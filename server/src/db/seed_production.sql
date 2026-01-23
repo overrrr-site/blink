@@ -2,6 +2,19 @@
 -- Supabase SQL Editorで実行してください
 
 -- ============================================
+-- 0. マイグレーション（auth_user_idカラムの追加）
+-- ============================================
+
+-- auth_user_idカラムを追加（存在しない場合のみ）
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS auth_user_id UUID;
+
+-- インデックスを作成（存在しない場合のみ）
+CREATE INDEX IF NOT EXISTS idx_staff_auth_user_id ON staff(auth_user_id);
+
+-- password_hashをNULL許容に変更（Supabase Authを使う場合は不要になるため）
+ALTER TABLE staff ALTER COLUMN password_hash DROP NOT NULL;
+
+-- ============================================
 -- 1. 既存データのクリア
 -- ============================================
 
@@ -49,12 +62,12 @@ ON CONFLICT (id) DO UPDATE SET
 -- 方法2: Supabase Admin APIを使用（後述のスクリプト参照）
 
 -- スタッフレコードを作成（auth_user_idは後で更新）
--- 仮のauth_user_idを設定（実際の値に置き換えてください）
-INSERT INTO staff (id, email, name, auth_user_id, created_at, updated_at)
+INSERT INTO staff (id, email, name, password_hash, auth_user_id, created_at, updated_at)
 VALUES (
   1,
   'nakai@overrrr.com',
   '中井 翔太',
+  NULL, -- password_hashは不要（Supabase Auth使用）
   NULL, -- 後でSupabase AuthユーザーIDに更新
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
