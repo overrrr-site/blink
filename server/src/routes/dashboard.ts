@@ -32,16 +32,26 @@ router.get('/', async (req: AuthRequest, res) => {
       [req.storeId, today]
     );
 
-    // 未入力の日誌
+    // 未入力の日誌（日誌が作成されていない、または内容が空の予約）
     const incompleteJournalsResult = await pool.query(
-      `SELECT j.*, d.name as dog_name, d.photo_url as dog_photo,
-              o.name as owner_name
+      `SELECT r.id as reservation_id, 
+              r.reservation_date,
+              r.reservation_date as journal_date,
+              r.reservation_time,
+              r.dog_id,
+              d.name as dog_name, 
+              d.photo_url as dog_photo,
+              o.name as owner_name,
+              j.id as journal_id,
+              j.comment
        FROM reservations r
        JOIN dogs d ON r.dog_id = d.id
        JOIN owners o ON d.owner_id = o.id
        LEFT JOIN journals j ON r.id = j.reservation_id
-       WHERE r.store_id = $1 AND r.reservation_date <= $2
-         AND (j.id IS NULL OR j.comment IS NULL)
+       WHERE r.store_id = $1 
+         AND r.reservation_date <= $2
+         AND r.status = 'チェックイン済'
+         AND (j.id IS NULL OR j.comment IS NULL OR j.comment = '')
        ORDER BY r.reservation_date DESC
        LIMIT 10`,
       [req.storeId, today]

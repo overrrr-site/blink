@@ -38,13 +38,16 @@ function JournalNew(): JSX.Element {
     }
   }
 
-  function getReservationId(reservation: Reservation): number {
-    return reservation.reservation_id || reservation.id
+  function getReservationId(reservation: Reservation): number | null {
+    return reservation.reservation_id || reservation.id || null
   }
 
   function getReservationDate(reservation: Reservation): string {
     return reservation.reservation_date || reservation.journal_date || ''
   }
+
+  // 有効な予約のみをフィルタリング（reservation_idがnullでないもの）
+  const validReservations = reservations.filter(r => getReservationId(r) !== null)
 
   if (loading) {
     return <LoadingSpinner />
@@ -59,7 +62,7 @@ function JournalNew(): JSX.Element {
           日誌を作成する予約を選択してください
         </p>
 
-        {reservations.length === 0 ? (
+        {validReservations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
               <iconify-icon icon="solar:check-circle-bold" width="40" height="40" className="text-chart-2"></iconify-icon>
@@ -76,9 +79,9 @@ function JournalNew(): JSX.Element {
           </div>
         ) : (
           <div className="space-y-3">
-            {reservations.map((reservation) => (
+            {validReservations.map((reservation) => (
               <button
-                key={getReservationId(reservation)}
+                key={getReservationId(reservation)!}
                 onClick={() => navigate(`/journals/create/${getReservationId(reservation)}`)}
                 className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow"
               >
