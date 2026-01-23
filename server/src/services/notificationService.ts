@@ -1,6 +1,23 @@
 import pool from '../db/connection.js';
-import { sendLineMessage, getOwnerLineId } from './lineMessagingService.js';
+import { sendLineMessage } from './lineMessagingService.js';
 import { sendEmail, getOwnerEmail } from './emailService.js';
+
+/**
+ * 飼い主のLINE IDを取得
+ */
+async function getOwnerLineId(ownerId: number): Promise<string | null> {
+  try {
+    const result = await pool.query(
+      `SELECT line_id FROM owners WHERE id = $1 AND line_id IS NOT NULL`,
+      [ownerId]
+    );
+
+    return result.rows[0]?.line_id || null;
+  } catch (error) {
+    console.error('Error fetching owner LINE ID:', error);
+    return null;
+  }
+}
 
 export interface NotificationData {
   storeId: number;
@@ -56,7 +73,7 @@ export async function sendNotification(data: NotificationData): Promise<void> {
     if (settings.line_notification_enabled) {
       const lineId = await getOwnerLineId(data.ownerId);
       if (lineId) {
-        const lineSent = await sendLineMessage(lineId, `${data.title}\n\n${data.message}`);
+        const lineSent = await sendLineMessage(data.storeId, lineId, `${data.title}\n\n${data.message}`);
         if (lineSent) {
           sentVia = 'line';
           sent = true;

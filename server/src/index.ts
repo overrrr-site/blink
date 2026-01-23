@@ -47,12 +47,11 @@ if (process.env.VERCEL) {
 // Initialize database
 initializeDatabase().catch(console.error);
 
-// Initialize LINE Messaging API and Email services
+// Initialize Email services (LINE Messaging APIは店舗ごとにマルチテナント対応)
 (async () => {
-  const { initializeLineClient } = await import('./services/lineMessagingService.js');
   const { initializeEmailClient } = await import('./services/emailService.js');
-  initializeLineClient();
   initializeEmailClient();
+  console.log('✅ LINE Messaging APIはマルチテナント対応（店舗ごとの認証情報を使用）');
 })();
 
 // Health check
