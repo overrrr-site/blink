@@ -98,11 +98,23 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const staffUser = response.data
         localStorage.setItem('staff_user', JSON.stringify(staffUser))
         set({ user: staffUser })
-      } catch (error) {
+      } catch (error: any) {
         console.error('スタッフ情報の取得に失敗しました:', error)
+        console.error('エラー詳細:', {
+          message: error?.message,
+          status: error?.response?.status,
+          statusText: error?.response?.statusText,
+          data: error?.response?.data,
+          url: error?.config?.url
+        })
+        
+        // エラーメッセージを詳細に表示
+        const errorMessage = error?.response?.data?.error || error?.response?.data?.details || error?.message || 'スタッフ情報の取得に失敗しました'
+        const errorDetails = error?.response?.data?.details ? `\n詳細: ${error.response.data.details}` : ''
+        
         // スタッフ情報が取得できない場合はログアウト
         await get().logout()
-        throw new Error('スタッフ情報の取得に失敗しました。管理者に連絡してください。')
+        throw new Error(`${errorMessage}${errorDetails}\n\n管理者に連絡してください。`)
       }
     },
 
