@@ -11,9 +11,19 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        console.log('=== AuthCallback 開始 ===')
+        console.log('現在のURL:', window.location.href)
+        console.log('URLハッシュ:', window.location.hash ? '存在する' : '存在しない')
+        
         // OAuthコールバックからセッションを取得
         // URLハッシュフラグメント（#access_token=...）を処理
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        console.log('getSession結果:', { 
+          hasSession: !!session, 
+          hasError: !!sessionError,
+          errorMessage: sessionError?.message
+        })
 
         if (sessionError) {
           throw sessionError
@@ -24,12 +34,25 @@ const AuthCallback = () => {
           const hashParams = new URLSearchParams(window.location.hash.substring(1))
           const accessToken = hashParams.get('access_token')
           const refreshToken = hashParams.get('refresh_token')
+          
+          console.log('URLハッシュからトークン取得:', {
+            hasAccessToken: !!accessToken,
+            hasRefreshToken: !!refreshToken,
+            accessTokenLength: accessToken?.length
+          })
 
           if (accessToken && refreshToken) {
             // セッションを設定
+            console.log('setSession実行中...')
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
+            })
+            
+            console.log('setSession結果:', {
+              hasSession: !!data.session,
+              hasError: !!error,
+              errorMessage: error?.message
             })
 
             if (error) {
@@ -37,6 +60,8 @@ const AuthCallback = () => {
             }
 
             if (data.session) {
+              console.log('セッション設定成功、スタッフ情報取得中...')
+              console.log('Access Token (最初の50文字):', data.session.access_token.substring(0, 50) + '...')
               // スタッフ情報を取得
               await fetchStaffInfo(data.session.access_token)
               // ダッシュボードにリダイレクト
@@ -45,9 +70,11 @@ const AuthCallback = () => {
             }
           }
 
-          throw new Error('セッションが見つかりません')
+          throw new Error('セッションが見つかりません。URLハッシュを確認してください。')
         }
 
+        console.log('既存セッション使用、スタッフ情報取得中...')
+        console.log('Access Token (最初の50文字):', session.access_token.substring(0, 50) + '...')
         // スタッフ情報を取得
         await fetchStaffInfo(session.access_token)
 
