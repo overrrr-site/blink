@@ -55,10 +55,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     // Supabase Auth でGoogleログイン
     loginWithGoogle: async () => {
+      // 本番環境のURLを取得（環境変数があればそれを使用、なければwindow.location.origin）
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin
+      const redirectUrl = `${frontendUrl}/auth/callback`
+
+      console.log('Googleログイン - Redirect URL:', redirectUrl)
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
         },
       })
 
