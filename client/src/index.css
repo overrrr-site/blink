@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #FAFAF9;
+  color: #292524;
+  font-size: 14px; /* ベースフォントサイズを14pxに */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ラベルのフォントサイズ統一 */
+label {
+  font-size: 14px;
+}
+
+/* カード間の余白を広げる */
+.space-y-4 > * + * {
+  margin-top: 1.25rem; /* 20px */
+}
+
+/* スクロールバーのスタイル */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

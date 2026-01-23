@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>犬詳細</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+
+        --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+        --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+        --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+        --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+        --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+        --tracking-normal: var(--tracking-normal);
+      }
+
+      :root {
+          --background: #FAFAF9;
+        --foreground: #292524;
+        --primary: #EA580C;
+        --primary-foreground: #FFFFFF;
+        --secondary: #E7E5E4;
+        --secondary-foreground: #292524;
+        --muted: #F5F5F4;
+        --muted-foreground: #78716C;
+        --accent: #FEF3C7;
+        --accent-foreground: #451A03;
+        --destructive: #EF4444;
+        --card: #FFFFFF;
+        --card-foreground: #292524;
+        --popover: #FFFFFF;
+        --popover-foreground: #292524;
+        --border: #E7E5E4;
+        --input: #FFFFFF;
+        --ring: #EA580C;
+        --chart-1: #EA580C;
+        --chart-2: #84CC16;
+        --chart-3: #06B6D4;
+        --chart-4: #F59E0B;
+        --chart-5: #EC4899;
+
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex flex-col h-full bg-background text-foreground font-sans relative">
+      <header
+        class="px-5 py-3 flex items-center justify-between bg-background/95 backdrop-blur-md sticky top-0 z-30"
+      >
+        <button class="flex items-center justify-center size-10 -ml-2">
+          <iconify-icon icon="solar:arrow-left-linear" class="size-6"></iconify-icon>
+        </button>
+        <h1 class="text-lg font-bold font-heading">犬の詳細情報</h1>
+        <button
+          class="text-primary font-bold text-sm px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+        >
+          編集
+        </button>
+      </header>
+      <main class="flex-1 overflow-y-auto pb-32">
+        <div
+          class="flex flex-col items-center pt-6 pb-8 bg-gradient-to-b from-accent/30 to-background px-5"
+        >
+          <div class="relative mb-4">
+            <div class="size-32 rounded-full border-4 border-card shadow-lg overflow-hidden">
+              <img
+                src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp"
+                alt="Dog Profile"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div
+              class="absolute bottom-1 right-1 bg-card size-8 rounded-full border-2 border-background flex items-center justify-center shadow-md"
+            >
+              <iconify-icon icon="solar:camera-bold" class="size-4 text-primary"></iconify-icon>
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-2 mb-1">
+              <h2 class="text-2xl font-bold font-heading">もも</h2>
+              <span
+                class="bg-pink-100 text-pink-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5"
+                ><iconify-icon icon="solar:re-order-bold" class="size-3 rotate-90"></iconify-icon
+                >♀</span
+              >
+              <span class="bg-chart-2/10 text-chart-2 text-[10px] font-bold px-2 py-0.5 rounded-full">避妊済</span>
+            </div>
+            <p class="text-muted-foreground font-medium">トイプードル / 3歳（2020年11月14日生）</p>
+            <div class="flex items-center justify-center gap-3 mt-2">
+              <span class="text-xs bg-muted px-2 py-1 rounded-full">アプリコット</span>
+              <span class="text-xs bg-muted px-2 py-1 rounded-full">3.2kg</span>
+            </div>
+          </div>
+        </div>
+        <div class="sticky top-[52px] z-20 bg-background border-b border-border">
+          <div class="flex overflow-x-auto scrollbar-hide">
+            <button
+              class="flex-none px-5 py-3 text-sm font-bold border-b-2 border-primary text-primary"
+            >
+              基本情報</button
+            ><button
+              class="flex-none px-5 py-3 text-sm font-bold border-b-2 border-transparent text-muted-foreground"
+            >
+              健康・ワクチン</button
+            ><button
+              class="flex-none px-5 py-3 text-sm font-bold border-b-2 border-transparent text-muted-foreground"
+            >
+              性格・特性</button
+            ><button
+              class="flex-none px-5 py-3 text-sm font-bold border-b-2 border-transparent text-muted-foreground"
+            >
+              利用履歴
+            </button>
+          </div>
+        </div>
+        <div class="p-5 space-y-6">
+          <!-- 基本情報セクション -->
+          <section class="space-y-4">
+            <h3
+              class="text-sm font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-wider"
+            >
+              <iconify-icon icon="solar:document-bold" class="size-4"></iconify-icon>
+              基本情報
+            </h3>
+            <div
+              class="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border"
+            >
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">名前</span>
+                <span class="text-sm font-medium">もも</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">犬種</span>
+                <span class="text-sm font-medium">トイプードル</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">生年月日</span>
+                <span class="text-sm font-medium">2020年11月14日（3歳）</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">性別</span>
+                <span class="text-sm font-medium">メス</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">体重</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium">3.2kg</span>
+                  <span class="text-[10px] text-muted-foreground">（2023/11/10 更新）</span>
+                </div>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">毛色</span>
+                <span class="text-sm font-medium">アプリコット</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">去勢・避妊</span>
+                <span class="text-sm font-medium text-chart-2">避妊済</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">マイクロチップ番号</span>
+                <span class="text-sm font-medium font-mono">392141234567890</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 性格・特性セクション -->
+          <section class="space-y-4">
+            <h3
+              class="text-sm font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-wider"
+            >
+              <iconify-icon icon="solar:heart-bold" class="size-4"></iconify-icon>
+              性格・特性
+            </h3>
+            <div
+              class="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border"
+            >
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">他の犬との相性</span>
+                <span class="text-sm font-medium text-chart-2">良好</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">人への反応</span>
+                <span class="text-sm font-medium text-chart-2">フレンドリー</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">噛み癖</span>
+                <span class="text-sm font-medium">なし</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">吠え癖</span>
+                <span class="text-sm font-medium text-chart-4">軽度（他犬に吠えることがある）</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">トイレの状況</span>
+                <span class="text-sm font-medium text-chart-2">ほぼOK</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">クレート慣れ</span>
+                <span class="text-sm font-medium text-chart-2">慣れている</span>
+              </div>
+              <div class="p-4 flex flex-col gap-2">
+                <span class="text-sm text-muted-foreground">苦手なこと</span>
+                <div class="bg-destructive/5 p-3 rounded-xl">
+                  <p class="text-sm leading-relaxed">大きな音（雷、花火）、掃除機の音</p>
+                </div>
+              </div>
+              <div class="p-4 flex flex-col gap-2">
+                <span class="text-sm text-muted-foreground">好きなこと・おもちゃ</span>
+                <div class="bg-chart-2/5 p-3 rounded-xl">
+                  <p class="text-sm leading-relaxed">ボール遊び、引っ張りっこ、おやつ探し</p>
+                </div>
+              </div>
+              <div class="p-4 flex flex-col gap-2">
+                <span class="text-sm text-muted-foreground">性格（自由記述）</span>
+                <div class="bg-accent/20 p-3 rounded-xl">
+                  <p class="text-sm leading-relaxed">
+                    人懐っこくて元気いっぱいです。少し怖がりな面もありますが、慣れると甘えん坊になります。おやつへの執着が強めです。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 健康・ワクチン情報 -->
+          <section class="space-y-4">
+            <h3
+              class="text-sm font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-wider"
+            >
+              <iconify-icon icon="solar:shield-check-bold" class="size-4"></iconify-icon>
+              ワクチン接種状況
+            </h3>
+            <div class="bg-card p-4 rounded-2xl border border-destructive/20 shadow-sm">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <p class="text-xs text-muted-foreground mb-0.5">混合ワクチン (5種)</p>
+                  <h4 class="font-bold">2022年11月10日 接種</h4>
+                </div>
+                <span
+                  class="text-[10px] bg-destructive/10 text-destructive font-bold px-2 py-1 rounded-full"
+                  >期限切れ</span
+                >
+              </div>
+              <div
+                class="flex items-center gap-2 p-2.5 bg-destructive/5 rounded-xl border border-destructive/10"
+              >
+                <iconify-icon
+                  icon="solar:danger-bold"
+                  class="size-4 text-destructive"
+                ></iconify-icon>
+                <p class="text-xs font-bold text-destructive">有効期限が4日前に切れています</p>
+              </div>
+            </div>
+            <div class="bg-card p-4 rounded-2xl border border-border shadow-sm">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <p class="text-xs text-muted-foreground mb-0.5">狂犬病予防接種</p>
+                  <h4 class="font-bold">2023年04月15日 接種</h4>
+                </div>
+                <span
+                  class="text-[10px] bg-chart-2/10 text-chart-2 font-bold px-2 py-1 rounded-full"
+                  >有効</span
+                >
+              </div>
+              <div class="flex items-center gap-2 p-2.5 bg-muted/50 rounded-xl">
+                <iconify-icon
+                  icon="solar:clock-circle-bold"
+                  class="size-4 text-muted-foreground"
+                ></iconify-icon>
+                <p class="text-xs font-medium text-muted-foreground">
+                  期限まであと <span class="text-foreground font-bold">152日</span>
+                </p>
+              </div>
+            </div>
+            <div class="bg-card p-4 rounded-2xl border border-border shadow-sm">
+              <p class="text-xs text-muted-foreground mb-3 font-medium">ワクチン証明書</p>
+              <div class="flex gap-3">
+                <div class="relative group">
+                  <div class="size-20 rounded-lg overflow-hidden bg-muted border border-border">
+                    <img
+                      src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/placeholder/portrait.png"
+                      class="w-full h-full object-cover opacity-80"
+                      alt="Certificate"
+                    />
+                  </div>
+                  <div
+                    class="absolute inset-0 flex items-center justify-center bg-black/5 rounded-lg"
+                  >
+                    <iconify-icon
+                      icon="solar:magnifer-linear"
+                      class="size-5 text-white"
+                    ></iconify-icon>
+                  </div>
+                </div>
+                <div class="flex flex-col justify-center">
+                  <p class="text-[10px] text-muted-foreground mb-1">アップロード日: 2023/11/14</p>
+                  <button class="text-primary text-xs font-bold flex items-center gap-1">
+                    証明書を更新する<iconify-icon
+                      icon="solar:upload-bold"
+                      class="size-3"
+                    ></iconify-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 医療・フード情報 -->
+          <section class="space-y-4">
+            <h3
+              class="text-sm font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-wider"
+            >
+              <iconify-icon icon="solar:medical-kit-bold" class="size-4"></iconify-icon>
+              医療・フード情報
+            </h3>
+            <div
+              class="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border"
+            >
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">既往歴・持病</span>
+                <span class="text-sm font-medium">特になし</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">アレルギー</span>
+                <span class="text-sm font-medium text-destructive">鶏肉（皮膚疾患）</span>
+              </div>
+              <div class="p-4 flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">服用中の薬</span>
+                <span class="text-sm font-medium">なし</span>
+              </div>
+              <div class="p-4 flex justify-between items-start">
+                <span class="text-sm text-muted-foreground">かかりつけ動物病院</span>
+                <div class="text-right">
+                  <p class="text-sm font-medium">代々木わんにゃんクリニック</p>
+                  <p class="text-xs text-muted-foreground">03-xxxx-xxxx</p>
+                </div>
+              </div>
+              <div class="p-4 flex flex-col gap-2">
+                <span class="text-sm text-muted-foreground">フード情報</span>
+                <div class="bg-accent/20 p-3 rounded-xl">
+                  <p class="text-xs text-muted-foreground mb-1">銘柄</p>
+                  <p class="text-sm font-medium mb-2">ロイヤルカナン 消化器サポート 低脂肪</p>
+                  <div class="flex gap-4">
+                    <div>
+                      <p class="text-xs text-muted-foreground">量</p>
+                      <p class="text-sm font-medium">各45g</p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-muted-foreground">回数</p>
+                      <p class="text-sm font-medium">1日2回（8:00/18:00）</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="pt-2">
+            <div
+              class="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center justify-between"
+            >
+              <div class="flex items-center gap-3">
+                <div class="size-12 rounded-full bg-card p-0.5 border border-primary/10">
+                  <img
+                    src="https://randomuser.me/api/portraits/women/47.jpg"
+                    class="w-full h-full rounded-full object-cover"
+                    alt="Owner"
+                  />
+                </div>
+                <div>
+                  <p class="text-[10px] text-primary font-bold">飼い主</p>
+                  <h4 class="font-bold">田中 美咲 様</h4>
+                </div>
+              </div>
+              <button
+                class="size-10 rounded-full bg-card shadow-sm border border-primary/10 flex items-center justify-center text-primary"
+              >
+                <iconify-icon icon="solar:arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </section>
+        </div>
+      </main>
+      <nav
+        class="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 pb-safe"
+      >
+        <div class="flex items-center justify-between px-2">
+          <button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <iconify-icon icon="solar:home-2-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">ホーム</span></button
+          ><button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-primary">
+            <iconify-icon icon="solar:users-group-rounded-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">顧客管理</span></button
+          ><button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <iconify-icon icon="solar:calendar-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">予約管理</span></button
+          ><button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <iconify-icon icon="solar:notebook-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">日誌</span></button
+          ><button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <iconify-icon icon="solar:settings-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">設定</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </body>
+</html>

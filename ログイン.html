@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ログイン - わんわんパーク</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+      }
+
+      :root {
+        --background: #fafaf9;
+        --foreground: #292524;
+        --primary: #ea580c;
+        --primary-foreground: #ffffff;
+        --secondary: #e7e5e4;
+        --secondary-foreground: #292524;
+        --muted: #f5f5f4;
+        --muted-foreground: #78716c;
+        --accent: #fef3c7;
+        --accent-foreground: #451a03;
+        --destructive: #ef4444;
+        --card: #ffffff;
+        --card-foreground: #292524;
+        --popover: #ffffff;
+        --popover-foreground: #292524;
+        --border: #e7e5e4;
+        --input: #ffffff;
+        --ring: #ea580c;
+        --chart-1: #ea580c;
+        --chart-2: #84cc16;
+        --chart-3: #06b6d4;
+        --chart-4: #f59e0b;
+        --chart-5: #ec4899;
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="min-h-screen bg-background text-foreground font-sans flex flex-col">
+      <!-- ヘッダー -->
+      <header class="px-5 pt-8 pb-6 text-center">
+        <div class="flex items-center justify-center gap-2 mb-2">
+          <iconify-icon icon="solar:paw-print-bold" class="text-primary size-10"></iconify-icon>
+        </div>
+        <h1 class="text-2xl font-bold font-heading text-foreground">わんわんパーク</h1>
+        <p class="text-sm text-muted-foreground mt-1">犬の幼稚園 顧客管理システム</p>
+      </header>
+
+      <!-- メインコンテンツ -->
+      <main class="flex-1 px-5 pb-8">
+        <!-- ログインフォーム -->
+        <div class="bg-card rounded-3xl p-6 border border-border shadow-sm max-w-md mx-auto">
+          <h2 class="text-lg font-bold font-heading text-center mb-6">スタッフログイン</h2>
+
+          <form class="space-y-4">
+            <!-- メールアドレス -->
+            <div>
+              <label class="block text-sm font-medium mb-2">メールアドレス</label>
+              <div class="relative">
+                <iconify-icon icon="solar:letter-bold" class="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2"></iconify-icon>
+                <input
+                  type="email"
+                  placeholder="example@email.com"
+                  class="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+            </div>
+
+            <!-- パスワード -->
+            <div>
+              <label class="block text-sm font-medium mb-2">パスワード</label>
+              <div class="relative">
+                <iconify-icon icon="solar:lock-password-bold" class="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2"></iconify-icon>
+                <input
+                  type="password"
+                  placeholder="パスワードを入力"
+                  class="w-full pl-10 pr-12 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <iconify-icon icon="solar:eye-bold" class="size-5"></iconify-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- パスワードを忘れた -->
+            <div class="text-right">
+              <a href="#" class="text-xs text-primary hover:underline">パスワードをお忘れですか？</a>
+            </div>
+
+            <!-- ログインボタン -->
+            <button
+              type="submit"
+              class="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+            >
+              ログイン
+            </button>
+          </form>
+
+          <!-- 区切り線 -->
+          <div class="flex items-center gap-4 my-6">
+            <div class="flex-1 h-px bg-border"></div>
+            <span class="text-xs text-muted-foreground">または</span>
+            <div class="flex-1 h-px bg-border"></div>
+          </div>
+
+          <!-- ソーシャルログイン -->
+          <div class="space-y-3">
+            <button class="w-full flex items-center justify-center gap-3 bg-[#06C755] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#06C755]/90 transition-colors">
+              <svg class="size-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+              </svg>
+              LINEでログイン
+            </button>
+
+            <button class="w-full flex items-center justify-center gap-3 bg-card border border-border text-foreground py-3 rounded-xl text-sm font-bold hover:bg-muted transition-colors">
+              <svg class="size-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Googleでログイン
+            </button>
+          </div>
+        </div>
+
+        <!-- 新規登録 -->
+        <div class="text-center mt-6">
+          <p class="text-sm text-muted-foreground">
+            アカウントをお持ちでない方は
+            <a href="#" class="text-primary font-bold hover:underline">新規登録</a>
+          </p>
+        </div>
+
+        <!-- 飼い主向けリンク -->
+        <div class="bg-accent/30 rounded-2xl p-4 mt-8 max-w-md mx-auto">
+          <div class="flex items-start gap-3">
+            <iconify-icon icon="solar:info-circle-bold" class="size-5 text-accent-foreground mt-0.5"></iconify-icon>
+            <div>
+              <p class="text-sm font-bold text-accent-foreground mb-1">飼い主の方へ</p>
+              <p class="text-xs text-muted-foreground">
+                飼い主の方は、通っている幼稚園のLINE公式アカウントからミニアプリをご利用ください。
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- フッター -->
+      <footer class="px-5 py-6 text-center border-t border-border">
+        <p class="text-[10px] text-muted-foreground">
+          &copy; 2024 わんわんパーク All rights reserved.
+        </p>
+        <div class="flex items-center justify-center gap-4 mt-2">
+          <a href="#" class="text-[10px] text-muted-foreground hover:text-primary">利用規約</a>
+          <a href="#" class="text-[10px] text-muted-foreground hover:text-primary">プライバシーポリシー</a>
+          <a href="#" class="text-[10px] text-muted-foreground hover:text-primary">お問い合わせ</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

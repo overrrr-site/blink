@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登園前入力 - 連絡帳</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+
+        --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+        --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+        --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+        --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+        --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+        --tracking-normal: var(--tracking-normal);
+      }
+
+      :root {
+          --background: #FAFAF9;
+        --foreground: #292524;
+        --primary: #EA580C;
+        --primary-foreground: #FFFFFF;
+        --secondary: #E7E5E4;
+        --secondary-foreground: #292524;
+        --muted: #F5F5F4;
+        --muted-foreground: #78716C;
+        --accent: #FEF3C7;
+        --accent-foreground: #451A03;
+        --destructive: #EF4444;
+        --card: #FFFFFF;
+        --card-foreground: #292524;
+        --popover: #FFFFFF;
+        --popover-foreground: #292524;
+        --border: #E7E5E4;
+        --input: #FFFFFF;
+        --ring: #EA580C;
+        --chart-1: #EA580C;
+        --chart-2: #84CC16;
+        --chart-3: #06B6D4;
+        --chart-4: #F59E0B;
+        --chart-5: #EC4899;
+
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex flex-col h-full bg-background text-foreground font-sans relative">
+      <header
+        class="px-5 pt-4 pb-4 bg-background sticky top-0 z-20 border-b border-border"
+      >
+        <div class="flex items-center gap-3">
+          <button class="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
+            <iconify-icon icon="solar:arrow-left-linear" class="size-5 text-foreground"></iconify-icon>
+          </button>
+          <div class="flex-1">
+            <h1 class="text-lg font-bold font-heading text-foreground">
+              登園前入力
+            </h1>
+            <p class="text-xs text-muted-foreground">11月24日（金）登園予定</p>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-y-auto px-5 pb-32 pt-4 space-y-6">
+        <!-- 対象犬の選択 -->
+        <section>
+          <h2 class="text-sm font-bold text-muted-foreground mb-3">登園する犬を選択</h2>
+          <div class="flex gap-3">
+            <!-- 選択中の犬 -->
+            <button class="flex-1 bg-primary/10 border-2 border-primary rounded-2xl p-4 flex flex-col items-center gap-2">
+              <div class="size-16 rounded-full overflow-hidden border-3 border-primary">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp" alt="もも" class="w-full h-full object-cover" />
+              </div>
+              <span class="text-sm font-bold">もも</span>
+              <iconify-icon icon="solar:check-circle-bold" class="size-5 text-primary"></iconify-icon>
+            </button>
+            <!-- 未選択の犬 -->
+            <button class="flex-1 bg-card border-2 border-border rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors">
+              <div class="size-16 rounded-full overflow-hidden border-3 border-border">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/6.webp" alt="ココ" class="w-full h-full object-cover" />
+              </div>
+              <span class="text-sm font-bold text-muted-foreground">ココ</span>
+              <iconify-icon icon="solar:add-circle-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+          </div>
+        </section>
+
+        <!-- ももの登園前情報入力 -->
+        <section class="bg-card rounded-3xl p-5 border border-border shadow-sm">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="size-12 rounded-full overflow-hidden border-2 border-primary">
+              <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp" alt="もも" class="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold font-heading">ももの登園前情報</h2>
+              <p class="text-xs text-muted-foreground">前回登園: 11月21日（火）</p>
+            </div>
+          </div>
+
+          <!-- 朝ごはん -->
+          <div class="mb-6">
+            <label class="block text-sm font-bold mb-3">
+              <iconify-icon icon="solar:bowl-bold" class="size-4 text-chart-4 mr-1"></iconify-icon>
+              朝ごはん
+            </label>
+            <div class="grid grid-cols-4 gap-2">
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-primary text-primary-foreground">
+                完食
+              </button>
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                少し残した
+              </button>
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                半分
+              </button>
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                食べず
+              </button>
+            </div>
+          </div>
+
+          <!-- 体調 -->
+          <div class="mb-6">
+            <label class="block text-sm font-bold mb-3">
+              <iconify-icon icon="solar:health-bold" class="size-4 text-chart-2 mr-1"></iconify-icon>
+              今日の体調
+            </label>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-chart-2/10 text-chart-2 border-2 border-chart-2">
+                良好
+              </button>
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                普通
+              </button>
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                少し心配
+              </button>
+            </div>
+          </div>
+
+          <!-- 排泄 -->
+          <div class="mb-6">
+            <label class="block text-sm font-bold mb-3">
+              <iconify-icon icon="solar:toilet-paper-bold" class="size-4 text-chart-3 mr-1"></iconify-icon>
+              今朝の排泄
+            </label>
+            <div class="space-y-3">
+              <div>
+                <p class="text-xs text-muted-foreground mb-2">うんち</p>
+                <div class="grid grid-cols-4 gap-2">
+                  <button class="py-2 px-2 rounded-xl text-xs font-semibold bg-chart-2/10 text-chart-2 border-2 border-chart-2">
+                    正常
+                  </button>
+                  <button class="py-2 px-2 rounded-xl text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                    軟便
+                  </button>
+                  <button class="py-2 px-2 rounded-xl text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                    下痢
+                  </button>
+                  <button class="py-2 px-2 rounded-xl text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                    なし
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-muted-foreground mb-2">おしっこ</p>
+                <div class="grid grid-cols-3 gap-2">
+                  <button class="py-2 px-2 rounded-xl text-xs font-semibold bg-chart-2/10 text-chart-2 border-2 border-chart-2">
+                    正常
+                  </button>
+                  <button class="py-2 px-2 rounded-xl text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                    多い
+                  </button>
+                  <button class="py-2 px-2 rounded-xl text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                    なし
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 散歩 -->
+          <div class="mb-6">
+            <label class="block text-sm font-bold mb-3">
+              <iconify-icon icon="solar:walking-round-bold" class="size-4 text-primary mr-1"></iconify-icon>
+              今朝の散歩
+            </label>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-primary text-primary-foreground">
+                した
+              </button>
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                少しだけ
+              </button>
+              <button class="py-2.5 px-3 rounded-xl text-sm font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+                してない
+              </button>
+            </div>
+          </div>
+
+          <!-- 前回からの変化・気になること -->
+          <div class="mb-6">
+            <label class="block text-sm font-bold mb-3">
+              <iconify-icon icon="solar:chat-round-dots-bold" class="size-4 text-chart-5 mr-1"></iconify-icon>
+              前回からの変化・気になること
+            </label>
+            <textarea
+              class="w-full p-4 rounded-xl border border-border bg-muted/30 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              rows="3"
+              placeholder="例：最近、他の犬に吠えることが増えました..."
+            >最近、他の犬に吠えることが増えました。特に大型犬に対して警戒心が強いようです。</textarea>
+          </div>
+
+          <!-- スタッフへの連絡事項 -->
+          <div>
+            <label class="block text-sm font-bold mb-3">
+              <iconify-icon icon="solar:letter-bold" class="size-4 text-chart-3 mr-1"></iconify-icon>
+              スタッフへの連絡事項
+            </label>
+            <textarea
+              class="w-full p-4 rounded-xl border border-border bg-muted/30 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              rows="3"
+              placeholder="例：お迎えが少し遅れるかもしれません..."
+            ></textarea>
+          </div>
+        </section>
+
+        <!-- お迎え予定時間 -->
+        <section class="bg-card rounded-3xl p-5 border border-border shadow-sm">
+          <h2 class="text-sm font-bold mb-4 flex items-center gap-2">
+            <iconify-icon icon="solar:clock-circle-bold" class="size-4 text-primary"></iconify-icon>
+            お迎え予定時間
+          </h2>
+          <div class="flex items-center gap-4">
+            <select class="flex-1 p-3 rounded-xl border border-border bg-muted/30 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+              <option>16:00</option>
+              <option>16:30</option>
+              <option selected>17:00</option>
+              <option>17:30</option>
+              <option>18:00</option>
+              <option>18:30</option>
+              <option>19:00</option>
+            </select>
+            <div class="text-sm text-muted-foreground">
+              <p>延長料金</p>
+              <p class="font-bold text-foreground">なし</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-muted-foreground mt-2">
+            ※18:00以降は30分毎に550円（税込）の延長料金がかかります
+          </p>
+        </section>
+
+        <!-- 前回の日誌サマリー -->
+        <section class="bg-accent/20 rounded-3xl p-5 border border-accent/30">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-bold flex items-center gap-2">
+              <iconify-icon icon="solar:document-text-bold" class="size-4 text-accent-foreground"></iconify-icon>
+              前回の日誌（11/21）
+            </h2>
+            <button class="text-[10px] font-bold text-primary flex items-center gap-0.5">
+              詳しく見る<iconify-icon icon="solar:arrow-right-linear" class="size-3"></iconify-icon>
+            </button>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded font-bold">トイレ ○</span>
+              <span class="text-[10px] bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded font-bold">オスワリ ○</span>
+              <span class="text-[10px] bg-chart-4/10 text-chart-4 px-2 py-0.5 rounded font-bold">マテ △</span>
+            </div>
+            <p class="text-xs text-muted-foreground leading-relaxed">
+              今日は他のワンちゃんたちとも仲良く遊べました。オスワリ・マテの練習もバッチリ！
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <!-- 送信ボタン（フローティング） -->
+      <div class="fixed bottom-20 left-0 right-0 px-5 z-40">
+        <button class="w-full bg-primary text-primary-foreground py-4 rounded-2xl text-base font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors">
+          <iconify-icon icon="solar:check-circle-bold" class="size-5"></iconify-icon>
+          入力内容を送信
+        </button>
+      </div>
+
+      <nav
+        class="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 pb-safe"
+      >
+        <div class="flex items-center justify-between px-6">
+          <button class="flex flex-col items-center justify-center py-3 gap-1 text-muted-foreground">
+            <iconify-icon icon="solar:home-2-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">ホーム</span></button
+          ><button
+            class="flex flex-col items-center justify-center py-3 gap-1 text-muted-foreground"
+          >
+            <iconify-icon icon="solar:calendar-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">予約</span></button
+          ><button
+            class="flex flex-col items-center justify-center py-3 gap-1 text-primary"
+          >
+            <iconify-icon icon="solar:notebook-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-bold">連絡帳</span></button
+          ><button
+            class="flex flex-col items-center justify-center py-3 gap-1 text-muted-foreground"
+          >
+            <iconify-icon icon="solar:user-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">マイページ</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </body>
+</html>

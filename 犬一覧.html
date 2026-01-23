@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>犬一覧 - 顧客管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+
+        --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+        --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+        --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+        --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+        --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+        --tracking-normal: var(--tracking-normal);
+      }
+
+      :root {
+          --background: #FAFAF9;
+        --foreground: #292524;
+        --primary: #EA580C;
+        --primary-foreground: #FFFFFF;
+        --secondary: #E7E5E4;
+        --secondary-foreground: #292524;
+        --muted: #F5F5F4;
+        --muted-foreground: #78716C;
+        --accent: #FEF3C7;
+        --accent-foreground: #451A03;
+        --destructive: #EF4444;
+        --card: #FFFFFF;
+        --card-foreground: #292524;
+        --popover: #FFFFFF;
+        --popover-foreground: #292524;
+        --border: #E7E5E4;
+        --input: #FFFFFF;
+        --ring: #EA580C;
+        --chart-1: #EA580C;
+        --chart-2: #84CC16;
+        --chart-3: #06B6D4;
+        --chart-4: #F59E0B;
+        --chart-5: #EC4899;
+
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="flex flex-col h-full bg-background text-foreground font-sans relative overflow-hidden"
+    >
+      <header
+        class="px-5 pt-6 pb-4 bg-background sticky top-0 z-10"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <h1 class="text-2xl font-bold font-heading text-foreground">
+            顧客管理
+          </h1>
+          <button class="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors">
+            <iconify-icon icon="solar:paw-bold" class="size-4"></iconify-icon>
+            新規登録
+          </button>
+        </div>
+        <!-- タブ切り替え -->
+        <div class="flex gap-2 mb-4">
+          <button class="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+            飼い主
+          </button>
+          <button class="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold bg-primary text-primary-foreground">
+            犬
+          </button>
+        </div>
+        <!-- 検索・フィルター -->
+        <div class="flex gap-2">
+          <div class="flex-1 relative">
+            <iconify-icon icon="solar:magnifer-linear" class="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2"></iconify-icon>
+            <input
+              type="text"
+              placeholder="名前・犬種で検索"
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+          <button class="bg-card border border-border px-3 rounded-xl hover:bg-muted transition-colors">
+            <iconify-icon icon="solar:filter-bold" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-y-auto pb-24 px-5">
+        <!-- 統計サマリー -->
+        <div class="flex gap-3 mb-4">
+          <div class="flex-1 bg-card rounded-xl p-3 border border-border">
+            <p class="text-[10px] text-muted-foreground mb-1">総登録数</p>
+            <p class="text-xl font-bold text-foreground">56<span class="text-sm font-normal text-muted-foreground ml-1">頭</span></p>
+          </div>
+          <div class="flex-1 bg-card rounded-xl p-3 border border-border">
+            <p class="text-[10px] text-muted-foreground mb-1">パピー</p>
+            <p class="text-xl font-bold text-chart-5">8<span class="text-sm font-normal text-muted-foreground ml-1">頭</span></p>
+          </div>
+          <div class="flex-1 bg-card rounded-xl p-3 border border-border">
+            <p class="text-[10px] text-muted-foreground mb-1">要ワクチン</p>
+            <p class="text-xl font-bold text-destructive">3<span class="text-sm font-normal text-muted-foreground ml-1">頭</span></p>
+          </div>
+        </div>
+
+        <!-- フィルタータグ -->
+        <div class="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
+          <button class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground">
+            すべて
+          </button>
+          <button class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-chart-5/10 text-chart-5">
+            パピー
+          </button>
+          <button class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+            小型犬
+          </button>
+          <button class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+            中型犬
+          </button>
+          <button class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground hover:bg-secondary transition-colors">
+            大型犬
+          </button>
+          <button class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive">
+            要ワクチン
+          </button>
+        </div>
+
+        <!-- 犬リスト -->
+        <div class="space-y-3">
+          <!-- 犬カード 1: ワクチン期限切れ -->
+          <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="size-14 rounded-full overflow-hidden border-2 border-destructive shrink-0">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp" alt="Dog" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-bold text-base">もも</h3>
+                  <span class="text-[10px] bg-chart-5/10 text-chart-5 px-1.5 py-0.5 rounded font-semibold">♀ 避妊済</span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1">トイプードル / 3歳2ヶ月 / 4.2kg</p>
+                <p class="text-xs text-muted-foreground mb-2">田中 花子 様</p>
+                <!-- アラート -->
+                <div class="flex items-center gap-1.5 text-destructive bg-destructive/10 rounded-lg px-2 py-1.5">
+                  <iconify-icon icon="solar:shield-warning-bold" class="size-3.5"></iconify-icon>
+                  <span class="text-[10px] font-semibold">混合ワクチン期限切れ（3日経過）</span>
+                </div>
+              </div>
+              <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- 犬カード 2: ワクチン期限間近 -->
+          <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="size-14 rounded-full overflow-hidden border-2 border-chart-4 shrink-0">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/6.webp" alt="Dog" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-bold text-base">ココ</h3>
+                  <span class="text-[10px] bg-chart-3/10 text-chart-3 px-1.5 py-0.5 rounded font-semibold">♀ 避妊済</span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1">柴犬 / 2歳5ヶ月 / 8.5kg</p>
+                <p class="text-xs text-muted-foreground mb-2">佐藤 健一 様</p>
+                <!-- アラート -->
+                <div class="flex items-center gap-1.5 text-chart-4 bg-chart-4/10 rounded-lg px-2 py-1.5">
+                  <iconify-icon icon="solar:shield-check-bold" class="size-3.5"></iconify-icon>
+                  <span class="text-[10px] font-semibold">狂犬病ワクチン 残り14日</span>
+                </div>
+              </div>
+              <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- 犬カード 3: パピー -->
+          <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="size-14 rounded-full overflow-hidden border-2 border-chart-5 shrink-0">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/4.webp" alt="Dog" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-bold text-base">さくら</h3>
+                  <span class="text-[10px] bg-chart-5/10 text-chart-5 px-1.5 py-0.5 rounded font-bold">パピー</span>
+                  <span class="text-[10px] bg-chart-5/10 text-chart-5 px-1.5 py-0.5 rounded font-semibold">♀</span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1">ポメラニアン / 4ヶ月 / 1.8kg</p>
+                <p class="text-xs text-muted-foreground mb-2">山田 太郎 様</p>
+                <!-- トレーニング進捗 -->
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-muted-foreground">登園回数:</span>
+                  <span class="text-xs font-bold text-primary">24回</span>
+                  <span class="text-[10px] text-muted-foreground ml-2">トイレ:</span>
+                  <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-bold">習得中</span>
+                </div>
+              </div>
+              <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- 犬カード 4: 通常（大型犬） -->
+          <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="size-14 rounded-full overflow-hidden border-2 border-transparent shrink-0">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/1.webp" alt="Dog" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-bold text-base">レオ</h3>
+                  <span class="text-[10px] bg-chart-3/10 text-chart-3 px-1.5 py-0.5 rounded font-semibold">♂ 去勢済</span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1">ゴールデンレトリバー / 1歳8ヶ月 / 28kg</p>
+                <p class="text-xs text-muted-foreground mb-2">高橋 美咲 様</p>
+                <!-- トレーニング進捗 -->
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-muted-foreground">登園回数:</span>
+                  <span class="text-xs font-bold text-primary">15回</span>
+                  <span class="text-[10px] text-muted-foreground ml-2">トイレ:</span>
+                  <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-bold">○</span>
+                </div>
+              </div>
+              <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- 犬カード 5: 通常（小型犬） -->
+          <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="size-14 rounded-full overflow-hidden border-2 border-transparent shrink-0">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/5.webp" alt="Dog" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-bold text-base">マロン</h3>
+                  <span class="text-[10px] bg-chart-3/10 text-chart-3 px-1.5 py-0.5 rounded font-semibold">♂ 去勢済</span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1">ミニチュアダックスフンド / 4歳1ヶ月 / 5.5kg</p>
+                <p class="text-xs text-muted-foreground mb-2">佐藤 健一 様</p>
+                <!-- トレーニング進捗 -->
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-muted-foreground">登園回数:</span>
+                  <span class="text-xs font-bold text-primary">42回</span>
+                  <span class="text-[10px] text-muted-foreground ml-2">トイレ:</span>
+                  <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-bold">○</span>
+                </div>
+              </div>
+              <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- 犬カード 6: 注意事項あり -->
+          <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="size-14 rounded-full overflow-hidden border-2 border-transparent shrink-0">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/2.webp" alt="Dog" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-bold text-base">チョコ</h3>
+                  <span class="text-[10px] bg-chart-5/10 text-chart-5 px-1.5 py-0.5 rounded font-semibold">♀ 避妊済</span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1">チワワ / 5歳3ヶ月 / 2.8kg</p>
+                <p class="text-xs text-muted-foreground mb-2">伊藤 由美 様</p>
+                <!-- 注意事項 -->
+                <div class="flex flex-wrap gap-1.5">
+                  <span class="text-[10px] bg-accent text-accent-foreground px-2 py-0.5 rounded font-medium">他犬が苦手</span>
+                  <span class="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded font-medium">食物アレルギーあり</span>
+                </div>
+              </div>
+              <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- 犬カード 7 -->
+          <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="size-14 rounded-full overflow-hidden border-2 border-transparent shrink-0">
+                <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/7.webp" alt="Dog" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-bold text-base">マックス</h3>
+                  <span class="text-[10px] bg-chart-3/10 text-chart-3 px-1.5 py-0.5 rounded font-semibold">♂ 去勢済</span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1">フレンチブルドッグ / 3歳 / 12kg</p>
+                <p class="text-xs text-muted-foreground mb-2">鈴木 一郎 様</p>
+                <!-- トレーニング進捗 -->
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-muted-foreground">登園回数:</span>
+                  <span class="text-xs font-bold text-primary">38回</span>
+                  <span class="text-[10px] text-muted-foreground ml-2">トイレ:</span>
+                  <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-bold">○</span>
+                </div>
+              </div>
+              <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <nav
+        class="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 pb-safe"
+      >
+        <div class="flex items-center justify-between px-2">
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:home-2-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">ホーム</span></button
+          ><button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-primary"
+          >
+            <iconify-icon icon="solar:users-group-rounded-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">顧客管理</span></button
+          ><button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <iconify-icon icon="solar:calendar-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">予約管理</span></button
+          ><button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <iconify-icon icon="solar:notebook-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">日誌</span></button
+          ><button
+            class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <iconify-icon icon="solar:settings-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">設定</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </body>
+</html>

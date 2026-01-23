@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>日誌履歴</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+      }
+      :root {
+        --background: #fafaf9;
+        --foreground: #292524;
+        --primary: #ea580c;
+        --primary-foreground: #ffffff;
+        --secondary: #e7e5e4;
+        --secondary-foreground: #292524;
+        --muted: #f5f5f4;
+        --muted-foreground: #78716c;
+        --accent: #fef3c7;
+        --accent-foreground: #451a03;
+        --destructive: #ef4444;
+        --card: #ffffff;
+        --card-foreground: #292524;
+        --popover: #ffffff;
+        --popover-foreground: #292524;
+        --border: #e7e5e4;
+        --input: #ffffff;
+        --ring: #ea580c;
+        --chart-1: #ea580c;
+        --chart-2: #84cc16;
+        --chart-3: #06b6d4;
+        --chart-4: #f59e0b;
+        --chart-5: #ec4899;
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex flex-col h-full bg-background text-foreground font-sans relative overflow-hidden">
+      <header class="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
+        <div class="flex items-center justify-between mb-4">
+          <h1 class="text-2xl font-bold font-heading text-foreground">日誌履歴</h1>
+          <button class="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors">
+            <iconify-icon icon="solar:export-bold" class="size-4"></iconify-icon>
+            エクスポート
+          </button>
+        </div>
+
+        <!-- 検索・フィルター -->
+        <div class="flex gap-2 mb-4">
+          <div class="flex-1 relative">
+            <iconify-icon icon="solar:magnifer-linear" class="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2"></iconify-icon>
+            <input
+              type="text"
+              placeholder="犬名・飼い主名で検索"
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+          <button class="bg-card border border-border px-3 rounded-xl hover:bg-muted transition-colors">
+            <iconify-icon icon="solar:filter-bold" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+        </div>
+
+        <!-- 月選択 -->
+        <div class="flex items-center justify-between bg-card rounded-xl p-2 border border-border">
+          <button class="p-2 hover:bg-muted rounded-lg transition-colors">
+            <iconify-icon icon="solar:alt-arrow-left-linear" class="size-5"></iconify-icon>
+          </button>
+          <span class="text-sm font-bold">2023年11月</span>
+          <button class="p-2 hover:bg-muted rounded-lg transition-colors">
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-y-auto pb-24 px-5">
+        <!-- 統計 -->
+        <div class="flex gap-3 mb-4">
+          <div class="flex-1 bg-card rounded-xl p-3 border border-border">
+            <p class="text-[10px] text-muted-foreground mb-1">今月の日誌</p>
+            <p class="text-xl font-bold text-foreground">86<span class="text-sm font-normal text-muted-foreground ml-1">件</span></p>
+          </div>
+          <div class="flex-1 bg-card rounded-xl p-3 border border-border">
+            <p class="text-[10px] text-muted-foreground mb-1">閲覧済み</p>
+            <p class="text-xl font-bold text-chart-2">72<span class="text-sm font-normal text-muted-foreground ml-1">件</span></p>
+          </div>
+          <div class="flex-1 bg-card rounded-xl p-3 border border-border">
+            <p class="text-[10px] text-muted-foreground mb-1">未閲覧</p>
+            <p class="text-xl font-bold text-chart-4">14<span class="text-sm font-normal text-muted-foreground ml-1">件</span></p>
+          </div>
+        </div>
+
+        <!-- 日誌リスト -->
+        <div class="space-y-3">
+          <!-- 日付グループ -->
+          <div>
+            <p class="text-xs font-bold text-muted-foreground mb-2 sticky top-0 bg-background py-1">11月14日（火）</p>
+
+            <!-- 日誌カード -->
+            <div class="space-y-2">
+              <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="size-12 rounded-full overflow-hidden border-2 border-chart-2 shrink-0">
+                    <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp" alt="もも" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <h3 class="font-bold text-sm">もも</h3>
+                      <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-semibold">送信済</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">田中 花子様 / 登園24回目</p>
+                  </div>
+                  <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                    <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+                  </button>
+                </div>
+                <p class="text-xs text-muted-foreground line-clamp-2 mb-2">
+                  今日は歯磨きシートを使って歯を触っています♪落ち着いていられるよう練習しました。オスワリはバッチリできました！
+                </p>
+                <div class="flex items-center gap-2">
+                  <div class="flex -space-x-1">
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/1.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="size-6 rounded bg-muted flex items-center justify-center border border-white text-[10px] text-muted-foreground font-bold">+2</div>
+                  </div>
+                  <span class="text-[10px] text-muted-foreground">写真4枚</span>
+                  <span class="text-[10px] text-muted-foreground ml-auto">担当: 山田</span>
+                </div>
+              </div>
+
+              <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="size-12 rounded-full overflow-hidden border-2 border-chart-2 shrink-0">
+                    <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/6.webp" alt="ココ" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <h3 class="font-bold text-sm">ココ</h3>
+                      <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-semibold">送信済</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">佐藤 健一様 / 登園15回目</p>
+                  </div>
+                  <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                    <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+                  </button>
+                </div>
+                <p class="text-xs text-muted-foreground line-clamp-2 mb-2">
+                  今日はお友達のワンちゃんと一緒に遊びました。少し興奮しすぎることもありましたが、呼び戻しの練習もできました。
+                </p>
+                <div class="flex items-center gap-2">
+                  <div class="flex -space-x-1">
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/6.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/2.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-muted-foreground">写真2枚</span>
+                  <span class="text-[10px] text-muted-foreground ml-auto">担当: 佐藤</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 日付グループ 2 -->
+          <div>
+            <p class="text-xs font-bold text-muted-foreground mb-2 sticky top-0 bg-background py-1">11月13日（月）</p>
+
+            <div class="space-y-2">
+              <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="size-12 rounded-full overflow-hidden border-2 border-chart-4 shrink-0">
+                    <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/4.webp" alt="さくら" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <h3 class="font-bold text-sm">さくら</h3>
+                      <span class="text-[10px] bg-chart-5/10 text-chart-5 px-1.5 py-0.5 rounded font-semibold">パピー</span>
+                      <span class="text-[10px] bg-chart-4/10 text-chart-4 px-1.5 py-0.5 rounded font-semibold">未閲覧</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">山田 太郎様 / 登園8回目</p>
+                  </div>
+                  <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                    <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+                  </button>
+                </div>
+                <p class="text-xs text-muted-foreground line-clamp-2 mb-2">
+                  パピー社会化クラスで他の子犬たちと触れ合いました。最初は緊張していましたが、徐々に慣れてきました！
+                </p>
+                <div class="flex items-center gap-2">
+                  <div class="flex -space-x-1">
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/4.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-muted-foreground">写真1枚</span>
+                  <span class="text-[10px] text-muted-foreground ml-auto">担当: 高橋</span>
+                </div>
+              </div>
+
+              <div class="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="size-12 rounded-full overflow-hidden border-2 border-chart-2 shrink-0">
+                    <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/1.webp" alt="レオ" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <h3 class="font-bold text-sm">レオ</h3>
+                      <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-semibold">送信済</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">高橋 美咲様 / 登園32回目</p>
+                  </div>
+                  <button class="text-muted-foreground hover:text-primary transition-colors p-1">
+                    <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5"></iconify-icon>
+                  </button>
+                </div>
+                <p class="text-xs text-muted-foreground line-clamp-2 mb-2">
+                  今日はリードワークの練習を重点的に行いました。引っ張り癖が少しずつ改善されてきています。
+                </p>
+                <div class="flex items-center gap-2">
+                  <div class="flex -space-x-1">
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/1.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/5.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="size-6 rounded bg-muted overflow-hidden border border-white">
+                      <img src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/2.webp" alt="" class="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-muted-foreground">写真3枚</span>
+                  <span class="text-[10px] text-muted-foreground ml-auto">担当: 山田</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <nav class="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 pb-safe">
+        <div class="flex items-center justify-between px-2">
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:home-2-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">ホーム</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:users-group-rounded-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">顧客管理</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:calendar-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">予約管理</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-primary">
+            <iconify-icon icon="solar:notebook-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">日誌</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:settings-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">設定</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </body>
+</html>

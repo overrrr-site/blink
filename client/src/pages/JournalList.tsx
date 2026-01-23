@@ -1,0 +1,359 @@
+import { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import api from '../api/client'
+import jsPDF from 'jspdf'
+
+const JournalList = () => {
+  const [journals, setJournals] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedDog, setSelectedDog] = useState<string>('')
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    fetchJournals()
+  }, [])
+
+  const fetchJournals = async () => {
+    try {
+      const response = await api.get('/journals')
+      setJournals(response.data)
+    } catch (error) {
+      console.error('Error fetching journals:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ユニークな犬のリストを取得
+  const uniqueDogs = useMemo(() => {
+    const dogs = journals.map((j) => ({ id: j.dog_id, name: j.dog_name }))
+    return Array.from(new Map(dogs.map((d) => [d.id, d])).values())
+  }, [journals])
+
+  // フィルタリングされた日誌
+  const filteredJournals = useMemo(() => {
+    return journals.filter((journal) => {
+      const matchesSearch =
+        searchQuery === '' ||
+        journal.dog_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        journal.owner_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (journal.comment && journal.comment.toLowerCase().includes(searchQuery.toLowerCase()))
+
+      const matchesDog = selectedDog === '' || journal.dog_id.toString() === selectedDog
+
+      return matchesSearch && matchesDog
+    })
+  }, [journals, searchQuery, selectedDog])
+
+  // 日付でグループ化
+  const groupedJournals = useMemo(() => {
+    const groups: { [key: string]: any[] } = {}
+    filteredJournals.forEach((journal) => {
+      const date = journal.journal_date
+      if (!groups[date]) {
+        groups[date] = []
+      }
+      groups[date].push(journal)
+    })
+    return groups
+  }, [filteredJournals])
+
+  // CSVエクスポート機能
+  const exportToCSV = () => {
+    const headers = ['日付', '犬名', '飼い主', '担当スタッフ', 'コメント']
+    const rows = filteredJournals.map((journal) => [
+      journal.journal_date,
+      journal.dog_name,
+      journal.owner_name,
+      journal.staff_name || '',
+      journal.comment?.replace(/"/g, '""') || '',
+    ])
+
+    const csvContent =
+      '\uFEFF' +
+      [headers, ...rows]
+        .map((row) => row.map((cell) => `"${cell}"`).join(','))
+        .join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `日誌一覧_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    setShowExportMenu(false)
+  }
+
+  // PDFエクスポート機能
+  const exportToPDF = () => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 15
+    let yPos = margin
+
+    // タイトル
+    doc.setFontSize(18)
+    doc.text('日誌一覧', pageWidth / 2, yPos, { align: 'center' })
+    yPos += 10
+
+    // 日付
+    doc.setFontSize(10)
+    doc.text(
+      `出力日: ${new Date().toLocaleDateString('ja-JP')}`,
+      pageWidth - margin,
+      yPos,
+      { align: 'right' }
+    )
+    yPos += 10
+
+    // テーブルヘッダー
+    doc.setFontSize(10)
+    doc.setFont(undefined, 'bold')
+    const headers = ['日付', '犬名', '飼い主', '担当', 'コメント']
+    const colWidths = [25, 30, 30, 20, pageWidth - margin * 2 - 105]
+    let xPos = margin
+
+    headers.forEach((header, index) => {
+      doc.text(header, xPos, yPos)
+      xPos += colWidths[index]
+    })
+    yPos += 7
+
+    // データ行
+    doc.setFont(undefined, 'normal')
+    filteredJournals.forEach((journal) => {
+      // ページ改行チェック
+      if (yPos > pageHeight - 20) {
+        doc.addPage()
+        yPos = margin
+      }
+
+      const row = [
+        journal.journal_date || '',
+        journal.dog_name || '',
+        journal.owner_name || '',
+        journal.staff_name || '',
+        journal.comment || '',
+      ]
+
+      xPos = margin
+      row.forEach((cell, index) => {
+        const cellText = doc.splitTextToSize(cell || '', colWidths[index] - 2)
+        doc.text(cellText, xPos, yPos)
+        xPos += colWidths[index]
+      })
+      yPos += Math.max(7, row[4] ? doc.getTextDimensions(row[4], { maxWidth: colWidths[4] }).h + 3 : 7)
+    })
+
+    doc.save(`日誌一覧_${new Date().toISOString().split('T')[0]}.pdf`)
+    setShowExportMenu(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">読み込み中...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="pb-6">
+      <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold font-heading text-foreground">日誌一覧</h1>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"
+              >
+                <iconify-icon icon="solar:export-bold" width="18" height="18"></iconify-icon>
+                エクスポート
+              </button>
+              {showExportMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowExportMenu(false)}
+                  ></div>
+                  <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg z-20 overflow-hidden min-w-[160px]">
+                    <button
+                      onClick={exportToCSV}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-sm font-medium border-b border-border"
+                    >
+                      <iconify-icon icon="solar:file-text-bold" width="20" height="20" className="text-chart-2"></iconify-icon>
+                      CSV形式
+                    </button>
+                    <button
+                      onClick={exportToPDF}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-sm font-medium"
+                    >
+                      <iconify-icon icon="solar:file-download-bold" width="20" height="20" className="text-chart-4"></iconify-icon>
+                      PDF形式
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={() => navigate('/reservations')}
+              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium active:bg-primary/90 transition-colors"
+            >
+              <iconify-icon icon="solar:pen-new-square-bold" width="18" height="18"></iconify-icon>
+              予約から作成
+            </button>
+          </div>
+        </div>
+
+        {/* 検索・フィルタ */}
+        <div className="space-y-3">
+          <div className="relative">
+            <iconify-icon
+              icon="solar:magnifer-linear"
+              width="20"
+              height="20"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            ></iconify-icon>
+            <input
+              type="text"
+              placeholder="犬名・飼い主名・コメントで検索"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="日誌を検索"
+              className="w-full pl-10 pr-4 py-2.5 bg-muted border-none rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                aria-label="検索をクリア"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <iconify-icon icon="solar:close-circle-bold" width="20" height="20" aria-hidden="true"></iconify-icon>
+              </button>
+            )}
+          </div>
+
+          {uniqueDogs.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <button
+                onClick={() => setSelectedDog('')}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  selectedDog === ''
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                すべて
+              </button>
+              {uniqueDogs.map((dog) => (
+                <button
+                  key={dog.id}
+                  onClick={() => setSelectedDog(dog.id.toString())}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    selectedDog === dog.id.toString()
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {dog.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="px-5 space-y-6">
+        {journals.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
+              <iconify-icon icon="solar:notebook-bold" width="40" height="40" className="text-muted-foreground"></iconify-icon>
+            </div>
+            <p className="text-lg font-medium text-foreground mb-2">日誌がありません</p>
+            <p className="text-sm text-muted-foreground mb-6">予約カレンダーから日誌を作成できます</p>
+            <button
+              onClick={() => navigate('/reservations')}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium active:bg-primary/90 transition-colors"
+            >
+              <iconify-icon icon="solar:calendar-bold" width="20" height="20"></iconify-icon>
+              予約カレンダーを開く
+            </button>
+          </div>
+        ) : filteredJournals.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <iconify-icon icon="solar:magnifer-linear" width="48" height="48" className="text-muted-foreground mb-4"></iconify-icon>
+            <p className="text-base font-medium text-foreground mb-1">該当する日誌がありません</p>
+            <p className="text-sm text-muted-foreground">検索条件を変更してください</p>
+          </div>
+        ) : (
+          Object.entries(groupedJournals).map(([date, dateJournals]) => (
+            <div key={date}>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <iconify-icon icon="solar:calendar-linear" width="16" height="16"></iconify-icon>
+                {new Date(date).toLocaleDateString('ja-JP', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  weekday: 'short',
+                })}
+                <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{dateJournals.length}件</span>
+              </h2>
+              <div className="space-y-3">
+                {dateJournals.map((journal) => (
+                  <div
+                    key={journal.id}
+                    onClick={() => navigate(`/journals/${journal.id}`)}
+                    className="bg-card rounded-2xl p-4 border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      {journal.dog_photo ? (
+                        <img
+                          src={journal.dog_photo}
+                          alt={journal.dog_name}
+                          className="size-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="size-12 rounded-full bg-muted flex items-center justify-center">
+                          <iconify-icon
+                            icon="solar:paw-print-bold"
+                            width="24"
+                            height="24"
+                            className="text-muted-foreground"
+                          ></iconify-icon>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-base">{journal.dog_name}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {journal.owner_name} 様 / {journal.staff_name || '担当未設定'}
+                        </p>
+                      </div>
+                      <iconify-icon
+                        icon="solar:alt-arrow-right-linear"
+                        width="20"
+                        height="20"
+                        className="text-muted-foreground shrink-0"
+                      ></iconify-icon>
+                    </div>
+                    {journal.comment && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{journal.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </main>
+    </div>
+  )
+}
+
+export default JournalList

@@ -1,0 +1,28 @@
+{
+  "name": "pet-carte",
+  "version": "1.0.0",
+  "description": "Blink - 犬の幼稚園向け顧客管理システム（ローカル開発優先）",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "vercel-build": "npm run build"
+  },
+  "keywords": [
+    "pet",
+    "daycare",
+    "customer-management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@vercel/node": "^5.5.26",
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>設定</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+      }
+      :root {
+        --background: #fafaf9;
+        --foreground: #292524;
+        --primary: #ea580c;
+        --primary-foreground: #ffffff;
+        --secondary: #e7e5e4;
+        --secondary-foreground: #292524;
+        --muted: #f5f5f4;
+        --muted-foreground: #78716c;
+        --accent: #fef3c7;
+        --accent-foreground: #451a03;
+        --destructive: #ef4444;
+        --card: #ffffff;
+        --card-foreground: #292524;
+        --popover: #ffffff;
+        --popover-foreground: #292524;
+        --border: #e7e5e4;
+        --input: #ffffff;
+        --ring: #ea580c;
+        --chart-1: #ea580c;
+        --chart-2: #84cc16;
+        --chart-3: #06b6d4;
+        --chart-4: #f59e0b;
+        --chart-5: #ec4899;
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex flex-col h-full bg-background text-foreground font-sans relative overflow-hidden">
+      <header class="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
+        <h1 class="text-2xl font-bold font-heading text-foreground">設定</h1>
+      </header>
+
+      <main class="flex-1 overflow-y-auto pb-24 px-5 space-y-4">
+        <!-- 店舗情報 -->
+        <section class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-border">
+            <h2 class="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:shop-bold" class="text-primary size-4"></iconify-icon>
+              店舗情報
+            </h2>
+          </div>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="solar:buildings-bold" class="size-5 text-muted-foreground"></iconify-icon>
+              <div class="text-left">
+                <span class="text-sm font-medium block">基本情報</span>
+                <span class="text-[10px] text-muted-foreground">店舗名、住所、営業時間</span>
+              </div>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="solar:calendar-bold" class="size-5 text-muted-foreground"></iconify-icon>
+              <div class="text-left">
+                <span class="text-sm font-medium block">営業日・定休日</span>
+                <span class="text-[10px] text-muted-foreground">営業カレンダーの設定</span>
+              </div>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="solar:users-group-rounded-bold" class="size-5 text-muted-foreground"></iconify-icon>
+              <div class="text-left">
+                <span class="text-sm font-medium block">受入可能頭数</span>
+                <span class="text-[10px] text-muted-foreground">1日あたりの受入上限</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-primary">15頭</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </div>
+          </button>
+        </section>
+
+        <!-- スタッフ管理 -->
+        <section class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 class="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:user-id-bold" class="text-chart-3 size-4"></iconify-icon>
+              スタッフ管理
+            </h2>
+            <button class="text-xs font-bold text-primary flex items-center gap-1">
+              <iconify-icon icon="solar:add-circle-bold" class="size-3.5"></iconify-icon>
+              追加
+            </button>
+          </div>
+          <div class="divide-y divide-border">
+            <button class="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
+              <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span class="text-sm font-bold text-primary">山</span>
+              </div>
+              <div class="flex-1 text-left">
+                <span class="text-sm font-medium block">山田 太郎</span>
+                <span class="text-[10px] text-muted-foreground">オーナー・トレーナー</span>
+              </div>
+              <span class="text-[10px] bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded font-bold">管理者</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+            <button class="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
+              <div class="size-10 rounded-full bg-chart-3/10 flex items-center justify-center shrink-0">
+                <span class="text-sm font-bold text-chart-3">佐</span>
+              </div>
+              <div class="flex-1 text-left">
+                <span class="text-sm font-medium block">佐藤 花子</span>
+                <span class="text-[10px] text-muted-foreground">トレーナー</span>
+              </div>
+              <span class="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded font-bold">スタッフ</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+            <button class="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
+              <div class="size-10 rounded-full bg-chart-4/10 flex items-center justify-center shrink-0">
+                <span class="text-sm font-bold text-chart-4">高</span>
+              </div>
+              <div class="flex-1 text-left">
+                <span class="text-sm font-medium block">高橋 健一</span>
+                <span class="text-[10px] text-muted-foreground">トレーナー</span>
+              </div>
+              <span class="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded font-bold">スタッフ</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+          </div>
+        </section>
+
+        <!-- コース・料金設定 -->
+        <section class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 class="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:tag-price-bold" class="text-chart-4 size-4"></iconify-icon>
+              コース・料金設定
+            </h2>
+            <button class="text-xs font-bold text-primary flex items-center gap-1">
+              <iconify-icon icon="solar:add-circle-bold" class="size-3.5"></iconify-icon>
+              追加
+            </button>
+          </div>
+          <div class="divide-y divide-border">
+            <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+              <div class="text-left">
+                <span class="text-sm font-medium block">週1回コース（月謝制）</span>
+                <span class="text-[10px] text-muted-foreground">月4回 / ¥22,000</span>
+              </div>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+            <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+              <div class="text-left">
+                <span class="text-sm font-medium block">週2回コース（月謝制）</span>
+                <span class="text-[10px] text-muted-foreground">月8回 / ¥44,000</span>
+              </div>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+            <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+              <div class="text-left">
+                <span class="text-sm font-medium block">10回チケット</span>
+                <span class="text-[10px] text-muted-foreground">有効期限3ヶ月 / ¥55,000</span>
+              </div>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+            <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+              <div class="text-left">
+                <span class="text-sm font-medium block">単発利用</span>
+                <span class="text-[10px] text-muted-foreground">1回 / ¥6,600</span>
+              </div>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+          </div>
+        </section>
+
+        <!-- トレーニング項目 -->
+        <section class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-border">
+            <h2 class="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:checklist-bold" class="text-chart-2 size-4"></iconify-icon>
+              トレーニング項目
+            </h2>
+          </div>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="text-left">
+              <span class="text-sm font-medium block">トイレトレーニング</span>
+              <span class="text-[10px] text-muted-foreground">4項目</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="text-left">
+              <span class="text-sm font-medium block">基本トレーニング</span>
+              <span class="text-[10px] text-muted-foreground">8項目</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="text-left">
+              <span class="text-sm font-medium block">社会化トレーニング</span>
+              <span class="text-[10px] text-muted-foreground">5項目</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+            <div class="text-left">
+              <span class="text-sm font-medium block">問題行動対策</span>
+              <span class="text-[10px] text-muted-foreground">4項目</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+        </section>
+
+        <!-- 通知設定 -->
+        <section class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-border">
+            <h2 class="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:bell-bold" class="text-chart-5 size-4"></iconify-icon>
+              通知設定
+            </h2>
+          </div>
+          <div class="p-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-sm font-medium block">登園前リマインド</span>
+                <span class="text-[10px] text-muted-foreground">前日18:00に飼い主へ通知</span>
+              </div>
+              <button class="w-12 h-7 bg-primary rounded-full relative">
+                <span class="absolute right-1 top-1 size-5 bg-white rounded-full shadow transition-all"></span>
+              </button>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-sm font-medium block">日誌送信通知</span>
+                <span class="text-[10px] text-muted-foreground">日誌作成時に飼い主へ通知</span>
+              </div>
+              <button class="w-12 h-7 bg-primary rounded-full relative">
+                <span class="absolute right-1 top-1 size-5 bg-white rounded-full shadow transition-all"></span>
+              </button>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-sm font-medium block">ワクチン期限アラート</span>
+                <span class="text-[10px] text-muted-foreground">期限30日前・14日前に通知</span>
+              </div>
+              <button class="w-12 h-7 bg-primary rounded-full relative">
+                <span class="absolute right-1 top-1 size-5 bg-white rounded-full shadow transition-all"></span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- プラン・お支払い -->
+        <section class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-border">
+            <h2 class="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:card-bold" class="text-primary size-4"></iconify-icon>
+              プラン・お支払い
+            </h2>
+          </div>
+          <div class="p-4">
+            <div class="bg-accent/30 rounded-xl p-4 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-accent-foreground">現在のプラン</span>
+                <span class="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">アクティブ</span>
+              </div>
+              <p class="text-lg font-bold">スタンダードプラン</p>
+              <p class="text-xs text-muted-foreground">¥5,500/月（税込）</p>
+            </div>
+            <button class="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors">
+              <span class="text-sm font-medium">プランを変更</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+            <button class="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors">
+              <span class="text-sm font-medium">お支払い方法</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+            <button class="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors">
+              <span class="text-sm font-medium">請求履歴</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+            </button>
+          </div>
+        </section>
+
+        <!-- その他 -->
+        <section class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="solar:question-circle-bold" class="size-5 text-muted-foreground"></iconify-icon>
+              <span class="text-sm font-medium">ヘルプ・サポート</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="solar:document-text-bold" class="size-5 text-muted-foreground"></iconify-icon>
+              <span class="text-sm font-medium">利用規約</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="solar:shield-check-bold" class="size-5 text-muted-foreground"></iconify-icon>
+              <span class="text-sm font-medium">プライバシーポリシー</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="solar:logout-2-bold" class="size-5 text-destructive"></iconify-icon>
+              <span class="text-sm font-medium text-destructive">ログアウト</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" class="size-5 text-muted-foreground"></iconify-icon>
+          </button>
+        </section>
+
+        <!-- バージョン情報 -->
+        <p class="text-center text-[10px] text-muted-foreground py-4">
+          わんわんパーク 管理画面 v1.0.0
+        </p>
+      </main>
+
+      <nav class="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 pb-safe">
+        <div class="flex items-center justify-between px-2">
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:home-2-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">ホーム</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:users-group-rounded-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">顧客管理</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:calendar-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">予約管理</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:notebook-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">日誌</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-primary">
+            <iconify-icon icon="solar:settings-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">設定</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </body>
+</html>

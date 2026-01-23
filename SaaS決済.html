@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>プラン・お支払い</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+      }
+      :root {
+        --background: #fafaf9;
+        --foreground: #292524;
+        --primary: #ea580c;
+        --primary-foreground: #ffffff;
+        --secondary: #e7e5e4;
+        --secondary-foreground: #292524;
+        --muted: #f5f5f4;
+        --muted-foreground: #78716c;
+        --accent: #fef3c7;
+        --accent-foreground: #451a03;
+        --destructive: #ef4444;
+        --card: #ffffff;
+        --card-foreground: #292524;
+        --popover: #ffffff;
+        --popover-foreground: #292524;
+        --border: #e7e5e4;
+        --input: #ffffff;
+        --ring: #ea580c;
+        --chart-1: #ea580c;
+        --chart-2: #84cc16;
+        --chart-3: #06b6d4;
+        --chart-4: #f59e0b;
+        --chart-5: #ec4899;
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex flex-col h-full bg-background text-foreground font-sans relative overflow-hidden">
+      <header class="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
+        <div class="flex items-center gap-3 mb-2">
+          <button class="p-2 hover:bg-muted rounded-lg transition-colors -ml-2">
+            <iconify-icon icon="solar:arrow-left-linear" class="size-5"></iconify-icon>
+          </button>
+          <h1 class="text-xl font-bold font-heading text-foreground flex-1">プラン・お支払い</h1>
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-y-auto pb-24 px-5 space-y-4">
+        <!-- 現在のプラン -->
+        <section class="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold font-heading">現在のプラン</h2>
+            <span class="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">アクティブ</span>
+          </div>
+
+          <div class="bg-primary/5 border-2 border-primary rounded-xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-lg font-bold">スタンダードプラン</span>
+              <iconify-icon icon="solar:verified-check-bold" class="size-6 text-primary"></iconify-icon>
+            </div>
+            <p class="text-2xl font-bold">¥5,500<span class="text-sm font-normal text-muted-foreground">/月（税込）</span></p>
+            <div class="mt-3 pt-3 border-t border-primary/20">
+              <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                <iconify-icon icon="solar:calendar-linear" class="size-4"></iconify-icon>
+                <span>次回請求日: 2023年12月1日</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <p class="text-xs font-bold text-muted-foreground mb-2">プランに含まれる機能</p>
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="solar:check-circle-bold" class="size-4 text-chart-2"></iconify-icon>
+              <span class="text-sm">顧客・犬情報管理（100頭まで）</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="solar:check-circle-bold" class="size-4 text-chart-2"></iconify-icon>
+              <span class="text-sm">予約・スケジュール管理</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="solar:check-circle-bold" class="size-4 text-chart-2"></iconify-icon>
+              <span class="text-sm">AI日誌作成（無制限）</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="solar:check-circle-bold" class="size-4 text-chart-2"></iconify-icon>
+              <span class="text-sm">LINEミニアプリ連携</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="solar:check-circle-bold" class="size-4 text-chart-2"></iconify-icon>
+              <span class="text-sm">スタッフアカウント3名まで</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- プラン比較 -->
+        <section class="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <h2 class="text-sm font-bold font-heading mb-4">プラン比較</h2>
+
+          <div class="space-y-3">
+            <!-- フリープラン -->
+            <div class="border border-border rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-bold">フリープラン</span>
+                <span class="text-lg font-bold">¥0</span>
+              </div>
+              <p class="text-xs text-muted-foreground mb-3">小規模事業者向け（20頭まで）</p>
+              <ul class="space-y-1 text-xs text-muted-foreground">
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-linear" class="size-3.5"></iconify-icon>
+                  顧客・犬情報管理（20頭まで）
+                </li>
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-linear" class="size-3.5"></iconify-icon>
+                  基本的な予約管理
+                </li>
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:close-circle-linear" class="size-3.5 text-destructive"></iconify-icon>
+                  AI日誌作成（月10件まで）
+                </li>
+              </ul>
+              <button class="w-full mt-3 py-2 text-sm font-bold text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors">
+                ダウングレード
+              </button>
+            </div>
+
+            <!-- スタンダードプラン（現在） -->
+            <div class="border-2 border-primary rounded-xl p-4 bg-primary/5 relative">
+              <div class="absolute -top-2.5 left-4">
+                <span class="text-[10px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">現在のプラン</span>
+              </div>
+              <div class="flex items-center justify-between mb-2 mt-1">
+                <span class="font-bold">スタンダードプラン</span>
+                <span class="text-lg font-bold">¥5,500<span class="text-xs font-normal">/月</span></span>
+              </div>
+              <p class="text-xs text-muted-foreground mb-3">中規模事業者向け（100頭まで）</p>
+              <ul class="space-y-1 text-xs text-muted-foreground">
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-bold" class="size-3.5 text-chart-2"></iconify-icon>
+                  顧客・犬情報管理（100頭まで）
+                </li>
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-bold" class="size-3.5 text-chart-2"></iconify-icon>
+                  AI日誌作成（無制限）
+                </li>
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-bold" class="size-3.5 text-chart-2"></iconify-icon>
+                  LINEミニアプリ連携
+                </li>
+              </ul>
+            </div>
+
+            <!-- プロプラン -->
+            <div class="border border-border rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-bold">プロプラン</span>
+                <span class="text-lg font-bold">¥11,000<span class="text-xs font-normal">/月</span></span>
+              </div>
+              <p class="text-xs text-muted-foreground mb-3">大規模・多店舗向け（無制限）</p>
+              <ul class="space-y-1 text-xs text-muted-foreground">
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-linear" class="size-3.5"></iconify-icon>
+                  顧客・犬情報管理（無制限）
+                </li>
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-linear" class="size-3.5"></iconify-icon>
+                  多店舗管理対応
+                </li>
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-linear" class="size-3.5"></iconify-icon>
+                  優先サポート
+                </li>
+                <li class="flex items-center gap-2">
+                  <iconify-icon icon="solar:check-circle-linear" class="size-3.5"></iconify-icon>
+                  スタッフアカウント無制限
+                </li>
+              </ul>
+              <button class="w-full mt-3 py-2 text-sm font-bold text-primary border border-primary rounded-xl hover:bg-primary/5 transition-colors">
+                アップグレード
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- お支払い方法 -->
+        <section class="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold font-heading">お支払い方法</h2>
+            <button class="text-xs font-bold text-primary">変更</button>
+          </div>
+
+          <div class="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+            <div class="size-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
+              <iconify-icon icon="logos:visa" class="size-8"></iconify-icon>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Visa •••• 4242</p>
+              <p class="text-[10px] text-muted-foreground">有効期限: 12/2025</p>
+            </div>
+            <iconify-icon icon="solar:check-circle-bold" class="size-5 text-chart-2"></iconify-icon>
+          </div>
+
+          <button class="w-full mt-3 py-2.5 text-sm font-bold text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2">
+            <iconify-icon icon="solar:add-circle-linear" class="size-4"></iconify-icon>
+            別のカードを追加
+          </button>
+        </section>
+
+        <!-- 請求履歴 -->
+        <section class="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold font-heading">請求履歴</h2>
+            <button class="text-xs font-bold text-primary">すべて見る</button>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between py-2 border-b border-border">
+              <div>
+                <p class="text-sm font-medium">2023年11月分</p>
+                <p class="text-[10px] text-muted-foreground">2023/11/01</p>
+              </div>
+              <div class="text-right flex items-center gap-3">
+                <div>
+                  <p class="text-sm font-bold">¥5,500</p>
+                  <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-medium">支払済</span>
+                </div>
+                <button class="p-1.5 hover:bg-muted rounded transition-colors">
+                  <iconify-icon icon="solar:download-linear" class="size-4 text-muted-foreground"></iconify-icon>
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-2 border-b border-border">
+              <div>
+                <p class="text-sm font-medium">2023年10月分</p>
+                <p class="text-[10px] text-muted-foreground">2023/10/01</p>
+              </div>
+              <div class="text-right flex items-center gap-3">
+                <div>
+                  <p class="text-sm font-bold">¥5,500</p>
+                  <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-medium">支払済</span>
+                </div>
+                <button class="p-1.5 hover:bg-muted rounded transition-colors">
+                  <iconify-icon icon="solar:download-linear" class="size-4 text-muted-foreground"></iconify-icon>
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-2">
+              <div>
+                <p class="text-sm font-medium">2023年9月分</p>
+                <p class="text-[10px] text-muted-foreground">2023/09/01</p>
+              </div>
+              <div class="text-right flex items-center gap-3">
+                <div>
+                  <p class="text-sm font-bold">¥5,500</p>
+                  <span class="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded font-medium">支払済</span>
+                </div>
+                <button class="p-1.5 hover:bg-muted rounded transition-colors">
+                  <iconify-icon icon="solar:download-linear" class="size-4 text-muted-foreground"></iconify-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 解約 -->
+        <section class="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <h2 class="text-sm font-bold font-heading mb-2">サブスクリプションの解約</h2>
+          <p class="text-xs text-muted-foreground mb-3">
+            解約すると、次回請求日以降はサービスをご利用いただけなくなります。データは30日間保持されます。
+          </p>
+          <button class="text-sm font-bold text-destructive hover:underline">
+            解約手続きへ
+          </button>
+        </section>
+      </main>
+
+      <nav class="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 pb-safe">
+        <div class="flex items-center justify-between px-2">
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:home-2-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">ホーム</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:users-group-rounded-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">顧客管理</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:calendar-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">予約管理</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <iconify-icon icon="solar:notebook-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">日誌</span>
+          </button>
+          <button class="flex flex-col items-center justify-center w-full py-3 gap-1 text-primary">
+            <iconify-icon icon="solar:settings-bold" class="size-6"></iconify-icon>
+            <span class="text-[10px] font-medium">設定</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </body>
+</html>

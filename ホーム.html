@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ホーム</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+
+        --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+        --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+        --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+        --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+        --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+        --tracking-normal: var(--tracking-normal);
+      }
+
+      :root {
+          --background: #FAFAF9;
+        --foreground: #292524;
+        --primary: #EA580C;
+        --primary-foreground: #FFFFFF;
+        --secondary: #E7E5E4;
+        --secondary-foreground: #292524;
+        --muted: #F5F5F4;
+        --muted-foreground: #78716C;
+        --accent: #FEF3C7;
+        --accent-foreground: #451A03;
+        --destructive: #EF4444;
+        --card: #FFFFFF;
+        --card-foreground: #292524;
+        --popover: #FFFFFF;
+        --popover-foreground: #292524;
+        --border: #E7E5E4;
+        --input: #FFFFFF;
+        --ring: #EA580C;
+        --chart-1: #EA580C;
+        --chart-2: #84CC16;
+        --chart-3: #06B6D4;
+        --chart-4: #F59E0B;
+        --chart-5: #EC4899;
+
+        --font-sans: "Nunito Sans";
+        --font-heading: "Nunito Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+
+        --radius: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex flex-col h-full bg-background text-foreground font-sans relative">
+      <header
+        class="px-5 pt-4 pb-4 bg-background sticky top-0 z-20 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <div class="size-10 bg-primary/10 rounded-xl flex items-center justify-center">
+            <iconify-icon icon="solar:paw-print-bold" class="text-primary size-6"></iconify-icon>
+          </div>
+          <div>
+            <h1 class="text-sm font-bold text-muted-foreground leading-none mb-1">DOGGY DAYCARE</h1>
+            <p class="text-lg font-bold font-heading text-foreground leading-none">
+              わんわんパーク 渋谷店
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="text-right mr-1">
+            <p class="text-[10px] text-muted-foreground font-medium">飼い主様</p>
+            <p class="text-sm font-bold">中井翔太 様</p>
+          </div>
+          <div class="size-10 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden">
+            <img
+              src="https://lh3.googleusercontent.com/a/ACg8ocJLXip7w4voMmovfKR6_G2NDDelk9xJAu636qkC1tkne8vsXA=s96-c"
+              alt="Profile"
+              class="w-full h-full rounded-full object-cover"
+            />
+          </div>
+        </div>
+      </header>
+      <main class="flex-1 overflow-y-auto px-5 pb-28 space-y-6">
+        <!-- 次回登園情報カード -->
+        <section class="bg-gradient-to-r from-primary/10 to-accent/30 rounded-3xl p-5 border border-primary/20">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:calendar-check-bold" class="text-primary size-5"></iconify-icon>
+              次回登園予定
+            </h2>
+            <span class="text-[10px] bg-primary text-primary-foreground px-2.5 py-1 rounded-full font-bold">あと3日</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex -space-x-2">
+              <img
+                src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp"
+                alt="もも"
+                class="size-12 rounded-full border-3 border-white object-cover shadow-md"
+              />
+              <img
+                src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/6.webp"
+                alt="ココ"
+                class="size-12 rounded-full border-3 border-white object-cover shadow-md"
+              />
+            </div>
+            <div class="flex-1">
+              <p class="text-lg font-bold text-foreground">11月24日 (金)</p>
+              <p class="text-xs text-muted-foreground">もも・ココ 2頭で登園予定</p>
+            </div>
+            <button class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <iconify-icon icon="solar:arrow-right-linear" class="size-5"></iconify-icon>
+            </button>
+          </div>
+        </section>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div
+            class="bg-card p-4 rounded-3xl border border-border shadow-sm flex flex-col items-start gap-2"
+          >
+            <div
+              class="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-1"
+            >
+              <iconify-icon icon="solar:calendar-bold" class="size-7"></iconify-icon>
+            </div>
+            <div>
+              <h3 class="font-bold text-base">予約</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">空き状況確認・予約変更</p>
+              <p class="text-[11px] font-bold text-primary">週2回コース</p>
+            </div>
+          </div>
+          <div
+            class="bg-card p-4 rounded-3xl border border-border shadow-sm flex flex-col items-start gap-2 relative"
+          >
+            <div
+              class="absolute top-4 right-4 bg-destructive text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+            >
+              未入力
+            </div>
+            <div
+              class="size-12 rounded-2xl bg-chart-3/10 flex items-center justify-center text-chart-3 mb-1"
+            >
+              <iconify-icon icon="solar:notebook-bold" class="size-7"></iconify-icon>
+            </div>
+            <div>
+              <h3 class="font-bold text-base">連絡帳</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                登園前情報の入力・日誌閲覧
+              </p>
+            </div>
+          </div>
+          <div
+            class="bg-card p-4 rounded-3xl border border-border shadow-sm flex flex-col items-start gap-2"
+          >
+            <div
+              class="size-12 rounded-2xl bg-chart-2/10 flex items-center justify-center text-chart-2 mb-1"
+            >
+              <iconify-icon icon="solar:user-bold" class="size-7"></iconify-icon>
+            </div>
+            <div>
+              <h3 class="font-bold text-base">マイページ</h3>
+              <div class="flex -space-x-2 mt-1.5">
+                <img
+                  src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp"
+                  alt="dog1"
+                  class="size-6 rounded-full border-2 border-white object-cover"
+                /><img
+                  src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/6.webp"
+                  alt="dog2"
+                  class="size-6 rounded-full border-2 border-white object-cover"
+                />
+              </div>
+              <p class="text-[10px] text-muted-foreground mt-1">飼い主・犬情報の確認</p>
+            </div>
+          </div>
+          <div
+            class="bg-card p-4 rounded-3xl border border-border shadow-sm flex flex-col items-start gap-2 relative"
+          >
+            <div
+              class="absolute top-4 right-4 bg-primary text-white text-[10px] font-bold size-5 flex items-center justify-center rounded-full"
+            >
+              3
+            </div>
+            <div
+              class="size-12 rounded-2xl bg-accent/30 flex items-center justify-center text-accent-foreground mb-1"
+            >
+              <iconify-icon icon="solar:bell-bold" class="size-7"></iconify-icon>
+            </div>
+            <div>
+              <h3 class="font-bold text-base">お知らせ</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">店舗からのお知らせ</p>
+            </div>
+          </div>
+        </div>
+        <section class="bg-card rounded-3xl p-5 border border-border shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold font-heading flex items-center gap-2">
+              <iconify-icon
+                icon="solar:calendar-mark-bold"
+                class="text-primary size-5"
+              ></iconify-icon
+              >今月の登園カレンダー
+            </h2>
+            <span class="text-xs text-muted-foreground font-medium">2023年11月</span>
+          </div>
+          <div class="grid grid-cols-7 gap-1 text-center mb-2">
+            <span class="text-[10px] font-bold text-destructive">日</span
+            ><span class="text-[10px] font-bold text-muted-foreground">月</span
+            ><span class="text-[10px] font-bold text-muted-foreground">火</span
+            ><span class="text-[10px] font-bold text-muted-foreground">水</span
+            ><span class="text-[10px] font-bold text-muted-foreground">木</span
+            ><span class="text-[10px] font-bold text-muted-foreground">金</span
+            ><span class="text-[10px] font-bold text-chart-3">土</span>
+          </div>
+          <div class="grid grid-cols-7 gap-1">
+            <div
+              class="aspect-square flex flex-col items-center justify-center rounded-lg bg-muted/20"
+            >
+              <span class="text-[10px] opacity-20">29</span>
+            </div>
+            <div
+              class="aspect-square flex flex-col items-center justify-center rounded-lg bg-muted/20"
+            >
+              <span class="text-[10px] opacity-20">30</span>
+            </div>
+            <div
+              class="aspect-square flex flex-col items-center justify-center rounded-lg bg-muted/20"
+            >
+              <span class="text-[10px] opacity-20">31</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">1</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">2</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">3</span>
+            </div>
+            <div
+              class="aspect-square flex flex-col items-center justify-center rounded-lg bg-primary/5 border border-primary/20 relative"
+            >
+              <span class="text-[10px] font-bold text-primary">4</span
+              ><iconify-icon
+                icon="solar:paw-print-bold"
+                class="text-primary size-3 mt-0.5"
+              ></iconify-icon>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">5</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">6</span>
+            </div>
+            <div
+              class="aspect-square flex flex-col items-center justify-center rounded-lg bg-primary/5 border border-primary/20 relative"
+            >
+              <span class="text-[10px] font-bold text-primary">7</span
+              ><iconify-icon
+                icon="solar:paw-print-bold"
+                class="text-primary size-3 mt-0.5"
+              ></iconify-icon>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">8</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">9</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">10</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">11</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">12</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">13</span>
+            </div>
+            <div
+              class="aspect-square flex flex-col items-center justify-center bg-accent/40 rounded-lg relative ring-2 ring-primary"
+            >
+              <span class="text-[10px] font-bold text-foreground">14</span
+              ><iconify-icon
+                icon="solar:paw-print-bold"
+                class="text-primary size-3 mt-0.5"
+              ></iconify-icon>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">15</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">16</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">17</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">18</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">19</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">20</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">21</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">22</span>
+            </div>
+            <div class="aspect-square flex flex-col items-center justify-center rounded-lg">
+              <span class="text-[10px]">23</span>
+            </div>
+            <div
+              class="aspect-square flex flex-col items-center justify-center rounded-lg bg-muted/20"
+            >
+              <span class="text-[10px] opacity-20">24</span>
+            </div>
+            <div
+              class="aspect-square flex flex-col items-center justify-center rounded-lg bg-muted/20"
+            >
+              <span class="text-[10px] opacity-20">25</span>
+            </div>
+          </div>
+        </section>
+        <!-- 契約・回数券情報セクション -->
+        <section class="bg-card rounded-3xl p-5 border border-border shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:ticket-bold" class="text-chart-4 size-5"></iconify-icon>
+              契約・回数券情報
+            </h2>
+          </div>
+
+          <!-- 現在のコース -->
+          <div class="bg-accent/20 rounded-xl p-3 mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-accent-foreground">現在のコース</span>
+              <span class="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">月謝制</span>
+            </div>
+            <p class="text-sm font-bold">週2回コース（月8〜10回）</p>
+            <p class="text-[10px] text-muted-foreground mt-1">毎週 火曜・金曜 登園</p>
+          </div>
+
+          <!-- 回数券残高 -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-muted-foreground">今月の利用状況</span>
+              <span class="text-sm font-bold text-primary">6 / 10 回</span>
+            </div>
+            <div class="w-full h-3 bg-muted rounded-full overflow-hidden">
+              <div class="bg-primary h-full w-[60%] rounded-full transition-all duration-500"></div>
+            </div>
+          </div>
+
+          <!-- 振替チケット -->
+          <div class="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="solar:transfer-horizontal-bold" class="text-chart-3 size-4"></iconify-icon>
+              <span class="text-xs font-medium">振替チケット</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-bold">2枚</span>
+              <span class="text-[10px] text-muted-foreground">有効期限: 2024/2/14</span>
+            </div>
+          </div>
+
+          <div class="flex justify-end mt-3">
+            <button class="text-[10px] font-bold text-primary flex items-center gap-0.5">
+              追加購入・詳細はこちら<iconify-icon icon="solar:arrow-right-linear" class="size-3"></iconify-icon>
+            </button>
+          </div>
+        </section>
+
+        <!-- 最新の日誌セクション -->
+        <section class="bg-card rounded-3xl p-5 border border-border shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:document-text-bold" class="text-chart-3 size-5"></iconify-icon>
+              最新の日誌
+            </h2>
+            <button class="text-[10px] font-bold text-primary flex items-center gap-0.5">
+              すべて見る<iconify-icon icon="solar:arrow-right-linear" class="size-3"></iconify-icon>
+            </button>
+          </div>
+
+          <div class="bg-muted/30 rounded-xl p-4">
+            <div class="flex items-center gap-3 mb-3">
+              <img
+                src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp"
+                alt="もも"
+                class="size-10 rounded-full object-cover border-2 border-white"
+              />
+              <div class="flex-1">
+                <p class="text-sm font-bold">もも</p>
+                <p class="text-[10px] text-muted-foreground">11月21日（火）第23回登園</p>
+              </div>
+              <span class="text-[10px] bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">NEW</span>
+            </div>
+            <p class="text-xs text-muted-foreground leading-relaxed mb-3">
+              今日は他のワンちゃんたちとも仲良く遊べました。オスワリ・マテの練習もバッチリ！トイレトレーニングも順調です。
+            </p>
+            <div class="flex gap-2">
+              <img
+                src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/3.webp"
+                alt="photo1"
+                class="size-14 rounded-lg object-cover"
+              />
+              <img
+                src="https://ggrhecslgdflloszjkwl.supabase.co/storage/v1/object/public/generation-assets/photos/veterinary-clinics/square/6.webp"
+                alt="photo2"
+                class="size-14 rounded-lg object-cover"
+              />
+              <div class="size-14 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground font-bold">
+                +2
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <nav
+        class="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 pb-safe"
+      >
+        <div class="flex items-center justify-between px-6">
+          <button class="flex flex-col items-center justify-center py-3 gap-1 text-primary">
+            <iconify-icon icon="solar:home-2-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-bold">ホーム</span></button
+          ><button
+            class="flex flex-col items-center justify-center py-3 gap-1 text-muted-foreground"
+          >
+            <iconify-icon icon="solar:calendar-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">予約</span></button
+          ><button
+            class="flex flex-col items-center justify-center py-3 gap-1 text-muted-foreground relative"
+          >
+            <div class="absolute top-2 right-1 size-2 bg-destructive rounded-full"></div>
+            <iconify-icon icon="solar:notebook-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">連絡帳</span></button
+          ><button
+            class="flex flex-col items-center justify-center py-3 gap-1 text-muted-foreground"
+          >
+            <iconify-icon icon="solar:user-bold" class="size-6"></iconify-icon
+            ><span class="text-[10px] font-medium">マイページ</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </body>
+</html>
