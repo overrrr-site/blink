@@ -23,10 +23,8 @@ Googleログイン後に `http://localhost:3000/#access_token=...` にリダイ�
 Vercel Dashboard → Settings → Environment Variables で以下を追加：
 
 ```
-VITE_FRONTEND_URL=https://blink-overrrr.vercel.app
+VITE_FRONTEND_URL=https://blink-delta-one.vercel.app
 ```
-
-または、実際の本番URLに合わせて設定してください。
 
 ### 3. Supabase Dashboardの設定（重要）
 
@@ -38,8 +36,7 @@ VITE_FRONTEND_URL=https://blink-overrrr.vercel.app
 以下のURLを **Redirect URLs** に追加してください：
 
 ```
-https://blink-overrrr.vercel.app/auth/callback
-https://blink-pj2bqdr4f-overrrr.vercel.app/auth/callback
+https://blink-delta-one.vercel.app/auth/callback
 ```
 
 **注意**: 
@@ -51,7 +48,7 @@ https://blink-pj2bqdr4f-overrrr.vercel.app/auth/callback
 **Site URL** を本番環境のURLに設定：
 
 ```
-https://blink-overrrr.vercel.app
+https://blink-delta-one.vercel.app
 ```
 
 ### 5. Google Cloud Consoleの設定確認
@@ -88,7 +85,7 @@ https://fqepwzwkztjnpfeyxnke.supabase.co/auth/v1/callback
 
 ## テスト
 
-1. 本番環境（`https://blink-overrrr.vercel.app/login`）にアクセス
+1. 本番環境（`https://blink-delta-one.vercel.app/login`）にアクセス
 2. 「Googleでログイン」をクリック
 3. Google認証を完了
 4. 本番環境の `/auth/callback` にリダイレクトされることを確認

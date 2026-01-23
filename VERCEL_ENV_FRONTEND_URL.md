@@ -25,7 +25,7 @@ Vercel環境変数に既に `FRONTEND_URL` が存在する場合の対応方法�
 2. 既存の `FRONTEND_URL` の値を確認（例: `https://blink-overrrr.vercel.app`）
 3. 新しい環境変数を追加:
    - **Key**: `VITE_FRONTEND_URL`
-   - **Value**: `FRONTEND_URL` と同じ値（例: `https://blink-overrrr.vercel.app`）
+   - **Value**: `FRONTEND_URL` と同じ値（例: `https://blink-delta-one.vercel.app`）
    - **Environment**: Production, Preview, Development を選択
 4. **Save** をクリック
 
@@ -33,12 +33,12 @@ Vercel環境変数に既に `FRONTEND_URL` が存在する場合の対応方法�
 
 既存の `FRONTEND_URL` が以下の場合:
 ```
-FRONTEND_URL=https://blink-overrrr.vercel.app
+FRONTEND_URL=https://blink-delta-one.vercel.app
 ```
 
 以下の環境変数を追加:
 ```
-VITE_FRONTEND_URL=https://blink-overrrr.vercel.app
+VITE_FRONTEND_URL=https://blink-delta-one.vercel.app
 ```
 
 ## 確認
