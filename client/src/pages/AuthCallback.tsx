@@ -11,7 +11,8 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // URLからセッション情報を取得
+        // OAuthコールバックからセッションを取得
+        // URLハッシュフラグメント（#access_token=...）を処理
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (sessionError) {
@@ -19,6 +20,31 @@ const AuthCallback = () => {
         }
 
         if (!session) {
+          // セッションがまだ取得できない場合、URLハッシュを処理
+          const hashParams = new URLSearchParams(window.location.hash.substring(1))
+          const accessToken = hashParams.get('access_token')
+          const refreshToken = hashParams.get('refresh_token')
+
+          if (accessToken && refreshToken) {
+            // セッションを設定
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            })
+
+            if (error) {
+              throw error
+            }
+
+            if (data.session) {
+              // スタッフ情報を取得
+              await fetchStaffInfo(data.session.access_token)
+              // ダッシュボードにリダイレクト
+              navigate('/', { replace: true })
+              return
+            }
+          }
+
           throw new Error('セッションが見つかりません')
         }
 
