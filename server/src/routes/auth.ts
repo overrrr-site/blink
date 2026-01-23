@@ -9,6 +9,10 @@ const router = express.Router();
 // 現在のログインユーザーのスタッフ情報を取得
 router.get('/me', authenticate, async (req: AuthRequest, res) => {
   try {
+    if (!req.userId) {
+      return res.status(400).json({ error: 'ユーザーIDが設定されていません' });
+    }
+
     const result = await pool.query(
       `SELECT s.id, s.email, s.name, ss.store_id
        FROM staff s
@@ -18,6 +22,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
     );
 
     if (result.rows.length === 0) {
+      console.error(`スタッフ情報が見つかりません (userId: ${req.userId})`);
       return res.status(404).json({ error: 'スタッフ情報が見つかりません' });
     }
 
@@ -28,8 +33,13 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       name: staff.name,
       storeId: staff.store_id,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching staff info:', error);
+    console.error('エラー詳細:', {
+      message: error?.message,
+      stack: error?.stack,
+      userId: req.userId
+    });
     sendServerError(res, 'スタッフ情報の取得に失敗しました', error);
   }
 });
