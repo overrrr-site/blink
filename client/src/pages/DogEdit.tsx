@@ -2,12 +2,21 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api/client'
 
+interface JournalPhoto {
+  url: string
+  date: string
+}
+
 const DogEdit = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
+  const [showPhotoModal, setShowPhotoModal] = useState(false)
+  const [journalPhotos, setJournalPhotos] = useState<JournalPhoto[]>([])
+  const [loadingPhotos, setLoadingPhotos] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const mixedVaccineInputRef = useRef<HTMLInputElement>(null)
   const rabiesVaccineInputRef = useRef<HTMLInputElement>(null)
 
@@ -19,6 +28,7 @@ const DogEdit = () => {
     weight: '',
     color: '',
     neutered: '',
+    photo_url: '',
   })
   const [health, setHealth] = useState({
     mixed_vaccine_date: '',
@@ -48,6 +58,7 @@ const DogEdit = () => {
         weight: dog.weight?.toString() || '',
         color: dog.color || '',
         neutered: dog.neutered || '',
+        photo_url: dog.photo_url || '',
       })
       if (dog.health) {
         setHealth({
@@ -66,6 +77,73 @@ const DogEdit = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // 日誌から写真を取得
+  const fetchJournalPhotos = async () => {
+    setLoadingPhotos(true)
+    try {
+      const response = await api.get(`/journals?dog_id=${id}`)
+      const photos: JournalPhoto[] = []
+      response.data.forEach((journal: any) => {
+        if (journal.photos && Array.isArray(journal.photos)) {
+          journal.photos.forEach((photo: string) => {
+            photos.push({
+              url: photo,
+              date: journal.journal_date,
+            })
+          })
+        }
+      })
+      setJournalPhotos(photos)
+    } catch (error) {
+      console.error('Error fetching journal photos:', error)
+    } finally {
+      setLoadingPhotos(false)
+    }
+  }
+
+  // プロフィール写真をアップロード
+  const handlePhotoUpload = async (file: File) => {
+    setUploading('photo')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await api.post('/uploads?category=dog-photos', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (response.data.url) {
+        setForm(prev => ({ ...prev, photo_url: response.data.url }))
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      alert('写真のアップロードに失敗しました')
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handlePhotoUpload(file)
+    }
+  }
+
+  // 日誌の写真を選択
+  const handleSelectJournalPhoto = (url: string) => {
+    setForm(prev => ({ ...prev, photo_url: url }))
+    setShowPhotoModal(false)
+  }
+
+  // 写真選択モーダルを開く
+  const openPhotoModal = () => {
+    fetchJournalPhotos()
+    setShowPhotoModal(true)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -144,8 +222,14 @@ const DogEdit = () => {
     setSaving(true)
     try {
       await api.put(`/dogs/${id}`, {
-        ...form,
+        name: form.name,
+        breed: form.breed,
+        birth_date: form.birth_date,
+        gender: form.gender,
         weight: form.weight ? parseFloat(form.weight) : null,
+        color: form.color,
+        neutered: form.neutered,
+        photo_url: form.photo_url || null,
         health,
       })
       navigate(`/dogs/${id}`)
@@ -187,6 +271,78 @@ const DogEdit = () => {
       </header>
 
       <form onSubmit={handleSubmit} className="px-5 pt-4 space-y-4">
+        {/* プロフィール写真 */}
+        <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
+            <iconify-icon icon="solar:camera-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            プロフィール写真
+          </h3>
+
+          <div className="flex flex-col items-center gap-4">
+            {/* 写真プレビュー */}
+            <div className="relative">
+              {form.photo_url ? (
+                <div className="relative">
+                  <img
+                    src={getFileUrl(form.photo_url)}
+                    alt={form.name || 'プロフィール写真'}
+                    className="size-32 rounded-full object-cover border-4 border-primary/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, photo_url: '' }))}
+                    className="absolute -top-2 -right-2 size-8 rounded-full bg-destructive text-white flex items-center justify-center shadow-lg"
+                  >
+                    <iconify-icon icon="solar:close-circle-bold" width="20" height="20"></iconify-icon>
+                  </button>
+                </div>
+              ) : (
+                <div className="size-32 rounded-full bg-muted flex items-center justify-center border-4 border-dashed border-border">
+                  <iconify-icon icon="solar:paw-print-bold" width="48" height="48" class="text-muted-foreground"></iconify-icon>
+                </div>
+              )}
+            </div>
+
+            {/* アップロードボタン */}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoSelect}
+              className="hidden"
+            />
+            
+            <div className="flex gap-2 w-full">
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploading === 'photo'}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-primary bg-primary/10 text-sm text-primary font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+              >
+                {uploading === 'photo' ? (
+                  <>
+                    <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+                    アップロード中...
+                  </>
+                ) : (
+                  <>
+                    <iconify-icon icon="solar:camera-add-bold" width="20" height="20"></iconify-icon>
+                    写真をアップロード
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={openPhotoModal}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border bg-muted/30 text-sm text-foreground font-medium hover:bg-muted transition-colors"
+              >
+                <iconify-icon icon="solar:gallery-bold" width="20" height="20"></iconify-icon>
+                日誌から選択
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* 基本情報 */}
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
@@ -489,6 +645,58 @@ const DogEdit = () => {
           </button>
         </div>
       </form>
+
+      {/* 日誌写真選択モーダル */}
+      {showPhotoModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div 
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowPhotoModal(false)}
+          ></div>
+          <div className="relative bg-background rounded-t-3xl w-full max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom">
+            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold">日誌の写真から選択</h3>
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                className="size-10 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted"
+              >
+                <iconify-icon icon="solar:close-circle-linear" width="24" height="24"></iconify-icon>
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto max-h-[60vh]">
+              {loadingPhotos ? (
+                <div className="flex items-center justify-center py-12">
+                  <iconify-icon icon="solar:spinner-bold" width="32" height="32" class="animate-spin text-primary"></iconify-icon>
+                </div>
+              ) : journalPhotos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <iconify-icon icon="solar:gallery-linear" width="48" height="48" class="text-muted-foreground mb-4"></iconify-icon>
+                  <p className="text-sm text-muted-foreground">日誌に写真がありません</p>
+                  <p className="text-xs text-muted-foreground mt-1">日誌作成時に写真を追加すると、ここに表示されます</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {journalPhotos.map((photo, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleSelectJournalPhoto(photo.url)}
+                      className="aspect-square rounded-xl overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
+                    >
+                      <img
+                        src={getFileUrl(photo.url)}
+                        alt={`日誌写真 ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
