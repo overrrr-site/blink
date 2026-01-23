@@ -36,7 +36,7 @@ const DogDetail = () => {
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate('/dogs')}
+            onClick={() => navigate('/customers')}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
             aria-label="戻る"
           >

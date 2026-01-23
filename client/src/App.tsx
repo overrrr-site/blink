@@ -4,9 +4,7 @@ import { ToastProvider } from './components/Toast'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import Dashboard from './pages/Dashboard'
-import OwnersList from './pages/OwnersList'
 import OwnerDetail from './pages/OwnerDetail'
-import DogsList from './pages/DogsList'
 import DogDetail from './pages/DogDetail'
 import ReservationsCalendar from './pages/ReservationsCalendar'
 import ReservationDetail from './pages/ReservationDetail'
@@ -61,11 +59,11 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="customers" element={<Customers />} />
-          <Route path="owners" element={<OwnersList />} />
+          <Route path="owners" element={<Navigate to="/customers" replace />} />
           <Route path="owners/new" element={<OwnerCreate />} />
           <Route path="owners/:id" element={<OwnerDetail />} />
           <Route path="owners/:id/edit" element={<OwnerEdit />} />
-          <Route path="dogs" element={<DogsList />} />
+          <Route path="dogs" element={<Navigate to="/customers" replace />} />
           <Route path="dogs/:id" element={<DogDetail />} />
           <Route path="dogs/:id/edit" element={<DogEdit />} />
           <Route path="dogs/:dogId/contracts/new" element={<ContractEdit />} />
