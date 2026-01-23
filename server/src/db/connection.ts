@@ -37,11 +37,19 @@ if (!connectionString) {
   console.warn('⚠️  データベース接続文字列が設定されていません');
 }
 
+// Vercelサーバーレス環境用に接続プール設定を最適化
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
+
 const pool = new Pool({
   connectionString: connectionString,
   ssl: process.env.NODE_ENV === 'production' && process.env.SUPABASE_URL 
     ? { rejectUnauthorized: false } 
     : false,
+  // サーバーレス環境では接続数を最小限に
+  max: isVercel ? 2 : 10,
+  min: 0,
+  idleTimeoutMillis: isVercel ? 1000 : 30000,
+  connectionTimeoutMillis: 10000,
 });
 
 pool.on('error', (err) => {
