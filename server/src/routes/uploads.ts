@@ -8,10 +8,23 @@ import { sendBadRequest, sendForbidden, sendNotFound, sendServerError } from '..
 const router = express.Router();
 router.use(authenticate);
 
-// アップロードディレクトリの作成
-const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Vercel環境かどうかを判定
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
+
+// アップロードディレクトリの設定
+// Vercel環境では /tmp を使用（書き込み可能な唯一のディレクトリ）
+// ローカル環境では public/uploads を使用
+const uploadDir = isVercel 
+  ? '/tmp/uploads' 
+  : path.join(process.cwd(), 'public', 'uploads');
+
+// ディレクトリの作成（エラーをキャッチして続行）
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (error) {
+  console.warn('アップロードディレクトリの作成に失敗しました（Vercel環境では正常）:', error);
 }
 
 // Multer設定
@@ -20,8 +33,12 @@ const storage = multer.diskStorage({
     // カテゴリ別にディレクトリを作成
     const category = (req as any).query.category || 'general';
     const categoryDir = path.join(uploadDir, category);
-    if (!fs.existsSync(categoryDir)) {
-      fs.mkdirSync(categoryDir, { recursive: true });
+    try {
+      if (!fs.existsSync(categoryDir)) {
+        fs.mkdirSync(categoryDir, { recursive: true });
+      }
+    } catch (error) {
+      console.warn('カテゴリディレクトリの作成に失敗:', error);
     }
     cb(null, categoryDir);
   },
@@ -113,9 +130,11 @@ router.delete('/', (req: AuthRequest, res) => {
     }
 
     // URLからファイルパスを取得（/uploads/以降）
-    const filePath = path.join(process.cwd(), 'public', url);
+    // Vercel環境では /tmp/uploads を使用
+    const relativePath = url.replace(/^\/uploads\//, '');
+    const filePath = path.join(uploadDir, relativePath);
     
-    // セキュリティチェック：public/uploads内のファイルのみ削除可能
+    // セキュリティチェック：uploadDir内のファイルのみ削除可能
     if (!filePath.startsWith(uploadDir)) {
       sendForbidden(res, '不正なパスです');
       return;
