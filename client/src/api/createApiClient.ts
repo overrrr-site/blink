@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { supabase } from '../lib/supabase'
 
 type CreateApiClientOptions = {
   baseURL: string
@@ -16,10 +17,11 @@ export function createApiClient({ baseURL, tokenKey, userKey, loginPath }: Creat
   })
 
   client.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem(tokenKey)
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+    async (config) => {
+      // Supabase セッションからトークンを取得
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`
       }
       return config
     },
