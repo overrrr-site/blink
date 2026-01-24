@@ -27,6 +27,7 @@ interface DashboardData {
   todayReservations: Reservation[]
   incompleteJournals: any[]
   alerts: any[]
+  todayInspectionRecord: any | null
   capacity?: number
 }
 
@@ -168,10 +169,10 @@ const Dashboard = () => {
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1 relative ${
+                className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 relative min-h-[48px] ${
                   statusFilter === filter.id
                     ? `bg-background text-foreground shadow-sm border-b-2 ${filter.borderColor}`
-                    : 'text-muted-foreground'
+                    : 'text-muted-foreground font-normal'
                 }`}
                 aria-label={`${filter.label}の予約を表示`}
                 aria-pressed={statusFilter === filter.id}
@@ -274,7 +275,7 @@ const Dashboard = () => {
                               <button
                                 onClick={() => handleCheckIn(reservation.id)}
                                 disabled={checkingIn === reservation.id}
-                                className="flex items-center gap-1 bg-chart-4 text-white px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                                className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
                               >
                                 {checkingIn === reservation.id ? (
                                   <iconify-icon icon="solar:spinner-bold" className="size-4 animate-spin"></iconify-icon>
@@ -287,7 +288,7 @@ const Dashboard = () => {
                             {isPresent && (
                               <button
                                 onClick={() => navigate(`/journals/create/${reservation.id}`)}
-                                className="flex items-center gap-1 bg-chart-2 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                                className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
                                 aria-label="日誌を作成"
                               >
                                 <iconify-icon icon="solar:pen-new-square-bold" className="size-4"></iconify-icon>
@@ -335,10 +336,10 @@ const Dashboard = () => {
 
                             {/* ステータス情報 */}
                             <div className="px-4 py-2 flex items-center gap-2 text-xs text-muted-foreground">
-                              <span className={`px-2.5 py-1 rounded-full font-semibold text-xs ${
-                                isPresent ? 'bg-chart-2/10 text-chart-2' :
-                                isWaiting ? 'bg-chart-4/10 text-chart-4' :
-                                'bg-muted text-muted-foreground'
+                              <span className={`px-2.5 py-1 rounded-full font-bold text-xs ${
+                                isPresent ? 'bg-chart-2/10 text-chart-2 border border-chart-2/30' :
+                                isWaiting ? 'bg-chart-4/10 text-chart-4 border border-chart-4/30' :
+                                'bg-muted text-muted-foreground border border-border'
                               }`}>
                                 {displayStatus === '来園待ち' && (
                                   <iconify-icon icon="solar:clock-circle-bold" className="size-3 mr-1"></iconify-icon>
@@ -362,7 +363,7 @@ const Dashboard = () => {
                             <div className="flex border-t border-border">
                               <button
                                 onClick={() => navigate(`/reservations/${reservation.id}`)}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:bg-muted/50"
+                                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
                               >
                                 <iconify-icon icon="solar:calendar-bold" className="size-4"></iconify-icon>
                                 予約詳細
@@ -370,7 +371,7 @@ const Dashboard = () => {
                               <div className="w-px bg-border" />
                               <button
                                 onClick={() => navigate(`/dogs/${reservation.dog_id}`)}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:bg-muted/50"
+                                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
                               >
                                 <iconify-icon icon="solar:document-text-bold" className="size-4"></iconify-icon>
                                 カルテ
@@ -389,8 +390,27 @@ const Dashboard = () => {
       </section>
 
       {/* アラートバナー - 画面上部に固定表示 */}
-      {(data?.incompleteJournals && data.incompleteJournals.length > 0) || (data?.alerts && data.alerts.length > 0) ? (
+      {(data?.incompleteJournals && data.incompleteJournals.length > 0) || 
+       (data?.alerts && data.alerts.length > 0) || 
+       !data?.todayInspectionRecord ? (
         <section className="px-5 mt-4 space-y-2">
+          {/* 今日の点検記録 */}
+          {!data?.todayInspectionRecord && (
+            <button
+              onClick={() => navigate('/inspection-records')}
+              className="w-full bg-chart-5/10 border border-chart-5/20 rounded-xl p-3 flex items-center gap-3 hover:bg-chart-5/15 transition-colors"
+            >
+              <div className="size-10 rounded-full bg-chart-5/20 flex items-center justify-center shrink-0">
+                <iconify-icon icon="solar:clipboard-check-bold" className="size-5 text-chart-5"></iconify-icon>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold text-chart-5">今日の点検記録</p>
+                <p className="text-xs text-muted-foreground">点検記録を入力してください</p>
+              </div>
+              <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+            </button>
+          )}
+
           {/* 未入力の日誌 */}
           {data.incompleteJournals && data.incompleteJournals.length > 0 && (
             <button

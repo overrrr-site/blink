@@ -23,6 +23,9 @@ import StaffEdit from './pages/StaffEdit'
 import CourseEdit from './pages/CourseEdit'
 import TrainingEdit from './pages/TrainingEdit'
 import Billing from './pages/Billing'
+import Help from './pages/Help'
+import InspectionRecord from './pages/InspectionRecord'
+import InspectionRecordList from './pages/InspectionRecordList'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -81,8 +84,11 @@ function App() {
           <Route path="journals/new" element={<JournalNew />} />
           <Route path="journals/:id" element={<JournalDetail />} />
           <Route path="journals/create/:reservationId" element={<JournalCreate />} />
+          <Route path="inspection-records" element={<InspectionRecordList />} />
+          <Route path="inspection-records/:date" element={<InspectionRecord />} />
           <Route path="settings" element={<Settings />} />
           <Route path="billing" element={<Billing />} />
+          <Route path="help" element={<Help />} />
         </Route>
       </Routes>
       </BrowserRouter>

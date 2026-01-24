@@ -79,10 +79,18 @@ router.get('/', async (req: AuthRequest, res) => {
       [req.storeId]
     );
 
+    // 今日の点検記録
+    const inspectionRecordResult = await pool.query(
+      `SELECT * FROM inspection_records
+       WHERE store_id = $1 AND inspection_date = $2`,
+      [req.storeId, today]
+    );
+
     res.json({
       todayReservations: reservationsResult.rows,
       incompleteJournals: incompleteJournalsResult.rows,
       alerts: alertsResult.rows,
+      todayInspectionRecord: inspectionRecordResult.rows[0] || null,
     });
   } catch (error) {
     console.error('Error fetching dashboard data:', error);

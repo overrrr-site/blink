@@ -1,14 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
-import jsPDF from 'jspdf'
 
 const JournalList = () => {
   const [journals, setJournals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDog, setSelectedDog] = useState<string>('')
-  const [showExportMenu, setShowExportMenu] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -86,73 +84,6 @@ const JournalList = () => {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    setShowExportMenu(false)
-  }
-
-  // PDFエクスポート機能
-  const exportToPDF = () => {
-    const doc = new jsPDF()
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const pageHeight = doc.internal.pageSize.getHeight()
-    const margin = 15
-    let yPos = margin
-
-    // タイトル
-    doc.setFontSize(18)
-    doc.text('日誌一覧', pageWidth / 2, yPos, { align: 'center' })
-    yPos += 10
-
-    // 日付
-    doc.setFontSize(10)
-    doc.text(
-      `出力日: ${new Date().toLocaleDateString('ja-JP')}`,
-      pageWidth - margin,
-      yPos,
-      { align: 'right' }
-    )
-    yPos += 10
-
-    // テーブルヘッダー
-    doc.setFontSize(10)
-    doc.setFont(undefined, 'bold')
-    const headers = ['日付', '犬名', '飼い主', '担当', 'コメント']
-    const colWidths = [25, 30, 30, 20, pageWidth - margin * 2 - 105]
-    let xPos = margin
-
-    headers.forEach((header, index) => {
-      doc.text(header, xPos, yPos)
-      xPos += colWidths[index]
-    })
-    yPos += 7
-
-    // データ行
-    doc.setFont(undefined, 'normal')
-    filteredJournals.forEach((journal) => {
-      // ページ改行チェック
-      if (yPos > pageHeight - 20) {
-        doc.addPage()
-        yPos = margin
-      }
-
-      const row = [
-        journal.journal_date || '',
-        journal.dog_name || '',
-        journal.owner_name || '',
-        journal.staff_name || '',
-        journal.comment || '',
-      ]
-
-      xPos = margin
-      row.forEach((cell, index) => {
-        const cellText = doc.splitTextToSize(cell || '', colWidths[index] - 2)
-        doc.text(cellText, xPos, yPos)
-        xPos += colWidths[index]
-      })
-      yPos += Math.max(7, row[4] ? doc.getTextDimensions(row[4], { maxWidth: colWidths[4] }).h + 3 : 7)
-    })
-
-    doc.save(`日誌一覧_${new Date().toISOString().split('T')[0]}.pdf`)
-    setShowExportMenu(false)
   }
 
   if (loading) {
@@ -169,39 +100,13 @@ const JournalList = () => {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">日誌一覧</h1>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <button
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"
-              >
-                <iconify-icon icon="solar:export-bold" width="18" height="18"></iconify-icon>
-                エクスポート
-              </button>
-              {showExportMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowExportMenu(false)}
-                  ></div>
-                  <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg z-20 overflow-hidden min-w-[160px]">
-                    <button
-                      onClick={exportToCSV}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-sm font-medium border-b border-border"
-                    >
-                      <iconify-icon icon="solar:file-text-bold" width="20" height="20" className="text-chart-2"></iconify-icon>
-                      CSV形式
-                    </button>
-                    <button
-                      onClick={exportToPDF}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-sm font-medium"
-                    >
-                      <iconify-icon icon="solar:file-download-bold" width="20" height="20" className="text-chart-4"></iconify-icon>
-                      PDF形式
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors min-h-[44px]"
+            >
+              <iconify-icon icon="solar:export-bold" width="18" height="18"></iconify-icon>
+              CSV出力
+            </button>
             <button
               onClick={() => navigate('/reservations')}
               className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium active:bg-primary/90 transition-colors"
@@ -244,10 +149,10 @@ const JournalList = () => {
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               <button
                 onClick={() => setSelectedDog('')}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-colors min-h-[44px] ${
                   selectedDog === ''
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80 font-normal'
                 }`}
               >
                 すべて
@@ -256,10 +161,10 @@ const JournalList = () => {
                 <button
                   key={dog.id}
                   onClick={() => setSelectedDog(dog.id.toString())}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-colors min-h-[44px] ${
                     selectedDog === dog.id.toString()
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80 font-normal'
                   }`}
                 >
                   {dog.name}

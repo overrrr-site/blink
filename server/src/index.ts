@@ -24,6 +24,7 @@ import liffRoutes from './routes/liff.js';
 import uploadsRoutes from './routes/uploads.js';
 import notificationsRoutes from './routes/notifications.js';
 import billingRoutes from './routes/billing.js';
+import inspectionRecordsRoutes from './routes/inspectionRecords.js';
 
 dotenv.config();
 
@@ -47,11 +48,16 @@ if (process.env.VERCEL) {
 // Initialize database
 initializeDatabase().catch(console.error);
 
-// Initialize Email services (LINE Messaging APIは店舗ごとにマルチテナント対応)
+// Initialize services
 (async () => {
+  // Email service
   const { initializeEmailClient } = await import('./services/emailService.js');
   initializeEmailClient();
   console.log('✅ LINE Messaging APIはマルチテナント対応（店舗ごとの認証情報を使用）');
+  
+  // Supabase Storage
+  const { initializeStorageBucket } = await import('./services/storageService.js');
+  await initializeStorageBucket();
 })();
 
 // Health check
@@ -79,6 +85,7 @@ app.use('/api/liff', liffRoutes);
 app.use('/api/uploads', uploadsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/inspection-records', inspectionRecordsRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

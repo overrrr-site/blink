@@ -37,3 +37,169 @@ label {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* 印刷用スタイル */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  /* 基本設定 */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 印刷時に非表示にする要素 */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* 印刷時のみ表示する要素 */
+  .hidden.print\:block {
+    display: block !important;
+  }
+
+  .hidden.print\:inline {
+    display: inline !important;
+  }
+
+  /* レイアウト調整 */
+  .print\:px-0 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .print\:pt-0 {
+    padding-top: 0 !important;
+  }
+
+  .print\:mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .print\:pb-4 {
+    padding-bottom: 1rem !important;
+  }
+
+  .print\:p-2 {
+    padding: 0.5rem !important;
+  }
+
+  .print\:gap-1 {
+    gap: 0.25rem !important;
+  }
+
+  .print\:gap-2 {
+    gap: 0.5rem !important;
+  }
+
+  /* サイズ調整 */
+  .print\:size-12 {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  .print\:max-w-\[100px\] {
+    max-width: 100px !important;
+  }
+
+  /* テキストサイズ */
+  .print\:text-xl {
+    font-size: 1.25rem !important;
+  }
+
+  .print\:text-lg {
+    font-size: 1.125rem !important;
+  }
+
+  .print\:text-sm {
+    font-size: 0.875rem !important;
+  }
+
+  .print\:text-xs {
+    font-size: 0.75rem !important;
+  }
+
+  .print\:text-\[10px\] {
+    font-size: 10px !important;
+  }
+
+  /* グリッド調整 */
+  .print\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  /* ボーダー・シャドウ */
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\:border-gray-300 {
+    border-color: #d1d5db !important;
+  }
+
+  .print\:border-b {
+    border-bottom-width: 1px !important;
+  }
+
+  /* 背景色 */
+  .print\:bg-gray-100 {
+    background-color: #f3f4f6 !important;
+  }
+
+  /* テキスト色 */
+  .print\:text-gray-700 {
+    color: #374151 !important;
+  }
+
+  .print\:text-gray-400 {
+    color: #9ca3af !important;
+  }
+
+  .print\:text-gray-600 {
+    color: #4b5563 !important;
+  }
+
+  /* 丸み */
+  .print\:rounded {
+    border-radius: 0.25rem !important;
+  }
+
+  /* 改ページ制御 */
+  section {
+    break-inside: avoid;
+  }
+
+  /* カード背景を白に */
+  .bg-card {
+    background-color: white !important;
+  }
+
+  /* ナビゲーション要素を非表示 */
+  nav,
+  .sticky {
+    position: static !important;
+  }
+
+  /* リンクのスタイル */
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+
+  /* ボタンを非表示 */
+  button {
+    display: none !important;
+  }
+
+  /* 印刷用ヘッダー・コンテンツ内のボタンは除外 */
+  .print\:block button,
+  main button {
+    display: none !important;
+  }
+}
