@@ -11,7 +11,9 @@ const InspectionRecordList = () => {
   const [loading, setLoading] = useState(true)
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [savingDates, setSavingDates] = useState<Set<string>>(new Set())
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
   const currentDate = new Date()
+  const today = currentDate.toISOString().split('T')[0]
   const [selectedMonth, setSelectedMonth] = useState(
     `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
   )
@@ -25,6 +27,17 @@ const InspectionRecordList = () => {
   useEffect(() => {
     fetchData()
   }, [year, month])
+
+  useEffect(() => {
+    // 今日の日付を初期展開状態に設定
+    const currentYear = currentDate.getFullYear()
+    const currentMonth = currentDate.getMonth() + 1
+    if (year === currentYear && month === currentMonth) {
+      setExpandedDates(new Set([today]))
+    } else {
+      setExpandedDates(new Set())
+    }
+  }, [year, month, today])
 
   const fetchData = async () => {
     try {
@@ -336,10 +349,23 @@ const InspectionRecordList = () => {
             const isSaving = savingDates.has(date)
             const hasAbnormal = record && (record.animal_count_abnormal || record.animal_state_abnormal)
 
+            const isExpanded = expandedDates.has(date)
+            const toggleExpanded = () => {
+              setExpandedDates((prev) => {
+                const newSet = new Set(prev)
+                if (newSet.has(date)) {
+                  newSet.delete(date)
+                } else {
+                  newSet.add(date)
+                }
+                return newSet
+              })
+            }
+
             return (
               <div
                 key={date}
-                className={`bg-card rounded-2xl border-2 p-4 ${
+                className={`bg-card rounded-2xl border-2 ${
                   hasAbnormal
                     ? 'border-destructive/30 bg-destructive/5'
                     : record
@@ -347,37 +373,50 @@ const InspectionRecordList = () => {
                     : 'border-border'
                 }`}
               >
-                {/* ヘッダー */}
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
-                  <div>
+                {/* ヘッダー（クリック可能） */}
+                <button
+                  onClick={toggleExpanded}
+                  className="w-full flex items-center justify-between p-4 border-b border-border"
+                >
+                  <div className="text-left">
                     <h3 className="text-lg font-bold">{day}日</h3>
                     <p className="text-xs text-muted-foreground">{weekday}</p>
                   </div>
-                  {isSaving && (
+                  <div className="flex items-center gap-2">
+                    {isSaving && (
+                      <iconify-icon
+                        icon="solar:spinner-bold"
+                        width="20"
+                        height="20"
+                        class="text-primary animate-spin"
+                      ></iconify-icon>
+                    )}
                     <iconify-icon
-                      icon="solar:spinner-bold"
+                      icon={isExpanded ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
                       width="20"
                       height="20"
-                      class="text-primary animate-spin"
+                      class="text-muted-foreground"
                     ></iconify-icon>
-                  )}
-                </div>
+                  </div>
+                </button>
 
-                {/* 点検時間 */}
-                <div className="mb-3">
-                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
-                    点検時間
-                  </label>
-                  <input
-                    type="time"
-                    value={record?.inspection_time || ''}
-                    onChange={(e) => handleFieldChange(date, 'inspection_time', e.target.value)}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm min-h-[44px]"
-                  />
-                </div>
+                {/* 折りたたみ可能なコンテンツ */}
+                {isExpanded && (
+                  <div className="p-4 space-y-3">
+                        <div>
+                      <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                        点検時間
+                      </label>
+                      <input
+                        type="time"
+                        value={record?.inspection_time || ''}
+                        onChange={(e) => handleFieldChange(date, 'inspection_time', e.target.value)}
+                        className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                      />
+                    </div>
 
-                {/* 飼養施設の点検 */}
-                <div className="mb-3">
+                    {/* 飼養施設の点検 */}
+                    <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-2 block">
                     飼養施設の点検
                   </label>
@@ -466,8 +505,8 @@ const InspectionRecordList = () => {
                   </div>
                 </div>
 
-                {/* 動物の点検 */}
-                <div className="mb-3">
+                    {/* 動物の点検 */}
+                    <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-2 block">
                     動物の点検
                   </label>
@@ -529,8 +568,8 @@ const InspectionRecordList = () => {
                   </div>
                 </div>
 
-                {/* 担当者 */}
-                <div className="mb-3">
+                    {/* 担当者 */}
+                    <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                     点検担当者
                   </label>
@@ -548,18 +587,20 @@ const InspectionRecordList = () => {
                   </select>
                 </div>
 
-                {/* 備考（異常がある場合または常に表示） */}
-                {(hasAbnormal || record) && (
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
-                      備考
-                    </label>
-                    <textarea
-                      value={record?.notes || ''}
-                      onChange={(e) => handleFieldChange(date, 'notes', e.target.value)}
-                      className="w-full h-20 bg-input border border-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="異常有の内容等を記入..."
-                    />
+                    {/* 備考（異常がある場合または常に表示） */}
+                    {(hasAbnormal || record) && (
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                          備考
+                        </label>
+                        <textarea
+                          value={record?.notes || ''}
+                          onChange={(e) => handleFieldChange(date, 'notes', e.target.value)}
+                          className="w-full h-20 bg-input border border-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="異常有の内容等を記入..."
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

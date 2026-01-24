@@ -460,7 +460,19 @@ const Dashboard = () => {
               <div className="flex-1 text-left">
                 <p className="text-sm font-bold text-chart-4">確認事項</p>
                 <p className="text-xs text-muted-foreground">
-                  {data.alerts[0]?.dog_name}のワクチン確認など
+                  {(() => {
+                    const alertTypes = new Set(data.alerts.map((a: any) => a.alert_type))
+                    const messages: string[] = []
+                    if (alertTypes.has('mixed_vaccine_expired')) {
+                      const count = data.alerts.filter((a: any) => a.alert_type === 'mixed_vaccine_expired').length
+                      messages.push(`混合ワクチン期限切れ ${count}件`)
+                    }
+                    if (alertTypes.has('rabies_vaccine_expiring')) {
+                      const count = data.alerts.filter((a: any) => a.alert_type === 'rabies_vaccine_expiring').length
+                      messages.push(`狂犬病ワクチン期限切れ間近 ${count}件`)
+                    }
+                    return messages.join('、') || '確認が必要な項目があります'
+                  })()}
                 </p>
               </div>
               <div className="flex items-center justify-center bg-chart-4 text-white text-xs font-bold size-7 rounded-full shrink-0">
