@@ -395,21 +395,34 @@ const Dashboard = () => {
        !data?.todayInspectionRecord ? (
         <section className="px-5 mt-4 space-y-2">
           {/* 今日の点検記録 */}
-          {!data?.todayInspectionRecord && (
-            <button
-              onClick={() => navigate('/inspection-records')}
-              className="w-full bg-chart-5/10 border border-chart-5/20 rounded-xl p-3 flex items-center gap-3 hover:bg-chart-5/15 transition-colors"
-            >
-              <div className="size-10 rounded-full bg-chart-5/20 flex items-center justify-center shrink-0">
-                <iconify-icon icon="solar:clipboard-check-bold" className="size-5 text-chart-5"></iconify-icon>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-chart-5">今日の点検記録</p>
-                <p className="text-xs text-muted-foreground">点検記録を入力してください</p>
-              </div>
-              <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
-            </button>
-          )}
+          <button
+            onClick={() => navigate('/inspection-records')}
+            className={`w-full border rounded-xl p-3 flex items-center gap-3 transition-colors ${
+              data?.todayInspectionRecord
+                ? 'bg-chart-2/10 border-chart-2/20 hover:bg-chart-2/15'
+                : 'bg-chart-5/10 border-chart-5/20 hover:bg-chart-5/15'
+            }`}
+          >
+            <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${
+              data?.todayInspectionRecord
+                ? 'bg-chart-2/20'
+                : 'bg-chart-5/20'
+            }`}>
+              <iconify-icon
+                icon={data?.todayInspectionRecord ? 'solar:check-circle-bold' : 'solar:clipboard-check-bold'}
+                className={`size-5 ${data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}`}
+              ></iconify-icon>
+            </div>
+            <div className="flex-1 text-left">
+              <p className={`text-sm font-bold ${data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}`}>
+                今日の点検記録
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
+              </p>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+          </button>
 
           {/* 未入力の日誌 */}
           {data?.incompleteJournals && data.incompleteJournals.length > 0 && (

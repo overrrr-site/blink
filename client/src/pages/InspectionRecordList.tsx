@@ -1,11 +1,16 @@
-import { useEffect, useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import api from '../api/client'
 
+interface Staff {
+  id: number
+  name: string
+}
+
 const InspectionRecordList = () => {
-  const navigate = useNavigate()
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [staffList, setStaffList] = useState<Staff[]>([])
+  const [savingDates, setSavingDates] = useState<Set<string>>(new Set())
   const currentDate = new Date()
   const [selectedMonth, setSelectedMonth] = useState(
     `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
@@ -14,37 +19,109 @@ const InspectionRecordList = () => {
   const year = parseInt(selectedMonth.split('-')[0])
   const month = parseInt(selectedMonth.split('-')[1])
 
+  // デバウンス用のタイマー
+  const saveTimers = useRef<Record<string, NodeJS.Timeout>>({})
+
   useEffect(() => {
-    fetchRecords()
+    fetchData()
   }, [year, month])
 
-  const fetchRecords = async () => {
+  const fetchData = async () => {
     try {
-      const response = await api.get(`/inspection-records?year=${year}&month=${month}`)
-      setRecords(response.data)
+      const [recordsRes, staffRes] = await Promise.all([
+        api.get(`/inspection-records?year=${year}&month=${month}`),
+        api.get('/auth/staff'),
+      ])
+      setRecords(recordsRes.data)
+      setStaffList(staffRes.data)
     } catch (error) {
-      console.error('Error fetching inspection records:', error)
+      console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
   }
 
+  // 日付ごとの記録をマップ
+  const recordsByDate = useMemo(() => {
+    const map: Record<string, any> = {}
+    records.forEach((record) => {
+      map[record.inspection_date] = record
+    })
+    return map
+  }, [records])
+
+  // デバウンス付き保存関数
+  const debouncedSave = useCallback((date: string, data: any) => {
+    // 既存のタイマーをクリア
+    if (saveTimers.current[date]) {
+      clearTimeout(saveTimers.current[date])
+    }
+
+    // 新しいタイマーを設定
+    saveTimers.current[date] = setTimeout(async () => {
+      setSavingDates((prev) => new Set(prev).add(date))
+      try {
+        const existing = recordsByDate[date]
+        if (existing) {
+          await api.put(`/inspection-records/${date}`, data)
+        } else {
+          await api.post('/inspection-records', {
+            ...data,
+            inspection_date: date,
+          })
+        }
+        // データを再取得
+        await fetchData()
+      } catch (error) {
+        console.error('Error saving inspection record:', error)
+        alert('点検記録の保存に失敗しました')
+      } finally {
+        setSavingDates((prev) => {
+          const newSet = new Set(prev)
+          newSet.delete(date)
+          return newSet
+        })
+      }
+    }, 500)
+  }, [recordsByDate])
+
+  // フィールド変更ハンドラー
+  const handleFieldChange = useCallback((date: string, field: string, value: boolean | string) => {
+    const currentRecord = recordsByDate[date] || {}
+    const newData = {
+      ...currentRecord,
+      [field]: value,
+      inspection_date: date,
+    }
+
+    // ローカル状態を即座に更新
+    setRecords((prev) => {
+      const existingIndex = prev.findIndex((r) => r.inspection_date === date)
+      if (existingIndex >= 0) {
+        const updated = [...prev]
+        updated[existingIndex] = { ...updated[existingIndex], [field]: value }
+        return updated
+      } else {
+        return [...prev, newData]
+      }
+    })
+
+    // デバウンス付きで保存
+    debouncedSave(date, newData)
+  }, [recordsByDate, debouncedSave])
+
   const handlePrint = async () => {
     try {
       const response = await api.get(`/inspection-records/export/${year}/${month}`)
-      // 印刷用のページを開く
       const printWindow = window.open('', '_blank')
       if (!printWindow) return
 
       const { store, records: exportRecords } = response.data
-
-      // 東京都様式に準拠したHTMLを生成
       const html = generatePrintHTML(store, exportRecords, year, month)
       
       printWindow.document.write(html)
       printWindow.document.close()
       
-      // 印刷ダイアログを表示
       setTimeout(() => {
         printWindow.print()
       }, 250)
@@ -56,20 +133,17 @@ const InspectionRecordList = () => {
 
   const generatePrintHTML = (store: any, records: any[], year: number, month: number) => {
     const businessTypes = store.business_types || []
-    
-    // 日付ごとの記録をマップ
-    const recordsByDate: Record<string, any> = {}
+    const recordsByDateMap: Record<string, any> = {}
     records.forEach((record) => {
-      recordsByDate[record.inspection_date] = record
+      recordsByDateMap[record.inspection_date] = record
     })
 
-    // 月の日数を取得
     const daysInMonth = new Date(year, month, 0).getDate()
     
     let tableRows = ''
     for (let day = 1; day <= daysInMonth; day++) {
       const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      const record = recordsByDate[date]
+      const record = recordsByDateMap[date]
       const dateObj = new Date(year, month - 1, day)
       const weekday = dateObj.toLocaleDateString('ja-JP', { weekday: 'short' })
       
@@ -191,34 +265,16 @@ const InspectionRecordList = () => {
     `
   }
 
-  // カレンダー表示用の日付リスト
-  const calendarDays = useMemo(() => {
-    const daysInMonth = new Date(year, month, 0).getDate()
-    const firstDay = new Date(year, month - 1, 1).getDay()
-    const days: Array<{ day: number; date: string; record: any | null }> = []
-
-    // 空のセル（月初めの空白）
-    for (let i = 0; i < firstDay; i++) {
-      days.push({ day: 0, date: '', record: null })
-    }
-
-    // 日付と記録をマッピング
-    const recordsByDate: Record<string, any> = {}
-    records.forEach((record) => {
-      recordsByDate[record.inspection_date] = record
-    })
-
-    for (let day = 1; day <= daysInMonth; day++) {
+  // 月の日付リストを生成
+  const daysInMonth = useMemo(() => {
+    const days = new Date(year, month, 0).getDate()
+    const dates: string[] = []
+    for (let day = 1; day <= days; day++) {
       const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      days.push({
-        day,
-        date,
-        record: recordsByDate[date] || null,
-      })
+      dates.push(date)
     }
-
-    return days
-  }, [year, month, records])
+    return dates
+  }, [year, month])
 
   const changeMonth = (delta: number) => {
     const newDate = new Date(year, month - 1 + delta, 1)
@@ -270,62 +326,245 @@ const InspectionRecordList = () => {
       </header>
 
       <main className="px-5">
-        {/* カレンダー表示 */}
-        <div className="bg-card rounded-2xl border border-border p-4">
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['日', '月', '火', '水', '木', '金', '土'].map((day) => (
-              <div key={day} className="text-center text-xs font-bold text-muted-foreground py-2">
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {calendarDays.map((item, index) => {
-              if (item.day === 0) {
-                return <div key={index} className="aspect-square"></div>
-              }
+        {/* カード形式のリスト */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {daysInMonth.map((date) => {
+            const record = recordsByDate[date] || null
+            const dateObj = new Date(date)
+            const day = dateObj.getDate()
+            const weekday = dateObj.toLocaleDateString('ja-JP', { weekday: 'short' })
+            const isSaving = savingDates.has(date)
+            const hasAbnormal = record && (record.animal_count_abnormal || record.animal_state_abnormal)
 
-              const hasRecord = item.record !== null
-              const hasAbnormal = item.record && (item.record.animal_count_abnormal || item.record.animal_state_abnormal)
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => navigate(`/inspection-records/${item.date}`)}
-                  className={`aspect-square rounded-lg border-2 transition-all ${
-                    hasRecord
-                      ? hasAbnormal
-                        ? 'bg-destructive/10 border-destructive text-destructive'
-                        : 'bg-chart-2/10 border-chart-2 text-chart-2'
-                      : 'bg-muted/30 border-border text-muted-foreground hover:border-primary'
-                  }`}
-                >
-                  <div className="text-xs font-bold">{item.day}</div>
-                  {hasRecord && (
-                    <div className="text-[8px] mt-0.5">
-                      <iconify-icon icon="solar:check-circle-bold" width="12" height="12"></iconify-icon>
-                    </div>
+            return (
+              <div
+                key={date}
+                className={`bg-card rounded-2xl border-2 p-4 ${
+                  hasAbnormal
+                    ? 'border-destructive/30 bg-destructive/5'
+                    : record
+                    ? 'border-chart-2/30 bg-chart-2/5'
+                    : 'border-border'
+                }`}
+              >
+                {/* ヘッダー */}
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+                  <div>
+                    <h3 className="text-lg font-bold">{day}日</h3>
+                    <p className="text-xs text-muted-foreground">{weekday}</p>
+                  </div>
+                  {isSaving && (
+                    <iconify-icon
+                      icon="solar:spinner-bold"
+                      width="20"
+                      height="20"
+                      class="text-primary animate-spin"
+                    ></iconify-icon>
                   )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+                </div>
 
-        {/* 凡例 */}
-        <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="size-4 rounded border-2 border-chart-2 bg-chart-2/10"></div>
-            <span>入力済み</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="size-4 rounded border-2 border-destructive bg-destructive/10"></div>
-            <span>異常あり</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="size-4 rounded border-2 border-border bg-muted/30"></div>
-            <span>未入力</span>
-          </div>
+                {/* 点検時間 */}
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                    点検時間
+                  </label>
+                  <input
+                    type="time"
+                    value={record?.inspection_time || ''}
+                    onChange={(e) => handleFieldChange(date, 'inspection_time', e.target.value)}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                  />
+                </div>
+
+                {/* 飼養施設の点検 */}
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-muted-foreground mb-2 block">
+                    飼養施設の点検
+                  </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs">清掃</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'cleaning_done', true)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            record?.cleaning_done
+                              ? 'bg-chart-2 text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          済
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'cleaning_done', false)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            !record?.cleaning_done && record !== null
+                              ? 'bg-destructive text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          否
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs">消毒</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'disinfection_done', true)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            record?.disinfection_done
+                              ? 'bg-chart-2 text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          済
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'disinfection_done', false)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            !record?.disinfection_done && record !== null
+                              ? 'bg-destructive text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          否
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs">保守点検</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'maintenance_done', true)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            record?.maintenance_done
+                              ? 'bg-chart-2 text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          済
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'maintenance_done', false)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            !record?.maintenance_done && record !== null
+                              ? 'bg-destructive text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          否
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 動物の点検 */}
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-muted-foreground mb-2 block">
+                    動物の点検
+                  </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs">数の異常</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'animal_count_abnormal', true)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            record?.animal_count_abnormal
+                              ? 'bg-destructive text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          有
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'animal_count_abnormal', false)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            !record?.animal_count_abnormal && record !== null
+                              ? 'bg-chart-2 text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          無
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs">状態の異常</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'animal_state_abnormal', true)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            record?.animal_state_abnormal
+                              ? 'bg-destructive text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          有
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(date, 'animal_state_abnormal', false)}
+                          className={`min-w-[60px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                            !record?.animal_state_abnormal && record !== null
+                              ? 'bg-chart-2 text-white ring-2 ring-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          無
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 担当者 */}
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                    点検担当者
+                  </label>
+                  <select
+                    value={record?.inspector_name || ''}
+                    onChange={(e) => handleFieldChange(date, 'inspector_name', e.target.value)}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                  >
+                    <option value="">選択してください</option>
+                    {staffList.map((staff) => (
+                      <option key={staff.id} value={staff.name}>
+                        {staff.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 備考（異常がある場合または常に表示） */}
+                {(hasAbnormal || record) && (
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                      備考
+                    </label>
+                    <textarea
+                      value={record?.notes || ''}
+                      onChange={(e) => handleFieldChange(date, 'notes', e.target.value)}
+                      className="w-full h-20 bg-input border border-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="異常有の内容等を記入..."
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </main>
     </div>
