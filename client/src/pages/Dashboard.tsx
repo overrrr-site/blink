@@ -412,7 +412,7 @@ const Dashboard = () => {
           )}
 
           {/* 未入力の日誌 */}
-          {data.incompleteJournals && data.incompleteJournals.length > 0 && (
+          {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
             <button
               onClick={() => navigate('/journals/new')}
               className="w-full bg-destructive/10 border border-destructive/20 rounded-xl p-3 flex items-center gap-3 hover:bg-destructive/15 transition-colors"
@@ -423,7 +423,7 @@ const Dashboard = () => {
               <div className="flex-1 text-left">
                 <p className="text-sm font-bold text-destructive">未入力の日誌</p>
                 <p className="text-xs text-muted-foreground">
-                  {data.incompleteJournals.slice(0, 2).map(j => j.dog_name).join('、')}
+                  {data.incompleteJournals.slice(0, 2).map((j: any) => j.dog_name).join('、')}
                   {data.incompleteJournals.length > 2 && ` 他${data.incompleteJournals.length - 2}件`}
                 </p>
               </div>
@@ -435,7 +435,7 @@ const Dashboard = () => {
           )}
 
           {/* 確認事項 */}
-          {data.alerts && data.alerts.length > 0 && (
+          {data?.alerts && data.alerts.length > 0 && (
             <button
               onClick={() => setAlertsModalOpen(true)}
               className="w-full bg-chart-4/10 border border-chart-4/20 rounded-xl p-3 flex items-center gap-3 hover:bg-chart-4/15 transition-colors"

@@ -6,7 +6,7 @@ const InspectionRecordList = () => {
   const navigate = useNavigate()
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const currentDate = new Date()
   const [selectedMonth, setSelectedMonth] = useState(
     `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
   )
@@ -55,7 +55,6 @@ const InspectionRecordList = () => {
   }
 
   const generatePrintHTML = (store: any, records: any[], year: number, month: number) => {
-    const monthName = new Date(year, month - 1).toLocaleDateString('ja-JP', { month: 'long' })
     const businessTypes = store.business_types || []
     
     // 日付ごとの記録をマップ

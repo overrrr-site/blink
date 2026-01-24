@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/client'
-import { createJapanesePDF, sanitizeTextForPDF } from '../utils/pdf'
 
 type TabId = 'store' | 'pricing' | 'integration' | 'other'
 
@@ -441,70 +440,6 @@ const Settings = () => {
           filename = '日誌一覧'
       }
 
-      // エクスポート形式を選択
-      const exportFormat = window.confirm('PDF形式でエクスポートしますか？\n「キャンセル」でCSV形式になります。')
-        ? 'pdf'
-        : 'csv'
-
-      if (exportFormat === 'pdf') {
-        // PDFエクスポート（日本語フォント対応）
-        const doc = await createJapanesePDF()
-        const pageWidth = doc.internal.pageSize.getWidth()
-        const pageHeight = doc.internal.pageSize.getHeight()
-        const margin = 15
-        let yPos = margin
-
-        // タイトル
-        doc.setFontSize(18)
-        doc.text(filename, pageWidth / 2, yPos, { align: 'center' })
-        yPos += 10
-
-        // 日付
-        doc.setFontSize(10)
-        doc.text(
-          `出力日: ${new Date().toLocaleDateString('ja-JP')}`,
-          pageWidth - margin,
-          yPos,
-          { align: 'right' }
-        )
-        yPos += 10
-
-        // テーブルヘッダー
-        doc.setFontSize(10)
-        doc.setFont('NotoSansJP', 'normal')
-        const colCount = headers.length
-        const colWidth = (pageWidth - margin * 2) / colCount
-        let xPos = margin
-
-        headers.forEach((header) => {
-          doc.text(header, xPos, yPos)
-          xPos += colWidth
-        })
-        yPos += 7
-
-        // 横線を引く
-        doc.setDrawColor(200)
-        doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3)
-
-        // データ行
-        data.forEach((row) => {
-          if (yPos > pageHeight - 20) {
-            doc.addPage()
-            yPos = margin
-          }
-
-          xPos = margin
-          headers.forEach((header) => {
-            const cell = sanitizeTextForPDF(String(row[header] || ''))
-            const cellText = doc.splitTextToSize(cell, colWidth - 2)
-            doc.text(cellText, xPos, yPos)
-            xPos += colWidth
-          })
-          yPos += Math.max(7, doc.getTextDimensions(String(Object.values(row)[0] || ''), { maxWidth: colWidth }).h + 3)
-        })
-
-        doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`)
-      } else {
       // CSVダウンロード
       const csvContent =
         '\uFEFF' +
@@ -521,7 +456,6 @@ const Settings = () => {
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
-      }
     } catch (error) {
       console.error('Export error:', error)
       alert('エクスポートに失敗しました')
