@@ -1,12 +1,12 @@
 import jsPDF from 'jspdf'
-import { getDefaultFont } from '@pdfme/common'
 
 // NotoSansJP フォントを使用したPDFを作成
 export async function createJapanesePDF(): Promise<jsPDF> {
   const doc = new jsPDF()
   
   try {
-    // pdfmeのデフォルトフォント（NotoSansJP）を取得
+    // pdfmeのデフォルトフォント（NotoSansJP）を動的インポートで取得
+    const { getDefaultFont } = await import('@pdfme/common')
     const font = await getDefaultFont()
     
     // フォントをjsPDFに登録

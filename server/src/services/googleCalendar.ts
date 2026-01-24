@@ -118,16 +118,16 @@ async function refreshToken(integration: any) {
   const oauth2Client = createOAuth2Client();
   
   // 暗号化されたリフレッシュトークンを復号化
-  let refreshToken: string;
+  let decryptedRefreshToken: string;
   try {
-    refreshToken = decrypt(integration.refresh_token);
+    decryptedRefreshToken = decrypt(integration.refresh_token);
   } catch (error) {
     console.error('Error decrypting refresh token:', error);
     throw new Error('リフレッシュトークンの復号化に失敗しました');
   }
   
   oauth2Client.setCredentials({
-    refresh_token: refreshToken,
+    refresh_token: decryptedRefreshToken,
   });
 
   try {
