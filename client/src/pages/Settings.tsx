@@ -1457,6 +1457,9 @@ const Settings = () => {
                   placeholder="1234567890"
                   className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  確認場所: LINE Developers コンソール → チャネル基本設定
+                </p>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">チャネルシークレット</label>
@@ -1467,6 +1470,9 @@ const Settings = () => {
                   placeholder="abcdefghijklmnopqrstuvwxyz"
                   className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  確認場所: LINE Official Account Manager → 設定 → Messaging API
+                </p>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">チャネルアクセストークン</label>
@@ -1477,6 +1483,9 @@ const Settings = () => {
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  確認場所: LINE Developers コンソール → Messaging API設定 → 一番下の「発行」ボタン
+                </p>
               </div>
               <div className="flex gap-3 pt-2">
                 <button

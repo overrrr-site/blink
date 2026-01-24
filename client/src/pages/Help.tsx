@@ -168,6 +168,16 @@ const HELP_SECTIONS: HelpSection[] = [
         answer: '「設定」タブの「連携」から、Googleカレンダーと連携して予約を自動同期できます。',
       },
       {
+        question: 'LINE公式アカウント連携',
+        answer: '「設定」タブの「連携」から、LINE公式アカウントと連携してメッセージを送信できます。',
+        steps: [
+          'LINE Developers コンソールでチャネルIDを確認（チャネル基本設定）',
+          'LINE Official Account Managerでチャネルシークレットを確認（設定 → Messaging API）',
+          'LINE Developers コンソールでチャネルアクセストークンを発行（Messaging API設定 → 一番下の「発行」ボタン）',
+          '設定画面で各情報を入力して保存',
+        ],
+      },
+      {
         question: '通知設定',
         answer: '「設定」タブの「連携」から、登園前リマインド、日誌送信通知、ワクチン期限アラートのON/OFFを設定できます。',
       },
