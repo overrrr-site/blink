@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/client'
-import jsPDF from 'jspdf'
+import { createJapanesePDF, sanitizeTextForPDF } from '../utils/pdf'
 
 type TabId = 'store' | 'pricing' | 'integration' | 'other'
 
@@ -53,6 +53,18 @@ const Settings = () => {
     journal_notification: true,
     vaccine_alert: true,
   })
+  const [lineStatus, setLineStatus] = useState<{
+    connected: boolean
+    channelId: string | null
+  } | null>(null)
+  const [loadingLine, setLoadingLine] = useState(true)
+  const [showLineModal, setShowLineModal] = useState(false)
+  const [lineSettings, setLineSettings] = useState({
+    channelId: '',
+    channelSecret: '',
+    channelAccessToken: '',
+  })
+  const [savingLine, setSavingLine] = useState(false)
 
   useEffect(() => {
     fetchGoogleCalendarStatus()
@@ -62,6 +74,7 @@ const Settings = () => {
     fetchTrainingMasters()
     fetchStoreInfo()
     fetchNotificationSettings()
+    fetchLineStatus()
     
     // URLパラメータで連携成功/失敗を確認
     const status = searchParams.get('google_calendar')
@@ -261,6 +274,72 @@ const Settings = () => {
     }
   }
 
+  const fetchLineStatus = async () => {
+    try {
+      const response = await api.get('/stores')
+      setLineStatus({
+        connected: response.data.line_connected || false,
+        channelId: response.data.line_channel_id || null,
+      })
+    } catch (error) {
+      console.error('Error fetching LINE status:', error)
+    } finally {
+      setLoadingLine(false)
+    }
+  }
+
+  const handleLineConnect = () => {
+    setLineSettings({
+      channelId: '',
+      channelSecret: '',
+      channelAccessToken: '',
+    })
+    setShowLineModal(true)
+  }
+
+  const handleLineSave = async () => {
+    if (!lineSettings.channelId || !lineSettings.channelSecret || !lineSettings.channelAccessToken) {
+      alert('すべての項目を入力してください')
+      return
+    }
+
+    setSavingLine(true)
+    try {
+      await api.put('/stores', {
+        line_channel_id: lineSettings.channelId,
+        line_channel_secret: lineSettings.channelSecret,
+        line_channel_access_token: lineSettings.channelAccessToken,
+      })
+      setShowLineModal(false)
+      fetchLineStatus()
+      alert('LINE公式アカウント連携を設定しました')
+    } catch (error) {
+      console.error('Error saving LINE settings:', error)
+      alert('LINE連携の設定に失敗しました')
+    } finally {
+      setSavingLine(false)
+    }
+  }
+
+  const handleLineDisconnect = async () => {
+    if (!confirm('LINE公式アカウント連携を解除しますか？')) {
+      return
+    }
+
+    try {
+      await api.put('/stores', {
+        line_channel_id: null,
+        line_channel_secret: null,
+        line_channel_access_token: null,
+      })
+      fetchLineStatus()
+      alert('LINE公式アカウント連携を解除しました')
+    } catch (error) {
+      console.error('Error disconnecting LINE:', error)
+      alert('連携の解除に失敗しました')
+    }
+  }
+
   const handleSaveStoreInfo = async (data: any) => {
     try {
       await api.put('/stores', data)
@@ -368,8 +447,8 @@ const Settings = () => {
         : 'csv'
 
       if (exportFormat === 'pdf') {
-        // PDFエクスポート
-        const doc = new jsPDF()
+        // PDFエクスポート（日本語フォント対応）
+        const doc = await createJapanesePDF()
         const pageWidth = doc.internal.pageSize.getWidth()
         const pageHeight = doc.internal.pageSize.getHeight()
         const margin = 15
@@ -392,7 +471,7 @@ const Settings = () => {
 
         // テーブルヘッダー
         doc.setFontSize(10)
-        doc.setFont(undefined, 'bold')
+        doc.setFont('NotoSansJP', 'normal')
         const colCount = headers.length
         const colWidth = (pageWidth - margin * 2) / colCount
         let xPos = margin
@@ -403,8 +482,11 @@ const Settings = () => {
         })
         yPos += 7
 
+        // 横線を引く
+        doc.setDrawColor(200)
+        doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3)
+
         // データ行
-        doc.setFont(undefined, 'normal')
         data.forEach((row) => {
           if (yPos > pageHeight - 20) {
             doc.addPage()
@@ -413,7 +495,7 @@ const Settings = () => {
 
           xPos = margin
           headers.forEach((header) => {
-            const cell = String(row[header] || '')
+            const cell = sanitizeTextForPDF(String(row[header] || ''))
             const cellText = doc.splitTextToSize(cell, colWidth - 2)
             doc.text(cellText, xPos, yPos)
             xPos += colWidth
@@ -459,11 +541,12 @@ const Settings = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 min-h-[48px] ${
                 activeTab === tab.id
                   ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
-                  : 'text-muted-foreground'
+                  : 'text-muted-foreground font-normal'
               }`}
+              aria-pressed={activeTab === tab.id}
             >
               <iconify-icon icon={tab.icon} width="14" height="14"></iconify-icon>
               {tab.label}
@@ -539,7 +622,7 @@ const Settings = () => {
                         value={storeSettings.max_capacity}
                         onChange={(e) => handleStoreSettingsChange('max_capacity', parseInt(e.target.value, 10))}
                         min="1"
-                        className="w-20 px-2 py-1 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="w-24 px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
                       />
                       <span className="text-sm font-bold text-primary">頭</span>
                     </>
@@ -607,13 +690,15 @@ const Settings = () => {
                       )}
                       <button
                         onClick={() => navigate(`/settings/staff/${staff.id}`)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-2 rounded-full hover:bg-muted transition-colors"
+                        aria-label={`${staff.name}の詳細`}
                       >
               <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
             </button>
                       <button
                         onClick={(e) => handleDeleteStaff(staff.id, e)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-destructive"
+                        className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
+                        aria-label={`${staff.name}を削除`}
                       >
                         <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16"></iconify-icon>
                       </button>
@@ -664,9 +749,10 @@ const Settings = () => {
                             <span className="text-xs text-muted-foreground">{item.item_label}</span>
                             <button
                               onClick={(e) => handleDeleteTrainingItem(item.id, e)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-destructive"
+                              className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors opacity-60 hover:opacity-100"
+                              aria-label={`${item.item_label}を削除`}
                             >
-                              <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="12" height="12"></iconify-icon>
+                              <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14"></iconify-icon>
             </button>
           </div>
                         ))}
@@ -741,13 +827,15 @@ const Settings = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => navigate(`/settings/courses/${course.id}`)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="p-2 rounded-full hover:bg-muted transition-colors"
+                          aria-label={`${course.course_name}の詳細`}
                         >
               <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
             </button>
                         <button
                           onClick={(e) => handleDeleteCourse(course.id, e)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-destructive"
+                          className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
+                          aria-label={`${course.course_name}を削除`}
                         >
                           <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16"></iconify-icon>
             </button>
@@ -820,6 +908,70 @@ const Settings = () => {
               </div>
         </section>
 
+            {/* LINE公式アカウント連携 */}
+            <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-border">
+                <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+                  <iconify-icon icon="solar:chat-round-bold" width="16" height="16" class="text-primary"></iconify-icon>
+                  LINE公式アカウント連携
+                </h2>
+              </div>
+              <div className="p-4">
+                {loadingLine ? (
+                  <div className="text-center py-4">
+                    <span className="text-xs text-muted-foreground">読み込み中...</span>
+                  </div>
+                ) : lineStatus?.connected ? (
+                  <div className="space-y-3">
+                    <div className="bg-chart-2/10 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-chart-2">連携中</span>
+                        <span className="text-xs bg-chart-2/20 text-chart-2 px-2 py-0.5 rounded-full font-bold">
+                          有効
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium">LINE公式アカウントと連携中</p>
+                      {lineStatus.channelId && (
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          チャネルID: {lineStatus.channelId}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleLineConnect}
+                      className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
+                    >
+                      <iconify-icon icon="solar:settings-bold" width="16" height="16"></iconify-icon>
+                      設定を変更
+                    </button>
+                    <button
+                      onClick={handleLineDisconnect}
+                      className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium text-destructive"
+                    >
+                      <iconify-icon icon="solar:unlink-bold" width="16" height="16"></iconify-icon>
+                      連携を解除
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="bg-muted/50 rounded-xl p-3">
+                      <p className="text-sm font-medium mb-1">未連携</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        LINE Messaging APIを使用してメッセージを送信できます
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleLineConnect}
+                      className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                    >
+                      <iconify-icon icon="solar:chat-round-bold" width="16" height="16"></iconify-icon>
+                      LINE公式アカウントと連携
+                    </button>
+                  </div>
+                )}
+              </div>
+        </section>
+
         {/* 通知設定 */}
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
@@ -840,11 +992,13 @@ const Settings = () => {
                   setNotificationSettings(prev => ({ ...prev, reminder_before_visit: newValue }))
                   await api.put('/notifications/settings', { ...notificationSettings, reminder_before_visit: newValue })
                 }}
-                className={`w-12 h-7 rounded-full relative transition-colors ${
+                className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
                   notificationSettings.reminder_before_visit ? 'bg-primary' : 'bg-muted'
                 }`}
+                role="switch"
+                aria-checked={notificationSettings.reminder_before_visit}
               >
-                <span className={`absolute top-1 size-5 bg-white rounded-full shadow transition-all ${
+                <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
                   notificationSettings.reminder_before_visit ? 'right-1' : 'left-1'
                 }`}></span>
               </button>
@@ -860,11 +1014,13 @@ const Settings = () => {
                   setNotificationSettings(prev => ({ ...prev, journal_notification: newValue }))
                   await api.put('/notifications/settings', { ...notificationSettings, journal_notification: newValue })
                 }}
-                className={`w-12 h-7 rounded-full relative transition-colors ${
+                className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
                   notificationSettings.journal_notification ? 'bg-primary' : 'bg-muted'
                 }`}
+                role="switch"
+                aria-checked={notificationSettings.journal_notification}
               >
-                <span className={`absolute top-1 size-5 bg-white rounded-full shadow transition-all ${
+                <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
                   notificationSettings.journal_notification ? 'right-1' : 'left-1'
                 }`}></span>
               </button>
@@ -880,11 +1036,13 @@ const Settings = () => {
                   setNotificationSettings(prev => ({ ...prev, vaccine_alert: newValue }))
                   await api.put('/notifications/settings', { ...notificationSettings, vaccine_alert: newValue })
                 }}
-                className={`w-12 h-7 rounded-full relative transition-colors ${
+                className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
                   notificationSettings.vaccine_alert ? 'bg-primary' : 'bg-muted'
                 }`}
+                role="switch"
+                aria-checked={notificationSettings.vaccine_alert}
               >
-                <span className={`absolute top-1 size-5 bg-white rounded-full shadow transition-all ${
+                <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
                   notificationSettings.vaccine_alert ? 'right-1' : 'left-1'
                 }`}></span>
               </button>
@@ -987,7 +1145,7 @@ const Settings = () => {
             {/* ヘルプ・サポート */}
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               <button
-                onClick={() => window.open('mailto:support@blink.example.com?subject=お問い合わせ', '_blank')}
+                onClick={() => navigate('/help')}
                 className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
               >
             <div className="flex items-center gap-3">
@@ -1047,9 +1205,10 @@ const Settings = () => {
               <h2 className="text-lg font-bold">店舗基本情報</h2>
               <button
                 onClick={() => setShowStoreInfoModal(false)}
-                className="size-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="20" height="20"></iconify-icon>
+                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -1112,9 +1271,10 @@ const Settings = () => {
               <h2 className="text-lg font-bold">営業日・定休日</h2>
               <button
                 onClick={() => setShowBusinessHoursModal(false)}
-                className="size-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="20" height="20"></iconify-icon>
+                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -1203,9 +1363,10 @@ const Settings = () => {
                   setInviteEmail('')
                   setInviteName('')
                 }}
-                className="size-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="20" height="20"></iconify-icon>
+                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -1252,6 +1413,91 @@ const Settings = () => {
                   className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                   {inviting ? '送信中...' : '招待メールを送信'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LINE公式アカウント連携設定モーダル */}
+      {showLineModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl w-full max-w-md">
+            <div className="border-b border-border px-5 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold">LINE公式アカウント連携</h2>
+              <button
+                onClick={() => {
+                  setShowLineModal(false)
+                  setLineSettings({
+                    channelId: '',
+                    channelSecret: '',
+                    channelAccessToken: '',
+                  })
+                }}
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                aria-label="閉じる"
+              >
+                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="bg-accent/30 rounded-xl p-3 flex items-start gap-2">
+                <iconify-icon icon="solar:info-circle-bold" width="16" height="16" class="text-accent-foreground mt-0.5"></iconify-icon>
+                <p className="text-xs text-muted-foreground">
+                  LINE Developersコンソールで取得した、Messaging APIのチャネル情報を入力してください。
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">チャネルID</label>
+                <input
+                  type="text"
+                  value={lineSettings.channelId}
+                  onChange={(e) => setLineSettings({ ...lineSettings, channelId: e.target.value })}
+                  placeholder="1234567890"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">チャネルシークレット</label>
+                <input
+                  type="text"
+                  value={lineSettings.channelSecret}
+                  onChange={(e) => setLineSettings({ ...lineSettings, channelSecret: e.target.value })}
+                  placeholder="abcdefghijklmnopqrstuvwxyz"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">チャネルアクセストークン</label>
+                <textarea
+                  value={lineSettings.channelAccessToken}
+                  onChange={(e) => setLineSettings({ ...lineSettings, channelAccessToken: e.target.value })}
+                  placeholder="Bearer xxxxx..."
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowLineModal(false)
+                    setLineSettings({
+                      channelId: '',
+                      channelSecret: '',
+                      channelAccessToken: '',
+                    })
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleLineSave}
+                  disabled={savingLine || !lineSettings.channelId || !lineSettings.channelSecret || !lineSettings.channelAccessToken}
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {savingLine ? '保存中...' : '保存'}
                 </button>
               </div>
             </div>

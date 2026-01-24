@@ -1,5 +1,6 @@
 import { Client } from '@line/bot-sdk';
 import pool from '../db/connection.js';
+import { decrypt } from '../utils/encryption.js';
 
 // 店舗ごとのLINEクライアントをキャッシュ
 const storeLineClients: Map<number, Client> = new Map();
@@ -32,11 +33,20 @@ async function getStoreLineCredentials(storeId: number): Promise<{
       return null;
     }
 
-    return {
-      channelId: store.line_channel_id,
-      channelSecret: store.line_channel_secret,
-      channelAccessToken: store.line_channel_access_token,
-    };
+    try {
+      // 暗号化されたシークレットとアクセストークンを復号化
+      const decryptedSecret = decrypt(store.line_channel_secret);
+      const decryptedToken = decrypt(store.line_channel_access_token);
+
+      return {
+        channelId: store.line_channel_id,
+        channelSecret: decryptedSecret,
+        channelAccessToken: decryptedToken,
+      };
+    } catch (error) {
+      console.error(`店舗ID ${storeId} のLINE認証情報の復号化に失敗しました:`, error);
+      return null;
+    }
   } catch (error) {
     console.error(`店舗ID ${storeId} のLINE認証情報取得エラー:`, error);
     return null;

@@ -7,6 +7,8 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { clearStoreLineClientCache } from '../services/lineMessagingService.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -19,7 +21,9 @@ router.get('/', async (req: AuthRequest, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, address, phone, business_hours, closed_days, created_at, updated_at
+      `SELECT id, name, address, phone, business_hours, closed_days, 
+              line_channel_id, line_channel_secret, line_channel_access_token,
+              created_at, updated_at
        FROM stores WHERE id = $1`,
       [req.storeId]
     );
@@ -29,7 +33,18 @@ router.get('/', async (req: AuthRequest, res) => {
       return;
     }
 
-    res.json(result.rows[0]);
+    const store = result.rows[0];
+    
+    // LINE設定をマスク表示（セキュリティのため）
+    const response = {
+      ...store,
+      line_channel_id: store.line_channel_id ? `${store.line_channel_id.substring(0, 4)}...` : null,
+      line_channel_secret: store.line_channel_secret ? `${store.line_channel_secret.substring(0, 4)}...` : null,
+      line_channel_access_token: store.line_channel_access_token ? `${store.line_channel_access_token.substring(0, 8)}...` : null,
+      line_connected: !!(store.line_channel_id && store.line_channel_secret && store.line_channel_access_token),
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching store:', error);
     sendServerError(res, '店舗情報の取得に失敗しました', error);
@@ -43,12 +58,14 @@ router.put('/', async (req: AuthRequest, res) => {
       return;
     }
 
-    const { name, address, phone, business_hours, closed_days } = req.body;
+    const { name, address, phone, business_hours, closed_days, 
+            line_channel_id, line_channel_secret, line_channel_access_token } = req.body;
 
     // 更新するフィールドを動的に構築
     const updates: string[] = []
     const values: any[] = []
     let paramIndex = 1
+    let lineSettingsUpdated = false
 
     if (name !== undefined) {
       updates.push(`name = $${paramIndex++}`)
@@ -70,6 +87,23 @@ router.put('/', async (req: AuthRequest, res) => {
       updates.push(`closed_days = $${paramIndex++}::jsonb`)
       values.push(closed_days && Array.isArray(closed_days) ? JSON.stringify(closed_days) : null)
     }
+    if (line_channel_id !== undefined) {
+      updates.push(`line_channel_id = $${paramIndex++}`)
+      values.push(line_channel_id || null)
+      lineSettingsUpdated = true
+    }
+    if (line_channel_secret !== undefined) {
+      // シークレットは暗号化して保存
+      updates.push(`line_channel_secret = $${paramIndex++}`)
+      values.push(line_channel_secret ? encrypt(line_channel_secret) : null)
+      lineSettingsUpdated = true
+    }
+    if (line_channel_access_token !== undefined) {
+      // アクセストークンは暗号化して保存
+      updates.push(`line_channel_access_token = $${paramIndex++}`)
+      values.push(line_channel_access_token ? encrypt(line_channel_access_token) : null)
+      lineSettingsUpdated = true
+    }
 
     if (updates.length === 0) {
       sendBadRequest(res, '更新する項目がありません')
@@ -80,16 +114,35 @@ router.put('/', async (req: AuthRequest, res) => {
     values.push(req.storeId)
 
     const result = await pool.query(
-      `UPDATE stores SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, address, phone, business_hours, closed_days, created_at, updated_at`,
+      `UPDATE stores SET ${updates.join(', ')} WHERE id = $${paramIndex} 
+       RETURNING id, name, address, phone, business_hours, closed_days, 
+                 line_channel_id, line_channel_secret, line_channel_access_token,
+                 created_at, updated_at`,
       values
     );
+
+    // LINE設定が更新された場合はキャッシュをクリア
+    if (lineSettingsUpdated) {
+      clearStoreLineClientCache(req.storeId);
+    }
 
     if (result.rows.length === 0) {
       sendNotFound(res, '店舗が見つかりません');
       return;
     }
 
-    res.json(result.rows[0]);
+    const store = result.rows[0];
+    
+    // LINE設定をマスク表示（セキュリティのため）
+    const response = {
+      ...store,
+      line_channel_id: store.line_channel_id ? `${store.line_channel_id.substring(0, 4)}...` : null,
+      line_channel_secret: store.line_channel_secret ? `${store.line_channel_secret.substring(0, 4)}...` : null,
+      line_channel_access_token: store.line_channel_access_token ? `${store.line_channel_access_token.substring(0, 8)}...` : null,
+      line_connected: !!(store.line_channel_id && store.line_channel_secret && store.line_channel_access_token),
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error updating store:', error);
     sendServerError(res, '店舗情報の更新に失敗しました', error);

@@ -40,6 +40,7 @@ export default function Billing() {
   const [currentPlan, setCurrentPlan] = useState<CurrentPlan | null>(null);
   const [billingHistory, setBillingHistory] = useState<BillingHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [payjpPublicKey, setPayjpPublicKey] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -52,22 +53,24 @@ export default function Billing() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [plansRes, currentRes, keyRes] = await Promise.all([
         api.get('/billing/plans'),
         api.get('/billing/current'),
         api.get('/billing/payjp-key'),
       ]);
 
-      setPlans(plansRes.data);
+      setPlans(plansRes.data || []);
       setCurrentPlan(currentRes.data);
-      setPayjpPublicKey(keyRes.data.publicKey);
+      setPayjpPublicKey(keyRes.data.publicKey || '');
 
       if (activeTab === 'history') {
         const historyRes = await api.get('/billing/history');
-        setBillingHistory(historyRes.data.history);
+        setBillingHistory(historyRes.data.history || []);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching billing data:', error);
+      setError(error.response?.data?.error || 'プラン情報の取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -127,6 +130,33 @@ export default function Billing() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="pb-6">
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2">
+          <button
+            onClick={() => navigate('/settings')}
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+          >
+            <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          </button>
+          <h1 className="text-lg font-bold font-heading flex-1">プラン・お支払い</h1>
+        </header>
+        <div className="px-5 pt-8 text-center">
+          <iconify-icon icon="solar:danger-triangle-bold" width="48" height="48" class="text-destructive mx-auto mb-4"></iconify-icon>
+          <p className="text-destructive font-bold mb-2">エラーが発生しました</p>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <button
+            onClick={fetchData}
+            className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold"
+          >
+            再読み込み
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-6">
       {/* ヘッダー */}
@@ -145,31 +175,34 @@ export default function Billing() {
         <div className="flex gap-2 bg-muted/30 rounded-xl p-1">
           <button
             onClick={() => setActiveTab('plan')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+            className={`flex-1 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px] ${
               activeTab === 'plan'
                 ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground font-normal'
             }`}
+            aria-pressed={activeTab === 'plan'}
           >
             プラン
           </button>
           <button
             onClick={() => setActiveTab('payment')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+            className={`flex-1 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px] ${
               activeTab === 'payment'
                 ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground font-normal'
             }`}
+            aria-pressed={activeTab === 'payment'}
           >
             お支払い方法
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+            className={`flex-1 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px] ${
               activeTab === 'history'
                 ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground font-normal'
             }`}
+            aria-pressed={activeTab === 'history'}
           >
             請求履歴
           </button>
@@ -200,7 +233,7 @@ export default function Billing() {
                   </div>
                   <p className="text-lg font-bold mb-1">{currentPlan.display_name}</p>
                   <p className="text-xs text-muted-foreground mb-3">
-                    ¥{currentPlan.price_monthly.toLocaleString()}/月（税込）
+                    ¥{(currentPlan.price_monthly ?? 0).toLocaleString()}/月（税込）
                   </p>
                   {currentPlan.max_dogs && (
                     <div className="pt-3 border-t border-border/50">
@@ -230,6 +263,15 @@ export default function Billing() {
                 <iconify-icon icon="solar:tag-price-bold" width="16" height="16" class="text-primary"></iconify-icon>
                 プランを選択
               </h3>
+              {plans.length === 0 ? (
+                <div className="text-center py-8">
+                  <iconify-icon icon="solar:document-text-bold" width="48" height="48" class="text-muted-foreground mx-auto mb-3"></iconify-icon>
+                  <p className="text-muted-foreground mb-2">プランが設定されていません</p>
+                  <p className="text-xs text-muted-foreground">
+                    管理者がデータベースにプランを登録する必要があります。
+                  </p>
+                </div>
+              ) : (
               <div className="space-y-3">
                 {plans.map((plan) => (
                   <div
@@ -244,7 +286,7 @@ export default function Billing() {
                       <div>
                         <h4 className="font-bold text-base">{plan.display_name}</h4>
                         <p className="text-sm text-muted-foreground mt-1">
-                          ¥{plan.price_monthly.toLocaleString()}/月（税込）
+                          ¥{(plan.price_monthly ?? 0).toLocaleString()}/月（税込）
                         </p>
                       </div>
                       {currentPlan?.plan_name === plan.name && (
@@ -266,7 +308,7 @@ export default function Billing() {
                       <button
                         onClick={() => handlePlanChange(plan.id)}
                         disabled={processing}
-                        className="w-full mt-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-50"
+                        className="w-full mt-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-50 min-h-[48px]"
                       >
                         このプランに変更
                       </button>
@@ -274,6 +316,7 @@ export default function Billing() {
                   </div>
                 ))}
               </div>
+              )}
             </section>
           </>
         )}
@@ -340,11 +383,11 @@ export default function Billing() {
                       <div>
                         <p className="font-bold text-sm">{item.plan_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(item.billing_period_start).toLocaleDateString('ja-JP')} 〜 {new Date(item.billing_period_end).toLocaleDateString('ja-JP')}
+                          {item.billing_period_start ? new Date(item.billing_period_start).toLocaleDateString('ja-JP') : '-'} 〜 {item.billing_period_end ? new Date(item.billing_period_end).toLocaleDateString('ja-JP') : '-'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-base">¥{item.amount.toLocaleString()}</p>
+                        <p className="font-bold text-base">¥{(item.amount ?? 0).toLocaleString()}</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                           item.status === 'paid'
                             ? 'bg-chart-2/10 text-chart-2'

@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
-// トレーニング項目のマスタデータ（要件定義に基づく）
-const TRAINING_CATEGORIES = {
+// デフォルトのトレーニング項目（APIからデータがない場合のフォールバック）
+const DEFAULT_TRAINING_CATEGORIES: Record<string, { label: string; icon: string; items: Array<{ id: string; label: string }> }> = {
   toiletTraining: {
     label: 'トイレ',
     icon: 'solar:box-bold',
@@ -37,6 +37,15 @@ const TRAINING_CATEGORIES = {
   },
 }
 
+// カテゴリのアイコンマッピング
+const CATEGORY_ICONS: Record<string, string> = {
+  toiletTraining: 'solar:box-bold',
+  basicTraining: 'solar:star-bold',
+  socialization: 'solar:users-group-rounded-bold',
+  problemBehavior: 'solar:shield-warning-bold',
+  default: 'solar:list-check-bold',
+}
+
 // 達成度の選択肢
 const ACHIEVEMENT_OPTIONS = [
   { value: 'done', label: '○', color: 'text-chart-2 bg-chart-2/20' },
@@ -51,12 +60,19 @@ interface Staff {
 
 type Step = 'photo' | 'comment' | 'details'
 
-const STEPS: Step[] = ['photo', 'comment', 'details']
+const STEPS: Step[] = ['photo', 'details', 'comment']
 
 const STEP_INFO: Record<Step, { title: string }> = {
   photo: { title: '写真' },
   comment: { title: 'コメント' },
   details: { title: '詳細' },
+}
+
+// トレーニングマスタから変換したカテゴリ形式
+interface TrainingCategory {
+  label: string
+  icon: string
+  items: Array<{ id: string; label: string }>
 }
 
 const JournalCreate = () => {
@@ -72,6 +88,7 @@ const JournalCreate = () => {
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([])
   const [photos, setPhotos] = useState<File[]>([])
+  const [trainingCategories, setTrainingCategories] = useState<Record<string, TrainingCategory>>(DEFAULT_TRAINING_CATEGORIES)
 
   // 段階式入力の現在のステップ
   const [currentStep, setCurrentStep] = useState<Step>('photo')
@@ -86,6 +103,7 @@ const JournalCreate = () => {
     morning_toilet_location: '',
     afternoon_toilet_location: '',
     training_data: {} as Record<string, string>,
+    memo: '', // スタッフのメモ書き（AIが清書する素材）
     comment: '',
     next_visit_date: '',
   })
@@ -98,12 +116,30 @@ const JournalCreate = () => {
 
   const fetchData = async () => {
     try {
-      const [reservationRes, staffRes] = await Promise.all([
+      const [reservationRes, staffRes, trainingRes] = await Promise.all([
         api.get(`/reservations/${reservationId}`),
         api.get('/auth/staff'),
+        api.get('/training-masters').catch(() => ({ data: {} })),
       ])
       setReservation(reservationRes.data)
       setStaffList(staffRes.data)
+
+      // トレーニングマスタをカテゴリ形式に変換
+      if (trainingRes.data && Object.keys(trainingRes.data).length > 0) {
+        const convertedCategories: Record<string, TrainingCategory> = {}
+        for (const [category, items] of Object.entries(trainingRes.data)) {
+          const itemsArray = items as Array<{ item_key: string; item_label: string }>
+          convertedCategories[category] = {
+            label: getCategoryLabel(category),
+            icon: CATEGORY_ICONS[category] || CATEGORY_ICONS.default,
+            items: itemsArray.map((item) => ({
+              id: item.item_key,
+              label: item.item_label,
+            })),
+          }
+        }
+        setTrainingCategories(convertedCategories)
+      }
 
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
       if (currentUser.id) {
@@ -118,6 +154,17 @@ const JournalCreate = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // カテゴリ名を日本語ラベルに変換
+  const getCategoryLabel = (category: string): string => {
+    const labels: Record<string, string> = {
+      toiletTraining: 'トイレ',
+      basicTraining: '基本',
+      socialization: '社会化',
+      problemBehavior: '問題行動対策',
+    }
+    return labels[category] || category
   }
 
   const handleTrainingChange = (itemId: string, value: string) => {
@@ -265,6 +312,19 @@ const JournalCreate = () => {
   const handleGenerateComment = async () => {
     setGenerating(true)
     try {
+      // トレーニングラベルをカテゴリから抽出
+      const trainingLabels: Record<string, string> = {}
+      Object.values(trainingCategories).forEach((category) => {
+        category.items.forEach((item) => {
+          trainingLabels[item.id] = item.label
+        })
+      })
+
+      // 写真解析結果を収集
+      const photoAnalysesArray = Object.values(photoAnalysis)
+        .filter((analysis) => analysis?.analysis)
+        .map((analysis) => analysis.analysis)
+
       const response = await api.post('/ai/generate-comment', {
         dog_name: reservation?.dog_name,
         training_data: formData.training_data,
@@ -278,6 +338,9 @@ const JournalCreate = () => {
           defecation: formData.afternoon_defecation,
           location: formData.afternoon_toilet_location,
         },
+        memo: formData.memo, // スタッフのメモを送信
+        photo_analyses: photoAnalysesArray, // 写真解析結果を送信
+        training_labels: trainingLabels, // カスタムトレーニングラベルを送信
       })
       setFormData((prev) => ({
         ...prev,
@@ -345,13 +408,13 @@ const JournalCreate = () => {
             <div key={step} className="flex items-center flex-1">
               <button
                 onClick={() => setCurrentStep(step)}
-                className={`flex-1 flex items-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-colors ${
+                className={`flex-1 flex items-center gap-1.5 py-2.5 px-2 rounded-lg text-xs font-bold transition-colors min-h-[48px] ${
                   currentStep === step
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    : 'bg-muted text-muted-foreground font-normal'
                 }`}
               >
-                <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                <span className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
                   currentStep === step ? 'bg-primary-foreground/20' : 'bg-background'
                 }`}>
                   {index + 1}
@@ -409,9 +472,10 @@ const JournalCreate = () => {
                 <button
                   type="button"
                   onClick={() => removePhoto(index)}
-                  className="absolute -top-2 -right-2 size-7 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute -top-2 -right-2 size-10 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-80 hover:opacity-100 transition-opacity"
+                  aria-label="写真を削除"
                 >
-                  <iconify-icon icon="solar:close-circle-bold" className="size-5"></iconify-icon>
+                  <iconify-icon icon="solar:close-circle-bold" className="size-6"></iconify-icon>
                 </button>
                 {photoAnalysis[index] && analyzingPhoto !== index && (
                   <button
@@ -425,13 +489,14 @@ const JournalCreate = () => {
                           ? `${prev.comment}\n\n[写真${index + 1}]\n${analysisText}`
                           : analysisText,
                       }))
-                      // コメントステップに移動
-                      setCurrentStep('comment')
+                      // 詳細ステップに移動
+                      setCurrentStep('details')
                     }}
-                    className="absolute top-2 right-2 size-7 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 size-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg opacity-80 hover:opacity-100 transition-opacity"
                     title="解析結果をコメントに追加"
+                    aria-label="解析結果をコメントに追加"
                   >
-                    <iconify-icon icon="solar:add-circle-bold" className="size-5"></iconify-icon>
+                    <iconify-icon icon="solar:add-circle-bold" className="size-6"></iconify-icon>
                   </button>
                 )}
               </div>
@@ -464,6 +529,46 @@ const JournalCreate = () => {
             <p className="text-sm text-muted-foreground">飼い主さんへのメッセージを書きましょう</p>
           </div>
 
+          {/* メモ入力エリア */}
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <iconify-icon icon="solar:notes-bold" className="size-5 text-chart-4"></iconify-icon>
+              <span className="text-sm font-bold">メモ書き（AIが清書します）</span>
+            </div>
+            <textarea
+              value={formData.memo}
+              onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
+              className="w-full h-24 bg-muted/50 border-0 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
+              placeholder="走り書きでOK！例：今日はオスワリ完璧、他の犬とも仲良く遊べた、少し興奮気味だったけど落ち着いてトレーニングできた"
+            />
+          </div>
+
+          {/* AI生成時に使われる情報の表示 */}
+          <div className="bg-muted/30 rounded-xl p-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 mb-2">
+              <iconify-icon icon="solar:info-circle-bold" className="size-4"></iconify-icon>
+              <span className="font-medium">AIが参照する情報</span>
+            </div>
+            <div className="space-y-1">
+              <p>
+                ✓ メモ書き
+                {formData.memo.trim() ? ` (${formData.memo.length}文字)` : ' (未入力)'}
+              </p>
+              <p>
+                ✓ 写真解析
+                {Object.keys(photoAnalysis).length > 0
+                  ? ` (${Object.keys(photoAnalysis).length}枚分)`
+                  : ' (なし)'}
+              </p>
+              <p>
+                ✓ トレーニング記録
+                {Object.keys(formData.training_data).length > 0
+                  ? ` (${Object.keys(formData.training_data).length}項目)`
+                  : ' (未入力)'}
+              </p>
+            </div>
+          </div>
+
           {/* AI生成ボタン */}
           <button
             type="button"
@@ -484,11 +589,16 @@ const JournalCreate = () => {
             )}
           </button>
 
+          {/* 生成されたコメント */}
           <div className="relative">
+            <label className="text-sm font-bold flex items-center gap-2 mb-2">
+              <iconify-icon icon="solar:document-text-bold" className="size-4 text-primary"></iconify-icon>
+              AIが生成したコメント（編集可能）
+            </label>
             <textarea
               value={formData.comment}
               onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-              className="w-full h-56 bg-card border border-border rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+              className="w-full h-56 bg-card border border-border rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
               placeholder="今日のワンちゃんの様子を記入してください..."
             />
             <p className="absolute bottom-3 right-3 text-xs text-muted-foreground">
@@ -587,8 +697,8 @@ const JournalCreate = () => {
             )}
           </div>
 
-          {/* トレーニング記録（シンプル版） */}
-          {Object.entries(TRAINING_CATEGORIES).map(([categoryKey, category]) => (
+          {/* トレーニング記録（設定から取得） */}
+          {Object.entries(trainingCategories).map(([categoryKey, category]) => (
             <div key={categoryKey} className="bg-card rounded-xl border border-border p-4">
               <div className="flex items-center gap-2 mb-3">
                 <iconify-icon icon={category.icon} className="size-5 text-primary"></iconify-icon>
@@ -604,11 +714,12 @@ const JournalCreate = () => {
                           key={option.value}
                           type="button"
                           onClick={() => handleTrainingChange(item.id, option.value)}
-                          className={`size-7 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                          className={`size-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                             formData.training_data[item.id] === option.value
                               ? option.color + ' ring-2 ring-primary'
-                              : 'text-muted-foreground/30 hover:bg-muted'
+                              : 'text-muted-foreground/30 hover:bg-muted active:bg-muted'
                           }`}
+                          aria-label={`${item.label}を${option.label}に設定`}
                         >
                           {option.label}
                         </button>
@@ -655,7 +766,7 @@ const JournalCreate = () => {
             </button>
           )}
 
-          {currentStep === 'details' ? (
+          {currentStep === 'comment' ? (
             <button
               type="button"
               onClick={handleSubmit}
@@ -686,15 +797,15 @@ const JournalCreate = () => {
           )}
         </div>
 
-        {/* スキップオプション（詳細ステップ以外） */}
-        {currentStep === 'comment' && formData.comment.trim() && (
+        {/* スキップオプション（詳細ステップでコメントをスキップ） */}
+        {currentStep === 'details' && formData.comment.trim() && (
           <button
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full mt-2 py-2 text-sm text-primary font-medium"
+            className="w-full mt-2 py-3 text-sm text-primary font-bold min-h-[48px] active:bg-primary/10 rounded-xl transition-colors"
           >
-            詳細をスキップして送信
+            コメントをスキップして送信
           </button>
         )}
       </div>

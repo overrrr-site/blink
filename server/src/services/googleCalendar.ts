@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import pool from '../db/connection.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
 
 interface CalendarEvent {
   summary: string;
@@ -80,7 +81,7 @@ export async function saveTokens(storeId: number, code: string) {
       throw new Error('カレンダーIDが取得できませんでした');
     }
 
-    // データベースに保存
+    // データベースに保存（トークンは暗号化）
     await pool.query(
       `INSERT INTO google_calendar_integrations 
        (store_id, calendar_id, access_token, refresh_token, token_expiry, enabled)
@@ -96,8 +97,8 @@ export async function saveTokens(storeId: number, code: string) {
       [
         storeId,
         primaryCalendar.id,
-        tokens.access_token,
-        tokens.refresh_token || null,
+        encrypt(tokens.access_token),
+        tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
         tokens.expiry_date ? new Date(tokens.expiry_date) : null,
         true,
       ]
@@ -115,13 +116,24 @@ export async function saveTokens(storeId: number, code: string) {
  */
 async function refreshToken(integration: any) {
   const oauth2Client = createOAuth2Client();
+  
+  // 暗号化されたリフレッシュトークンを復号化
+  let refreshToken: string;
+  try {
+    refreshToken = decrypt(integration.refresh_token);
+  } catch (error) {
+    console.error('Error decrypting refresh token:', error);
+    throw new Error('リフレッシュトークンの復号化に失敗しました');
+  }
+  
   oauth2Client.setCredentials({
-    refresh_token: integration.refresh_token,
+    refresh_token: refreshToken,
   });
 
   try {
     const { credentials } = await oauth2Client.refreshAccessToken();
     
+    // 新しいアクセストークンを暗号化して保存
     await pool.query(
       `UPDATE google_calendar_integrations 
        SET access_token = $1, 
@@ -129,7 +141,7 @@ async function refreshToken(integration: any) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $3`,
       [
-        credentials.access_token,
+        encrypt(credentials.access_token),
         credentials.expiry_date ? new Date(credentials.expiry_date) : null,
         integration.id,
       ]
@@ -154,10 +166,23 @@ async function getAuthenticatedCalendar(storeId: number) {
 
   const oauth2Client = createOAuth2Client();
   
+  // 暗号化されたトークンを復号化
+  let accessToken: string;
+  let refreshToken: string | null = null;
+  
+  try {
+    accessToken = decrypt(integration.access_token);
+    if (integration.refresh_token) {
+      refreshToken = decrypt(integration.refresh_token);
+    }
+  } catch (error) {
+    console.error('Error decrypting tokens:', error);
+    throw new Error('トークンの復号化に失敗しました');
+  }
+  
   // トークンの有効期限をチェック
-  let accessToken = integration.access_token;
   if (integration.token_expiry && new Date(integration.token_expiry) <= new Date()) {
-    if (!integration.refresh_token) {
+    if (!refreshToken) {
       throw new Error('リフレッシュトークンがありません。再認証が必要です。');
     }
     accessToken = await refreshToken(integration);
@@ -165,7 +190,7 @@ async function getAuthenticatedCalendar(storeId: number) {
 
   oauth2Client.setCredentials({
     access_token: accessToken,
-    refresh_token: integration.refresh_token,
+    refresh_token: refreshToken || undefined,
   });
 
   return {
