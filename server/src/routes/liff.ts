@@ -552,7 +552,7 @@ router.post('/link/request', async (req, res) => {
     );
 
     if (!emailSent) {
-      sendServerError(res, '確認コードの送信に失敗しました');
+      sendServerError(res, '確認コードの送信に失敗しました', null);
       return;
     }
 
