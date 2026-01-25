@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import pool from '../db/connection.js';
+import { sendEmail } from '../services/emailService.js';
 import {
   sendBadRequest,
   sendForbidden,
@@ -459,6 +460,204 @@ router.post('/pre-visit-inputs', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error: any) {
     sendServerError(res, '登園前入力の保存に失敗しました', error);
+  }
+});
+
+// 確認コード生成（6桁）
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// メールアドレスをマスク表示
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (local.length <= 2) {
+    return `${local[0]}***@${domain}`;
+  }
+  return `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}@${domain}`;
+}
+
+// LINE ID紐付けリクエスト（確認コード送信）
+router.post('/link/request', async (req, res) => {
+  try {
+    const { phone, lineUserId } = req.body;
+
+    if (!phone || !lineUserId) {
+      sendBadRequest(res, '電話番号とLINEユーザーIDが必要です');
+      return;
+    }
+
+    // 電話番号で飼い主を検索
+    const ownerResult = await pool.query(
+      `SELECT o.* FROM owners o WHERE o.phone = $1 LIMIT 1`,
+      [phone]
+    );
+
+    if (ownerResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'この電話番号で登録されているアカウントが見つかりません',
+      });
+    }
+
+    const owner = ownerResult.rows[0];
+
+    // 既にLINE IDが紐付いている場合
+    if (owner.line_id && owner.line_id === lineUserId) {
+      return res.status(400).json({
+        error: 'このLINEアカウントは既に紐付けられています',
+      });
+    }
+
+    // メールアドレスが登録されていない場合
+    if (!owner.email) {
+      return res.status(400).json({
+        error: 'メールアドレスが登録されていません。店舗にお問い合わせください。',
+      });
+    }
+
+    // 確認コードを生成
+    const code = generateVerificationCode();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10分後
+
+    // 既存のコードを削除（同じ電話番号とLINE User IDの組み合わせ）
+    await pool.query(
+      `DELETE FROM line_link_codes WHERE phone = $1 AND line_user_id = $2`,
+      [phone, lineUserId]
+    );
+
+    // 確認コードを保存
+    await pool.query(
+      `INSERT INTO line_link_codes (phone, code, line_user_id, expires_at)
+       VALUES ($1, $2, $3, $4)`,
+      [phone, code, lineUserId, expiresAt]
+    );
+
+    // メール送信
+    const emailSent = await sendEmail(
+      owner.email,
+      '【Blink】LINEアカウント紐付けの確認コード',
+      `確認コード: ${code}\n\nこのコードは10分間有効です。\n\nこのメールに心当たりがない場合は、無視してください。`,
+      `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>LINEアカウント紐付けの確認コード</h2>
+          <p>以下の確認コードを入力してください：</p>
+          <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0;">
+            ${code}
+          </div>
+          <p style="color: #666; font-size: 14px;">このコードは10分間有効です。</p>
+          <p style="color: #666; font-size: 14px;">このメールに心当たりがない場合は、無視してください。</p>
+        </div>
+      `
+    );
+
+    if (!emailSent) {
+      sendServerError(res, '確認コードの送信に失敗しました');
+      return;
+    }
+
+    res.json({
+      message: '確認コードを送信しました',
+      maskedEmail: maskEmail(owner.email),
+    });
+  } catch (error: any) {
+    console.error('Link request error:', error);
+    sendServerError(res, '紐付けリクエストの処理に失敗しました', error);
+  }
+});
+
+// LINE ID紐付け確認（確認コード検証）
+router.post('/link/verify', async (req, res) => {
+  try {
+    const { phone, code, lineUserId } = req.body;
+
+    if (!phone || !code || !lineUserId) {
+      sendBadRequest(res, '電話番号、確認コード、LINEユーザーIDが必要です');
+      return;
+    }
+
+    // 確認コードを検証
+    const codeResult = await pool.query(
+      `SELECT * FROM line_link_codes
+       WHERE phone = $1 AND line_user_id = $2 AND code = $3 AND expires_at > CURRENT_TIMESTAMP
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [phone, code, lineUserId]
+    );
+
+    if (codeResult.rows.length === 0) {
+      // 試行回数をカウント
+      await pool.query(
+        `UPDATE line_link_codes
+         SET attempts = attempts + 1
+         WHERE phone = $1 AND line_user_id = $2 AND expires_at > CURRENT_TIMESTAMP`,
+        [phone, lineUserId]
+      );
+
+      return res.status(400).json({
+        error: '確認コードが正しくないか、期限切れです',
+      });
+    }
+
+    const codeRecord = codeResult.rows[0];
+
+    // 試行回数制限（5回）
+    if (codeRecord.attempts >= 5) {
+      return res.status(400).json({
+        error: '試行回数の上限に達しました。再度確認コードをリクエストしてください。',
+      });
+    }
+
+    // 電話番号で飼い主を取得
+    const ownerResult = await pool.query(
+      `SELECT o.* FROM owners o WHERE o.phone = $1 LIMIT 1`,
+      [phone]
+    );
+
+    if (ownerResult.rows.length === 0) {
+      sendNotFound(res, '飼い主が見つかりません');
+      return;
+    }
+
+    const owner = ownerResult.rows[0];
+
+    // LINE User IDを更新
+    await pool.query(
+      `UPDATE owners SET line_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [lineUserId, owner.id]
+    );
+
+    // 使用済み確認コードを削除
+    await pool.query(
+      `DELETE FROM line_link_codes WHERE phone = $1 AND line_user_id = $2`,
+      [phone, lineUserId]
+    );
+
+    // JWTトークンを発行
+    const token = jwt.sign(
+      {
+        ownerId: owner.id,
+        storeId: owner.store_id,
+        lineUserId: lineUserId,
+        type: 'owner',
+      },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      token,
+      owner: {
+        id: owner.id,
+        name: owner.name,
+        storeId: owner.store_id,
+        lineUserId: lineUserId,
+      },
+      message: 'LINEアカウントの紐付けが完了しました',
+    });
+  } catch (error: any) {
+    console.error('Link verify error:', error);
+    sendServerError(res, '紐付け確認の処理に失敗しました', error);
   }
 });
 

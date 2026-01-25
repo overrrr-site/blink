@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useLiffAuthStore } from './store/authStore';
 import { initLiff } from './utils/liff';
 import Login from './pages/Login';
+import LinkAccount from './pages/LinkAccount';
 import Home from './pages/Home';
 import MyPage from './pages/MyPage';
 import ReservationsCalendar from './pages/ReservationsCalendar';
@@ -35,6 +36,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/link" element={<LinkAccount />} />
         <Route path="/liff.html" element={<Navigate to="/" replace />} />
         <Route
           path="/"

@@ -73,7 +73,18 @@ export default function Login() {
       } catch (err: any) {
         console.error('Login error:', err);
         if (err.response?.data?.requiresRegistration) {
-          setError('LINEアカウントが登録されていません。店舗にご連絡ください。');
+          // LINE User IDを取得して紐付け画面へ遷移
+          try {
+            const profile = await getLiffProfile();
+            navigate('/link', { 
+              state: { lineUserId: profile.userId },
+              replace: true 
+            });
+            return;
+          } catch (profileError) {
+            console.error('Failed to get LINE profile:', profileError);
+            setError('LINEアカウント情報の取得に失敗しました');
+          }
         } else {
           setError('ログインに失敗しました: ' + (err.message || '不明なエラー'));
         }
