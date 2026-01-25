@@ -1044,7 +1044,7 @@ const Settings = () => {
               )}
             </button>
             <p className="text-[10px] text-muted-foreground text-center pt-2">
-                  CSV形式またはPDF形式でダウンロードできます
+                  CSV形式でダウンロードできます
             </p>
           </div>
         </section>

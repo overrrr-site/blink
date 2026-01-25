@@ -6,7 +6,7 @@ const liffClient = createApiClient({
   baseURL: `${API_BASE_URL}/api/liff`,
   tokenKey: 'liff_token',
   userKey: 'liff_user',
-  loginPath: '/liff.html#/login',
+  loginPath: '/liff/login',
 })
 
 export default liffClient

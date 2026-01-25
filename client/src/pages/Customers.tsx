@@ -99,14 +99,14 @@ const Customers = () => {
         <div className="relative">
           <iconify-icon
             icon="solar:magnifer-linear"
-            className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground"
+            class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground"
           ></iconify-icon>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="名前、電話番号、犬種で検索..."
-            className="w-full bg-muted border-2 border-transparent rounded-xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm focus:shadow-md"
+            className="w-full bg-muted border border-border rounded-xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm focus:shadow-md min-h-[48px]"
             aria-label="検索"
           />
           {searchQuery && (
@@ -123,10 +123,10 @@ const Customers = () => {
         <div className="flex bg-muted rounded-xl p-1">
           <button
             onClick={() => setViewMode('owners')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors relative ${
+            className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-colors relative min-h-[48px] ${
               viewMode === 'owners'
                 ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
-                : 'text-muted-foreground'
+                : 'text-muted-foreground font-normal'
             }`}
             aria-label="飼い主一覧を表示"
             aria-pressed={viewMode === 'owners'}
@@ -136,10 +136,10 @@ const Customers = () => {
           </button>
           <button
             onClick={() => setViewMode('dogs')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors relative ${
+            className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-colors relative min-h-[48px] ${
               viewMode === 'dogs'
                 ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
-                : 'text-muted-foreground'
+                : 'text-muted-foreground font-normal'
             }`}
             aria-label="ワンちゃん一覧を表示"
             aria-pressed={viewMode === 'dogs'}
@@ -185,7 +185,7 @@ const Customers = () => {
                 <button
                   key={owner.id}
                   onClick={() => navigate(`/owners/${owner.id}`)}
-                  className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow"
+                  className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow active:bg-muted/50 min-h-[72px]"
                 >
                   <div className="flex items-center gap-3">
                     <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
@@ -247,7 +247,7 @@ const Customers = () => {
                 <button
                   key={dog.id}
                   onClick={() => navigate(`/dogs/${dog.id}`)}
-                  className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow"
+                  className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow active:bg-muted/50 min-h-[72px]"
                 >
                   <div className="flex items-center gap-3">
                     <div className="size-12 rounded-full bg-muted overflow-hidden">

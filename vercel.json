@@ -10,7 +10,15 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api).*)",
+      "source": "/liff",
+      "destination": "/liff.html"
+    },
+    {
+      "source": "/liff/(.*)",
+      "destination": "/liff.html"
+    },
+    {
+      "source": "/((?!api|liff).*)",
       "destination": "/index.html"
     }
   ],

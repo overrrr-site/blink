@@ -704,7 +704,7 @@ const JournalCreate = () => {
                 <iconify-icon icon={category.icon} className="size-5 text-primary"></iconify-icon>
                 <span className="font-bold text-sm">{category.label}</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {category.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
                     <span className="text-xs">{item.label}</span>
