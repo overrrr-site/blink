@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import {
+  requireStoreId,
   sendBadRequest,
   sendNotFound,
   sendServerError,
@@ -83,6 +84,10 @@ router.get('/:id', async (req: AuthRequest, res) => {
 // 飼い主作成
 router.post('/', async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const {
       name,
       name_kana,
