@@ -51,8 +51,12 @@ export async function processLineWebhookEvents(
   bodyString: string,
   signature: string
 ): Promise<void> {
+  console.log('processLineWebhookEvents開始: イベント数=', events.length);
+  
   for (const event of events) {
     try {
+      console.log('イベント処理中: type=', event.type);
+      
       // 検証イベントはスキップ
       if (event.type === 'verify') {
         console.log('LINE Webhook: 検証イベント');
@@ -60,6 +64,7 @@ export async function processLineWebhookEvents(
       }
 
       if (event.type !== 'message' && event.type !== 'postback') {
+        console.log('スキップ: サポート外のイベントタイプ');
         continue;
       }
 
@@ -68,6 +73,8 @@ export async function processLineWebhookEvents(
         console.warn('LINE Webhook: userIdなし');
         continue;
       }
+      
+      console.log('LINE userId:', lineUserId);
 
       // LINE IDから店舗を特定
       const ownerResult = await pool.query(
@@ -78,6 +85,8 @@ export async function processLineWebhookEvents(
          LIMIT 1`,
         [lineUserId]
       );
+      
+      console.log('オーナー検索結果: 件数=', ownerResult.rows.length);
 
       if (ownerResult.rows.length === 0) {
         console.warn(`LINE Webhook: ユーザー ${lineUserId} が見つかりません`);
@@ -94,7 +103,10 @@ export async function processLineWebhookEvents(
 
       // 署名検証
       const channelSecret = decrypt(owner.line_channel_secret);
-      if (!verifySignature(channelSecret, bodyString, signature)) {
+      const signatureValid = verifySignature(channelSecret, bodyString, signature);
+      console.log('署名検証結果:', signatureValid);
+      
+      if (!signatureValid) {
         console.warn(`LINE Webhook: 署名検証失敗 (店舗ID: ${owner.store_id})`);
         continue;
       }
@@ -105,6 +117,7 @@ export async function processLineWebhookEvents(
         [owner.store_id]
       );
       const lineBotEnabled = botSettingsResult.rows[0]?.line_bot_enabled ?? false;
+      console.log('チャットボット有効:', lineBotEnabled);
 
       if (!lineBotEnabled) {
         console.log(`LINE Webhook: 店舗ID ${owner.store_id} はボット無効`);
@@ -113,7 +126,10 @@ export async function processLineWebhookEvents(
 
       // メッセージ処理
       const replyToken = event.replyToken;
+      console.log('replyToken:', replyToken ? '存在' : 'なし');
+      
       if (replyToken) {
+        console.log('handleLineMessage呼び出し開始');
         await handleLineMessage(
           owner.store_id,
           owner.owner_id,
@@ -121,11 +137,13 @@ export async function processLineWebhookEvents(
           event,
           replyToken
         );
+        console.log('handleLineMessage完了');
       }
     } catch (error) {
       console.error('LINE Webhook event処理エラー:', error);
     }
   }
+  console.log('processLineWebhookEvents完了');
 }
 
 /**

@@ -35,8 +35,8 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 
 // LINE Webhook: 最優先で200を返す（Vercel環境対応）
-// ミドルウェアを通さず、直接ハンドラーを定義
-app.post('/api/line/webhook', (req, res) => {
+// express.text()でraw bodyを取得し、署名検証に使用
+app.post('/api/line/webhook', express.text({ type: '*/*' }), (req, res) => {
   // 何があっても即座に200を返す
   res.status(200).send('OK');
   
@@ -48,7 +48,7 @@ app.post('/api/line/webhook', (req, res) => {
       return;
     }
     
-    // bodyを文字列化
+    // bodyを文字列化（express.text()で取得した場合は文字列）
     let bodyString: string;
     let parsedBody: any;
     
@@ -62,15 +62,19 @@ app.post('/api/line/webhook', (req, res) => {
       bodyString = JSON.stringify(req.body);
       parsedBody = req.body;
     } else {
-      console.log('LINE Webhook: 不明なbody形式');
+      console.log('LINE Webhook: body取得失敗 - type:', typeof req.body);
       return;
     }
+    
+    console.log('LINE Webhook: イベント受信, body長:', bodyString.length);
     
     const events = parsedBody.events || [];
     if (events.length === 0) {
       console.log('LINE Webhook: イベントなし（検証成功）');
       return;
     }
+    
+    console.log('LINE Webhook: イベント数:', events.length, 'タイプ:', events.map((e: any) => e.type).join(','));
     
     // 非同期でイベント処理をインポートして実行
     import('./services/lineBotService.js').then(async ({ processLineWebhookEvents }) => {
