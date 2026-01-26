@@ -16,19 +16,44 @@ const TABS: TabConfig[] = [
   { id: 'other', label: 'その他', icon: 'solar:settings-bold' },
 ]
 
-// タブコンポーネントを遅延ロード
 const StoreTab = lazy(() => import('./settings/StoreTab'))
 const PricingTab = lazy(() => import('./settings/PricingTab'))
 const IntegrationTab = lazy(() => import('./settings/IntegrationTab'))
 const OtherTab = lazy(() => import('./settings/OtherTab'))
 
-const TabLoader = () => (
-  <div className="flex items-center justify-center py-8">
-    <iconify-icon icon="solar:spinner-bold" width="24" height="24" class="text-primary animate-spin"></iconify-icon>
-  </div>
-)
+function TabLoader() {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <iconify-icon icon="solar:spinner-bold" width="24" height="24" class="text-primary animate-spin"></iconify-icon>
+    </div>
+  )
+}
 
-const Settings = () => {
+function renderActiveTab(
+  activeTab: TabId,
+  storeInfo: any,
+  setStoreInfo: (info: any) => void,
+  fetchStoreInfo: () => Promise<void>
+) {
+  switch (activeTab) {
+    case 'store':
+      return (
+        <StoreTab
+          storeInfo={storeInfo}
+          setStoreInfo={setStoreInfo}
+          fetchStoreInfo={fetchStoreInfo}
+        />
+      )
+    case 'pricing':
+      return <PricingTab />
+    case 'integration':
+      return <IntegrationTab />
+    case 'other':
+      return <OtherTab />
+  }
+}
+
+function Settings() {
   const [activeTab, setActiveTab] = useState<TabId>('store')
   const [storeInfo, setStoreInfo] = useState<any>(null)
 
@@ -36,7 +61,7 @@ const Settings = () => {
     fetchStoreInfo()
   }, [])
 
-  const fetchStoreInfo = async () => {
+  async function fetchStoreInfo() {
     try {
       const response = await api.get('/stores')
       setStoreInfo(response.data)
@@ -50,7 +75,6 @@ const Settings = () => {
       <header className="px-5 pt-6 pb-2 bg-background sticky top-0 z-10">
         <h1 className="text-2xl font-bold font-heading text-foreground mb-4">設定</h1>
 
-        {/* タブナビゲーション */}
         <div className="flex bg-muted rounded-xl p-1 gap-1">
           {TABS.map((tab) => (
             <button
@@ -72,16 +96,7 @@ const Settings = () => {
 
       <main className="flex-1 overflow-y-auto pb-24 px-5 space-y-4 pt-4">
         <Suspense fallback={<TabLoader />}>
-          {activeTab === 'store' && (
-            <StoreTab
-              storeInfo={storeInfo}
-              setStoreInfo={setStoreInfo}
-              fetchStoreInfo={fetchStoreInfo}
-            />
-          )}
-          {activeTab === 'pricing' && <PricingTab />}
-          {activeTab === 'integration' && <IntegrationTab />}
-          {activeTab === 'other' && <OtherTab />}
+          {renderActiveTab(activeTab, storeInfo, setStoreInfo, fetchStoreInfo)}
         </Suspense>
       </main>
     </div>

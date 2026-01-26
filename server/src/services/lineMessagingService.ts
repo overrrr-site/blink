@@ -107,9 +107,7 @@ export async function sendLineMessage(
     await client.pushMessage(lineUserId, {
       type: 'text',
       text: message,
-    }, {
-      notificationDisabled: false,
-    });
+    }, false);
 
     return true;
   } catch (error: any) {
@@ -136,9 +134,7 @@ export async function sendLineMessages(
       return false;
     }
 
-    await client.pushMessage(lineUserId, messages, {
-      notificationDisabled: false,
-    });
+    await client.pushMessage(lineUserId, messages as any, false);
 
     return true;
   } catch (error: any) {

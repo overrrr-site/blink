@@ -2,7 +2,29 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../../api/client'
 
-const IntegrationTab = () => {
+interface ToggleSwitchProps {
+  checked: boolean
+  onChange: () => void
+}
+
+function ToggleSwitch({ checked, onChange }: ToggleSwitchProps) {
+  return (
+    <button
+      onClick={onChange}
+      className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
+        checked ? 'bg-primary' : 'bg-muted'
+      }`}
+      role="switch"
+      aria-checked={checked}
+    >
+      <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
+        checked ? 'right-1' : 'left-1'
+      }`}></span>
+    </button>
+  )
+}
+
+function IntegrationTab() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [googleCalendarStatus, setGoogleCalendarStatus] = useState<{
@@ -50,7 +72,7 @@ const IntegrationTab = () => {
     }
   }, [])
 
-  const fetchGoogleCalendarStatus = async () => {
+  async function fetchGoogleCalendarStatus() {
     try {
       const response = await api.get('/google-calendar/status')
       setGoogleCalendarStatus(response.data)
@@ -61,7 +83,7 @@ const IntegrationTab = () => {
     }
   }
 
-  const fetchNotificationSettings = async () => {
+  async function fetchNotificationSettings() {
     try {
       const response = await api.get('/notifications/settings')
       setNotificationSettings({
@@ -76,7 +98,7 @@ const IntegrationTab = () => {
     }
   }
 
-  const handleTestLineMessage = async () => {
+  async function handleTestLineMessage() {
     setTestingLine(true)
     setLineTestResult(null)
     try {
@@ -96,7 +118,7 @@ const IntegrationTab = () => {
     }
   }
 
-  const handleGoogleCalendarConnect = async () => {
+  async function handleGoogleCalendarConnect() {
     try {
       const response = await api.get('/google-calendar/auth')
       window.location.href = response.data.authUrl
@@ -106,7 +128,7 @@ const IntegrationTab = () => {
     }
   }
 
-  const handleGoogleCalendarDisconnect = async () => {
+  async function handleGoogleCalendarDisconnect() {
     if (!confirm('Googleカレンダー連携を解除しますか？')) {
       return
     }
@@ -121,7 +143,7 @@ const IntegrationTab = () => {
     }
   }
 
-  const fetchLineStatus = async () => {
+  async function fetchLineStatus() {
     try {
       const response = await api.get('/stores')
       setLineStatus({
@@ -135,7 +157,7 @@ const IntegrationTab = () => {
     }
   }
 
-  const handleLineConnect = () => {
+  function handleLineConnect() {
     setLineSettings({
       channelId: '',
       channelSecret: '',
@@ -144,7 +166,7 @@ const IntegrationTab = () => {
     setShowLineModal(true)
   }
 
-  const handleLineSave = async () => {
+  async function handleLineSave() {
     if (!lineSettings.channelId || !lineSettings.channelSecret || !lineSettings.channelAccessToken) {
       alert('すべての項目を入力してください')
       return
@@ -168,7 +190,7 @@ const IntegrationTab = () => {
     }
   }
 
-  const handleLineDisconnect = async () => {
+  async function handleLineDisconnect() {
     if (!confirm('LINE公式アカウント連携を解除しますか？')) {
       return
     }
@@ -185,6 +207,20 @@ const IntegrationTab = () => {
       console.error('Error disconnecting LINE:', error)
       alert('連携の解除に失敗しました')
     }
+  }
+
+  async function updateNotificationSetting(key: keyof typeof notificationSettings, value: boolean) {
+    setNotificationSettings(prev => ({ ...prev, [key]: value }))
+    await api.put('/notifications/settings', { [key]: value })
+  }
+
+  function closeLineModal() {
+    setShowLineModal(false)
+    setLineSettings({
+      channelId: '',
+      channelSecret: '',
+      channelAccessToken: '',
+    })
   }
 
   return (
@@ -282,22 +318,10 @@ const IntegrationTab = () => {
                   <span className="text-sm font-medium block">LINE通知を有効にする</span>
                   <span className="text-[10px] text-muted-foreground">オンにするとLINEでメッセージを送信します</span>
                 </div>
-                <button
-                  onClick={async () => {
-                    const newValue = !notificationSettings.line_notification_enabled
-                    setNotificationSettings(prev => ({ ...prev, line_notification_enabled: newValue }))
-                    await api.put('/notifications/settings', { line_notification_enabled: newValue })
-                  }}
-                  className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
-                    notificationSettings.line_notification_enabled ? 'bg-primary' : 'bg-muted'
-                  }`}
-                  role="switch"
-                  aria-checked={notificationSettings.line_notification_enabled}
-                >
-                  <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
-                    notificationSettings.line_notification_enabled ? 'right-1' : 'left-1'
-                  }`}></span>
-                </button>
+                <ToggleSwitch
+                  checked={notificationSettings.line_notification_enabled}
+                  onChange={() => updateNotificationSetting('line_notification_enabled', !notificationSettings.line_notification_enabled)}
+                />
               </div>
 
               {/* テスト送信ボタン */}
@@ -325,9 +349,9 @@ const IntegrationTab = () => {
                   lineTestResult.success ? 'bg-chart-2/10 text-chart-2' : 'bg-destructive/10 text-destructive'
                 }`}>
                   <div className="flex items-start gap-2">
-                    <iconify-icon 
-                      icon={lineTestResult.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'} 
-                      width="16" 
+                    <iconify-icon
+                      icon={lineTestResult.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
+                      width="16"
                       height="16"
                       class="mt-0.5"
                     ></iconify-icon>
@@ -385,66 +409,30 @@ const IntegrationTab = () => {
               <span className="text-sm font-medium block">登園前リマインド</span>
               <span className="text-[10px] text-muted-foreground">前日18:00に飼い主へ通知</span>
             </div>
-            <button
-              onClick={async () => {
-                const newValue = !notificationSettings.reminder_before_visit
-                setNotificationSettings(prev => ({ ...prev, reminder_before_visit: newValue }))
-                await api.put('/notifications/settings', { ...notificationSettings, reminder_before_visit: newValue })
-              }}
-              className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
-                notificationSettings.reminder_before_visit ? 'bg-primary' : 'bg-muted'
-              }`}
-              role="switch"
-              aria-checked={notificationSettings.reminder_before_visit}
-            >
-              <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
-                notificationSettings.reminder_before_visit ? 'right-1' : 'left-1'
-              }`}></span>
-            </button>
+            <ToggleSwitch
+              checked={notificationSettings.reminder_before_visit}
+              onChange={() => updateNotificationSetting('reminder_before_visit', !notificationSettings.reminder_before_visit)}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm font-medium block">日誌送信通知</span>
               <span className="text-[10px] text-muted-foreground">日誌作成時に飼い主へ通知</span>
             </div>
-            <button
-              onClick={async () => {
-                const newValue = !notificationSettings.journal_notification
-                setNotificationSettings(prev => ({ ...prev, journal_notification: newValue }))
-                await api.put('/notifications/settings', { ...notificationSettings, journal_notification: newValue })
-              }}
-              className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
-                notificationSettings.journal_notification ? 'bg-primary' : 'bg-muted'
-              }`}
-              role="switch"
-              aria-checked={notificationSettings.journal_notification}
-            >
-              <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
-                notificationSettings.journal_notification ? 'right-1' : 'left-1'
-              }`}></span>
-            </button>
+            <ToggleSwitch
+              checked={notificationSettings.journal_notification}
+              onChange={() => updateNotificationSetting('journal_notification', !notificationSettings.journal_notification)}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm font-medium block">ワクチン期限アラート</span>
               <span className="text-[10px] text-muted-foreground">期限30日前・14日前に通知</span>
             </div>
-            <button
-              onClick={async () => {
-                const newValue = !notificationSettings.vaccine_alert
-                setNotificationSettings(prev => ({ ...prev, vaccine_alert: newValue }))
-                await api.put('/notifications/settings', { ...notificationSettings, vaccine_alert: newValue })
-              }}
-              className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
-                notificationSettings.vaccine_alert ? 'bg-primary' : 'bg-muted'
-              }`}
-              role="switch"
-              aria-checked={notificationSettings.vaccine_alert}
-            >
-              <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
-                notificationSettings.vaccine_alert ? 'right-1' : 'left-1'
-              }`}></span>
-            </button>
+            <ToggleSwitch
+              checked={notificationSettings.vaccine_alert}
+              onChange={() => updateNotificationSetting('vaccine_alert', !notificationSettings.vaccine_alert)}
+            />
           </div>
         </div>
       </section>
@@ -456,14 +444,7 @@ const IntegrationTab = () => {
             <div className="border-b border-border px-5 py-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">LINE公式アカウント連携</h2>
               <button
-                onClick={() => {
-                  setShowLineModal(false)
-                  setLineSettings({
-                    channelId: '',
-                    channelSecret: '',
-                    channelAccessToken: '',
-                  })
-                }}
+                onClick={closeLineModal}
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
@@ -518,14 +499,7 @@ const IntegrationTab = () => {
               </div>
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => {
-                    setShowLineModal(false)
-                    setLineSettings({
-                      channelId: '',
-                      channelSecret: '',
-                      channelAccessToken: '',
-                    })
-                  }}
+                  onClick={closeLineModal}
                   className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
                 >
                   キャンセル
