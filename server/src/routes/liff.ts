@@ -582,7 +582,7 @@ router.post('/link/verify', async (req, res) => {
        WHERE phone = $1 AND line_user_id = $2 AND code = $3 AND expires_at > CURRENT_TIMESTAMP
        ORDER BY created_at DESC
        LIMIT 1`,
-      [phone, code, lineUserId]
+      [phone, lineUserId, code]
     );
 
     if (codeResult.rows.length === 0) {
