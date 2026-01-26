@@ -235,7 +235,7 @@ export default function Terms() {
               <p className="font-bold text-foreground">OVER株式会社</p>
               <p className="text-xs mt-1">〒150-0021 東京都渋谷区恵比寿西2-8-4</p>
               <p className="text-xs">
-                <a href="https://www.overrrr.com/contact" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                <a href="https://www.overrrr.com/#contact" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   お問い合わせフォーム
                 </a>
               </p>
