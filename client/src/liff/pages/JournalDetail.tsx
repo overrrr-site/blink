@@ -12,10 +12,41 @@ interface Journal {
   staff_name: string;
   comment: string;
   photos: string[];
-  morning_urination: boolean;
-  morning_defecation: boolean;
-  afternoon_urination: boolean;
-  afternoon_defecation: boolean;
+  morning_toilet_status: string;
+  morning_toilet_location: string;
+  afternoon_toilet_status: string;
+  afternoon_toilet_location: string;
+}
+
+// トイレステータスに応じたアイコンと色を取得
+function getToiletStatusStyle(status: string | null | undefined) {
+  if (!status || status === '未選択' || status === '') {
+    return {
+      icon: 'mdi:minus-circle-outline',
+      colorClass: 'text-muted-foreground',
+      label: '-',
+    };
+  }
+  if (status === '成功') {
+    return {
+      icon: 'mdi:check-circle',
+      colorClass: 'text-chart-2',
+      label: '成功',
+    };
+  }
+  if (status === '一部成功') {
+    return {
+      icon: 'mdi:check-circle-outline',
+      colorClass: 'text-chart-3',
+      label: '一部成功',
+    };
+  }
+  // 失敗
+  return {
+    icon: 'mdi:close-circle',
+    colorClass: 'text-destructive',
+    label: status,
+  };
 }
 
 export default function JournalDetail() {
@@ -70,6 +101,9 @@ export default function JournalDetail() {
     );
   }
 
+  const morningStatus = getToiletStatusStyle(journal.morning_toilet_status);
+  const afternoonStatus = getToiletStatusStyle(journal.afternoon_toilet_status);
+
   return (
     <div className="px-5 pt-6 pb-28 space-y-6">
       {/* ヘッダー */}
@@ -119,29 +153,23 @@ export default function JournalDetail() {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-muted/30 rounded-xl p-3">
             <p className="text-xs text-muted-foreground mb-2 font-medium">午前</p>
-            <div className="space-y-1">
-              <div className={`flex items-center gap-2 text-sm ${journal.morning_urination ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.morning_urination ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
-                オシッコ
-              </div>
-              <div className={`flex items-center gap-2 text-sm ${journal.morning_defecation ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.morning_defecation ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
-                ウンチ
-              </div>
+            <div className={`flex items-center gap-2 text-sm font-medium ${morningStatus.colorClass}`}>
+              <iconify-icon icon={morningStatus.icon} width="18" height="18"></iconify-icon>
+              {morningStatus.label}
             </div>
+            {journal.morning_toilet_location && (
+              <p className="text-xs text-muted-foreground mt-1.5">{journal.morning_toilet_location}</p>
+            )}
           </div>
           <div className="bg-muted/30 rounded-xl p-3">
             <p className="text-xs text-muted-foreground mb-2 font-medium">午後</p>
-            <div className="space-y-1">
-              <div className={`flex items-center gap-2 text-sm ${journal.afternoon_urination ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.afternoon_urination ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
-                オシッコ
-              </div>
-              <div className={`flex items-center gap-2 text-sm ${journal.afternoon_defecation ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.afternoon_defecation ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
-                ウンチ
-              </div>
+            <div className={`flex items-center gap-2 text-sm font-medium ${afternoonStatus.colorClass}`}>
+              <iconify-icon icon={afternoonStatus.icon} width="18" height="18"></iconify-icon>
+              {afternoonStatus.label}
             </div>
+            {journal.afternoon_toilet_location && (
+              <p className="text-xs text-muted-foreground mt-1.5">{journal.afternoon_toilet_location}</p>
+            )}
           </div>
         </div>
       </section>
