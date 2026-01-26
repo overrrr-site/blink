@@ -238,7 +238,7 @@ async function handleTextMessage(
     // 不明なメッセージにはヘルプを返す
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: '申し訳ございませんが、そのメッセージは理解できませんでした。\n\n「ヘルプ」と送信すると、使い方を確認できます。',
+      text: '申し訳ございません、メッセージを理解できませんでした。\n\n「ヘルプ」と送信いただくと、使い方をご案内いたします。',
       quickReply: createQuickReply(),
     });
   }
@@ -301,14 +301,14 @@ async function handlePostback(
         // キャンセル操作をやめる
         await client.replyMessage(replyToken, {
           type: 'text',
-          text: '操作をキャンセルしました。',
+          text: '承知しました。また何かございましたらお気軽にどうぞ 😊',
           quickReply: createQuickReply(),
         });
         break;
       default:
         await client.replyMessage(replyToken, {
           type: 'text',
-          text: '操作を完了しました。',
+          text: '完了いたしました。他にご用件はございますか？',
           quickReply: createQuickReply(),
         });
     }
@@ -316,7 +316,7 @@ async function handlePostback(
     console.error('Error handling postback:', error);
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: 'エラーが発生しました。もう一度お試しください。',
+      text: '申し訳ございません、エラーが発生しました。しばらくしてから再度お試しください。',
     }, false);
   }
 }
@@ -346,7 +346,7 @@ async function sendReservations(
     if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '今後の予約はありません。',
+        text: '現在、今後のご予約はございません 📅\n\n新しくご予約される場合は「予約する」とお送りください。',
         quickReply: createQuickReply(),
       });
       return;
@@ -359,7 +359,7 @@ async function sendReservations(
     // 最初のメッセージをreplyTokenで送信
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: `📅 予約一覧（${result.rows.length}件）`,
+      text: `📅 ご予約一覧です（${result.rows.length}件）`,
     });
 
     // 以降のメッセージはpushMessageで送信
@@ -369,7 +369,7 @@ async function sendReservations(
 
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '予約をキャンセルする場合は「キャンセル」と送信してください。',
+      text: 'キャンセルをご希望の場合は「キャンセル」とお送りください 🙋',
       quickReply: createQuickReply(),
     }, false);
   } catch (error: any) {
@@ -377,7 +377,7 @@ async function sendReservations(
     // エラー時はpushMessageを使用（replyTokenは既に使用済みの可能性があるため）
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '予約情報の取得に失敗しました。',
+      text: '申し訳ございません、予約情報の取得に失敗しました。しばらくしてから再度お試しください。',
     }, false);
   }
 }
@@ -405,7 +405,7 @@ async function sendReservationLink(
 
   await client.replyMessage(replyToken, {
     type: 'text',
-    text: '📅 予約作成ページを開きます。\n下のボタンをタップしてください。',
+    text: '📅 ご予約ページをご用意しました。\n下のボタンからお進みください。',
     quickReply: {
       items: [
         {
@@ -443,7 +443,7 @@ async function sendReservationMenu(
 
   await client.replyMessage(replyToken, {
     type: 'text',
-    text: '📅 予約メニュー\n\nどちらをご希望ですか？',
+    text: '📅 ご予約について、どちらをご希望ですか？',
     quickReply: {
       items: [
         {
@@ -500,7 +500,7 @@ async function sendCancellableReservations(
     if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: 'キャンセル可能な予約はありません。',
+        text: '現在、キャンセル可能なご予約はございません。',
         quickReply: createQuickReply(),
       });
       return;
@@ -509,7 +509,7 @@ async function sendCancellableReservations(
     // 最初のメッセージをreplyTokenで送信
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: 'キャンセルする予約を選択してください：',
+      text: 'キャンセルされるご予約をお選びください：',
     });
 
     // 各予約にキャンセルボタンを付けて送信（pushMessageを使用）
@@ -537,7 +537,7 @@ async function sendCancellableReservations(
       console.error('Error sending cancellable reservations:', error);
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '予約情報の取得に失敗しました。',
+      text: '申し訳ございません、予約情報の取得に失敗しました。しばらくしてから再度お試しください。',
     }, false);
   }
 }
@@ -565,7 +565,7 @@ async function cancelReservation(
     if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '予約が見つかりませんでした。',
+        text: 'ご予約が見つかりませんでした。',
       });
       return;
     }
@@ -580,7 +580,7 @@ async function cancelReservation(
       altText: '予約キャンセルの確認',
       template: {
         type: 'confirm',
-        text: `以下の予約をキャンセルしますか？\n\n${reservationDate} ${reservationTime}\n${reservation.dog_name}`,
+        text: `こちらのご予約をキャンセルしますか？\n\n${reservationDate} ${reservationTime}\n${reservation.dog_name}`,
         actions: [
           {
             type: 'postback',
@@ -599,7 +599,7 @@ async function cancelReservation(
       console.error('Error canceling reservation:', error);
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: 'エラーが発生しました。',
+      text: '申し訳ございません、エラーが発生しました。',
     }, false);
   }
 }
@@ -626,7 +626,7 @@ async function confirmCancelReservation(
     if (checkResult.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '予約が見つかりませんでした。',
+        text: 'ご予約が見つかりませんでした。',
       });
       return;
     }
@@ -637,7 +637,7 @@ async function confirmCancelReservation(
     if (reservation.status === 'キャンセル') {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: 'この予約は既にキャンセルされています。',
+        text: 'こちらのご予約は既にキャンセル済みです。',
         quickReply: createQuickReply(),
       });
       return;
@@ -645,7 +645,7 @@ async function confirmCancelReservation(
 
     // 予約をキャンセル
     await pool.query(
-      `UPDATE reservations 
+      `UPDATE reservations
        SET status = 'キャンセル', updated_at = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [reservationId]
@@ -656,14 +656,14 @@ async function confirmCancelReservation(
 
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: `✅ 予約をキャンセルしました。\n\n${reservationDate} ${reservationTime}`,
+      text: `✅ ご予約をキャンセルいたしました。\n\n${reservationDate} ${reservationTime}`,
       quickReply: createQuickReply(),
     });
   } catch (error: any) {
       console.error('Error confirming cancel:', error);
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: 'キャンセル処理に失敗しました。',
+      text: '申し訳ございません、キャンセル処理に失敗しました。',
     }, false);
   }
 }
@@ -692,7 +692,7 @@ async function sendJournals(
     if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '日誌はまだありません。',
+        text: '📝 日誌はまだ作成されていません。',
         quickReply: createQuickReply(),
       });
       return;
@@ -701,7 +701,7 @@ async function sendJournals(
     // 最初のメッセージをreplyTokenで送信
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: `📝 日誌一覧（最新${result.rows.length}件）`,
+      text: `📝 日誌一覧です（最新${result.rows.length}件）`,
     });
 
     // 各日誌をFlexメッセージで送信（pushMessageを使用）
@@ -712,14 +712,14 @@ async function sendJournals(
 
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '詳細を見るには、各日誌の「詳細を見る」ボタンをタップしてください。',
+      text: '詳しい内容は「詳細を見る」ボタンからご確認いただけます。',
       quickReply: createQuickReply(),
     }, false);
   } catch (error: any) {
       console.error('Error sending journals:', error);
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '日誌情報の取得に失敗しました。',
+      text: '申し訳ございません、日誌情報の取得に失敗しました。',
     }, false);
   }
 }
@@ -748,6 +748,7 @@ async function sendJournalDetail(
       await client.replyMessage(replyToken, {
         type: 'text',
         text: '日誌が見つかりませんでした。',
+        quickReply: createQuickReply(),
       });
       return;
     }
@@ -782,7 +783,7 @@ async function sendJournalDetail(
       console.error('Error sending journal detail:', error);
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '日誌情報の取得に失敗しました。',
+      text: '申し訳ございません、日誌情報の取得に失敗しました。',
     }, false);
   }
 }
@@ -806,7 +807,7 @@ async function sendContracts(
     if (dogsResult.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '登録されている犬がいません。',
+        text: '🐕 まだワンちゃんの登録がありません。',
         quickReply: createQuickReply(),
       });
       return;
@@ -828,7 +829,7 @@ async function sendContracts(
     if (contractsResult.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '有効な契約情報はありません。',
+        text: '📋 現在、有効なご契約はございません。',
         quickReply: createQuickReply(),
       });
       return;
@@ -837,7 +838,7 @@ async function sendContracts(
     // 最初のメッセージをreplyTokenで送信
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: `📋 契約情報（${contractsResult.rows.length}件）`,
+      text: `📋 ご契約情報です（${contractsResult.rows.length}件）`,
     });
 
     // 各契約をFlexメッセージで送信（pushMessageを使用）
@@ -864,14 +865,14 @@ async function sendContracts(
 
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '予約を作成するには「予約する」と送信してください。',
+      text: 'ご予約は「予約する」とお送りいただければ作成できます 📅',
       quickReply: createQuickReply(),
     }, false);
   } catch (error: any) {
       console.error('Error sending contracts:', error);
     await client.pushMessage(lineUserId, {
       type: 'text',
-      text: '契約情報の取得に失敗しました。',
+      text: '申し訳ございません、契約情報の取得に失敗しました。',
     }, false);
   }
 }
