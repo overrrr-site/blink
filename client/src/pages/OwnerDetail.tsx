@@ -120,7 +120,7 @@ const OwnerDetail = () => {
             </button>
           </div>
           {owner.dogs && owner.dogs.length > 0 ? (
-            {owner.dogs.length === 1 ? (
+            owner.dogs.length === 1 ? (
               <div
                 onClick={() => navigate(`/dogs/${owner.dogs[0].id}`)}
                 className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
