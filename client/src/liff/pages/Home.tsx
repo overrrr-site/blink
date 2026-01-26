@@ -74,6 +74,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrInput, setQrInput] = useState('');
+  const [qrError, setQrError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -115,29 +118,40 @@ export default function Home() {
 
     setCheckingIn(true);
     try {
-      let qrCode: string;
-
       // まずQRコードスキャンを試みる
-      try {
-        qrCode = await scanQRCode();
-      } catch (scanError: any) {
-        console.log('[CheckIn] QR scan failed:', scanError.message);
-        
-        // スキャンに失敗した場合、手動入力にフォールバック
-        const errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
-        const input = prompt(`${errorMessage}\n\n店舗のQRコードを手動で入力してください:`);
-        if (!input) {
-          return;
-        }
-        qrCode = input.trim();
+      const qrCode = await scanQRCode();
+      await processCheckIn(qrCode);
+    } catch (scanError: any) {
+      console.log('[CheckIn] QR scan failed:', scanError.message);
+      setCheckingIn(false);
+      
+      // エラーメッセージを設定してモーダルを表示
+      let errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
+      
+      // カメラ権限エラーの場合、詳細な案内を追加
+      if (errorMessage.includes('カメラ') || errorMessage.includes('permission')) {
+        errorMessage = 'カメラへのアクセスが許可されていません。\n\n【LINEアプリの場合】\n端末の設定 → LINE → カメラをオンにしてください\n\n【ブラウザの場合】\nアドレスバー左のアイコンをタップし、カメラを許可してください';
       }
+      
+      setQrError(errorMessage);
+      setQrInput('');
+      setShowQrModal(true);
+    }
+  };
 
-      // チェックインAPIを呼び出し
+  const processCheckIn = async (qrCode: string) => {
+    if (!data?.nextReservation) return;
+    
+    setCheckingIn(true);
+    try {
       await liffClient.post('/check-in', {
         qrCode,
         reservationId: data.nextReservation.id,
       });
 
+      setShowQrModal(false);
+      setQrInput('');
+      setQrError(null);
       alert('チェックインが完了しました！');
       fetchData();
     } catch (error: any) {
@@ -146,6 +160,14 @@ export default function Home() {
     } finally {
       setCheckingIn(false);
     }
+  };
+
+  const handleManualCheckIn = () => {
+    if (!qrInput.trim()) {
+      alert('QRコードの内容を入力してください');
+      return;
+    }
+    processCheckIn(qrInput.trim());
   };
 
   if (loading) {
@@ -385,6 +407,101 @@ export default function Home() {
           </button>
         </div>
       </section>
+
+      {/* QRコード手動入力モーダル */}
+      {showQrModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4">
+          <div 
+            className="bg-card rounded-3xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* ヘッダー */}
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h2 className="text-base font-bold font-heading flex items-center gap-2">
+                <iconify-icon icon="solar:qr-code-bold" width="20" height="20" class="text-primary"></iconify-icon>
+                QRコード入力
+              </h2>
+              <button
+                onClick={() => {
+                  setShowQrModal(false);
+                  setQrError(null);
+                  setQrInput('');
+                }}
+                className="size-10 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+                aria-label="閉じる"
+              >
+                <iconify-icon icon="solar:close-circle-bold" width="24" height="24" class="text-muted-foreground"></iconify-icon>
+              </button>
+            </div>
+
+            {/* コンテンツ */}
+            <div className="p-5 space-y-4">
+              {/* エラーメッセージ */}
+              {qrError && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    <iconify-icon icon="solar:info-circle-bold" width="20" height="20" class="text-destructive shrink-0 mt-0.5"></iconify-icon>
+                    <p className="text-xs text-destructive whitespace-pre-line leading-relaxed">{qrError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* 説明 */}
+              <div className="bg-muted/50 rounded-2xl p-4">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  店舗に設置されているQRコードをスキャンできない場合は、スタッフにQRコードの内容をお伝えいただくか、以下に手動で入力してください。
+                </p>
+              </div>
+
+              {/* 入力フィールド */}
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2">QRコードの内容</label>
+                <input
+                  type="text"
+                  value={qrInput}
+                  onChange={(e) => setQrInput(e.target.value)}
+                  placeholder="スタッフから教えてもらった内容を入力"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  autoFocus
+                />
+              </div>
+
+              {/* カメラで再試行ボタン */}
+              <button
+                onClick={() => {
+                  setShowQrModal(false);
+                  handleCheckIn();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary text-primary text-sm font-bold hover:bg-primary/5 transition-colors"
+              >
+                <iconify-icon icon="solar:camera-bold" width="20" height="20"></iconify-icon>
+                カメラで再試行
+              </button>
+
+              {/* 送信ボタン */}
+              <button
+                onClick={handleManualCheckIn}
+                disabled={!qrInput.trim() || checkingIn}
+                className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-sm font-bold 
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           active:scale-95 transition-transform flex items-center justify-center gap-2"
+              >
+                {checkingIn ? (
+                  <>
+                    <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                    チェックイン中...
+                  </>
+                ) : (
+                  <>
+                    <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+                    この内容でチェックイン
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
