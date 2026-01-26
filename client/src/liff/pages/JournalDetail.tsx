@@ -121,11 +121,11 @@ export default function JournalDetail() {
             <p className="text-xs text-muted-foreground mb-2 font-medium">午前</p>
             <div className="space-y-1">
               <div className={`flex items-center gap-2 text-sm ${journal.morning_urination ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.morning_urination ? 'solar:check-circle-bold' : 'solar:minus-circle-linear'} width="16" height="16"></iconify-icon>
+                <iconify-icon icon={journal.morning_urination ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
                 オシッコ
               </div>
               <div className={`flex items-center gap-2 text-sm ${journal.morning_defecation ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.morning_defecation ? 'solar:check-circle-bold' : 'solar:minus-circle-linear'} width="16" height="16"></iconify-icon>
+                <iconify-icon icon={journal.morning_defecation ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
                 ウンチ
               </div>
             </div>
@@ -134,11 +134,11 @@ export default function JournalDetail() {
             <p className="text-xs text-muted-foreground mb-2 font-medium">午後</p>
             <div className="space-y-1">
               <div className={`flex items-center gap-2 text-sm ${journal.afternoon_urination ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.afternoon_urination ? 'solar:check-circle-bold' : 'solar:minus-circle-linear'} width="16" height="16"></iconify-icon>
+                <iconify-icon icon={journal.afternoon_urination ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
                 オシッコ
               </div>
               <div className={`flex items-center gap-2 text-sm ${journal.afternoon_defecation ? 'text-chart-2' : 'text-muted-foreground'}`}>
-                <iconify-icon icon={journal.afternoon_defecation ? 'solar:check-circle-bold' : 'solar:minus-circle-linear'} width="16" height="16"></iconify-icon>
+                <iconify-icon icon={journal.afternoon_defecation ? 'mdi:check-circle' : 'mdi:minus-circle-outline'} width="16" height="16"></iconify-icon>
                 ウンチ
               </div>
             </div>
