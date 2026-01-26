@@ -16,7 +16,6 @@ interface TrainingForm {
   category: string
   item_key: string
   item_label: string
-  display_order: string
   enabled: boolean
 }
 
@@ -29,7 +28,6 @@ function TrainingEdit(): JSX.Element {
     category: '基本トレーニング',
     item_key: '',
     item_label: '',
-    display_order: '0',
     enabled: true,
   })
 
@@ -49,7 +47,6 @@ function TrainingEdit(): JSX.Element {
         category: response.data.category || '基本トレーニング',
         item_key: response.data.item_key || '',
         item_label: response.data.item_label || '',
-        display_order: response.data.display_order?.toString() || '0',
         enabled: response.data.enabled !== false,
       })
     } catch (error) {
@@ -79,7 +76,6 @@ function TrainingEdit(): JSX.Element {
         category: form.category,
         item_key: form.item_key,
         item_label: form.item_label,
-        display_order: parseInt(form.display_order, 10) || 0,
         enabled: form.enabled,
       }
 
@@ -161,27 +157,19 @@ function TrainingEdit(): JSX.Element {
                 className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">表示順序</label>
-              <input
-                type="number"
-                name="display_order"
-                value={form.display_order}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer">
+            <div className="pt-2">
+              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-border hover:bg-muted/30 transition-colors">
                 <input
                   type="checkbox"
                   name="enabled"
                   checked={form.enabled}
                   onChange={handleChange}
-                  className="size-4 rounded border-border"
+                  className="size-5 rounded border-border accent-primary"
                 />
-                <span className="text-xs text-muted-foreground">有効</span>
+                <div>
+                  <span className="text-sm font-medium block">日誌で使用する</span>
+                  <span className="text-[10px] text-muted-foreground">オフにすると日誌作成時の項目一覧に表示されなくなります</span>
+                </div>
               </label>
             </div>
           </div>
