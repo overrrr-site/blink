@@ -7,6 +7,16 @@ import SaveButton from '../components/SaveButton'
 
 const CONTRACT_TYPES = ['月謝制', 'チケット制', '単発'] as const
 
+interface CourseMaster {
+  id: number
+  course_name: string
+  contract_type: string
+  sessions: number | null
+  price: number | null
+  valid_days: number | null
+  enabled: boolean
+}
+
 interface ContractForm {
   contract_type: string
   course_name: string
@@ -22,6 +32,9 @@ function ContractEdit(): JSX.Element {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [courseMasters, setCourseMasters] = useState<CourseMaster[]>([])
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+  const [useCustomCourse, setUseCustomCourse] = useState(false)
   const [form, setForm] = useState<ContractForm>({
     contract_type: '月謝制',
     course_name: '',
@@ -37,10 +50,49 @@ function ContractEdit(): JSX.Element {
   const isTicketType = form.contract_type === 'チケット制'
 
   useEffect(() => {
+    fetchCourseMasters()
     if (id) {
       fetchContract()
     }
   }, [id])
+
+  async function fetchCourseMasters(): Promise<void> {
+    try {
+      const response = await api.get('/course-masters')
+      const enabledCourses = response.data.filter((c: CourseMaster) => c.enabled)
+      setCourseMasters(enabledCourses)
+    } catch (error) {
+      console.error('Error fetching course masters:', error)
+    }
+  }
+
+  function handleCourseSelect(courseId: string): void {
+    setSelectedCourseId(courseId)
+    
+    if (courseId === 'custom') {
+      setUseCustomCourse(true)
+      return
+    }
+    
+    setUseCustomCourse(false)
+    const course = courseMasters.find(c => c.id.toString() === courseId)
+    if (course) {
+      // コースマスタの情報でフォームを自動入力
+      const validUntil = course.valid_days
+        ? new Date(Date.now() + course.valid_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        : ''
+      
+      setForm({
+        contract_type: course.contract_type,
+        course_name: course.course_name,
+        total_sessions: course.sessions?.toString() || '',
+        remaining_sessions: course.sessions?.toString() || '', // 新規は総回数と同じ
+        valid_until: validUntil,
+        monthly_sessions: course.contract_type === '月謝制' ? (course.sessions?.toString() || '') : '',
+        price: course.price?.toString() || '',
+      })
+    }
+  }
 
   async function fetchContract(): Promise<void> {
     try {
@@ -114,44 +166,97 @@ function ContractEdit(): JSX.Element {
       />
 
       <form onSubmit={handleSubmit} className="px-5 pt-4 space-y-4">
-        {/* 契約タイプ */}
-        <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-          <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
-            <iconify-icon icon="solar:tag-bold" className="text-chart-4 size-4"></iconify-icon>
-            契約タイプ
-          </h3>
-          <select
-            name="contract_type"
-            value={form.contract_type}
-            onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-          >
-            {CONTRACT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </section>
+        {/* コース選択（新規作成時のみ表示） */}
+        {!isEditing && (
+          <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+            <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
+              <iconify-icon icon="solar:clipboard-list-bold" className="text-primary size-4"></iconify-icon>
+              コース選択
+            </h3>
+            {courseMasters.length > 0 ? (
+              <>
+                <select
+                  value={selectedCourseId}
+                  onChange={(e) => handleCourseSelect(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="">コースを選択してください</option>
+                  {courseMasters.map((course) => (
+                    <option key={course.id} value={course.id.toString()}>
+                      {course.course_name}（{course.contract_type}）
+                      {course.price && ` - ¥${course.price.toLocaleString()}`}
+                    </option>
+                  ))}
+                  <option value="custom">カスタム入力...</option>
+                </select>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  設定画面で登録したコースから選択できます
+                </p>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-muted-foreground mb-2">登録されているコースがありません</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings/courses/new')}
+                  className="text-xs text-primary font-bold"
+                >
+                  コースを登録する
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* 契約タイプ（カスタム入力または編集時に表示） */}
+        {(useCustomCourse || isEditing || courseMasters.length === 0) && (
+          <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+            <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
+              <iconify-icon icon="solar:tag-bold" className="text-chart-4 size-4"></iconify-icon>
+              契約タイプ
+            </h3>
+            <select
+              name="contract_type"
+              value={form.contract_type}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              {CONTRACT_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </section>
+        )}
 
         {/* コース情報 */}
-        <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-          <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
-            <iconify-icon icon="solar:document-bold" className="text-primary size-4"></iconify-icon>
-            コース情報
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">コース名</label>
-              <input
-                type="text"
-                name="course_name"
-                value={form.course_name}
-                onChange={handleChange}
-                placeholder="例: 週2回コース"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
+        {(selectedCourseId || useCustomCourse || isEditing || courseMasters.length === 0) && (
+          <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+            <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
+              <iconify-icon icon="solar:document-bold" className="text-primary size-4"></iconify-icon>
+              コース情報
+              {selectedCourseId && selectedCourseId !== 'custom' && (
+                <span className="text-[10px] bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full">自動入力</span>
+              )}
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">コース名</label>
+                <input
+                  type="text"
+                  name="course_name"
+                  value={form.course_name}
+                  onChange={handleChange}
+                  placeholder="例: 週2回コース"
+                  readOnly={selectedCourseId !== '' && selectedCourseId !== 'custom' && !isEditing}
+                  className={`w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                    selectedCourseId && selectedCourseId !== 'custom' && !isEditing
+                      ? 'bg-muted/50 cursor-not-allowed'
+                      : 'bg-input'
+                  }`}
+                />
+              </div>
 
             {isMonthlyType && (
               <div>
@@ -225,6 +330,7 @@ function ContractEdit(): JSX.Element {
             </div>
           </div>
         </section>
+        )}
       </form>
 
       <SaveButton
