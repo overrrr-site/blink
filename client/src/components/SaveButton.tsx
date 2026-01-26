@@ -14,7 +14,7 @@ function SaveButton({
   disabled = false,
 }: SaveButtonProps): JSX.Element {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border px-5 py-4 pb-safe">
+    <div className="fixed bottom-16 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border px-5 py-4 z-40">
       <button
         onClick={onClick}
         disabled={saving || disabled}
