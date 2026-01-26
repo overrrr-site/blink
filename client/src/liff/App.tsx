@@ -15,6 +15,8 @@ const ReservationEdit = lazy(() => import('./pages/ReservationEdit'));
 const PreVisitInput = lazy(() => import('./pages/PreVisitInput'));
 const JournalList = lazy(() => import('./pages/JournalList'));
 const JournalDetail = lazy(() => import('./pages/JournalDetail'));
+const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
+const Terms = lazy(() => import('../pages/Terms'));
 
 // ページ遷移時のローディング表示
 function PageLoader() {
@@ -53,6 +55,8 @@ function App() {
           {/* ルート（/liff/）がログインページ - LIFFコールバック先 */}
           <Route path="/" element={<Login />} />
           <Route path="/link" element={<LinkAccount />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route
             path="/home"
             element={

@@ -368,6 +368,28 @@ export default function MyPage() {
           </div>
           <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
         </button>
+        <button 
+          onClick={() => navigate('/privacy')}
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border min-h-[56px]"
+          aria-label="プライバシーポリシー"
+        >
+          <div className="flex items-center gap-3">
+            <iconify-icon icon="solar:shield-check-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <span className="text-sm font-medium">プライバシーポリシー</span>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+        </button>
+        <button 
+          onClick={() => navigate('/terms')}
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border min-h-[56px]"
+          aria-label="利用規約"
+        >
+          <div className="flex items-center gap-3">
+            <iconify-icon icon="solar:document-text-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <span className="text-sm font-medium">利用規約</span>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+        </button>
         <button
           onClick={handleLogout}
           className="w-full flex items-center justify-between p-4 hover:bg-destructive/5 active:bg-destructive/10 transition-colors min-h-[56px]"

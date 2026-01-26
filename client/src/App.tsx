@@ -31,6 +31,8 @@ const Billing = lazy(() => import('./pages/Billing'))
 const Help = lazy(() => import('./pages/Help'))
 const InspectionRecord = lazy(() => import('./pages/InspectionRecord'))
 const InspectionRecordList = lazy(() => import('./pages/InspectionRecordList'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const Terms = lazy(() => import('./pages/Terms'))
 
 // ページ遷移時のローディング表示
 function PageLoader() {
@@ -62,6 +64,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route
               path="/"
               element={

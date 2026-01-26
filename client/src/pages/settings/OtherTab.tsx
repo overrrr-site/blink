@@ -200,7 +200,7 @@ function OtherTab() {
           <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
         </button>
         <button
-          onClick={() => alert('利用規約は準備中です。')}
+          onClick={() => navigate('/terms')}
           className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
         >
           <div className="flex items-center gap-3">
@@ -210,7 +210,7 @@ function OtherTab() {
           <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
         </button>
         <button
-          onClick={() => alert('プライバシーポリシーは準備中です。')}
+          onClick={() => navigate('/privacy')}
           className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center gap-3">
