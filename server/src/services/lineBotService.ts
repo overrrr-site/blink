@@ -197,7 +197,9 @@ async function handleTextMessage(
   text: string,
   replyToken: string
 ): Promise<void> {
+  console.log('handleTextMessage: 受信テキスト=', text);
   const normalizedText = text.toLowerCase().replace(/\s+/g, '');
+  console.log('handleTextMessage: 正規化テキスト=', normalizedText);
 
   // コマンド判定（揺らぎ対応）
   // 予約作成キーワード
@@ -215,26 +217,34 @@ async function handleTextMessage(
 
   // 予約作成（先にチェック - より具体的なキーワード）
   if (reservationCreateKeywords.some(keyword => normalizedText.includes(keyword))) {
+    console.log('handleTextMessage: マッチ=予約作成');
     await sendReservationLink(client, lineUserId, storeId, replyToken);
   // 予約確認
   } else if (reservationViewKeywords.some(keyword => normalizedText.includes(keyword))) {
+    console.log('handleTextMessage: マッチ=予約確認');
     await sendReservations(client, lineUserId, ownerId, replyToken);
   // 「予約」または「よやく」単体 → メニュー表示
   } else if (normalizedText === '予約' || normalizedText === 'よやく' || normalizedText.match(/^予約[！!]?$/) || normalizedText.match(/^よやく[！!]?$/)) {
+    console.log('handleTextMessage: マッチ=予約メニュー');
     await sendReservationMenu(client, lineUserId, storeId, replyToken);
   // キャンセル
   } else if (cancelKeywords.some(keyword => normalizedText.includes(keyword))) {
+    console.log('handleTextMessage: マッチ=キャンセル');
     await sendCancellableReservations(client, lineUserId, ownerId, replyToken);
   // 日誌
   } else if (journalKeywords.some(keyword => normalizedText.includes(keyword))) {
+    console.log('handleTextMessage: マッチ=日誌');
     await sendJournals(client, lineUserId, ownerId, replyToken);
   // 契約
   } else if (contractKeywords.some(keyword => normalizedText.includes(keyword))) {
+    console.log('handleTextMessage: マッチ=契約');
     await sendContracts(client, lineUserId, ownerId, replyToken);
   // ヘルプ
   } else if (helpKeywords.some(keyword => normalizedText.includes(keyword))) {
+    console.log('handleTextMessage: マッチ=ヘルプ');
     await sendHelp(client, lineUserId, replyToken);
   } else {
+    console.log('handleTextMessage: マッチなし');
     // 不明なメッセージにはヘルプを返す
     await client.replyMessage(replyToken, {
       type: 'text',
