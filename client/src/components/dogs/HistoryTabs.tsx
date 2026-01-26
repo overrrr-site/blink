@@ -67,7 +67,8 @@ export default function HistoryTabs({
                   reservation.reservation_date?.split('T')[0] || reservation.reservation_date
                 const statusColors: Record<string, string> = {
                   予定: 'bg-chart-4/10 text-chart-4',
-                  チェックイン済: 'bg-chart-2/10 text-chart-2',
+                  登園済: 'bg-chart-2/10 text-chart-2',
+                  退園済: 'bg-chart-3/10 text-chart-3',
                   キャンセル: 'bg-muted text-muted-foreground',
                 }
                 return (

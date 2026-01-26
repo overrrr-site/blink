@@ -160,7 +160,7 @@ router.get('/me', async (req, res) => {
             `SELECT COUNT(*) as used_count
              FROM reservations r
              WHERE r.dog_id = $1 
-               AND r.status IN ('チェックイン済', '予定')
+               AND r.status IN ('登園済', '退園済', '予定')
                AND r.reservation_date >= $2
                AND r.reservation_date <= COALESCE($3, CURRENT_DATE + INTERVAL '1 year')`,
             [
@@ -937,17 +937,17 @@ router.post('/check-in', async (req, res) => {
       });
     }
 
-    // 既にチェックイン済みか確認
-    if (reservation.status === 'チェックイン済') {
+    // 既に登園済みか確認
+    if (reservation.status === '登園済' || reservation.status === '退園済') {
       return res.status(400).json({
-        error: '既にチェックイン済みです',
+        error: '既に登園済みです',
       });
     }
 
-    // 予約ステータスを「チェックイン済」に更新
+    // 予約ステータスを「登園済」に更新
     const result = await pool.query(
       `UPDATE reservations 
-       SET status = 'チェックイン済',
+       SET status = '登園済',
            checked_in_at = CURRENT_TIMESTAMP,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
@@ -980,12 +980,12 @@ router.post('/check-in', async (req, res) => {
     }
 
     res.json({
-      message: 'チェックインが完了しました',
+      message: '登園が完了しました',
       reservation: result.rows[0],
     });
   } catch (error: any) {
     console.error('Check-in error:', error);
-    sendServerError(res, 'チェックインに失敗しました', error);
+    sendServerError(res, '登園処理に失敗しました', error);
   }
 });
 
@@ -1044,10 +1044,10 @@ router.post('/check-out', async (req, res) => {
       });
     }
 
-    // チェックイン済みか確認
-    if (reservation.status !== 'チェックイン済') {
+    // 登園済みか確認
+    if (reservation.status !== '登園済') {
       return res.status(400).json({
-        error: 'チェックインされていません',
+        error: 'まだ登園していません',
       });
     }
 
@@ -1058,10 +1058,11 @@ router.post('/check-out', async (req, res) => {
       });
     }
 
-    // チェックアウト時刻を更新
+    // 退園時刻とステータスを更新
     const result = await pool.query(
       `UPDATE reservations 
-       SET checked_out_at = CURRENT_TIMESTAMP,
+       SET status = '退園済',
+           checked_out_at = CURRENT_TIMESTAMP,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING *`,
@@ -1069,12 +1070,12 @@ router.post('/check-out', async (req, res) => {
     );
 
     res.json({
-      message: 'チェックアウトが完了しました',
+      message: '退園が完了しました',
       reservation: result.rows[0],
     });
   } catch (error: any) {
     console.error('Check-out error:', error);
-    sendServerError(res, 'チェックアウトに失敗しました', error);
+    sendServerError(res, '退園処理に失敗しました', error);
   }
 });
 

@@ -49,8 +49,8 @@ export function createQuickReply() {
 export function createReservationFlexMessage(reservation: any) {
   const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
   const reservationTime = reservation.reservation_time.substring(0, 5);
-  const statusEmoji = reservation.status === 'チェックイン済' ? '✅' : '📅';
-  const statusColor = reservation.status === 'チェックイン済' ? '#10B981' : '#3B82F6';
+  const statusEmoji = reservation.status === '登園済' ? '✅' : reservation.status === '退園済' ? '🏠' : '📅';
+  const statusColor = reservation.status === '登園済' ? '#10B981' : reservation.status === '退園済' ? '#6B7280' : '#3B82F6';
 
   return {
     type: 'flex',

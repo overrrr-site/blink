@@ -413,7 +413,7 @@ async function sendCancellableReservations(
        JOIN dogs d ON r.dog_id = d.id
        WHERE d.owner_id = $1
          AND r.reservation_date >= CURRENT_DATE
-         AND r.status IN ('予定', 'チェックイン済')
+         AND r.status IN ('予定', '登園済')
        ORDER BY r.reservation_date ASC, r.reservation_time ASC
        LIMIT 5`,
       [ownerId]
@@ -771,7 +771,7 @@ async function sendContracts(
           `SELECT COUNT(*) as used_count
            FROM reservations r
            WHERE r.dog_id = $1 
-             AND r.status IN ('チェックイン済', '予定')
+             AND r.status IN ('登園済', '退園済', '予定')
              AND r.reservation_date >= $2
              AND r.reservation_date <= COALESCE($3, CURRENT_DATE + INTERVAL '1 year')`,
           [contract.dog_id, contract.created_at, contract.valid_until]

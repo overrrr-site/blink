@@ -115,7 +115,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
                 FROM reservations r2
                 WHERE r2.dog_id = r.dog_id
                   AND r2.reservation_date <= r.reservation_date
-                  AND r2.status IN ('チェックイン済', '予定')
+                  AND r2.status IN ('登園済', '退園済', '予定')
               ) as visit_count,
               (
                 SELECT r3.reservation_date
@@ -205,7 +205,8 @@ router.put('/:id', async (req: AuthRequest, res) => {
         reservation_time = COALESCE($2, reservation_time),
         status = COALESCE($3, status),
         memo = COALESCE($4, memo),
-        checked_in_at = CASE WHEN $3 = 'チェックイン済' THEN COALESCE(checked_in_at, CURRENT_TIMESTAMP) ELSE checked_in_at END,
+        checked_in_at = CASE WHEN $3 = '登園済' THEN COALESCE(checked_in_at, CURRENT_TIMESTAMP) ELSE checked_in_at END,
+        checked_out_at = CASE WHEN $3 = '退園済' THEN COALESCE(checked_out_at, CURRENT_TIMESTAMP) ELSE checked_out_at END,
         cancelled_at = CASE WHEN $3 = 'キャンセル' THEN COALESCE(cancelled_at, CURRENT_TIMESTAMP) ELSE cancelled_at END,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $5 AND store_id = $6
@@ -220,15 +221,15 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     const reservation = result.rows[0];
 
-    // ステータスが「チェックイン済」に変更された場合、契約残数を減算
-    if (status === 'チェックイン済') {
+    // ステータスが「登園済」に変更された場合、契約残数を減算
+    if (status === '登園済') {
       const previousStatus = await pool.query(
         `SELECT status FROM reservations WHERE id = $1`,
         [id]
       );
       
-      // 既にチェックイン済みでない場合のみ減算（重複減算を防ぐ）
-      if (previousStatus.rows[0]?.status !== 'チェックイン済') {
+      // 既に登園済みでない場合のみ減算（重複減算を防ぐ）
+      if (previousStatus.rows[0]?.status !== '登園済') {
         const contractResult = await pool.query(
           `SELECT id, contract_type, remaining_sessions
            FROM contracts

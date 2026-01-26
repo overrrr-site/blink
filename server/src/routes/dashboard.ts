@@ -50,7 +50,7 @@ router.get('/', async (req: AuthRequest, res) => {
        LEFT JOIN journals j ON r.id = j.reservation_id
        WHERE r.store_id = $1 
          AND r.reservation_date <= $2
-         AND r.status = 'チェックイン済'
+         AND r.status IN ('登園済', '退園済')
          AND (j.id IS NULL OR j.comment IS NULL OR j.comment = '')
        ORDER BY r.reservation_date DESC
        LIMIT 10`,

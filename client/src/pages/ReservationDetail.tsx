@@ -123,14 +123,35 @@ const ReservationDetail = () => {
             </div>
           </div>
 
-          {reservation.status !== 'チェックイン済' && (
-            <button
-              onClick={() => updateStatus('チェックイン済')}
-              className="mt-4 w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
-            >
-              チェックイン
-            </button>
-          )}
+          {/* ステータスに応じたアクションボタン */}
+          <div className="mt-4 space-y-2">
+            {reservation.status === '予定' && (
+              <button
+                onClick={() => updateStatus('登園済')}
+                className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <iconify-icon icon="solar:login-3-bold" className="size-5"></iconify-icon>
+                登園
+              </button>
+            )}
+            {reservation.status === '登園済' && (
+              <button
+                onClick={() => updateStatus('退園済')}
+                className="w-full bg-chart-2 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-2/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <iconify-icon icon="solar:logout-3-bold" className="size-5"></iconify-icon>
+                退園
+              </button>
+            )}
+            {(reservation.status === '登園済' || reservation.status === '退園済') && (
+              <button
+                onClick={() => updateStatus('予定')}
+                className="w-full bg-muted text-foreground py-2 rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors"
+              >
+                ステータスを戻す
+              </button>
+            )}
+          </div>
         </div>
 
         {reservation.morning_urination !== undefined && (

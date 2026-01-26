@@ -13,7 +13,7 @@ interface Reservation {
   owner_name: string
   reservation_date: string
   reservation_time: string
-  status: '予定' | 'チェックイン済' | 'キャンセル'
+  status: '予定' | '登園済' | '退園済' | 'キャンセル'
   checked_in_at?: string
   // 連絡帳（飼い主からの入力）
   pvi_morning_urination?: boolean
@@ -75,12 +75,12 @@ const Dashboard = () => {
     setCheckingIn(reservationId)
     try {
       await api.put(`/reservations/${reservationId}`, {
-        status: 'チェックイン済',
+        status: '登園済',
       })
       await fetchDashboard()
     } catch (error) {
       console.error('Error checking in:', error)
-      alert('チェックインに失敗しました')
+      alert('登園処理に失敗しました')
     } finally {
       setCheckingIn(null)
     }
@@ -88,14 +88,10 @@ const Dashboard = () => {
 
   // ステータスの内部値（フィルタリング用）
   const getDisplayStatus = (reservation: Reservation): '来園待ち' | '在園中' | '帰宅済' => {
-    if (reservation.status === 'チェックイン済') {
-      // 簡易的に、チェックインから8時間経過していれば帰宅済とする
-      if (reservation.checked_in_at) {
-        const checkedInTime = new Date(reservation.checked_in_at)
-        const now = new Date()
-        const hoursDiff = (now.getTime() - checkedInTime.getTime()) / (1000 * 60 * 60)
-        if (hoursDiff > 8) return '帰宅済'
-      }
+    if (reservation.status === '退園済') {
+      return '帰宅済'
+    }
+    if (reservation.status === '登園済') {
       return '在園中'
     }
     return '来園待ち'

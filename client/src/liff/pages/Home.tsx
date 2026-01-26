@@ -213,15 +213,15 @@ export default function Home() {
       return;
     }
 
-    // チェックイン済みか確認
-    if (data.nextReservation.status !== 'チェックイン済') {
-      alert('チェックインされていません');
+    // 登園済みか確認
+    if (data.nextReservation.status !== '登園済') {
+      alert('まだ登園していません');
       return;
     }
 
-    // 既にチェックアウト済みか確認
-    if (data.nextReservation.checked_out_at) {
-      alert('既にチェックアウト済みです');
+    // 既に退園済みか確認
+    if (data.nextReservation.checked_out_at || data.nextReservation.status === '退園済') {
+      alert('既に退園済みです');
       return;
     }
 
@@ -391,8 +391,8 @@ export default function Home() {
                   <iconify-icon icon="mdi:check-circle" class="size-5"></iconify-icon>
                   本日の登園完了
                 </div>
-              ) : nextReservation.status === 'チェックイン済' ? (
-                /* チェックイン済み → 降園ボタン表示 */
+              ) : nextReservation.status === '登園済' ? (
+                /* 登園済み → 退園ボタン表示 */
                 <button
                   onClick={handleCheckOut}
                   disabled={checkingOut}
@@ -404,17 +404,24 @@ export default function Home() {
                   {checkingOut ? (
                     <>
                       <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
-                      チェックアウト中...
+                      退園処理中...
                     </>
                   ) : (
                     <>
                       <iconify-icon icon="solar:qr-code-bold" class="size-5"></iconify-icon>
-                      降園する（QRコードスキャン）
+                      退園する（QRコードスキャン）
                     </>
                   )}
                 </button>
+              ) : nextReservation.status === '退園済' ? (
+                /* 退園済み → 完了表示 */
+                <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
+                               min-h-[56px] flex items-center justify-center gap-2">
+                  <iconify-icon icon="mdi:check-circle" class="size-5"></iconify-icon>
+                  本日の登園完了
+                </div>
               ) : (
-                /* 未チェックイン → 登園ボタン表示 */
+                /* 未登園 → 登園ボタン表示 */
                 <button
                   onClick={handleCheckIn}
                   disabled={checkingIn}
