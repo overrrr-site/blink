@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { scanQRCode, isInLine } from '../utils/liff';
 
 interface OwnerData {
   id: number;
@@ -74,6 +75,7 @@ export default function Home() {
   const [data, setData] = useState<OwnerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -94,6 +96,64 @@ export default function Home() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData();
+  };
+
+  const handleCheckIn = async () => {
+    if (!data?.nextReservation) {
+      alert('予約が見つかりません');
+      return;
+    }
+
+    // 予約日が過去でないことを確認
+    const reservationDate = new Date(data.nextReservation.reservation_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    reservationDate.setHours(0, 0, 0, 0);
+    
+    if (reservationDate < today) {
+      alert('この予約は過去の予約です');
+      return;
+    }
+
+    setCheckingIn(true);
+    try {
+      let qrCode: string;
+
+      if (isInLine()) {
+        // LINEアプリ内: QRコードスキャン
+        try {
+          qrCode = await scanQRCode();
+        } catch (error: any) {
+          if (error.message?.includes('QRコードスキャンはLINEアプリ内')) {
+            alert('QRコードスキャンはLINEアプリ内でのみ利用可能です');
+          } else {
+            alert('QRコードのスキャンに失敗しました: ' + (error.message || '不明なエラー'));
+          }
+          return;
+        }
+      } else {
+        // 外部ブラウザ: 手動入力
+        const input = prompt('店舗から提供されたQRコードを入力してください:');
+        if (!input) {
+          return;
+        }
+        qrCode = input.trim();
+      }
+
+      // チェックインAPIを呼び出し
+      await liffClient.post('/check-in', {
+        qrCode,
+        reservationId: data.nextReservation.id,
+      });
+
+      alert('チェックインが完了しました！');
+      fetchData();
+    } catch (error: any) {
+      console.error('Check-in error:', error);
+      alert(error.response?.data?.error || 'チェックインに失敗しました');
+    } finally {
+      setCheckingIn(false);
+    }
   };
 
   if (loading) {
@@ -141,54 +201,80 @@ export default function Home() {
 
       {/* 次回登園情報カード */}
       {nextReservation ? (
-        <section 
-          className="bg-gradient-to-r from-primary/10 to-accent/30 rounded-3xl p-5 border border-primary/20 
-                     active:scale-[0.99] transition-transform cursor-pointer"
-          onClick={() => navigate('/home/reservations')}
-          role="button"
-          aria-label="次回登園予定を確認"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold font-heading flex items-center gap-2">
-              <iconify-icon icon="solar:calendar-check-bold" width="20" height="20" class="text-primary"></iconify-icon>
-              次回登園予定
-            </h2>
-            {daysUntil !== null && daysUntil >= 0 && (
-              <span className="text-[10px] bg-primary text-primary-foreground px-2.5 py-1 rounded-full font-bold animate-pulse">
-                {daysUntil === 0 ? '本日' : daysUntil === 1 ? '明日' : `あと${daysUntil}日`}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-2">
-              {data.dogs.length > 0 ? (
-                data.dogs.slice(0, 2).map((dog) => (
-                  <img
-                    key={dog.id}
-                    src={dog.photo_url || '/placeholder-dog.png'}
-                    alt={dog.name}
-                    className="size-12 rounded-full border-3 border-white object-cover shadow-md"
-                  />
-                ))
-              ) : (
-                <div className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center">
-                  <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
-                </div>
+        <div className="space-y-3">
+          <section 
+            className="bg-gradient-to-r from-primary/10 to-accent/30 rounded-3xl p-5 border border-primary/20 
+                       active:scale-[0.99] transition-transform cursor-pointer"
+            onClick={() => navigate('/home/reservations')}
+            role="button"
+            aria-label="次回登園予定を確認"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold font-heading flex items-center gap-2">
+                <iconify-icon icon="solar:calendar-check-bold" width="20" height="20" class="text-primary"></iconify-icon>
+                次回登園予定
+              </h2>
+              {daysUntil !== null && daysUntil >= 0 && (
+                <span className="text-[10px] bg-primary text-primary-foreground px-2.5 py-1 rounded-full font-bold animate-pulse">
+                  {daysUntil === 0 ? '本日' : daysUntil === 1 ? '明日' : `あと${daysUntil}日`}
+                </span>
               )}
             </div>
-            <div className="flex-1">
-              <p className="text-lg font-bold text-foreground">
-                {format(new Date(nextReservation.reservation_date), 'M月d日 (E)', { locale: ja })}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {nextReservation.dog_name} {nextReservation.reservation_time?.slice(0, 5)}
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="flex -space-x-2">
+                {data.dogs.length > 0 ? (
+                  data.dogs.slice(0, 2).map((dog) => (
+                    <img
+                      key={dog.id}
+                      src={dog.photo_url || '/placeholder-dog.png'}
+                      alt={dog.name}
+                      className="size-12 rounded-full border-3 border-white object-cover shadow-md"
+                    />
+                  ))
+                ) : (
+                  <div className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center">
+                    <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-lg font-bold text-foreground">
+                  {format(new Date(nextReservation.reservation_date), 'M月d日 (E)', { locale: ja })}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {nextReservation.dog_name} {nextReservation.reservation_time?.slice(0, 5)}
+                </p>
+              </div>
+              <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <iconify-icon icon="solar:arrow-right-linear" width="20" height="20"></iconify-icon>
+              </div>
             </div>
-            <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <iconify-icon icon="solar:arrow-right-linear" width="20" height="20"></iconify-icon>
-            </div>
-          </div>
-        </section>
+          </section>
+
+          {/* 登園チェックインボタン（今日の予約の場合のみ表示） */}
+          {isToday(new Date(nextReservation.reservation_date)) && (
+            <button
+              onClick={handleCheckIn}
+              disabled={checkingIn}
+              className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         active:scale-95 transition-transform min-h-[56px] shadow-lg
+                         flex items-center justify-center gap-2"
+            >
+              {checkingIn ? (
+                <>
+                  <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                  チェックイン中...
+                </>
+              ) : (
+                <>
+                  <iconify-icon icon="solar:qr-code-bold" class="size-5"></iconify-icon>
+                  登園する（QRコードスキャン）
+                </>
+              )}
+            </button>
+          )}
+        </div>
       ) : (
         <section className="bg-muted/30 rounded-3xl p-5 border border-border text-center">
           <iconify-icon icon="solar:calendar-add-bold" width="48" height="48" class="text-muted-foreground mx-auto mb-2"></iconify-icon>

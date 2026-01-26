@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { QRCodeSVG } from '@rc-component/qrcode'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/client'
 
@@ -64,6 +65,9 @@ const Settings = () => {
     channelAccessToken: '',
   })
   const [savingLine, setSavingLine] = useState(false)
+  const [qrCode, setQrCode] = useState<string | null>(null)
+  const [qrLoading, setQrLoading] = useState(false)
+  const [showQrModal, setShowQrModal] = useState(false)
 
   useEffect(() => {
     fetchGoogleCalendarStatus()
@@ -74,6 +78,7 @@ const Settings = () => {
     fetchStoreInfo()
     fetchNotificationSettings()
     fetchLineStatus()
+    fetchQrCode()
     
     // URLパラメータで連携成功/失敗を確認
     const status = searchParams.get('google_calendar')
@@ -381,6 +386,102 @@ const Settings = () => {
     }
   }
 
+  const fetchQrCode = async () => {
+    setQrLoading(true)
+    try {
+      const response = await api.get('/liff/qr-code')
+      setQrCode(response.data.qrCode)
+    } catch (error) {
+      console.error('Error fetching QR code:', error)
+    } finally {
+      setQrLoading(false)
+    }
+  }
+
+  const handlePrintQrCode = () => {
+    if (!qrCode) return
+    
+    // QRコードをSVGとして取得（モーダル内または通常表示）
+    const qrSvg = document.querySelector('#qr-display-modal svg') || document.querySelector('#qr-display svg')
+    if (!qrSvg) {
+      alert('QRコードが見つかりません')
+      return
+    }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      alert('ポップアップがブロックされています。ブラウザの設定を確認してください。')
+      return
+    }
+
+    // SVGをクローンして印刷ウィンドウに表示
+    const svgClone = qrSvg.cloneNode(true) as SVGElement
+    const svgString = new XMLSerializer().serializeToString(svgClone)
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>登園用QRコード</title>
+          <style>
+            @media print {
+              @page {
+                margin: 20mm;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+              }
+            }
+            body {
+              margin: 0;
+              padding: 40px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              font-family: sans-serif;
+              min-height: 100vh;
+            }
+            h1 {
+              margin-bottom: 20px;
+              font-size: 24px;
+            }
+            .qr-container {
+              background: white;
+              padding: 20px;
+              border: 2px solid #000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .instructions {
+              margin-top: 20px;
+              text-align: center;
+              font-size: 14px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>登園用QRコード</h1>
+          <div class="qr-container">
+            ${svgString}
+          </div>
+          <p class="instructions">飼い主にこのQRコードをスキャンしてもらってください</p>
+          <script>
+            window.onload = function() {
+              setTimeout(() => {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
   const handleLogout = () => {
     if (!confirm('ログアウトしますか？')) {
       return
@@ -563,6 +664,61 @@ const Settings = () => {
                   )}
             </div>
               </div>
+        </section>
+
+        {/* 登園用QRコード */}
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:qr-code-bold" width="16" height="16" class="text-primary"></iconify-icon>
+              登園用QRコード
+            </h2>
+          </div>
+          <div className="p-4">
+            {qrLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <iconify-icon icon="solar:spinner-bold" width="24" height="24" class="text-primary animate-spin"></iconify-icon>
+              </div>
+            ) : qrCode ? (
+              <div className="space-y-4">
+                <div className="bg-muted/30 rounded-xl p-4 flex flex-col items-center">
+                  <div id="qr-display" className="bg-white p-4 rounded-lg mb-3">
+                    <QRCodeSVG value={qrCode} size={200} />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    このQRコードを印刷して店舗に設置してください
+                  </p>
+                </div>
+                <button
+                  onClick={handlePrintQrCode}
+                  className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                >
+                  <iconify-icon icon="solar:printer-bold" width="16" height="16"></iconify-icon>
+                  QRコードを印刷
+                </button>
+                <button
+                  onClick={() => setShowQrModal(true)}
+                  className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
+                >
+                  <iconify-icon icon="solar:eye-bold" width="16" height="16"></iconify-icon>
+                  大きく表示
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-2">
+                  QRコードの取得に失敗しました
+                </p>
+                <button
+                  onClick={fetchQrCode}
+                  disabled={qrLoading}
+                  className="text-xs text-primary hover:underline disabled:opacity-50"
+                >
+                  再試行
+                </button>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* スタッフ管理 */}
@@ -1443,6 +1599,39 @@ const Settings = () => {
                   {savingLine ? '保存中...' : '保存'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QRコード拡大表示モーダル */}
+      {showQrModal && qrCode && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl w-full max-w-md">
+            <div className="border-b border-border px-5 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold">登園用QRコード</h2>
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                aria-label="閉じる"
+              >
+                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div id="qr-display-modal" className="bg-white p-6 rounded-lg flex items-center justify-center">
+                <QRCodeSVG value={qrCode} size={300} />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                このQRコードを印刷して店舗に設置してください
+              </p>
+              <button
+                onClick={handlePrintQrCode}
+                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+              >
+                <iconify-icon icon="solar:printer-bold" width="16" height="16"></iconify-icon>
+                印刷
+              </button>
             </div>
           </div>
         </div>

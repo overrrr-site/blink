@@ -253,13 +253,109 @@ router.get('/reservations/:id', async (req, res) => {
   }
 });
 
+// 空き状況取得
+router.get('/availability', async (req, res) => {
+  try {
+    const decoded = requireOwnerToken(req, res);
+    if (!decoded) return;
+
+    const { month } = req.query; // 形式: "2026-01"
+    
+    if (!month) {
+      sendBadRequest(res, '月の指定が必要です（例: 2026-01）');
+      return;
+    }
+
+    // 店舗設定を取得（定員）
+    const settingsResult = await pool.query(
+      `SELECT max_capacity FROM store_settings WHERE store_id = $1`,
+      [decoded.storeId]
+    );
+    const maxCapacity = settingsResult.rows[0]?.max_capacity || 15;
+
+    // 店舗情報を取得（営業時間・定休日）
+    const storeResult = await pool.query(
+      `SELECT business_hours, closed_days FROM stores WHERE id = $1`,
+      [decoded.storeId]
+    );
+    const businessHours = storeResult.rows[0]?.business_hours || {};
+    const closedDays = storeResult.rows[0]?.closed_days || [];
+
+    // 指定月の各日の予約数を取得
+    const startDate = `${month}-01`;
+    const endDate = new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + 1))
+      .toISOString().split('T')[0];
+
+    const reservationsResult = await pool.query(
+      `SELECT 
+        reservation_date,
+        COUNT(*) as reservation_count
+       FROM reservations
+       WHERE store_id = $1
+         AND reservation_date >= $2
+         AND reservation_date < $3
+         AND status != 'キャンセル'
+         AND deleted_at IS NULL
+       GROUP BY reservation_date
+       ORDER BY reservation_date`,
+      [decoded.storeId, startDate, endDate]
+    );
+
+    // 日付ごとの予約数をマップに変換
+    const reservationMap = new Map<string, number>();
+    reservationsResult.rows.forEach((row: any) => {
+      reservationMap.set(row.reservation_date, parseInt(row.reservation_count));
+    });
+
+    // 月の全日付を生成
+    const availability: Array<{
+      date: string;
+      available: number;
+      capacity: number;
+      isClosed: boolean;
+    }> = [];
+
+    const currentDate = new Date(startDate);
+    const end = new Date(endDate);
+    
+    while (currentDate < end) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const dayOfWeek = currentDate.getDay(); // 0=日曜, 1=月曜, ...
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayNames[dayOfWeek];
+      
+      const reservationCount = reservationMap.get(dateStr) || 0;
+      const isClosed = closedDays.includes(dayName);
+      
+      availability.push({
+        date: dateStr,
+        available: Math.max(0, maxCapacity - reservationCount),
+        capacity: maxCapacity,
+        isClosed,
+      });
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    res.json({
+      month,
+      availability,
+      businessHours,
+      closedDays,
+    });
+  } catch (error: any) {
+    console.error('Availability error:', error);
+    sendServerError(res, '空き状況の取得に失敗しました', error);
+  }
+});
+
 // 飼い主の予約作成
 router.post('/reservations', async (req, res) => {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    const { dog_id, reservation_date, reservation_time, pickup_time, notes } = req.body;
+    const { dog_id, reservation_date, reservation_time, notes } = req.body;
 
     if (!dog_id || !reservation_date) {
       sendBadRequest(res, '犬IDと予約日は必須です');
@@ -277,17 +373,62 @@ router.post('/reservations', async (req, res) => {
       return;
     }
 
+    // 定員チェック
+    const settingsResult = await pool.query(
+      `SELECT max_capacity FROM store_settings WHERE store_id = $1`,
+      [decoded.storeId]
+    );
+    const maxCapacity = settingsResult.rows[0]?.max_capacity || 15;
+
+    const existingReservationsResult = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM reservations
+       WHERE store_id = $1
+         AND reservation_date = $2
+         AND status != 'キャンセル'
+         AND deleted_at IS NULL`,
+      [decoded.storeId, reservation_date]
+    );
+
+    const existingCount = parseInt(existingReservationsResult.rows[0].count);
+    if (existingCount >= maxCapacity) {
+      return res.status(400).json({
+        error: 'この日は定員に達しています',
+      });
+    }
+
+    // 契約残数チェック（チケット制の場合）
+    const contractResult = await pool.query(
+      `SELECT contract_type, remaining_sessions
+       FROM contracts
+       WHERE dog_id = $1
+         AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [dog_id]
+    );
+
+    if (contractResult.rows.length > 0) {
+      const contract = contractResult.rows[0];
+      if (contract.contract_type === 'チケット制') {
+        if (!contract.remaining_sessions || contract.remaining_sessions <= 0) {
+          return res.status(400).json({
+            error: 'チケットの残数がありません。追加購入が必要です。',
+          });
+        }
+      }
+    }
+
     const result = await pool.query(
       `INSERT INTO reservations (
-        store_id, dog_id, reservation_date, reservation_time, pickup_time, status, notes
-      ) VALUES ($1, $2, $3, $4, $5, '予約済み', $6)
+        store_id, dog_id, reservation_date, reservation_time, memo
+      ) VALUES ($1, $2, $3, $4, $5)
       RETURNING *`,
       [
         decoded.storeId,
         dog_id,
         reservation_date,
         reservation_time || '09:00',
-        pickup_time || '17:00',
         notes || null,
       ]
     );
@@ -305,7 +446,7 @@ router.put('/reservations/:id', async (req, res) => {
     if (!decoded) return;
 
     const { id } = req.params;
-    const { reservation_date, reservation_time, pickup_time, notes } = req.body;
+    const { reservation_date, reservation_time, notes } = req.body;
 
     // 予約がこの飼い主のものか確認
     const reservationCheck = await pool.query(
@@ -324,12 +465,11 @@ router.put('/reservations/:id', async (req, res) => {
       `UPDATE reservations SET
         reservation_date = COALESCE($1, reservation_date),
         reservation_time = COALESCE($2, reservation_time),
-        pickup_time = COALESCE($3, pickup_time),
-        notes = COALESCE($4, notes),
+        memo = COALESCE($3, memo),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5
+      WHERE id = $4
       RETURNING *`,
-      [reservation_date, reservation_time, pickup_time, notes, id]
+      [reservation_date, reservation_time, notes, id]
     );
 
     res.json(result.rows[0]);
@@ -658,6 +798,165 @@ router.post('/link/verify', async (req, res) => {
   } catch (error: any) {
     console.error('Link verify error:', error);
     sendServerError(res, '紐付け確認の処理に失敗しました', error);
+  }
+});
+
+// 店舗側: 店舗固定のQRコード生成（店舗認証が必要）
+router.get('/qr-code', async (req, res) => {
+  try {
+    // 店舗認証が必要（通常のstaff認証を使用）
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      sendUnauthorized(res, '認証トークンが提供されていません');
+      return;
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      if (decoded.type !== 'staff') {
+        sendForbidden(res, '店舗スタッフ専用のエンドポイントです');
+        return;
+      }
+    } catch (error: any) {
+      sendUnauthorized(res, '無効な認証トークンです');
+      return;
+    }
+
+    const storeId = decoded.storeId;
+
+    // QRコードに含める情報: store_id のみ（固定）
+    const qrData = {
+      storeId,
+      type: 'checkin',
+    };
+
+    // 署名付きトークンを生成（有効期限なし、店舗固定）
+    const qrToken = jwt.sign(
+      qrData,
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '365d' } // 1年間有効（実質的に固定）
+    );
+
+    res.json({
+      qrCode: qrToken,
+      storeId,
+    });
+  } catch (error: any) {
+    console.error('QR code generation error:', error);
+    sendServerError(res, 'QRコードの生成に失敗しました', error);
+  }
+});
+
+// LIFF側: QRコードによるチェックイン
+router.post('/check-in', async (req, res) => {
+  try {
+    const decoded = requireOwnerToken(req, res);
+    if (!decoded) return;
+
+    const { qrCode, reservationId } = req.body;
+
+    if (!qrCode || !reservationId) {
+      sendBadRequest(res, 'QRコードと予約IDが必要です');
+      return;
+    }
+
+    // QRコードの署名を検証
+    let qrData: any;
+    try {
+      qrData = jwt.verify(qrCode, process.env.JWT_SECRET || 'secret') as any;
+    } catch (error: any) {
+      return res.status(400).json({
+        error: '無効なQRコードです',
+      });
+    }
+
+    // QRコードタイプを確認
+    if (qrData.type !== 'checkin') {
+      return res.status(400).json({
+        error: '無効なQRコードです',
+      });
+    }
+
+    // 店舗IDを確認
+    if (qrData.storeId !== decoded.storeId) {
+      return res.status(400).json({
+        error: 'このQRコードは別の店舗のものです',
+      });
+    }
+
+    // 予約を確認
+    const reservationCheck = await pool.query(
+      `SELECT r.* FROM reservations r
+       JOIN dogs d ON r.dog_id = d.id
+       WHERE r.id = $1 AND d.owner_id = $2 AND r.store_id = $3 AND r.status != 'キャンセル'`,
+      [reservationId, decoded.ownerId, decoded.storeId]
+    );
+
+    if (reservationCheck.rows.length === 0) {
+      sendNotFound(res, '予約が見つかりません');
+      return;
+    }
+
+    const reservation = reservationCheck.rows[0];
+
+    // 予約日が今日以降であることを確認
+    const today = new Date().toISOString().split('T')[0];
+    if (reservation.reservation_date < today) {
+      return res.status(400).json({
+        error: 'この予約は過去の予約です',
+      });
+    }
+
+    // 既にチェックイン済みか確認
+    if (reservation.status === 'チェックイン済') {
+      return res.status(400).json({
+        error: '既にチェックイン済みです',
+      });
+    }
+
+    // 予約ステータスを「チェックイン済」に更新
+    const result = await pool.query(
+      `UPDATE reservations 
+       SET status = 'チェックイン済',
+           checked_in_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [reservationId]
+    );
+
+    // 契約残数を減算（チケット制の場合）
+    const contractResult = await pool.query(
+      `SELECT id, contract_type, remaining_sessions
+       FROM contracts
+       WHERE dog_id = $1
+         AND contract_type = 'チケット制'
+         AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+         AND remaining_sessions > 0
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [reservation.dog_id]
+    );
+
+    if (contractResult.rows.length > 0) {
+      const contract = contractResult.rows[0];
+      await pool.query(
+        `UPDATE contracts 
+         SET remaining_sessions = remaining_sessions - 1,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [contract.id]
+      );
+    }
+
+    res.json({
+      message: 'チェックインが完了しました',
+      reservation: result.rows[0],
+    });
+  } catch (error: any) {
+    console.error('Check-in error:', error);
+    sendServerError(res, 'チェックインに失敗しました', error);
   }
 });
 

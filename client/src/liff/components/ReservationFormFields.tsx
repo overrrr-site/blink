@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { useAvailability } from '../hooks/useAvailability'
 
 type FormData = {
   reservation_date: string
@@ -14,6 +15,16 @@ type ReservationFormFieldsProps = {
 }
 
 export default function ReservationFormFields({ formData, onChange }: ReservationFormFieldsProps) {
+  // 選択された日付の月を取得
+  const selectedMonth = formData.reservation_date
+    ? format(new Date(formData.reservation_date), 'yyyy-MM')
+    : format(new Date(), 'yyyy-MM')
+
+  const { getAvailabilityForDate } = useAvailability(selectedMonth)
+  const availability = formData.reservation_date
+    ? getAvailabilityForDate(formData.reservation_date)
+    : null
+
   return (
     <>
       <div>
@@ -27,16 +38,33 @@ export default function ReservationFormFields({ formData, onChange }: Reservatio
             value={formData.reservation_date}
             onChange={(e) => onChange({ reservation_date: e.target.value })}
             min={format(new Date(), 'yyyy-MM-dd')}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
-                       focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            className={`w-full px-4 py-3 rounded-xl border bg-input text-foreground min-h-[52px]
+                       focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all
+                       ${availability?.isClosed ? 'border-destructive/50 bg-destructive/5' : ''}
+                       ${availability && availability.available === 0 ? 'border-warning/50 bg-warning/5' : 'border-border'}`}
             required
             aria-required="true"
           />
         </div>
         {formData.reservation_date && (
-          <p className="text-xs text-muted-foreground mt-1.5">
-            {format(new Date(formData.reservation_date), 'yyyy年M月d日 (E)', { locale: ja })}
-          </p>
+          <div className="mt-1.5 space-y-1">
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(formData.reservation_date), 'yyyy年M月d日 (E)', { locale: ja })}
+            </p>
+            {availability && (
+              <div className="text-xs">
+                {availability.isClosed ? (
+                  <span className="text-destructive font-medium">定休日</span>
+                ) : availability.available === 0 ? (
+                  <span className="text-warning font-medium">満員</span>
+                ) : (
+                  <span className="text-primary font-medium">
+                    残り {availability.available}/{availability.capacity} 枠
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
 

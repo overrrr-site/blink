@@ -12,6 +12,9 @@ declare const liff: {
   }>;
   isInClient(): boolean;
   ready: Promise<void>;
+  scanCodeV2(): Promise<{
+    value: string;
+  }>;
 };
 
 const LIFF_ID = import.meta.env.VITE_LIFF_ID || '';
@@ -95,4 +98,22 @@ export const logout = () => {
 
 export const isInLine = (): boolean => {
   return typeof liff !== 'undefined' && liff.isInClient();
+};
+
+export const scanQRCode = async (): Promise<string> => {
+  if (typeof liff === 'undefined') {
+    throw new Error('LIFF SDK is not loaded');
+  }
+
+  if (!liff.isInClient()) {
+    throw new Error('QRコードスキャンはLINEアプリ内でのみ利用可能です');
+  }
+
+  try {
+    const result = await liff.scanCodeV2();
+    return result.value;
+  } catch (error: any) {
+    console.error('[LIFF Debug] QR scan error:', error);
+    throw error;
+  }
 };

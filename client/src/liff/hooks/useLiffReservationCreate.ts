@@ -61,7 +61,6 @@ export function useLiffReservationCreate() {
         dog_id: parseInt(formData.dog_id, 10),
         reservation_date: formData.reservation_date,
         reservation_time: formData.reservation_time,
-        pickup_time: formData.pickup_time,
         notes: formData.notes || null,
       })
       return true

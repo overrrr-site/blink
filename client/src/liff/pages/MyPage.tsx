@@ -267,6 +267,36 @@ export default function MyPage() {
                 </span>
               </div>
               <p className="text-base font-bold">{currentContract.course_name}</p>
+              
+              {/* 残数表示 */}
+              {currentContract.contract_type === 'チケット制' && currentContract.remaining_sessions !== null && (
+                <div className="mt-3 pt-3 border-t border-accent/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">残り回数</span>
+                    <span className={`text-lg font-bold ${
+                      currentContract.remaining_sessions === 0 
+                        ? 'text-destructive' 
+                        : currentContract.remaining_sessions <= 3 
+                        ? 'text-warning' 
+                        : 'text-primary'
+                    }`}>
+                      {currentContract.remaining_sessions} 回
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {currentContract.contract_type === '月謝制' && currentContract.monthly_sessions && (
+                <div className="mt-3 pt-3 border-t border-accent/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">月間利用可能回数</span>
+                    <span className="text-base font-bold text-primary">
+                      {currentContract.monthly_sessions} 回
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-accent/30">
                 <span className="text-xs text-muted-foreground">月額料金</span>
                 <span className="text-base font-bold">

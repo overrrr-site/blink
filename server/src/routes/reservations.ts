@@ -220,6 +220,40 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     const reservation = result.rows[0];
 
+    // ステータスが「チェックイン済」に変更された場合、契約残数を減算
+    if (status === 'チェックイン済') {
+      const previousStatus = await pool.query(
+        `SELECT status FROM reservations WHERE id = $1`,
+        [id]
+      );
+      
+      // 既にチェックイン済みでない場合のみ減算（重複減算を防ぐ）
+      if (previousStatus.rows[0]?.status !== 'チェックイン済') {
+        const contractResult = await pool.query(
+          `SELECT id, contract_type, remaining_sessions
+           FROM contracts
+           WHERE dog_id = $1
+             AND contract_type = 'チケット制'
+             AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+             AND remaining_sessions > 0
+           ORDER BY created_at DESC
+           LIMIT 1`,
+          [reservation.dog_id]
+        );
+
+        if (contractResult.rows.length > 0) {
+          const contract = contractResult.rows[0];
+          await pool.query(
+            `UPDATE contracts 
+             SET remaining_sessions = remaining_sessions - 1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1`,
+            [contract.id]
+          );
+        }
+      }
+    }
+
     // Googleカレンダーに同期（エラーが発生しても予約は更新済み）
     await syncCalendarOnUpdate({
       storeId: req.storeId!,
