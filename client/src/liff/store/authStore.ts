@@ -5,6 +5,7 @@ interface Owner {
   name: string;
   storeId: number;
   storeName: string;
+  storeAddress: string;
   lineUserId: string;
 }
 

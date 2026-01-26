@@ -53,9 +53,9 @@ router.post('/auth', async (req, res) => {
       return;
     }
 
-    // LINE IDで飼い主を検索（店舗名も含める）
+    // LINE IDで飼い主を検索（店舗名・住所も含める）
     const ownerResult = await pool.query(
-      `SELECT o.*, s.name as store_name
+      `SELECT o.*, s.name as store_name, s.address as store_address
        FROM owners o
        JOIN stores s ON o.store_id = s.id
        WHERE o.line_id = $1
@@ -92,6 +92,7 @@ router.post('/auth', async (req, res) => {
         name: owner.name,
         storeId: owner.store_id,
         storeName: owner.store_name,
+        storeAddress: owner.store_address || '',
         lineUserId: lineUserId,
       },
     });
