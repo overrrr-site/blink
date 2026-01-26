@@ -439,7 +439,7 @@ const DogEdit = () => {
                 className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">未設定</option>
-                <option value="済み">済み</option>
+                <option value="済">済み</option>
                 <option value="未">未</option>
               </select>
             </div>
