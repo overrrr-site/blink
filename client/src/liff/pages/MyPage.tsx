@@ -319,7 +319,7 @@ export default function MyPage() {
                     {currentContract.contract_type === '月謝制' ? '月額料金' : '料金'}
                   </span>
                   <span className="text-base font-bold">
-                    ¥{currentContract.price?.toLocaleString()}
+                    ¥{Math.floor(currentContract.price).toLocaleString()}
                     <span className="text-xs font-normal text-muted-foreground">（税込）</span>
                   </span>
                 </div>
