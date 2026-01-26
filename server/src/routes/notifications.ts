@@ -243,10 +243,11 @@ router.post('/test-line', async (req: AuthRequest, res) => {
         });
       }
     } else {
-      // owner_idが指定されていない場合、LINE連携済みの飼い主を探す
+      // owner_idが指定されていない場合、有効なLINE ID（Uで始まる）を持つ飼い主を探す
       const linkedOwnerResult = await pool.query(
         `SELECT id, name, line_id FROM owners 
-         WHERE store_id = $1 AND line_id IS NOT NULL AND line_id != '' AND deleted_at IS NULL
+         WHERE store_id = $1 AND line_id IS NOT NULL AND line_id LIKE 'U%' AND deleted_at IS NULL
+         ORDER BY id ASC
          LIMIT 1`,
         [req.storeId]
       );
