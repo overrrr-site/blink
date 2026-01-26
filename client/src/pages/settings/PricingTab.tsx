@@ -2,7 +2,18 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/client'
 
-const PricingTab = () => {
+function getContractTypeStyle(contractType: string): string {
+  switch (contractType) {
+    case '月謝制':
+      return 'bg-chart-2/10 text-chart-2'
+    case 'チケット制':
+      return 'bg-chart-4/10 text-chart-4'
+    default:
+      return 'bg-muted text-muted-foreground'
+  }
+}
+
+function PricingTab() {
   const navigate = useNavigate()
   const [courseList, setCourseList] = useState<any[]>([])
   const [loadingCourses, setLoadingCourses] = useState(true)
@@ -11,7 +22,7 @@ const PricingTab = () => {
     fetchCourses()
   }, [])
 
-  const fetchCourses = async () => {
+  async function fetchCourses() {
     try {
       const response = await api.get('/course-masters')
       setCourseList(response.data)
@@ -22,7 +33,7 @@ const PricingTab = () => {
     }
   }
 
-  const handleDeleteCourse = async (id: number, e: React.MouseEvent) => {
+  async function handleDeleteCourse(id: number, e: React.MouseEvent) {
     e.stopPropagation()
     if (!confirm('このコースを削除しますか？')) {
       return
@@ -74,11 +85,7 @@ const PricingTab = () => {
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium block">{course.course_name}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                    course.contract_type === '月謝制' ? 'bg-chart-2/10 text-chart-2' :
-                    course.contract_type === 'チケット制' ? 'bg-chart-4/10 text-chart-4' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getContractTypeStyle(course.contract_type)}`}>
                     {course.contract_type}
                   </span>
                   {!course.enabled && (
