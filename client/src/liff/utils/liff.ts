@@ -105,15 +105,22 @@ export const scanQRCode = async (): Promise<string> => {
     throw new Error('LIFF SDK is not loaded');
   }
 
-  if (!liff.isInClient()) {
-    throw new Error('QRコードスキャンはLINEアプリ内でのみ利用可能です');
-  }
+  console.log('[LIFF Debug] scanQRCode called, isInClient:', liff.isInClient());
 
   try {
+    // scanCodeV2はLINEアプリ内と一部の外部ブラウザで動作
     const result = await liff.scanCodeV2();
+    console.log('[LIFF Debug] QR scan result:', result.value ? 'success' : 'empty');
     return result.value;
   } catch (error: any) {
     console.error('[LIFF Debug] QR scan error:', error);
+    // エラーの種類を判別して適切なメッセージを返す
+    if (error.code === 'FORBIDDEN' || error.message?.includes('permission')) {
+      throw new Error('カメラへのアクセスが許可されていません');
+    }
+    if (error.code === 'INVALID_OPERATION' || error.message?.includes('not supported')) {
+      throw new Error('このブラウザではQRコードスキャンがサポートされていません');
+    }
     throw error;
   }
 };

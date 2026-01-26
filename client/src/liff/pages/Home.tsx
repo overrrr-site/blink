@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { scanQRCode, isInLine } from '../utils/liff';
+import { scanQRCode } from '../utils/liff';
 
 interface OwnerData {
   id: number;
@@ -117,21 +117,15 @@ export default function Home() {
     try {
       let qrCode: string;
 
-      if (isInLine()) {
-        // LINEアプリ内: QRコードスキャン
-        try {
-          qrCode = await scanQRCode();
-        } catch (error: any) {
-          if (error.message?.includes('QRコードスキャンはLINEアプリ内')) {
-            alert('QRコードスキャンはLINEアプリ内でのみ利用可能です');
-          } else {
-            alert('QRコードのスキャンに失敗しました: ' + (error.message || '不明なエラー'));
-          }
-          return;
-        }
-      } else {
-        // 外部ブラウザ: 手動入力
-        const input = prompt('店舗から提供されたQRコードを入力してください:');
+      // まずQRコードスキャンを試みる
+      try {
+        qrCode = await scanQRCode();
+      } catch (scanError: any) {
+        console.log('[CheckIn] QR scan failed:', scanError.message);
+        
+        // スキャンに失敗した場合、手動入力にフォールバック
+        const errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
+        const input = prompt(`${errorMessage}\n\n店舗のQRコードを手動で入力してください:`);
         if (!input) {
           return;
         }
