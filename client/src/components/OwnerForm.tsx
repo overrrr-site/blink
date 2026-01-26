@@ -48,6 +48,11 @@ const OwnerForm = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+    // 電話番号入力時にハイフンを自動除去
+    if (name === 'phone' || name === 'emergency_contact_phone') {
+      setForm((prev) => ({ ...prev, [name]: value.replace(/-/g, '') }))
+      return
+    }
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -101,9 +106,10 @@ const OwnerForm = ({
               name="phone"
               value={form.phone}
               onChange={handleChange}
-              placeholder="090-1234-5678"
+              placeholder="09012345678"
               className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
+            <p className="text-xs text-muted-foreground mt-1">ハイフンなしで入力してください</p>
           </div>
 
           <div>
@@ -159,9 +165,10 @@ const OwnerForm = ({
               name="emergency_contact_phone"
               value={form.emergency_contact_phone}
               onChange={handleChange}
-              placeholder="080-9876-5432"
+              placeholder="08098765432"
               className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
+            <p className="text-xs text-muted-foreground mt-1">ハイフンなしで入力してください</p>
           </div>
         </div>
       </section>

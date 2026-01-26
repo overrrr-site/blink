@@ -15,6 +15,7 @@ import JournalNew from './pages/JournalNew'
 import Settings from './pages/Settings'
 import OwnerCreate from './pages/OwnerCreate'
 import OwnerEdit from './pages/OwnerEdit'
+import DogCreate from './pages/DogCreate'
 import DogEdit from './pages/DogEdit'
 import ReservationCreate from './pages/ReservationCreate'
 import Customers from './pages/Customers'
@@ -66,6 +67,7 @@ function App() {
           <Route path="owners/new" element={<OwnerCreate />} />
           <Route path="owners/:id" element={<OwnerDetail />} />
           <Route path="owners/:id/edit" element={<OwnerEdit />} />
+          <Route path="owners/:ownerId/dogs/new" element={<DogCreate />} />
           <Route path="dogs" element={<Navigate to="/customers" replace />} />
           <Route path="dogs/:id" element={<DogDetail />} />
           <Route path="dogs/:id/edit" element={<DogEdit />} />

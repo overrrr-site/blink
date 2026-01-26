@@ -48,6 +48,7 @@ const OwnerDetail = () => {
           <button
             onClick={() => navigate('/customers')}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+            aria-label="顧客一覧に戻る"
           >
             <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
           </button>
@@ -107,9 +108,18 @@ const OwnerDetail = () => {
           </div>
         </div>
 
-        {owner.dogs && owner.dogs.length > 0 && (
-          <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-            <h2 className="text-xl font-bold mb-4">登録犬</h2>
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">登録犬</h2>
+            <button
+              onClick={() => navigate(`/owners/${id}/dogs/new`)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors"
+            >
+              <iconify-icon icon="solar:add-circle-bold" width="20" height="20"></iconify-icon>
+              犬を追加
+            </button>
+          </div>
+          {owner.dogs && owner.dogs.length > 0 ? (
             {owner.dogs.length === 1 ? (
               <div
                 onClick={() => navigate(`/dogs/${owner.dogs[0].id}`)}
@@ -145,7 +155,10 @@ const OwnerDetail = () => {
                     <div
                       key={dog.id}
                       onClick={() => navigate(`/dogs/${dog.id}`)}
-                      className="flex flex-col items-center gap-2 p-3 bg-muted/30 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors shrink-0 min-w-[100px]"
+                      className="flex flex-col items-center gap-2 p-3 bg-muted/30 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors shrink-0 min-w-[100px] min-h-[120px]"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/dogs/${dog.id}`)}
                     >
                       {dog.photo_url ? (
                         <img
@@ -169,9 +182,24 @@ const OwnerDetail = () => {
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            )
+          ) : (
+            <div className="text-center py-8">
+              <iconify-icon
+                icon="solar:paw-print-bold"
+                className="size-12 text-muted-foreground mx-auto mb-3"
+              ></iconify-icon>
+              <p className="text-sm text-muted-foreground mb-4">登録されている犬がいません</p>
+              <button
+                onClick={() => navigate(`/owners/${id}/dogs/new`)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors"
+              >
+                <iconify-icon icon="solar:add-circle-bold" width="20" height="20"></iconify-icon>
+                犬を追加
+              </button>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )
