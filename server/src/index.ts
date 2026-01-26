@@ -34,24 +34,21 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 
-// LINE Webhook: 最優先で200を返す（Vercel環境対応）
+// LINE Webhook: Vercel環境では処理完了後にレスポンスを返す
 // express.text()でraw bodyを取得し、署名検証に使用
-app.post('/api/line/webhook', express.text({ type: '*/*' }), (req, res) => {
-  // 何があっても即座に200を返す
-  res.status(200).send('OK');
-  
-  // 非同期でイベント処理（レスポンス後）
+app.post('/api/line/webhook', express.text({ type: '*/*' }), async (req, res) => {
   try {
     const signature = req.headers['x-line-signature'] as string;
     if (!signature) {
       console.log('LINE Webhook: 署名なし（検証リクエスト）');
+      res.status(200).send('OK');
       return;
     }
-    
+
     // bodyを文字列化（express.text()で取得した場合は文字列）
     let bodyString: string;
     let parsedBody: any;
-    
+
     if (typeof req.body === 'string') {
       bodyString = req.body;
       try { parsedBody = JSON.parse(req.body); } catch { parsedBody = { events: [] }; }
@@ -63,26 +60,32 @@ app.post('/api/line/webhook', express.text({ type: '*/*' }), (req, res) => {
       parsedBody = req.body;
     } else {
       console.log('LINE Webhook: body取得失敗 - type:', typeof req.body);
+      res.status(200).send('OK');
       return;
     }
-    
+
     console.log('LINE Webhook: イベント受信, body長:', bodyString.length);
-    
+
     const events = parsedBody.events || [];
     if (events.length === 0) {
       console.log('LINE Webhook: イベントなし（検証成功）');
+      res.status(200).send('OK');
       return;
     }
-    
+
     console.log('LINE Webhook: イベント数:', events.length, 'タイプ:', events.map((e: any) => e.type).join(','));
-    
-    // 非同期でイベント処理をインポートして実行
-    import('./services/lineBotService.js').then(async ({ processLineWebhookEvents }) => {
-      await processLineWebhookEvents(events, bodyString, signature);
-    }).catch(err => console.error('LINE Webhook処理エラー:', err));
-    
+
+    // イベント処理を実行（完了を待つ）
+    const { processLineWebhookEvents } = await import('./services/lineBotService.js');
+    await processLineWebhookEvents(events, bodyString, signature);
+
+    console.log('LINE Webhook: 処理完了');
+    res.status(200).send('OK');
+
   } catch (error) {
     console.error('LINE Webhook error:', error);
+    // エラーでも200を返す（LINEがリトライしないように）
+    res.status(200).send('OK');
   }
 });
 
