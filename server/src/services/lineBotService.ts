@@ -77,16 +77,22 @@ export async function processLineWebhookEvents(
       console.log('LINE userId:', lineUserId);
 
       // LINE IDから店舗を特定
-      const ownerResult = await pool.query(
-        `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
-         FROM owners o
-         JOIN stores s ON o.store_id = s.id
-         WHERE o.line_id = $1
-         LIMIT 1`,
-        [lineUserId]
-      );
-      
-      console.log('オーナー検索結果: 件数=', ownerResult.rows.length);
+      let ownerResult;
+      try {
+        console.log('オーナー検索クエリ実行中...');
+        ownerResult = await pool.query(
+          `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
+           FROM owners o
+           JOIN stores s ON o.store_id = s.id
+           WHERE o.line_id = $1
+           LIMIT 1`,
+          [lineUserId]
+        );
+        console.log('オーナー検索結果: 件数=', ownerResult.rows.length);
+      } catch (dbError: any) {
+        console.error('オーナー検索DBエラー:', dbError.message);
+        continue;
+      }
 
       if (ownerResult.rows.length === 0) {
         console.warn(`LINE Webhook: ユーザー ${lineUserId} が見つかりません`);
