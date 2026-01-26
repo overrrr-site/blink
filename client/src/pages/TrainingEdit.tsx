@@ -6,8 +6,8 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import SaveButton from '../components/SaveButton'
 
 const TRAINING_CATEGORIES = [
-  'トイレトレーニング',
   '基本トレーニング',
+  'トイレトレーニング',
   '社会化トレーニング',
   '問題行動対策',
 ] as const

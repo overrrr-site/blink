@@ -6,6 +6,14 @@ import { requireStoreId, sendNotFound, sendBadRequest, sendServerError, sendSucc
 const router = express.Router();
 router.use(authenticate);
 
+// カテゴリの表示順序
+const CATEGORY_ORDER = [
+  '基本トレーニング',
+  'トイレトレーニング',
+  '社会化トレーニング',
+  '問題行動対策',
+];
+
 router.get('/', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
@@ -13,7 +21,7 @@ router.get('/', async (req: AuthRequest, res) => {
     const result = await pool.query(
       `SELECT * FROM training_item_masters
        WHERE store_id = $1 AND enabled = TRUE
-       ORDER BY category, display_order, id`,
+       ORDER BY display_order, id`,
       [req.storeId]
     );
 
@@ -26,7 +34,21 @@ router.get('/', async (req: AuthRequest, res) => {
       grouped[item.category].push(item);
     }
 
-    res.json(grouped);
+    // カテゴリを定義された順序でソート
+    const orderedResult: Record<string, unknown[]> = {};
+    for (const category of CATEGORY_ORDER) {
+      if (grouped[category]) {
+        orderedResult[category] = grouped[category];
+      }
+    }
+    // 定義されていないカテゴリがあれば末尾に追加
+    for (const category of Object.keys(grouped)) {
+      if (!CATEGORY_ORDER.includes(category)) {
+        orderedResult[category] = grouped[category];
+      }
+    }
+
+    res.json(orderedResult);
   } catch (error) {
     sendServerError(res, 'トレーニング項目マスタ一覧の取得に失敗しました', error);
   }
