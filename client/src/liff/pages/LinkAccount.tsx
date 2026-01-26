@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLiffProfile } from '../utils/liff';
+import { getLiffProfile, isLiffLoggedIn, initLiff } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
 
@@ -29,9 +29,24 @@ export default function LinkAccount() {
       // LINE User IDが取得できない場合は、LIFFから取得を試みる
       const fetchLineUserId = async () => {
         try {
+          // LIFF初期化
+          await initLiff();
+          
+          // ログイン状態を確認
+          if (!isLiffLoggedIn()) {
+            // 未ログインの場合、getLiffProfileがliff.login()を呼び出しリダイレクト
+            console.log('LIFF未ログイン。ログインページへリダイレクト中...');
+            await getLiffProfile();
+            return;
+          }
+          
           const profile = await getLiffProfile();
           setLineUserId(profile.userId);
-        } catch (err) {
+        } catch (err: any) {
+          // リダイレクト中のエラーは無視
+          if (err.message === 'Redirecting to LINE login...') {
+            return;
+          }
           console.error('Failed to get LINE profile:', err);
           setError('LINEアカウント情報の取得に失敗しました');
         }
