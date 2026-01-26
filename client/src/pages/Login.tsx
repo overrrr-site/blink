@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -60,7 +61,7 @@ const Login = () => {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 py-3 px-4 rounded-xl text-sm font-medium border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 mb-6"
+            className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 py-3 px-4 rounded-xl text-sm font-bold border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 mb-6 min-h-[48px]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path
@@ -106,7 +107,7 @@ const Login = () => {
                   placeholder="example@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[48px]"
                   required
                 />
               </div>
@@ -119,20 +120,32 @@ const Login = () => {
                   <iconify-icon icon="solar:lock-password-bold" width="20" height="20"></iconify-icon>
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="パスワードを入力"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[48px]"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+                >
+                  <iconify-icon 
+                    icon={showPassword ? 'solar:eye-closed-bold' : 'solar:eye-bold'} 
+                    width="20" 
+                    height="20"
+                  ></iconify-icon>
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 min-h-[48px]"
             >
               {loading ? 'ログイン中...' : 'メールでログイン'}
             </button>

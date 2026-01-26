@@ -108,7 +108,7 @@ export default function LinkAccount() {
 
       if (response.data.token && response.data.owner) {
         setAuth(response.data.token, response.data.owner);
-        navigate('/');
+        navigate('/home');
       } else {
         setError('認証に失敗しました');
       }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useReservationCreateData, ReservationDog } from '../hooks/useReservationCreateData'
+import { useReservationCreateData } from '../hooks/useReservationCreateData'
 import { useReservationCreate } from '../hooks/useReservationCreate'
 import { useDogFilter } from '../hooks/useDogFilter'
 import StepIndicator from '../components/reservations/StepIndicator'
@@ -14,7 +14,7 @@ const ReservationCreate = () => {
   const [searchParams] = useSearchParams()
   const dateParam = searchParams.get('date')
 
-  const { loading, dogs, recentReservations } = useReservationCreateData()
+  const { loading, dogs, recentReservations, invalidate } = useReservationCreateData()
   const [searchQuery, setSearchQuery] = useState('')
   const [showRecentOnly, setShowRecentOnly] = useState(false)
 
@@ -29,7 +29,10 @@ const ReservationCreate = () => {
     handleSubmit,
   } = useReservationCreate({
     dateParam,
-    onSuccess: () => navigate('/reservations'),
+    onSuccess: () => {
+      invalidate()
+      navigate('/reservations')
+    },
   })
 
   const { filteredDogs, recentDogs } = useDogFilter({
@@ -75,13 +78,7 @@ const ReservationCreate = () => {
           <DateTimeStep
             form={form}
             onChange={handleChange}
-            onNext={() => {
-              if (form.reservation_date && form.reservation_time) {
-                setCurrentStep(2)
-              } else {
-                alert('日付と時間を選択してください')
-              }
-            }}
+            onNext={() => setCurrentStep(2)}
           />
         )}
 
@@ -101,13 +98,7 @@ const ReservationCreate = () => {
               setShowRecentOnly(false)
             }}
             onBack={() => setCurrentStep(1)}
-            onNext={() => {
-              if (selectedDogId) {
-                setCurrentStep(3)
-              } else {
-                alert('犬を選択してください')
-              }
-            }}
+            onNext={() => setCurrentStep(3)}
           />
         )}
 

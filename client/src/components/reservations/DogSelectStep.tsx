@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { RecentReservation, ReservationDog } from '../../hooks/useReservationCreateData'
 
 type DogSelectStepProps = {
@@ -27,7 +28,17 @@ export default function DogSelectStep({
   onBack,
   onNext,
 }: DogSelectStepProps) {
+  const [error, setError] = useState('')
   const list = showRecentOnly && !searchQuery ? recentDogs : filteredDogs
+
+  const handleNext = () => {
+    if (!selectedDogId) {
+      setError('犬を選択してください')
+      return
+    }
+    setError('')
+    onNext()
+  }
 
   return (
     <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
@@ -129,18 +140,26 @@ export default function DogSelectStep({
           )
         })}
       </div>
+
+      {error && (
+        <div className="mt-3 flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
+          <iconify-icon icon="solar:danger-triangle-bold" className="size-5 shrink-0"></iconify-icon>
+          {error}
+        </div>
+      )}
+
       <div className="mt-4 flex justify-between">
         <button
           type="button"
           onClick={onBack}
-          className="px-6 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+          className="px-6 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors min-h-[48px]"
         >
           戻る
         </button>
         <button
           type="button"
-          onClick={onNext}
-          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+          onClick={handleNext}
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors min-h-[48px]"
         >
           次へ
         </button>

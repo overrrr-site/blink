@@ -61,7 +61,7 @@ export default function JournalDetail() {
         <iconify-icon icon="solar:notebook-linear" width="64" height="64" class="text-muted-foreground mx-auto mb-4"></iconify-icon>
         <p className="text-muted-foreground mb-4">日誌が見つかりません</p>
         <button
-          onClick={() => navigate('/journals')}
+          onClick={() => navigate('/home/journals')}
           className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold active:scale-95 transition-transform"
         >
           日誌一覧に戻る

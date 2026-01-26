@@ -16,7 +16,8 @@ import Layout from './components/Layout';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useLiffAuthStore();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+  // LIFFアプリ内では basename="/liff" なので、相対パスで指定
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 }
 
 function App() {
@@ -33,13 +34,13 @@ function App() {
   }, [initialize]);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/liff">
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* ルート（/liff/）がログインページ - LIFFコールバック先 */}
+        <Route path="/" element={<Login />} />
         <Route path="/link" element={<LinkAccount />} />
-        <Route path="/liff.html" element={<Navigate to="/" replace />} />
         <Route
-          path="/"
+          path="/home"
           element={
             <PrivateRoute>
               <Layout />

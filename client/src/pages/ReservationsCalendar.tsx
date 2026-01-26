@@ -168,7 +168,7 @@ const ReservationsCalendar = () => {
         <div className="flex items-center justify-between mb-4">
           <button 
             onClick={goToPreviousMonth} 
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
             aria-label="前の月"
           >
             <iconify-icon
@@ -179,7 +179,7 @@ const ReservationsCalendar = () => {
           <h2 className="text-lg font-bold">{format(currentDate, 'yyyy年MM月')}</h2>
           <button 
             onClick={goToNextMonth} 
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
             aria-label="次の月"
           >
             <iconify-icon
@@ -193,7 +193,7 @@ const ReservationsCalendar = () => {
           {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => (
             <span
               key={day}
-              className={`text-xs font-semibold ${
+              className={`text-xs font-bold ${
                 index === 0 ? 'text-destructive' : index === 6 ? 'text-chart-3' : 'text-muted-foreground'
               }`}
             >
@@ -238,7 +238,7 @@ const ReservationsCalendar = () => {
                     e.stopPropagation()
                     setSelectedDate(day)
                   }}
-                  className="w-full h-full flex flex-col items-center justify-start min-h-[44px]"
+                  className="w-full h-full flex flex-col items-center justify-start min-h-[48px]"
                   aria-label={`${format(day, 'M月d日')}の予約を表示`}
                 >
                   <span className={`text-xs ${isSelected ? 'font-bold' : isToday(day) ? 'font-semibold' : ''}`}>

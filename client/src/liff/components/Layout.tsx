@@ -7,8 +7,8 @@ export default function Layout() {
   const { owner } = useLiffAuthStore();
 
   const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
+    if (path === '/home') {
+      return location.pathname === '/home';
     }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
@@ -18,7 +18,7 @@ export default function Layout() {
       {/* ヘッダー */}
       <header className="px-5 pt-4 pb-4 bg-background sticky top-0 z-20 flex items-center justify-between border-b border-border">
         <button 
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           className="flex items-center gap-3 active:opacity-70 transition-opacity"
           aria-label="ホームに戻る"
         >
@@ -33,7 +33,7 @@ export default function Layout() {
           </div>
         </button>
         <button
-          onClick={() => navigate('/mypage')}
+          onClick={() => navigate('/home/mypage')}
           className="size-12 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden 
                      active:scale-95 transition-transform hover:border-primary/40"
           aria-label="マイページ"
@@ -57,28 +57,28 @@ export default function Layout() {
       >
         <div className="flex items-center justify-around max-w-md mx-auto">
           <NavButton
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             icon="solar:home-bold"
             label="ホーム"
-            isActive={isActive('/')}
+            isActive={isActive('/home')}
           />
           <NavButton
-            onClick={() => navigate('/reservations')}
+            onClick={() => navigate('/home/reservations')}
             icon="solar:calendar-bold"
             label="予約"
-            isActive={isActive('/reservations')}
+            isActive={isActive('/home/reservations')}
           />
           <NavButton
-            onClick={() => navigate('/journals')}
+            onClick={() => navigate('/home/journals')}
             icon="solar:notebook-bold"
             label="日誌"
-            isActive={isActive('/journals')}
+            isActive={isActive('/home/journals')}
           />
           <NavButton
-            onClick={() => navigate('/mypage')}
+            onClick={() => navigate('/home/mypage')}
             icon="solar:user-bold"
             label="マイページ"
-            isActive={isActive('/mypage')}
+            isActive={isActive('/home/mypage')}
           />
         </div>
       </nav>

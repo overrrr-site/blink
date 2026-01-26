@@ -14,6 +14,25 @@ import {
   syncCalendarOnDelete,
 } from '../services/reservationsService.js';
 
+function toIsoDateString(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function getMonthDateRange(month: string): { start: string; end: string } | null {
+  const [yearPart, monthPart] = month.split('-');
+  const year = Number(yearPart);
+  const monthIndex = Number(monthPart) - 1;
+
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
+    return null;
+  }
+
+  const start = new Date(Date.UTC(year, monthIndex, 1));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 1));
+
+  return { start: toIsoDateString(start), end: toIsoDateString(end) };
+}
+
 const router = express.Router();
 router.use(authenticate);
 
@@ -43,10 +62,11 @@ router.get('/', async (req: AuthRequest, res) => {
       params.push(date);
     } else if (month) {
       // month は 'yyyy-MM' 形式（例: '2024-01'）
-      // これを 'yyyy-MM-01' に変換して日付として扱う
-      const monthDate = `${month}-01`;
-      query += ` AND DATE_TRUNC('month', r.reservation_date) = DATE_TRUNC('month', $2::date)`;
-      params.push(monthDate);
+      const range = getMonthDateRange(String(month));
+      if (range) {
+        query += ` AND r.reservation_date >= $2 AND r.reservation_date < $3`;
+        params.push(range.start, range.end);
+      }
     }
 
     query += ` ORDER BY r.reservation_date, r.reservation_time`;
@@ -89,7 +109,23 @@ router.get('/:id', async (req: AuthRequest, res) => {
               pvi.morning_defecation as pvi_morning_defecation,
               pvi.afternoon_urination as pvi_afternoon_urination,
               pvi.afternoon_defecation as pvi_afternoon_defecation,
-              pvi.breakfast_status, pvi.health_status, pvi.notes
+              pvi.breakfast_status, pvi.health_status, pvi.notes,
+              (
+                SELECT COUNT(*)
+                FROM reservations r2
+                WHERE r2.dog_id = r.dog_id
+                  AND r2.reservation_date <= r.reservation_date
+                  AND r2.status IN ('チェックイン済', '予定')
+              ) as visit_count,
+              (
+                SELECT r3.reservation_date
+                FROM reservations r3
+                WHERE r3.dog_id = r.dog_id
+                  AND r3.reservation_date > r.reservation_date
+                  AND r3.status = '予定'
+                ORDER BY r3.reservation_date
+                LIMIT 1
+              ) as next_visit_date
        FROM reservations r
        JOIN dogs d ON r.dog_id = d.id
        JOIN owners o ON d.owner_id = o.id
@@ -104,30 +140,8 @@ router.get('/:id', async (req: AuthRequest, res) => {
     }
 
     const reservation = result.rows[0];
-
-    // 登園回数を取得（この予約日以前のチェックイン済み予約数）
-    const visitCountResult = await pool.query(
-      `SELECT COUNT(*) as visit_count
-       FROM reservations
-       WHERE dog_id = $1
-         AND reservation_date <= $2
-         AND status IN ('チェックイン済', '予定')`,
-      [reservation.dog_id, reservation.reservation_date]
-    );
-    reservation.visit_count = parseInt(visitCountResult.rows[0].visit_count) || 1;
-
-    // 次回登園日を取得
-    const nextVisitResult = await pool.query(
-      `SELECT reservation_date
-       FROM reservations
-       WHERE dog_id = $1
-         AND reservation_date > $2
-         AND status = '予定'
-       ORDER BY reservation_date
-       LIMIT 1`,
-      [reservation.dog_id, reservation.reservation_date]
-    );
-    reservation.next_visit_date = nextVisitResult.rows[0]?.reservation_date || null;
+    reservation.visit_count = Math.max(Number(reservation.visit_count) || 0, 1);
+    reservation.next_visit_date = reservation.next_visit_date || null;
 
     res.json(reservation);
   } catch (error) {
@@ -146,26 +160,22 @@ router.post('/', async (req: AuthRequest, res) => {
       return;
     }
 
-    // 犬のstore_idとowner_idを確認
-    const dogCheck = await pool.query(
-      `SELECT o.store_id, o.id as owner_id FROM dogs d
-       JOIN owners o ON d.owner_id = o.id
-       WHERE d.id = $1 AND o.store_id = $2`,
-      [dog_id, req.storeId]
-    );
-
-    if (dogCheck.rows.length === 0) {
-      sendForbidden(res);
-      return;
-    }
-
     const result = await pool.query(
       `INSERT INTO reservations (
         store_id, dog_id, reservation_date, reservation_time, memo
-      ) VALUES ($1, $2, $3, $4, $5)
+      )
+      SELECT $5, d.id, $2, $3, $4
+      FROM dogs d
+      JOIN owners o ON d.owner_id = o.id
+      WHERE d.id = $1 AND o.store_id = $5
       RETURNING *`,
-      [req.storeId, dog_id, reservation_date, reservation_time, memo]
+      [dog_id, reservation_date, reservation_time, memo, req.storeId]
     );
+
+    if (result.rows.length === 0) {
+      sendForbidden(res);
+      return;
+    }
 
     const reservation = result.rows[0];
 

@@ -295,7 +295,7 @@ export default function ReservationsCalendar() {
             <iconify-icon icon="solar:calendar-minimalistic-linear" width="48" height="48" class="text-muted-foreground mx-auto mb-3"></iconify-icon>
             <p className="text-muted-foreground mb-3">この日の予約はありません</p>
             <button
-              onClick={() => navigate('/reservations/new')}
+              onClick={() => navigate('/home/reservations/new')}
               className="text-primary text-sm font-bold hover:underline"
             >
               予約を作成する →
@@ -306,7 +306,7 @@ export default function ReservationsCalendar() {
 
       {/* 新規予約ボタン */}
       <button
-        onClick={() => navigate('/reservations/new')}
+        onClick={() => navigate('/home/reservations/new')}
         className="fixed bottom-24 right-5 bg-primary text-primary-foreground size-14 rounded-full shadow-lg 
                    flex items-center justify-center z-20 active:scale-95 transition-transform
                    hover:shadow-xl hover:bg-primary/90"

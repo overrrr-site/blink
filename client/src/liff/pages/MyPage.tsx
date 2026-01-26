@@ -59,7 +59,7 @@ export default function MyPage() {
   const handleLogout = () => {
     if (confirm('ログアウトしますか？')) {
       clearAuth();
-      navigate('/login');
+      navigate('/');
     }
   };
 

@@ -14,8 +14,8 @@ export default function Login() {
     console.log('[Login Debug] useEffect triggered, isAuthenticated:', isAuthenticated);
     
     if (isAuthenticated) {
-      console.log('[Login Debug] Already authenticated, navigating to /');
-      navigate('/');
+      console.log('[Login Debug] Already authenticated, navigating to /home');
+      navigate('/home');
       return;
     }
 
@@ -42,7 +42,7 @@ export default function Login() {
 
             if (response.data.token && response.data.owner) {
               setAuth(response.data.token, response.data.owner);
-              navigate('/');
+              navigate('/home');
               return;
             }
           } catch (authError: any) {
@@ -89,9 +89,9 @@ export default function Login() {
         console.log('[Login Debug] Backend response:', response.data);
 
         if (response.data.token && response.data.owner) {
-          console.log('[Login Debug] Auth successful, navigating to /');
+          console.log('[Login Debug] Auth successful, navigating to /home');
           setAuth(response.data.token, response.data.owner);
-          navigate('/');
+          navigate('/home');
         } else {
           console.log('[Login Debug] Auth failed - no token or owner');
           setError('認証に失敗しました');

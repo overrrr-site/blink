@@ -51,6 +51,22 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = CURRENT_TIMESTAMP;
 
 -- ============================================
+-- 2.5. プランデータの作成（決済用）
+-- ============================================
+
+INSERT INTO plans (id, name, display_name, price_monthly, max_dogs, features)
+VALUES
+  (1, 'free', 'フリープラン', 0, 20, '{"ai_limit": true, "support": "email"}'::jsonb),
+  (2, 'standard', 'スタンダードプラン', 5500, 100, '{"ai_limit": false, "support": "priority"}'::jsonb),
+  (3, 'pro', 'プロプラン', 11000, NULL, '{"ai_limit": false, "support": "priority", "multi_store": true}'::jsonb)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  display_name = EXCLUDED.display_name,
+  price_monthly = EXCLUDED.price_monthly,
+  max_dogs = EXCLUDED.max_dogs,
+  features = EXCLUDED.features;
+
+-- ============================================
 -- 3. スタッフデータの作成
 -- ============================================
 -- 注意: auth.usersテーブルへのユーザー作成は、Supabase Admin APIまたは

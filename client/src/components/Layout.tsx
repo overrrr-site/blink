@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import OnboardingGuide from './OnboardingGuide'
 
 const Layout = () => {
   const navigate = useNavigate()
@@ -121,6 +122,7 @@ const Layout = () => {
               onClick={() => navigate(item.path)}
               aria-label={`${item.label}へ移動`}
               aria-current={isActive(item.path) ? 'page' : undefined}
+              data-guide={item.path === '/' ? 'nav-today' : item.path === '/reservations' ? 'nav-reservations' : undefined}
               className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[56px] py-2 px-3 gap-1 transition-all rounded-lg active:scale-95 ${
                 isActive(item.path)
                   ? 'text-primary'
@@ -142,6 +144,7 @@ const Layout = () => {
                 e.stopPropagation()
                 setFabOpen(!fabOpen)
               }}
+              data-guide="fab-button"
               className={`absolute -top-6 size-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-50 ${
                 fabOpen
                   ? 'bg-muted text-muted-foreground rotate-45'
@@ -161,6 +164,7 @@ const Layout = () => {
               onClick={() => navigate(item.path)}
               aria-label={`${item.label}へ移動`}
               aria-current={isActive(item.path) ? 'page' : undefined}
+              data-guide={item.path === '/customers' ? 'nav-customers' : item.path === '/settings' ? 'nav-settings' : undefined}
               className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[56px] py-2 px-3 gap-1 transition-all rounded-lg active:scale-95 ${
                 isActive(item.path)
                   ? 'text-primary'
@@ -176,6 +180,9 @@ const Layout = () => {
           ))}
         </div>
       </nav>
+
+      {/* オンボーディングガイド */}
+      <OnboardingGuide />
     </div>
   )
 }

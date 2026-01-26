@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { calculateAge, getVaccineAlerts } from '../utils/dog'
+import { calculateAge } from '../utils/dog'
 import HealthInfoSection from '../components/dogs/HealthInfoSection'
 import PersonalitySection from '../components/dogs/PersonalitySection'
 import ContractsSection from '../components/dogs/ContractsSection'
@@ -29,8 +29,6 @@ const DogDetail = () => {
     )
   }
 
-  const vaccineAlerts = getVaccineAlerts(dog?.health)
-
   return (
     <div className="space-y-4 pb-6">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
@@ -54,44 +52,7 @@ const DogDetail = () => {
         </button>
       </header>
 
-      {/* ワクチン警告バナー - 画面上部に固定表示 */}
-      {vaccineAlerts.length > 0 && (
-        <div className="sticky top-[57px] z-10 px-5 pt-2">
-          {vaccineAlerts.map((alert, index) => (
-            <div
-              key={alert.type}
-              className={`mb-2 rounded-xl p-3 border-2 ${
-                alert.status.status === 'expired'
-                  ? 'bg-destructive/10 border-destructive/30'
-                  : alert.status.status === 'warning'
-                  ? 'bg-chart-4/10 border-chart-4/30'
-                  : 'bg-chart-4/5 border-chart-4/20'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <iconify-icon
-                  icon="solar:danger-triangle-bold"
-                  className={`size-5 ${
-                    alert.status.status === 'expired' ? 'text-destructive' : 'text-chart-4'
-                  }`}
-                ></iconify-icon>
-                <div className="flex-1">
-                  <p className="text-sm font-bold">
-                    {alert.label}の確認が必要です
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {alert.status.status === 'expired'
-                      ? `${alert.status.days}日超過しています`
-                      : `あと${alert.status.days}日で期限切れです`}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <main className="px-5 space-y-4">
+      <main className="px-5 space-y-4 pt-4">
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
           <div className="flex items-center gap-4 mb-4">
             {dog.photo_url ? (

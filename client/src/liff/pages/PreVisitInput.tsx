@@ -89,7 +89,7 @@ export default function PreVisitInput() {
         reservation_id: parseInt(reservationId),
         ...formData,
       });
-      navigate('/');
+      navigate('/home');
     } catch (error: any) {
       console.error('Error saving pre-visit input:', error);
       alert(error.response?.data?.error || '登園前入力の保存に失敗しました');
@@ -117,7 +117,7 @@ export default function PreVisitInput() {
         <iconify-icon icon="solar:calendar-cross-bold" width="64" height="64" class="text-muted-foreground mx-auto mb-4"></iconify-icon>
         <p className="text-muted-foreground mb-4">予約が見つかりません</p>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold active:scale-95 transition-transform"
         >
           ホームに戻る

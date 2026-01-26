@@ -144,7 +144,7 @@ export default function Home() {
         <section 
           className="bg-gradient-to-r from-primary/10 to-accent/30 rounded-3xl p-5 border border-primary/20 
                      active:scale-[0.99] transition-transform cursor-pointer"
-          onClick={() => navigate('/reservations')}
+          onClick={() => navigate('/home/reservations')}
           role="button"
           aria-label="次回登園予定を確認"
         >
@@ -194,7 +194,7 @@ export default function Home() {
           <iconify-icon icon="solar:calendar-add-bold" width="48" height="48" class="text-muted-foreground mx-auto mb-2"></iconify-icon>
           <p className="text-sm text-muted-foreground mb-3">次回の予約はありません</p>
           <button
-            onClick={() => navigate('/reservations/new')}
+            onClick={() => navigate('/home/reservations/new')}
             className="bg-primary text-primary-foreground px-6 py-2 rounded-xl text-sm font-bold 
                        active:scale-95 transition-transform"
           >
@@ -206,7 +206,7 @@ export default function Home() {
       {/* メニューカード */}
       <div className="grid grid-cols-2 gap-4">
         <MenuCard
-          onClick={() => navigate('/reservations')}
+          onClick={() => navigate('/home/reservations')}
           icon="solar:calendar-bold"
           iconBgColor="bg-primary/10"
           iconColor="text-primary"
@@ -215,7 +215,7 @@ export default function Home() {
         />
 
         <MenuCard
-          onClick={() => navigate('/journals')}
+          onClick={() => navigate('/home/journals')}
           icon="solar:notebook-bold"
           iconBgColor="bg-chart-3/10"
           iconColor="text-chart-3"
@@ -224,7 +224,7 @@ export default function Home() {
         />
 
         <MenuCard
-          onClick={() => navigate('/mypage')}
+          onClick={() => navigate('/home/mypage')}
           icon="solar:user-bold"
           iconBgColor="bg-chart-2/10"
           iconColor="text-chart-2"
@@ -270,7 +270,7 @@ export default function Home() {
         <h2 className="text-sm font-bold text-muted-foreground mb-3">クイックアクション</h2>
         <div className="flex gap-3">
           <button
-            onClick={() => navigate('/reservations/new')}
+            onClick={() => navigate('/home/reservations/new')}
             className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold 
                        flex items-center justify-center gap-2 active:scale-95 transition-transform"
             aria-label="新規予約"
@@ -279,7 +279,7 @@ export default function Home() {
             新規予約
           </button>
           <button
-            onClick={() => navigate('/journals')}
+            onClick={() => navigate('/home/journals')}
             className="flex-1 bg-muted text-foreground py-3 rounded-xl text-sm font-bold 
                        flex items-center justify-center gap-2 active:scale-95 transition-transform"
             aria-label="日誌を見る"

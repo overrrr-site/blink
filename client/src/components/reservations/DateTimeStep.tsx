@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 type ReservationForm = {
   reservation_date: string
   reservation_time: string
@@ -11,6 +13,17 @@ type DateTimeStepProps = {
 }
 
 export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepProps) {
+  const [error, setError] = useState('')
+
+  const handleNext = () => {
+    if (!form.reservation_date || !form.reservation_time) {
+      setError('日付と時間を選択してください')
+      return
+    }
+    setError('')
+    onNext()
+  }
+
   return (
     <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
       <div className="flex items-center gap-2 mb-3">
@@ -78,11 +91,19 @@ export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepPro
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="mt-3 flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
+          <iconify-icon icon="solar:danger-triangle-bold" className="size-5 shrink-0"></iconify-icon>
+          {error}
+        </div>
+      )}
+
       <div className="mt-4 flex justify-end">
         <button
           type="button"
-          onClick={onNext}
-          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+          onClick={handleNext}
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors min-h-[48px]"
         >
           次へ
         </button>

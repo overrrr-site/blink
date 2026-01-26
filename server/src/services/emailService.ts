@@ -48,7 +48,11 @@ export async function sendEmail(
       transporter = client;
     }
 
-    const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@blink.example.com';
+    const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
+    if (!smtpFrom) {
+      console.error('SMTP_FROM または SMTP_USER が設定されていません');
+      return false;
+    }
 
     await transporter.sendMail({
       from: smtpFrom,

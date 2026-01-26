@@ -53,7 +53,7 @@ export default function ReservationCreate() {
         onSubmit={async () => {
           const success = await handleSubmit()
           if (success) {
-            navigate('/reservations')
+            navigate('/home/reservations')
           }
         }}
       />

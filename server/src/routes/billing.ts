@@ -111,8 +111,21 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
 
       // 顧客が存在しない場合は作成
       if (!customerId) {
+        // 店舗のメールアドレスを使用（未設定の場合はスタッフのメールを取得）
+        let customerEmail = store.email;
+        if (!customerEmail) {
+          const staffResult = await pool.query(
+            `SELECT s.email FROM staff s
+             JOIN store_staff ss ON s.id = ss.staff_id
+             WHERE ss.store_id = $1 AND ss.role = 'owner'
+             LIMIT 1`,
+            [req.storeId]
+          );
+          customerEmail = staffResult.rows[0]?.email || `store_${req.storeId}@blink.app`;
+        }
+
         const customer = await payjp.customers.create({
-          email: `store_${req.storeId}@example.com`, // 実際のメールアドレスに置き換える
+          email: customerEmail,
           card: payjp_token,
         });
         customerId = customer.id;

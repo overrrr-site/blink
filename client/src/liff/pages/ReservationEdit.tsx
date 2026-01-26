@@ -57,7 +57,7 @@ export default function ReservationEdit() {
     } catch (error) {
       console.error('Error fetching data:', error);
       alert('データの取得に失敗しました');
-      navigate('/reservations');
+      navigate('/home/reservations');
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ export default function ReservationEdit() {
     setSaving(true);
     try {
       await liffClient.put(`/reservations/${id}`, form);
-      navigate('/reservations');
+      navigate('/home/reservations');
     } catch (error: any) {
       console.error('Error updating reservation:', error);
       alert(error.response?.data?.error || '予約の更新に失敗しました');
@@ -106,7 +106,7 @@ export default function ReservationEdit() {
       {/* ヘッダー */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2">
         <button
-          onClick={() => navigate('/reservations')}
+          onClick={() => navigate('/home/reservations')}
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
         >
           <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>

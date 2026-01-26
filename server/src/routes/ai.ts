@@ -44,15 +44,21 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
       training_data,
       morning_toilet,
       afternoon_toilet,
+      memo,              // スタッフのメモ書き（新規追加）
+      photo_analyses,    // 写真解析結果の配列（新規追加）
+      training_labels,   // カスタムトレーニングラベル（新規追加）
     } = req.body;
 
     // トレーニングデータを文章化
     const doneItems: string[] = [];
     const almostItems: string[] = [];
 
+    // カスタムラベルがあればそれを使用、なければデフォルトを使用
+    const labels = training_labels || TRAINING_LABELS;
+
     if (training_data) {
       Object.entries(training_data).forEach(([key, value]) => {
-        const label = TRAINING_LABELS[key] || key;
+        const label = labels[key] || key;
         if (value === 'done') {
           doneItems.push(label);
         } else if (value === 'almost') {
@@ -68,7 +74,15 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
     if (apiKey) {
       // Gemini APIを使用した生成
       try {
-        const prompt = buildPrompt(dog_name, doneItems, almostItems, morning_toilet, afternoon_toilet);
+        const prompt = buildPrompt(
+          dog_name,
+          doneItems,
+          almostItems,
+          morning_toilet,
+          afternoon_toilet,
+          memo,
+          photo_analyses
+        );
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
@@ -101,7 +115,7 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
     }
 
     // テンプレートベースのフォールバック
-    const comment = generateTemplateComment(dog_name, doneItems, almostItems, morning_toilet, afternoon_toilet);
+    const comment = generateTemplateComment(dog_name, doneItems, almostItems, morning_toilet, afternoon_toilet, memo);
     res.json({ comment });
   } catch (error) {
     sendServerError(res, 'コメント生成に失敗しました', error);
@@ -113,13 +127,29 @@ function buildPrompt(
   doneItems: string[],
   almostItems: string[],
   morningToilet: { urination: boolean; defecation: boolean; location: string } | undefined,
-  afternoonToilet: { urination: boolean; defecation: boolean; location: string } | undefined
+  afternoonToilet: { urination: boolean; defecation: boolean; location: string } | undefined,
+  memo?: string,
+  photoAnalyses?: string[]
 ): string {
   let context = `あなたは犬の幼稚園のスタッフです。今日の${dogName}ちゃんの様子を飼い主さんに伝える日誌コメントを、温かみのある自然な日本語で書いてください。
 
-以下の情報を元に、100〜200文字程度のコメントを作成してください：
+以下の情報を元に、150〜250文字程度のコメントを作成してください：
 
 `;
+
+  // スタッフのメモがあれば最優先で反映
+  if (memo && memo.trim()) {
+    context += `【スタッフのメモ】\n${memo.trim()}\n\n`;
+  }
+
+  // 写真の解析結果があれば反映
+  if (photoAnalyses && photoAnalyses.length > 0) {
+    context += `【写真から読み取れた様子】\n`;
+    photoAnalyses.forEach((analysis, index) => {
+      context += `・${analysis}\n`;
+    });
+    context += '\n';
+  }
 
   if (doneItems.length > 0) {
     context += `【できたこと】${doneItems.join('、')}\n`;
@@ -147,6 +177,7 @@ function buildPrompt(
   context += `
 注意事項：
 - 飼い主さんへの報告として自然な文章にしてください
+- スタッフのメモや写真の情報を優先的に反映してください
 - 絵文字は控えめに（1〜2個程度）
 - ポジティブな表現を心がけてください
 - 「もう少し」の項目は、前向きな表現で伝えてください`;
@@ -159,7 +190,8 @@ function generateTemplateComment(
   doneItems: string[],
   almostItems: string[],
   morningToilet: { urination: boolean; defecation: boolean; location: string } | undefined,
-  afternoonToilet: { urination: boolean; defecation: boolean; location: string } | undefined
+  afternoonToilet: { urination: boolean; defecation: boolean; location: string } | undefined,
+  memo?: string
 ): string {
   const parts: string[] = [];
 
@@ -170,6 +202,11 @@ function generateTemplateComment(
     `本日の${dogName}ちゃんの様子をお伝えします。`,
   ];
   parts.push(greetings[Math.floor(Math.random() * greetings.length)]);
+
+  // メモがあれば追加
+  if (memo && memo.trim()) {
+    parts.push(memo.trim());
+  }
 
   // できたこと
   if (doneItems.length > 0) {
