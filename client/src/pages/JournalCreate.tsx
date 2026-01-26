@@ -754,7 +754,7 @@ const JournalCreate = () => {
       )}
 
       {/* 下部ボタン */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border p-4 z-30">
+      <div className="fixed bottom-16 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border p-4 z-40">
         <div className="flex gap-3">
           {currentStep !== 'photo' && (
             <button
