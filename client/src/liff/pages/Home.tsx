@@ -222,12 +222,21 @@ export default function Home() {
               <div className="flex -space-x-2">
                 {data.dogs.length > 0 ? (
                   data.dogs.slice(0, 2).map((dog) => (
-                    <img
-                      key={dog.id}
-                      src={dog.photo_url || '/placeholder-dog.png'}
-                      alt={dog.name}
-                      className="size-12 rounded-full border-3 border-white object-cover shadow-md"
-                    />
+                    dog.photo_url ? (
+                      <img
+                        key={dog.id}
+                        src={dog.photo_url}
+                        alt={dog.name}
+                        className="size-12 rounded-full border-3 border-white object-cover shadow-md"
+                      />
+                    ) : (
+                      <div
+                        key={dog.id}
+                        className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center shadow-md"
+                      >
+                        <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
+                      </div>
+                    )
                   ))
                 ) : (
                   <div className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center">
@@ -318,12 +327,21 @@ export default function Home() {
           {data.dogs.length > 0 && (
             <div className="flex -space-x-2 mt-2">
               {data.dogs.slice(0, 3).map((dog) => (
-                <img
-                  key={dog.id}
-                  src={dog.photo_url || '/placeholder-dog.png'}
-                  alt={dog.name}
-                  className="size-6 rounded-full border-2 border-white object-cover"
-                />
+                dog.photo_url ? (
+                  <img
+                    key={dog.id}
+                    src={dog.photo_url}
+                    alt={dog.name}
+                    className="size-6 rounded-full border-2 border-white object-cover"
+                  />
+                ) : (
+                  <div
+                    key={dog.id}
+                    className="size-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center"
+                  >
+                    <iconify-icon icon="solar:paw-print-bold" width="12" height="12" class="text-primary"></iconify-icon>
+                  </div>
+                )
               ))}
               {data.dogs.length > 3 && (
                 <div className="size-6 rounded-full border-2 border-white bg-muted flex items-center justify-center">
