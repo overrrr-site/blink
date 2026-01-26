@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { scanQRCode } from '../utils/liff';
+import { scanQRCode, getLiffDebugInfo } from '../utils/liff';
 
 interface OwnerData {
   id: number;
@@ -77,6 +77,7 @@ export default function Home() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -124,6 +125,10 @@ export default function Home() {
     } catch (scanError: any) {
       console.log('[CheckIn] QR scan failed:', scanError.message);
       setCheckingIn(false);
+      
+      // デバッグ情報を取得
+      const debug = getLiffDebugInfo();
+      setDebugInfo(debug);
       
       // エラーメッセージを設定してモーダルを表示
       let errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
@@ -446,6 +451,14 @@ export default function Home() {
                     <p className="text-xs text-destructive whitespace-pre-line leading-relaxed">{qrError}</p>
                   </div>
                 </div>
+              )}
+
+              {/* デバッグ情報（開発用） */}
+              {debugInfo && (
+                <details className="bg-muted/30 rounded-xl p-3">
+                  <summary className="text-[10px] text-muted-foreground cursor-pointer">デバッグ情報（タップで展開）</summary>
+                  <pre className="text-[9px] text-muted-foreground mt-2 whitespace-pre-wrap font-mono">{debugInfo}</pre>
+                </details>
               )}
 
               {/* 説明 */}

@@ -110,6 +110,31 @@ export const isInLine = (): boolean => {
   return typeof liff !== 'undefined' && liff.isInClient();
 };
 
+export const getLiffDebugInfo = (): string => {
+  if (typeof liff === 'undefined') {
+    return 'LIFF SDK not loaded';
+  }
+  
+  try {
+    const isInClient = liff.isInClient();
+    const os = liff.getOS();
+    const lineVersion = liff.getLineVersion();
+    const context = liff.getContext();
+    const isLoggedIn = liff.isLoggedIn();
+    
+    return [
+      `isInClient: ${isInClient}`,
+      `OS: ${os}`,
+      `LINE Version: ${lineVersion || 'N/A'}`,
+      `Context Type: ${context?.type || 'N/A'}`,
+      `View Type: ${context?.viewType || 'N/A'}`,
+      `Logged In: ${isLoggedIn}`,
+    ].join('\n');
+  } catch (error: any) {
+    return `Debug info error: ${error.message}`;
+  }
+};
+
 export const scanQRCode = async (): Promise<string> => {
   if (typeof liff === 'undefined') {
     throw new Error('LIFF SDK is not loaded');
