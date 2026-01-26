@@ -278,13 +278,21 @@ export function createJournalFlexMessage(journal: any) {
  * 契約情報カードのFlexメッセージを作成
  */
 export function createContractFlexMessage(contract: any, calculatedRemaining: number | null) {
-  const startDate = format(new Date(contract.start_date), 'yyyy年M月d日', { locale: ja });
-  const endDate = contract.end_date
-    ? format(new Date(contract.end_date), 'yyyy年M月d日', { locale: ja })
-    : '無期限';
-  const validUntil = contract.valid_until
-    ? format(new Date(contract.valid_until), 'yyyy年M月d日', { locale: ja })
-    : '無期限';
+  // 日付を安全にフォーマット（nullや無効な値に対応）
+  const formatSafeDate = (dateValue: any, defaultText: string = '未設定'): string => {
+    if (!dateValue) return defaultText;
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return defaultText;
+      return format(date, 'yyyy年M月d日', { locale: ja });
+    } catch {
+      return defaultText;
+    }
+  };
+
+  const startDate = formatSafeDate(contract.start_date, '未設定');
+  const endDate = formatSafeDate(contract.end_date, '無期限');
+  const validUntil = formatSafeDate(contract.valid_until, '無期限');
 
   const priceLabel = contract.contract_type === '月謝制' ? '月額料金' : '料金';
   const price = contract.price ? Math.floor(contract.price).toLocaleString() : '-';

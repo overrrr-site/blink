@@ -853,6 +853,15 @@ async function sendContracts(
 
     // 各契約をFlexメッセージで送信（pushMessageを使用）
     for (const contract of contractsResult.rows) {
+      console.log('契約データ:', JSON.stringify({
+        id: contract.id,
+        dog_name: contract.dog_name,
+        contract_type: contract.contract_type,
+        start_date: contract.start_date,
+        end_date: contract.end_date,
+        valid_until: contract.valid_until,
+      }));
+
       // 残回数を計算
       let calculatedRemaining = null;
       if (contract.contract_type !== '月謝制') {
