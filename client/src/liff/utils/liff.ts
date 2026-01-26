@@ -15,6 +15,16 @@ declare const liff: {
   scanCodeV2(): Promise<{
     value: string;
   }>;
+  getContext(): {
+    type: string;
+    viewType?: string;
+    userId?: string;
+    utouId?: string;
+    roomId?: string;
+    groupId?: string;
+  } | null;
+  getOS(): 'ios' | 'android' | 'web';
+  getLineVersion(): string | null;
 };
 
 const LIFF_ID = import.meta.env.VITE_LIFF_ID || '';
@@ -106,7 +116,18 @@ export const scanQRCode = async (): Promise<string> => {
   }
 
   const isInClient = liff.isInClient();
-  console.log('[LIFF Debug] scanQRCode called, isInClient:', isInClient);
+  const os = liff.getOS();
+  const lineVersion = liff.getLineVersion();
+  const context = liff.getContext();
+  
+  console.log('[LIFF Debug] scanQRCode called');
+  console.log('[LIFF Debug] Environment:', {
+    isInClient,
+    os,
+    lineVersion,
+    contextType: context?.type,
+    viewType: context?.viewType,
+  });
 
   // 外部ブラウザの場合は事前にエラーを返す
   if (!isInClient) {
@@ -114,6 +135,7 @@ export const scanQRCode = async (): Promise<string> => {
   }
 
   try {
+    console.log('[LIFF Debug] Calling liff.scanCodeV2()...');
     // scanCodeV2はLINEアプリ内で動作
     const result = await liff.scanCodeV2();
     console.log('[LIFF Debug] QR scan result:', result.value ? 'success' : 'empty');
@@ -124,23 +146,26 @@ export const scanQRCode = async (): Promise<string> => {
       code: error.code,
       message: error.message,
       name: error.name,
+      stack: error.stack,
     });
     
     // エラーの種類を判別して適切なメッセージを返す
     const errorCode = error.code?.toUpperCase?.() || error.code || '';
     const errorMessage = error.message?.toLowerCase?.() || '';
     
+    // FORBIDDEN: Scan QR scopeが有効になっていない、またはカメラ権限がない
     if (errorCode === 'FORBIDDEN' || errorMessage.includes('permission') || errorMessage.includes('denied')) {
-      throw new Error('カメラへのアクセスが許可されていません');
+      throw new Error('カメラへのアクセスが許可されていません。\n\nLINE Developers Consoleで「Scan QR」スコープが有効になっているか確認してください。');
     }
+    // INVALID_OPERATION: LIFFサイズがFullでない、またはサポートされていない環境
     if (errorCode === 'INVALID_OPERATION' || errorMessage.includes('not supported') || errorMessage.includes('unavailable')) {
-      throw new Error('QRコードスキャンが利用できません');
+      throw new Error('QRコードスキャンが利用できません。\n\nLIFFアプリのサイズを「Full」に設定してください。');
     }
     if (errorCode === 'INIT_FAILED' || errorMessage.includes('init')) {
       throw new Error('LIFFの初期化に失敗しました。ページを再読み込みしてください。');
     }
     
     // その他のエラーは詳細を表示
-    throw new Error(`QRコードスキャンに失敗しました（${errorCode || error.message || '不明なエラー'}）`);
+    throw new Error(`QRコードスキャンに失敗しました\n\nエラー: ${errorCode || error.message || '不明なエラー'}\n\nLINE Developers Consoleで「Scan QR」スコープとLIFFサイズ「Full」を確認してください。`);
   }
 };
