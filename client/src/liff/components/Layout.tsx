@@ -26,7 +26,7 @@ export default function Layout() {
             <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-white"></iconify-icon>
           </div>
           <div className="text-left">
-            <h1 className="text-[10px] font-bold text-primary tracking-wider leading-none mb-0.5">BLINK</h1>
+            <h1 className="text-[10px] font-bold text-primary tracking-wider leading-none mb-0.5">{owner?.storeName || 'BLINK'}</h1>
             <p className="text-sm font-bold font-heading text-foreground leading-none">
               {owner?.name || '飼い主'} 様
             </p>
