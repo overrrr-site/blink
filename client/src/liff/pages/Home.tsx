@@ -4,10 +4,15 @@ import liffClient from '../api/client';
 import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { scanQRCode, getLiffDebugInfo } from '../utils/liff';
+import { useLiffAuthStore } from '../store/authStore';
 
 interface OwnerData {
   id: number;
   name: string;
+  store_id: number;
+  store_name: string;
+  store_address: string;
+  line_id: string;
   dogs: Array<{
     id: number;
     name: string;
@@ -73,6 +78,7 @@ function MenuCard({
 
 export default function Home() {
   const navigate = useNavigate();
+  const { owner, setAuth, token } = useLiffAuthStore();
   const [data, setData] = useState<OwnerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -88,6 +94,19 @@ export default function Home() {
     try {
       const response = await liffClient.get('/me');
       setData(response.data);
+      
+      // authStoreの店舗情報を更新
+      if (response.data && token) {
+        const ownerData = response.data;
+        setAuth(token, {
+          id: ownerData.id,
+          name: ownerData.name,
+          storeId: ownerData.store_id,
+          storeName: ownerData.store_name || '',
+          storeAddress: ownerData.store_address || '',
+          lineUserId: ownerData.line_id || owner?.lineUserId || '',
+        });
+      }
     } catch (error) {
       console.error('Error fetching owner data:', error);
     } finally {

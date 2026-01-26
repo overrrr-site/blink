@@ -108,9 +108,12 @@ router.get('/me', async (req, res) => {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    // 飼い主情報と登録犬を取得
+    // 飼い主情報と店舗情報を取得
     const ownerResult = await pool.query(
-      `SELECT o.* FROM owners o WHERE o.id = $1 AND o.store_id = $2`,
+      `SELECT o.*, s.name as store_name, s.address as store_address 
+       FROM owners o 
+       JOIN stores s ON o.store_id = s.id
+       WHERE o.id = $1 AND o.store_id = $2`,
       [decoded.ownerId, decoded.storeId]
     );
 
