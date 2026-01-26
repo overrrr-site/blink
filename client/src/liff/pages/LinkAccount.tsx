@@ -143,12 +143,13 @@ export default function LinkAccount() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">電話番号</label>
+              <label className="block text-sm font-medium mb-2">電話番号（ハイフンなし）</label>
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="090-1234-5678"
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="09012345678"
+                maxLength={11}
                 className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 disabled={loading}
               />
