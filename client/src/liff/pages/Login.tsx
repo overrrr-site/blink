@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getLiffProfile, initLiff } from '../utils/liff';
+import { getLiffProfile, initLiff, isLiffLoggedIn } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
 
@@ -55,6 +55,17 @@ export default function Login() {
 
         // 本番環境: LIFF SDKを使用
         await initLiff();
+        
+        // LIFFログイン状態を確認
+        if (!isLiffLoggedIn()) {
+          console.log('LIFFログインが必要です。リダイレクト中...');
+          // getLiffProfile内でliff.login()が呼ばれ、リダイレクトが発生する
+          // リダイレクト後、再度このページがロードされる
+          await getLiffProfile();
+          return; // ここには到達しない（リダイレクト後）
+        }
+
+        // ログイン済みの場合、プロフィールを取得
         const profile = await getLiffProfile();
 
         // バックエンドでLINE認証
@@ -72,9 +83,19 @@ export default function Login() {
         }
       } catch (err: any) {
         console.error('Login error:', err);
+        
+        // リダイレクト中のエラーは無視
+        if (err.message === 'Redirecting to LINE login...') {
+          return;
+        }
+        
         if (err.response?.data?.requiresRegistration) {
           // LINE User IDを取得して紐付け画面へ遷移
           try {
+            if (!isLiffLoggedIn()) {
+              setError('LINEログインが必要です');
+              return;
+            }
             const profile = await getLiffProfile();
             navigate('/link', { 
               state: { lineUserId: profile.userId },

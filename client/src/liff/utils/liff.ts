@@ -41,12 +41,20 @@ export const getLiffProfile = async () => {
   }
 
   if (!liff.isLoggedIn()) {
+    // login()はリダイレクトを発生させるため、この後のコードは実行されない
+    // リダイレクト後、再度このページがロードされ、isLoggedIn()がtrueになる
     liff.login();
-    // ログイン後、再度プロフィールを取得する必要がある
-    // 実際の実装では、ログインコールバックを処理する必要があります
-    return await liff.getProfile();
+    // リダイレクトが発生するため、ここには到達しない
+    throw new Error('Redirecting to LINE login...');
   }
   return await liff.getProfile();
+};
+
+export const isLiffLoggedIn = (): boolean => {
+  if (typeof liff === 'undefined') {
+    return false;
+  }
+  return liff.isLoggedIn();
 };
 
 export const logout = () => {
