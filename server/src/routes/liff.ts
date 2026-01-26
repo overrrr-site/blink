@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import pool from '../db/connection.js';
 import { sendEmail } from '../services/emailService.js';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
 import {
   sendBadRequest,
   sendForbidden,
@@ -802,28 +803,14 @@ router.post('/link/verify', async (req, res) => {
 });
 
 // 店舗側: 店舗固定のQRコード生成（店舗認証が必要）
-router.get('/qr-code', async (req, res) => {
+router.get('/qr-code', authenticate, async (req: AuthRequest, res) => {
   try {
-    // 店舗認証が必要（通常のstaff認証を使用）
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      sendUnauthorized(res, '認証トークンが提供されていません');
+    const storeId = req.storeId;
+    
+    if (!storeId) {
+      sendForbidden(res, '店舗が設定されていません');
       return;
     }
-
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-      if (decoded.type !== 'staff') {
-        sendForbidden(res, '店舗スタッフ専用のエンドポイントです');
-        return;
-      }
-    } catch (error: any) {
-      sendUnauthorized(res, '無効な認証トークンです');
-      return;
-    }
-
-    const storeId = decoded.storeId;
 
     // QRコードに含める情報: store_id のみ（固定）
     const qrData = {
