@@ -386,6 +386,34 @@ const Settings = () => {
     }
   }
 
+  const handleReorderTrainingItem = async (category: string, itemId: number, direction: 'up' | 'down', e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    const items = trainingMasters[category]
+    if (!items) return
+    
+    const currentIndex = items.findIndex((item: any) => item.id === itemId)
+    if (currentIndex === -1) return
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    if (newIndex < 0 || newIndex >= items.length) return
+    
+    // Swap display_order between the two items
+    const currentItem = items[currentIndex]
+    const targetItem = items[newIndex]
+    
+    try {
+      await Promise.all([
+        api.put(`/training-masters/${currentItem.id}`, { display_order: targetItem.display_order }),
+        api.put(`/training-masters/${targetItem.id}`, { display_order: currentItem.display_order }),
+      ])
+      fetchTrainingMasters()
+    } catch (error: any) {
+      console.error('Error reordering training item:', error)
+      alert('トレーニング項目の並び替えに失敗しました')
+    }
+  }
+
   const fetchQrCode = async () => {
     setQrLoading(true)
     try {
@@ -566,7 +594,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-32">
       <header className="px-5 pt-6 pb-2 bg-background sticky top-0 z-10">
         <h1 className="text-2xl font-bold font-heading text-foreground mb-4">設定</h1>
         
@@ -831,20 +859,48 @@ const Settings = () => {
                         <span className="text-[10px] text-muted-foreground">{items.length}項目</span>
                       </div>
                       <div className="space-y-1">
-                        {items.map((item) => (
+                        {items.map((item: any, index: number) => (
                           <div
                             key={item.id}
                             className="flex items-center justify-between p-2 hover:bg-muted/30 rounded-lg group"
                           >
-                            <span className="text-xs text-muted-foreground">{item.item_label}</span>
-                            <button
-                              onClick={(e) => handleDeleteTrainingItem(item.id, e)}
-                              className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors opacity-60 hover:opacity-100"
-                              aria-label={`${item.item_label}を削除`}
-                            >
-                              <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14"></iconify-icon>
-            </button>
-          </div>
+                            <span className="text-xs text-muted-foreground flex-1">{item.item_label}</span>
+                            <div className="flex items-center gap-1">
+                              {/* 並び替えボタン */}
+                              <button
+                                onClick={(e) => handleReorderTrainingItem(category, item.id, 'up', e)}
+                                disabled={index === 0}
+                                className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                aria-label={`${item.item_label}を上に移動`}
+                              >
+                                <iconify-icon icon="solar:alt-arrow-up-linear" width="14" height="14"></iconify-icon>
+                              </button>
+                              <button
+                                onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
+                                disabled={index === items.length - 1}
+                                className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                aria-label={`${item.item_label}を下に移動`}
+                              >
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" height="14"></iconify-icon>
+                              </button>
+                              {/* 編集ボタン */}
+                              <button
+                                onClick={() => navigate(`/settings/training/${item.id}`)}
+                                className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors"
+                                aria-label={`${item.item_label}を編集`}
+                              >
+                                <iconify-icon icon="solar:pen-bold" width="14" height="14"></iconify-icon>
+                              </button>
+                              {/* 削除ボタン */}
+                              <button
+                                onClick={(e) => handleDeleteTrainingItem(item.id, e)}
+                                className="p-1.5 text-destructive rounded hover:bg-destructive/10 transition-colors"
+                                aria-label={`${item.item_label}を削除`}
+                              >
+                                <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14"></iconify-icon>
+                              </button>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>

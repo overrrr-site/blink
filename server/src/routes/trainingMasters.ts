@@ -32,6 +32,27 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 });
 
+router.get('/:id', async (req: AuthRequest, res) => {
+  try {
+    if (!requireStoreId(req, res)) return;
+
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT * FROM training_item_masters WHERE id = $1 AND store_id = $2`,
+      [id, req.storeId]
+    );
+
+    if (result.rows.length === 0) {
+      return sendNotFound(res, 'トレーニング項目が見つかりません');
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    sendServerError(res, 'トレーニング項目の取得に失敗しました', error);
+  }
+});
+
 router.post('/', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
