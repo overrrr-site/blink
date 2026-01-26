@@ -25,7 +25,6 @@ import uploadsRoutes from './routes/uploads.js';
 import notificationsRoutes from './routes/notifications.js';
 import billingRoutes from './routes/billing.js';
 import inspectionRecordsRoutes from './routes/inspectionRecords.js';
-import lineWebhookRoutes from './routes/lineWebhook.js';
 
 dotenv.config();
 
@@ -35,10 +34,53 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 
-// LINE Webhookは独自のbodyパーサーを使用するため、express.json()より前に登録
-// express.text()でraw bodyを取得できるようにする
-app.use('/api/line/webhook', express.text({ type: 'application/json' }));
-app.use('/api/line', lineWebhookRoutes);
+// LINE Webhook: 最優先で200を返す（Vercel環境対応）
+// ミドルウェアを通さず、直接ハンドラーを定義
+app.post('/api/line/webhook', (req, res) => {
+  // 何があっても即座に200を返す
+  res.status(200).send('OK');
+  
+  // 非同期でイベント処理（レスポンス後）
+  try {
+    const signature = req.headers['x-line-signature'] as string;
+    if (!signature) {
+      console.log('LINE Webhook: 署名なし（検証リクエスト）');
+      return;
+    }
+    
+    // bodyを文字列化
+    let bodyString: string;
+    let parsedBody: any;
+    
+    if (typeof req.body === 'string') {
+      bodyString = req.body;
+      try { parsedBody = JSON.parse(req.body); } catch { parsedBody = { events: [] }; }
+    } else if (Buffer.isBuffer(req.body)) {
+      bodyString = req.body.toString('utf-8');
+      try { parsedBody = JSON.parse(bodyString); } catch { parsedBody = { events: [] }; }
+    } else if (typeof req.body === 'object' && req.body !== null) {
+      bodyString = JSON.stringify(req.body);
+      parsedBody = req.body;
+    } else {
+      console.log('LINE Webhook: 不明なbody形式');
+      return;
+    }
+    
+    const events = parsedBody.events || [];
+    if (events.length === 0) {
+      console.log('LINE Webhook: イベントなし（検証成功）');
+      return;
+    }
+    
+    // 非同期でイベント処理をインポートして実行
+    import('./services/lineBotService.js').then(async ({ processLineWebhookEvents }) => {
+      await processLineWebhookEvents(events, bodyString, signature);
+    }).catch(err => console.error('LINE Webhook処理エラー:', err));
+    
+  } catch (error) {
+    console.error('LINE Webhook error:', error);
+  }
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -93,7 +135,6 @@ app.use('/api/uploads', uploadsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/inspection-records', inspectionRecordsRoutes);
-// LINE Webhookは上部で登録済み（express.json()の前に登録が必要なため）
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

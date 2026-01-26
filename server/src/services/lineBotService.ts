@@ -1,6 +1,8 @@
 import { Client } from '@line/bot-sdk';
+import crypto from 'crypto';
 import pool from '../db/connection.js';
 import { getStoreLineClient } from './lineMessagingService.js';
+import { decrypt } from '../utils/encryption.js';
 import {
   createReservationFlexMessage,
   createJournalFlexMessage,
@@ -20,6 +22,110 @@ interface LineEvent {
   postback?: {
     data: string;
   };
+  source?: {
+    userId?: string;
+  };
+  replyToken?: string;
+}
+
+/**
+ * LINE Webhook署名検証
+ */
+function verifySignature(
+  channelSecret: string,
+  body: string,
+  signature: string
+): boolean {
+  const hash = crypto
+    .createHmac('sha256', channelSecret)
+    .update(body)
+    .digest('base64');
+  return hash === signature;
+}
+
+/**
+ * LINE Webhookイベントを処理（index.tsから呼び出される）
+ */
+export async function processLineWebhookEvents(
+  events: LineEvent[],
+  bodyString: string,
+  signature: string
+): Promise<void> {
+  for (const event of events) {
+    try {
+      // 検証イベントはスキップ
+      if (event.type === 'verify') {
+        console.log('LINE Webhook: 検証イベント');
+        continue;
+      }
+
+      if (event.type !== 'message' && event.type !== 'postback') {
+        continue;
+      }
+
+      const lineUserId = event.source?.userId;
+      if (!lineUserId) {
+        console.warn('LINE Webhook: userIdなし');
+        continue;
+      }
+
+      // LINE IDから店舗を特定
+      const ownerResult = await pool.query(
+        `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
+         FROM owners o
+         JOIN stores s ON o.store_id = s.id
+         WHERE o.line_id = $1
+         LIMIT 1`,
+        [lineUserId]
+      );
+
+      if (ownerResult.rows.length === 0) {
+        console.warn(`LINE Webhook: ユーザー ${lineUserId} が見つかりません`);
+        continue;
+      }
+
+      const owner = ownerResult.rows[0];
+
+      // 店舗のLINE認証情報を確認
+      if (!owner.line_channel_secret) {
+        console.warn(`LINE Webhook: 店舗ID ${owner.store_id} のLINE認証情報なし`);
+        continue;
+      }
+
+      // 署名検証
+      const channelSecret = decrypt(owner.line_channel_secret);
+      if (!verifySignature(channelSecret, bodyString, signature)) {
+        console.warn(`LINE Webhook: 署名検証失敗 (店舗ID: ${owner.store_id})`);
+        continue;
+      }
+
+      // チャットボット有効チェック
+      const botSettingsResult = await pool.query(
+        `SELECT line_bot_enabled FROM notification_settings WHERE store_id = $1`,
+        [owner.store_id]
+      );
+      const lineBotEnabled = botSettingsResult.rows[0]?.line_bot_enabled ?? false;
+
+      if (!lineBotEnabled) {
+        console.log(`LINE Webhook: 店舗ID ${owner.store_id} はボット無効`);
+        continue;
+      }
+
+      // メッセージ処理
+      const replyToken = event.replyToken;
+      if (replyToken) {
+        await handleLineMessage(
+          owner.store_id,
+          owner.owner_id,
+          lineUserId,
+          event,
+          replyToken
+        );
+      }
+    } catch (error) {
+      console.error('LINE Webhook event処理エラー:', error);
+    }
+  }
 }
 
 /**
