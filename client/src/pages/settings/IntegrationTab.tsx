@@ -39,6 +39,7 @@ function IntegrationTab() {
     vaccine_alert: true,
     line_notification_enabled: false,
     email_notification_enabled: false,
+    line_bot_enabled: false,
   })
   const [testingLine, setTestingLine] = useState(false)
   const [lineTestResult, setLineTestResult] = useState<{
@@ -92,6 +93,7 @@ function IntegrationTab() {
         vaccine_alert: response.data.vaccine_alert ?? true,
         line_notification_enabled: response.data.line_notification_enabled ?? false,
         email_notification_enabled: response.data.email_notification_enabled ?? false,
+        line_bot_enabled: response.data.line_bot_enabled ?? false,
       })
     } catch (error) {
       console.error('Error fetching notification settings:', error)
@@ -394,6 +396,74 @@ function IntegrationTab() {
           )}
         </div>
       </section>
+
+      {/* LINEチャットボット設定 */}
+      {lineStatus?.connected && (
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:chat-round-dots-bold" width="16" height="16" class="text-primary"></iconify-icon>
+              LINEチャットボット設定
+            </h2>
+          </div>
+          <div className="p-4 space-y-4">
+            {/* Webhook URL表示 */}
+            <div className="bg-accent/30 rounded-xl p-3">
+              <div className="flex items-start gap-2 mb-2">
+                <iconify-icon icon="solar:info-circle-bold" width="16" height="16" class="text-accent-foreground mt-0.5"></iconify-icon>
+                <div className="flex-1">
+                  <p className="text-xs font-bold mb-1">Webhook URL</p>
+                  <p className="text-[10px] text-muted-foreground mb-2">
+                    LINE Developersコンソールの「Messaging API設定」→「Webhook URL」に以下のURLを設定してください。
+                  </p>
+                  <div className="bg-background rounded-lg p-2 border border-border">
+                    <code className="text-[10px] text-foreground break-all">
+                      https://blink-overrrr.vercel.app/api/line/webhook
+                    </code>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('https://blink-overrrr.vercel.app/api/line/webhook');
+                      alert('Webhook URLをコピーしました');
+                    }}
+                    className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+                  >
+                    <iconify-icon icon="solar:copy-bold" width="12" height="12"></iconify-icon>
+                    URLをコピー
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* チャットボット有効化スイッチ */}
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <span className="text-sm font-medium block">チャットボットを有効にする</span>
+                <span className="text-[10px] text-muted-foreground">
+                  オンにすると、飼い主がLINEチャットから予約確認・日誌閲覧などができます
+                </span>
+              </div>
+              <ToggleSwitch
+                checked={notificationSettings.line_bot_enabled || false}
+                onChange={() => updateNotificationSetting('line_bot_enabled', !(notificationSettings.line_bot_enabled || false))}
+              />
+            </div>
+
+            {/* 使い方ガイド */}
+            <div className="bg-muted/30 rounded-xl p-3">
+              <p className="text-xs font-bold mb-2">📖 使い方</p>
+              <div className="space-y-1 text-[10px] text-muted-foreground">
+                <p>• 「予約確認」→ 今後の予約一覧を表示</p>
+                <p>• 「予約する」→ 新規予約作成（LIFFアプリを開く）</p>
+                <p>• 「キャンセル」→ 予約をキャンセル</p>
+                <p>• 「日誌」「日報」→ 日誌一覧を表示</p>
+                <p>• 「契約」「残回数」→ 契約情報と残回数を表示</p>
+                <p>• 「ヘルプ」→ 使い方ガイドを表示</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 通知設定 */}
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">

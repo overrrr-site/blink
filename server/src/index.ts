@@ -25,6 +25,7 @@ import uploadsRoutes from './routes/uploads.js';
 import notificationsRoutes from './routes/notifications.js';
 import billingRoutes from './routes/billing.js';
 import inspectionRecordsRoutes from './routes/inspectionRecords.js';
+import lineWebhookRoutes from './routes/lineWebhook.js';
 
 dotenv.config();
 
@@ -86,6 +87,7 @@ app.use('/api/uploads', uploadsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/inspection-records', inspectionRecordsRoutes);
+app.use('/api/line', lineWebhookRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

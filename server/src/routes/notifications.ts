@@ -50,6 +50,7 @@ router.put('/settings', async (req: AuthRequest, res) => {
       vaccine_alert_days,
       line_notification_enabled,
       email_notification_enabled,
+      line_bot_enabled,
     } = req.body;
 
     // 既存の設定を確認
@@ -65,8 +66,8 @@ router.put('/settings', async (req: AuthRequest, res) => {
         `INSERT INTO notification_settings (
           store_id, reminder_before_visit, reminder_before_visit_days,
           journal_notification, vaccine_alert, vaccine_alert_days,
-          line_notification_enabled, email_notification_enabled
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          line_notification_enabled, email_notification_enabled, line_bot_enabled
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *`,
         [
           req.storeId,
@@ -77,6 +78,7 @@ router.put('/settings', async (req: AuthRequest, res) => {
           vaccine_alert_days ?? 14,
           line_notification_enabled ?? false,
           email_notification_enabled ?? false,
+          line_bot_enabled ?? false,
         ]
       );
     } else {
@@ -90,8 +92,9 @@ router.put('/settings', async (req: AuthRequest, res) => {
           vaccine_alert_days = COALESCE($5, vaccine_alert_days),
           line_notification_enabled = COALESCE($6, line_notification_enabled),
           email_notification_enabled = COALESCE($7, email_notification_enabled),
+          line_bot_enabled = COALESCE($8, line_bot_enabled),
           updated_at = CURRENT_TIMESTAMP
-        WHERE store_id = $8
+        WHERE store_id = $9
         RETURNING *`,
         [
           reminder_before_visit,
@@ -101,6 +104,7 @@ router.put('/settings', async (req: AuthRequest, res) => {
           vaccine_alert_days,
           line_notification_enabled,
           email_notification_enabled,
+          line_bot_enabled,
           req.storeId,
         ]
       );

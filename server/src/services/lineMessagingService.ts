@@ -56,7 +56,7 @@ async function getStoreLineCredentials(storeId: number): Promise<{
 /**
  * 店舗ごとのLINEクライアントを取得（キャッシュあり）
  */
-async function getStoreLineClient(storeId: number): Promise<Client | null> {
+export async function getStoreLineClient(storeId: number): Promise<Client | null> {
   // キャッシュにあればそれを返す
   if (storeLineClients.has(storeId)) {
     return storeLineClients.get(storeId)!;
