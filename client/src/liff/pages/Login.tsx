@@ -11,18 +11,22 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('[Login Debug] useEffect triggered, isAuthenticated:', isAuthenticated);
+    
     if (isAuthenticated) {
+      console.log('[Login Debug] Already authenticated, navigating to /');
       navigate('/');
       return;
     }
 
     const handleLogin = async () => {
+      console.log('[Login Debug] handleLogin started');
       try {
         setLoading(true);
         
         // 開発環境（LIFF_IDが設定されていない場合）はダミーデータで認証
         if (!import.meta.env.VITE_LIFF_ID) {
-          console.log('開発モード: ダミーLINE IDで認証します');
+          console.log('[Login Debug] Dev mode: VITE_LIFF_ID not set');
           const mockProfile = {
             userId: 'dev-user-12345',  // データベースに設定した固定ID
             displayName: '開発ユーザー',
@@ -54,11 +58,15 @@ export default function Login() {
         }
 
         // 本番環境: LIFF SDKを使用
+        console.log('[Login Debug] Production mode: initializing LIFF');
         await initLiff();
         
         // LIFFログイン状態を確認
-        if (!isLiffLoggedIn()) {
-          console.log('LIFFログインが必要です。リダイレクト中...');
+        const loggedIn = isLiffLoggedIn();
+        console.log('[Login Debug] LIFF login status:', loggedIn);
+        
+        if (!loggedIn) {
+          console.log('[Login Debug] Not logged in, will redirect to LINE login');
           // getLiffProfile内でliff.login()が呼ばれ、リダイレクトが発生する
           // リダイレクト後、再度このページがロードされる
           await getLiffProfile();
@@ -66,19 +74,26 @@ export default function Login() {
         }
 
         // ログイン済みの場合、プロフィールを取得
+        console.log('[Login Debug] Already logged in, getting profile');
         const profile = await getLiffProfile();
+        console.log('[Login Debug] Got profile, userId:', profile.userId);
 
         // バックエンドでLINE認証
+        console.log('[Login Debug] Calling backend auth API');
         const response = await liffClient.post('/auth', {
           lineUserId: profile.userId,
           displayName: profile.displayName,
           pictureUrl: profile.pictureUrl,
         });
 
+        console.log('[Login Debug] Backend response:', response.data);
+
         if (response.data.token && response.data.owner) {
+          console.log('[Login Debug] Auth successful, navigating to /');
           setAuth(response.data.token, response.data.owner);
           navigate('/');
         } else {
+          console.log('[Login Debug] Auth failed - no token or owner');
           setError('認証に失敗しました');
         }
       } catch (err: any) {
