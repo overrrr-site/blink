@@ -31,8 +31,10 @@ interface OwnerData {
     contract_type: string;
     start_date: string;
     end_date: string;
-    monthly_fee: number;
+    price: number | null;
+    total_sessions: number | null;
     remaining_sessions: number | null;
+    calculated_remaining: number | null;
     monthly_sessions: number | null;
   }>;
 }
@@ -270,24 +272,35 @@ export default function MyPage() {
               </div>
               <p className="text-base font-bold">{currentContract.course_name}</p>
               
-              {/* 残数表示 */}
-              {currentContract.contract_type === 'チケット制' && currentContract.remaining_sessions !== null && (
+              {/* 残数表示（チケット制） */}
+              {currentContract.contract_type === 'チケット制' && (
                 <div className="mt-3 pt-3 border-t border-accent/30">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">残り回数</span>
-                    <span className={`text-lg font-bold ${
-                      currentContract.remaining_sessions === 0 
-                        ? 'text-destructive' 
-                        : currentContract.remaining_sessions <= 3 
-                        ? 'text-warning' 
-                        : 'text-primary'
-                    }`}>
-                      {currentContract.remaining_sessions} 回
-                    </span>
+                    {(() => {
+                      const remaining = currentContract.calculated_remaining ?? currentContract.remaining_sessions ?? 0;
+                      return (
+                        <span className={`text-lg font-bold ${
+                          remaining === 0 
+                            ? 'text-destructive' 
+                            : remaining <= 3 
+                            ? 'text-warning' 
+                            : 'text-primary'
+                        }`}>
+                          {remaining} 回
+                          {currentContract.total_sessions && (
+                            <span className="text-xs font-normal text-muted-foreground ml-1">
+                              / {currentContract.total_sessions}回
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
               
+              {/* 月間利用可能回数（月謝制） */}
               {currentContract.contract_type === '月謝制' && currentContract.monthly_sessions && (
                 <div className="mt-3 pt-3 border-t border-accent/30">
                   <div className="flex items-center justify-between">
@@ -299,13 +312,18 @@ export default function MyPage() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-accent/30">
-                <span className="text-xs text-muted-foreground">月額料金</span>
-                <span className="text-base font-bold">
-                  ¥{currentContract.monthly_fee?.toLocaleString()}
-                  <span className="text-xs font-normal text-muted-foreground">（税込）</span>
-                </span>
-              </div>
+              {/* 料金表示 */}
+              {currentContract.price && (
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-accent/30">
+                  <span className="text-xs text-muted-foreground">
+                    {currentContract.contract_type === '月謝制' ? '月額料金' : '料金'}
+                  </span>
+                  <span className="text-base font-bold">
+                    ¥{currentContract.price?.toLocaleString()}
+                    <span className="text-xs font-normal text-muted-foreground">（税込）</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </section>
