@@ -129,8 +129,10 @@ export default function Home() {
       let errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
       
       // カメラ権限エラーの場合、詳細な案内を追加
-      if (errorMessage.includes('カメラ') || errorMessage.includes('permission')) {
-        errorMessage = 'カメラへのアクセスが許可されていません。\n\n【LINEアプリの場合】\n端末の設定 → LINE → カメラをオンにしてください\n\n【ブラウザの場合】\nアドレスバー左のアイコンをタップし、カメラを許可してください';
+      if (errorMessage.includes('カメラへのアクセスが許可されていません')) {
+        errorMessage = 'カメラへのアクセスが許可されていません。\n\n【iPhoneの場合】\n設定アプリ → LINE → カメラをオンにしてください\n\n【Androidの場合】\n設定 → アプリ → LINE → 権限 → カメラを許可';
+      } else if (errorMessage.includes('LINEアプリ内でのみ')) {
+        errorMessage = 'QRコードスキャンはLINEアプリ内でのみ利用可能です。\n\nLINEアプリのトーク画面からこのページを開いてください。';
       }
       
       setQrError(errorMessage);

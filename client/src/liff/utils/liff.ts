@@ -105,22 +105,42 @@ export const scanQRCode = async (): Promise<string> => {
     throw new Error('LIFF SDK is not loaded');
   }
 
-  console.log('[LIFF Debug] scanQRCode called, isInClient:', liff.isInClient());
+  const isInClient = liff.isInClient();
+  console.log('[LIFF Debug] scanQRCode called, isInClient:', isInClient);
+
+  // 外部ブラウザの場合は事前にエラーを返す
+  if (!isInClient) {
+    throw new Error('QRコードスキャンはLINEアプリ内でのみ利用可能です。LINEアプリからこのページを開いてください。');
+  }
 
   try {
-    // scanCodeV2はLINEアプリ内と一部の外部ブラウザで動作
+    // scanCodeV2はLINEアプリ内で動作
     const result = await liff.scanCodeV2();
     console.log('[LIFF Debug] QR scan result:', result.value ? 'success' : 'empty');
     return result.value;
   } catch (error: any) {
     console.error('[LIFF Debug] QR scan error:', error);
+    console.error('[LIFF Debug] Error details:', {
+      code: error.code,
+      message: error.message,
+      name: error.name,
+    });
+    
     // エラーの種類を判別して適切なメッセージを返す
-    if (error.code === 'FORBIDDEN' || error.message?.includes('permission')) {
+    const errorCode = error.code?.toUpperCase?.() || error.code || '';
+    const errorMessage = error.message?.toLowerCase?.() || '';
+    
+    if (errorCode === 'FORBIDDEN' || errorMessage.includes('permission') || errorMessage.includes('denied')) {
       throw new Error('カメラへのアクセスが許可されていません');
     }
-    if (error.code === 'INVALID_OPERATION' || error.message?.includes('not supported')) {
-      throw new Error('このブラウザではQRコードスキャンがサポートされていません');
+    if (errorCode === 'INVALID_OPERATION' || errorMessage.includes('not supported') || errorMessage.includes('unavailable')) {
+      throw new Error('QRコードスキャンが利用できません');
     }
-    throw error;
+    if (errorCode === 'INIT_FAILED' || errorMessage.includes('init')) {
+      throw new Error('LIFFの初期化に失敗しました。ページを再読み込みしてください。');
+    }
+    
+    // その他のエラーは詳細を表示
+    throw new Error(`QRコードスキャンに失敗しました（${errorCode || error.message || '不明なエラー'}）`);
   }
 };
