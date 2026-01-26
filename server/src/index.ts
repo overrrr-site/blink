@@ -35,8 +35,9 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 
-// LINE Webhookはexpress.raw()が必要なため、express.json()の前に登録
-// （express.json()が先に適用されるとbodyがパースされてしまうため）
+// LINE Webhookは独自のbodyパーサーを使用するため、express.json()より前に登録
+// express.text()でraw bodyを取得できるようにする
+app.use('/api/line/webhook', express.text({ type: 'application/json' }));
 app.use('/api/line', lineWebhookRoutes);
 
 app.use(express.json());

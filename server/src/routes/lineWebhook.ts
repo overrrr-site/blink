@@ -23,8 +23,12 @@ function verifySignature(
 
 /**
  * bodyを文字列として取得（Vercel環境対応）
+ * express.text()で取得した場合は文字列、それ以外はオブジェクト/Bufferの可能性あり
  */
 function getBodyString(body: any): string {
+  if (!body) {
+    return '{}';
+  }
   if (typeof body === 'string') {
     return body;
   }
