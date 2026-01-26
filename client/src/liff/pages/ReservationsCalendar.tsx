@@ -176,7 +176,7 @@ export default function ReservationsCalendar() {
                       : 'text-muted-foreground/40 hover:bg-muted/50'
                   }`}
                 aria-label={`${format(day, 'M月d日')}${hasReservation ? `、${dayReservations.length}件の予約あり` : ''}`}
-                aria-pressed={isSelected}
+                aria-pressed={!!isSelected}
               >
                 <span className={`text-sm ${isSelected || isToday ? 'font-bold' : ''}`}>
                   {format(day, 'd')}

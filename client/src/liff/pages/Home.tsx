@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
 import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -71,7 +70,6 @@ function MenuCard({
 
 export default function Home() {
   const navigate = useNavigate();
-  const { owner } = useLiffAuthStore();
   const [data, setData] = useState<OwnerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

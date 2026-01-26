@@ -32,12 +32,14 @@ interface OwnerData {
     start_date: string;
     end_date: string;
     monthly_fee: number;
+    remaining_sessions: number | null;
+    monthly_sessions: number | null;
   }>;
 }
 
 export default function MyPage() {
   const navigate = useNavigate();
-  const { owner, clearAuth } = useLiffAuthStore();
+  const { clearAuth } = useLiffAuthStore();
   const [data, setData] = useState<OwnerData | null>(null);
   const [loading, setLoading] = useState(true);
 
