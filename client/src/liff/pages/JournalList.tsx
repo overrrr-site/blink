@@ -112,7 +112,7 @@ export default function JournalList() {
           {journals.map((journal) => (
             <button
               key={journal.id}
-              onClick={() => navigate(`/journals/${journal.id}`)}
+              onClick={() => navigate(`/home/journals/${journal.id}`)}
               className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left 
                          hover:bg-muted/50 active:bg-muted active:scale-[0.99] transition-all"
               aria-label={`${journal.dog_name}の${format(new Date(journal.journal_date), 'M月d日')}の日誌を見る`}
