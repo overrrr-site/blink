@@ -38,8 +38,8 @@ export default function PrivacyPolicy() {
             <p className="text-sm font-bold">OVER株式会社</p>
             <p className="text-xs text-muted-foreground mt-1">〒150-0021 東京都渋谷区恵比寿西2-8-4</p>
             <p className="text-xs text-muted-foreground">
-              <a href="https://www.overrrr.com/company" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                https://www.overrrr.com/company
+              <a href="https://www.overrrr.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                https://www.overrrr.com
               </a>
             </p>
           </div>
