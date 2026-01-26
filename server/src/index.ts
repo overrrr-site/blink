@@ -34,6 +34,11 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
+
+// LINE Webhookはexpress.raw()が必要なため、express.json()の前に登録
+// （express.json()が先に適用されるとbodyがパースされてしまうため）
+app.use('/api/line', lineWebhookRoutes);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -87,7 +92,7 @@ app.use('/api/uploads', uploadsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/inspection-records', inspectionRecordsRoutes);
-app.use('/api/line', lineWebhookRoutes);
+// LINE Webhookは上部で登録済み（express.json()の前に登録が必要なため）
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
