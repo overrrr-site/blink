@@ -9,17 +9,19 @@ UPDATE reservations SET status = '登園済' WHERE status = 'チェックイン�
 -- まず、すべての既存のCHECK制約を削除（制約名が異なる可能性があるため）
 DO $$
 DECLARE
-  constraint_name text;
+  constraint_record RECORD;
 BEGIN
-  -- reservationsテーブルのstatusカラムに関するCHECK制約をすべて検索して削除
-  FOR constraint_name IN
-    SELECT conname
+  -- reservationsテーブルのすべてのCHECK制約を取得
+  FOR constraint_record IN
+    SELECT conname, pg_get_constraintdef(oid) as definition
     FROM pg_constraint
     WHERE conrelid = 'reservations'::regclass
       AND contype = 'c'
-      AND pg_get_constraintdef(oid) LIKE '%status%'
   LOOP
-    EXECUTE 'ALTER TABLE reservations DROP CONSTRAINT IF EXISTS ' || quote_ident(constraint_name);
+    -- statusカラムに関連する制約を削除
+    IF constraint_record.definition LIKE '%status%' THEN
+      EXECUTE 'ALTER TABLE reservations DROP CONSTRAINT IF EXISTS ' || quote_ident(constraint_record.conname);
+    END IF;
   END LOOP;
 END $$;
 
