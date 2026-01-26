@@ -1,6 +1,6 @@
 import { supabase } from '../db/supabase.js';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 // Supabase Storageのバケット名
 const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
@@ -29,7 +29,7 @@ export async function uploadToSupabaseStorage(
   try {
     // ユニークなファイル名を生成
     const ext = path.extname(file.originalname);
-    const uniqueFilename = `${uuidv4()}${ext}`;
+    const uniqueFilename = `${randomUUID()}${ext}`;
     const filePath = `${category}/${uniqueFilename}`;
 
     // Supabase Storageにアップロード

@@ -132,13 +132,16 @@ router.post('/', async (req: AuthRequest, res) => {
       return;
     }
 
+    // 空文字列をnullに変換（DB制約対応）
+    const neuteredValue = neutered === '' ? null : neutered;
+
     const dogResult = await pool.query(
       `INSERT INTO dogs (
         owner_id, name, breed, birth_date, gender, weight,
         color, photo_url, neutered
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
-      [owner_id, name, breed, birth_date, gender, weight, color, photo_url, neutered]
+      [owner_id, name, breed, birth_date, gender, weight, color, photo_url, neuteredValue]
     );
 
     const dogId = dogResult.rows[0].id;
@@ -217,6 +220,9 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return;
     }
 
+    // 空文字列をnullに変換（DB制約対応）
+    const neuteredValue = neutered === '' ? null : neutered;
+
     const result = await pool.query(
       `UPDATE dogs SET
         name = $1, breed = $2, birth_date = $3, gender = $4,
@@ -224,7 +230,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $9
       RETURNING *`,
-      [name, breed, birth_date, gender, weight, color, photo_url, neutered, id]
+      [name, breed, birth_date, gender, weight, color, photo_url, neuteredValue, id]
     );
 
     // 健康情報の更新
