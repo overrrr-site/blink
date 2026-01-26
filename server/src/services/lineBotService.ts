@@ -199,18 +199,40 @@ async function handleTextMessage(
 ): Promise<void> {
   const normalizedText = text.toLowerCase().replace(/\s+/g, '');
 
-  // コマンド判定
-  if (normalizedText.includes('予約') && (normalizedText.includes('確認') || normalizedText.includes('見る') || normalizedText.includes('一覧'))) {
-    await sendReservations(client, lineUserId, ownerId, replyToken);
-  } else if (normalizedText.includes('予約') && (normalizedText.includes('する') || normalizedText.includes('作成') || normalizedText.includes('新規'))) {
+  // コマンド判定（揺らぎ対応）
+  // 予約作成キーワード
+  const reservationCreateKeywords = ['予約する', '予約したい', '予約取', '予約とる', '予約とりたい', '予約入れ', '予約いれ', '新しく予約', '新規予約', 'よやくする', 'よやくしたい'];
+  // 予約確認キーワード
+  const reservationViewKeywords = ['予約確認', '予約見', '予約みる', '予約みたい', '予約一覧', '予約いちらん', '次の予約', 'いつ予約', 'よやくかくにん', 'よやくみ'];
+  // キャンセルキーワード
+  const cancelKeywords = ['キャンセル', 'きゃんせる', 'やめる', 'やめたい', '取り消し', '取消', 'とりけし', '予約取消', '予約キャンセル'];
+  // 日誌キーワード
+  const journalKeywords = ['日誌', '日報', 'にっし', 'にっぽう', 'レポート', '報告', '様子', 'ようす', '今日の'];
+  // 契約キーワード
+  const contractKeywords = ['契約', 'けいやく', '残回数', '残り回数', 'のこり', 'あと何回', '回数券', 'チケット'];
+  // ヘルプキーワード
+  const helpKeywords = ['ヘルプ', 'へるぷ', 'help', '使い方', 'つかいかた', '？', '?', 'わからない', '教えて', 'おしえて', '何ができる'];
+
+  // 予約作成（先にチェック - より具体的なキーワード）
+  if (reservationCreateKeywords.some(keyword => normalizedText.includes(keyword))) {
     await sendReservationLink(client, lineUserId, storeId, replyToken);
-  } else if (normalizedText.includes('キャンセル')) {
+  // 予約確認
+  } else if (reservationViewKeywords.some(keyword => normalizedText.includes(keyword))) {
+    await sendReservations(client, lineUserId, ownerId, replyToken);
+  // 「予約」または「よやく」単体 → メニュー表示
+  } else if (normalizedText === '予約' || normalizedText === 'よやく' || normalizedText.match(/^予約[！!]?$/) || normalizedText.match(/^よやく[！!]?$/)) {
+    await sendReservationMenu(client, lineUserId, storeId, replyToken);
+  // キャンセル
+  } else if (cancelKeywords.some(keyword => normalizedText.includes(keyword))) {
     await sendCancellableReservations(client, lineUserId, ownerId, replyToken);
-  } else if (normalizedText.includes('日誌') || normalizedText.includes('日報')) {
+  // 日誌
+  } else if (journalKeywords.some(keyword => normalizedText.includes(keyword))) {
     await sendJournals(client, lineUserId, ownerId, replyToken);
-  } else if (normalizedText.includes('契約') || normalizedText.includes('残回数') || normalizedText.includes('残り')) {
+  // 契約
+  } else if (contractKeywords.some(keyword => normalizedText.includes(keyword))) {
     await sendContracts(client, lineUserId, ownerId, replyToken);
-  } else if (normalizedText.includes('ヘルプ') || normalizedText.includes('使い方') || normalizedText === '？' || normalizedText === '?') {
+  // ヘルプ
+  } else if (helpKeywords.some(keyword => normalizedText.includes(keyword))) {
     await sendHelp(client, lineUserId, replyToken);
   } else {
     // 不明なメッセージにはヘルプを返す
@@ -270,6 +292,10 @@ async function handlePostback(
         break;
       case 'help':
         await sendHelp(client, lineUserId, replyToken);
+        break;
+      case 'cancel_menu':
+        // 予約キャンセルメニュー
+        await sendCancellableReservations(client, lineUserId, ownerId, replyToken);
         break;
       case 'cancel':
         // キャンセル操作をやめる
@@ -365,28 +391,28 @@ async function sendReservationLink(
   storeId: number,
   replyToken: string
 ): Promise<void> {
-  // LIFF URLを生成（環境変数から取得）
   const liffId = process.env.LIFF_ID;
-    if (!liffId) {
-      await client.pushMessage(lineUserId, {
-        type: 'text',
-        text: '予約機能の設定が完了していません。管理者にお問い合わせください。',
-      }, false);
-      return;
-    }
+  if (!liffId) {
+    await client.pushMessage(lineUserId, {
+      type: 'text',
+      text: '予約機能の設定が完了していません。管理者にお問い合わせください。',
+    }, false);
+    return;
+  }
 
-  const liffUrl = `https://liff.line.me/${liffId}/home/reservations`;
+  // 予約作成ページに直接遷移
+  const liffUrl = `https://liff.line.me/${liffId}/home/reservations/new`;
 
   await client.replyMessage(replyToken, {
     type: 'text',
-    text: '予約を作成するには、以下のリンクをタップしてください。',
+    text: '📅 予約作成ページを開きます。\n下のボタンをタップしてください。',
     quickReply: {
       items: [
         {
           type: 'action',
           action: {
             type: 'uri',
-            label: '予約する',
+            label: '予約を作成する',
             uri: liffUrl,
           },
         },
@@ -396,6 +422,52 @@ async function sendReservationLink(
             type: 'postback',
             label: '予約確認',
             data: 'action=view_reservations',
+          },
+        },
+      ],
+    },
+  });
+}
+
+/**
+ * 予約メニューを送信（「予約」単体の場合）
+ */
+async function sendReservationMenu(
+  client: Client,
+  lineUserId: string,
+  storeId: number,
+  replyToken: string
+): Promise<void> {
+  const liffId = process.env.LIFF_ID;
+  const createUrl = liffId ? `https://liff.line.me/${liffId}/home/reservations/new` : '#';
+
+  await client.replyMessage(replyToken, {
+    type: 'text',
+    text: '📅 予約メニュー\n\nどちらをご希望ですか？',
+    quickReply: {
+      items: [
+        {
+          type: 'action',
+          action: {
+            type: 'uri',
+            label: '新しく予約する',
+            uri: createUrl,
+          },
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'postback',
+            label: '予約を確認する',
+            data: 'action=view_reservations',
+          },
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'postback',
+            label: 'キャンセルする',
+            data: 'action=cancel_menu',
           },
         },
       ],
