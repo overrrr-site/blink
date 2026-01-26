@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getLiffProfile, initLiff, isLiffLoggedIn } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
+import logoImage from '../../assets/logo.png';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -137,10 +138,7 @@ export default function Login() {
       <div className="flex items-center justify-center h-screen bg-gradient-to-b from-primary/5 to-background">
         <div className="text-center px-8">
           {/* ロゴ */}
-          <div className="size-24 bg-gradient-to-br from-primary to-primary/70 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg animate-pulse">
-            <iconify-icon icon="solar:paw-print-bold" width="48" height="48" class="text-white"></iconify-icon>
-          </div>
-          <h1 className="text-2xl font-bold font-heading text-primary mb-2">BLINK</h1>
+          <img src={logoImage} alt="Blink" className="h-24 mx-auto mb-6 animate-pulse" />
           <p className="text-sm text-muted-foreground mb-8">犬の幼稚園</p>
           
           <iconify-icon
@@ -160,9 +158,7 @@ export default function Login() {
       <div className="flex items-center justify-center h-screen bg-gradient-to-b from-primary/5 to-background px-5">
         <div className="text-center max-w-sm">
           {/* ロゴ */}
-          <div className="size-20 bg-gradient-to-br from-primary to-primary/70 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <iconify-icon icon="solar:paw-print-bold" width="40" height="40" class="text-white"></iconify-icon>
-          </div>
+          <img src={logoImage} alt="Blink" className="h-20 mx-auto mb-6" />
           
           <div className="bg-destructive/10 rounded-2xl p-6 mb-6">
             <iconify-icon

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import logoImage from '../assets/logo.png'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -42,7 +43,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
       <header className="px-5 pt-8 pb-6 text-center">
-        <h1 className="text-2xl font-bold font-heading text-foreground">Blink</h1>
+        <img src={logoImage} alt="Blink" className="h-16 mx-auto mb-2" />
         <p className="text-sm text-muted-foreground mt-1">犬の幼稚園 顧客管理システム</p>
       </header>
 

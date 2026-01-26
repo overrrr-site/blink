@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
+import logoImage from '../../assets/logo.png';
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -22,9 +23,7 @@ export default function Layout() {
           className="flex items-center gap-3 active:opacity-70 transition-opacity"
           aria-label="ホームに戻る"
         >
-          <div className="size-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-md">
-            <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-white"></iconify-icon>
-          </div>
+          <img src={logoImage} alt="Blink" className="h-10" />
           <div className="text-left">
             <h1 className="text-[10px] font-bold text-primary tracking-wider leading-none mb-0.5">{owner?.storeName || 'BLINK'}</h1>
             <p className="text-sm font-bold font-heading text-foreground leading-none">

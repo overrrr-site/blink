@@ -985,4 +985,93 @@ router.post('/check-in', async (req, res) => {
   }
 });
 
+// LIFF側: QRコードによるチェックアウト（降園）
+router.post('/check-out', async (req, res) => {
+  try {
+    const decoded = requireOwnerToken(req, res);
+    if (!decoded) return;
+
+    const { qrCode, reservationId } = req.body;
+
+    if (!qrCode || !reservationId) {
+      sendBadRequest(res, 'QRコードと予約IDが必要です');
+      return;
+    }
+
+    // QRコードを検証
+    try {
+      const qrData = jwt.verify(qrCode, process.env.JWT_SECRET || 'secret') as {
+        storeId: number;
+        type: string;
+      };
+
+      if (qrData.type !== 'store_checkin' || qrData.storeId !== decoded.storeId) {
+        return res.status(400).json({
+          error: 'QRコードが無効です',
+        });
+      }
+    } catch (jwtError) {
+      return res.status(400).json({
+        error: 'QRコードが無効または期限切れです',
+      });
+    }
+
+    // 予約を取得・検証
+    const reservationResult = await pool.query(
+      `SELECT r.*, d.owner_id, d.name as dog_name
+       FROM reservations r
+       JOIN dogs d ON r.dog_id = d.id
+       WHERE r.id = $1`,
+      [reservationId]
+    );
+
+    if (reservationResult.rows.length === 0) {
+      return res.status(404).json({
+        error: '予約が見つかりません',
+      });
+    }
+
+    const reservation = reservationResult.rows[0];
+
+    // 飼い主の犬か確認
+    if (reservation.owner_id !== decoded.ownerId) {
+      return res.status(403).json({
+        error: 'この予約にアクセスする権限がありません',
+      });
+    }
+
+    // チェックイン済みか確認
+    if (reservation.status !== 'チェックイン済') {
+      return res.status(400).json({
+        error: 'チェックインされていません',
+      });
+    }
+
+    // 既にチェックアウト済みか確認
+    if (reservation.checked_out_at) {
+      return res.status(400).json({
+        error: '既にチェックアウト済みです',
+      });
+    }
+
+    // チェックアウト時刻を更新
+    const result = await pool.query(
+      `UPDATE reservations 
+       SET checked_out_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [reservationId]
+    );
+
+    res.json({
+      message: 'チェックアウトが完了しました',
+      reservation: result.rows[0],
+    });
+  } catch (error: any) {
+    console.error('Check-out error:', error);
+    sendServerError(res, 'チェックアウトに失敗しました', error);
+  }
+});
+
 export default router;

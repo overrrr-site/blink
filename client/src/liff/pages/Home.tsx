@@ -19,6 +19,9 @@ interface OwnerData {
     reservation_time: string;
     dog_name: string;
     dog_photo: string;
+    status: string;
+    checked_in_at: string | null;
+    checked_out_at: string | null;
   } | null;
 }
 
@@ -74,7 +77,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [qrModalMode, setQrModalMode] = useState<'checkin' | 'checkout'>('checkin');
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
@@ -118,6 +123,7 @@ export default function Home() {
     }
 
     setCheckingIn(true);
+    setQrModalMode('checkin');
     try {
       // まずQRコードスキャンを試みる
       const qrCode = await scanQRCode();
@@ -174,7 +180,82 @@ export default function Home() {
       alert('QRコードの内容を入力してください');
       return;
     }
-    processCheckIn(qrInput.trim());
+    if (qrModalMode === 'checkout') {
+      processCheckOut(qrInput.trim());
+    } else {
+      processCheckIn(qrInput.trim());
+    }
+  };
+
+  // チェックアウト（降園）処理
+  const handleCheckOut = async () => {
+    if (!data?.nextReservation) {
+      alert('予約が見つかりません');
+      return;
+    }
+
+    // チェックイン済みか確認
+    if (data.nextReservation.status !== 'チェックイン済') {
+      alert('チェックインされていません');
+      return;
+    }
+
+    // 既にチェックアウト済みか確認
+    if (data.nextReservation.checked_out_at) {
+      alert('既にチェックアウト済みです');
+      return;
+    }
+
+    setCheckingOut(true);
+    setQrModalMode('checkout');
+    try {
+      // QRコードスキャンを試みる
+      const qrCode = await scanQRCode();
+      await processCheckOut(qrCode);
+    } catch (scanError: any) {
+      console.log('[CheckOut] QR scan failed:', scanError.message);
+      setCheckingOut(false);
+      
+      // デバッグ情報を取得
+      const debug = getLiffDebugInfo();
+      setDebugInfo(debug);
+      
+      // エラーメッセージを設定してモーダルを表示
+      let errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
+      
+      if (errorMessage.includes('カメラへのアクセスが許可されていません')) {
+        errorMessage = 'カメラへのアクセスが許可されていません。\n\n【iPhoneの場合】\n設定アプリ → LINE → カメラをオンにしてください\n\n【Androidの場合】\n設定 → アプリ → LINE → 権限 → カメラを許可';
+      } else if (errorMessage.includes('LINEアプリ内でのみ')) {
+        errorMessage = 'QRコードスキャンはLINEアプリ内でのみ利用可能です。\n\nLINEアプリのトーク画面からこのページを開いてください。';
+      }
+      
+      setQrError(errorMessage);
+      setQrInput('');
+      setShowQrModal(true);
+    }
+  };
+
+  const processCheckOut = async (qrCode: string) => {
+    if (!data?.nextReservation) return;
+    
+    setCheckingOut(true);
+    try {
+      await liffClient.post('/check-out', {
+        qrCode,
+        reservationId: data.nextReservation.id,
+      });
+
+      setShowQrModal(false);
+      setQrInput('');
+      setQrError(null);
+      alert('チェックアウトが完了しました！お疲れさまでした。');
+      fetchData();
+    } catch (error: any) {
+      console.error('Check-out error:', error);
+      alert(error.response?.data?.error || 'チェックアウトに失敗しました');
+    } finally {
+      setCheckingOut(false);
+    }
   };
 
   if (loading) {
@@ -281,28 +362,62 @@ export default function Home() {
             </div>
           </section>
 
-          {/* 登園チェックインボタン（今日の予約の場合のみ表示） */}
+          {/* 登園/降園ボタン（今日の予約の場合のみ表示） */}
           {isToday(new Date(nextReservation.reservation_date)) && (
-            <button
-              onClick={handleCheckIn}
-              disabled={checkingIn}
-              className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         active:scale-95 transition-transform min-h-[56px] shadow-lg
-                         flex items-center justify-center gap-2"
-            >
-              {checkingIn ? (
-                <>
-                  <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
-                  チェックイン中...
-                </>
+            <>
+              {/* チェックアウト済みの場合 */}
+              {nextReservation.checked_out_at ? (
+                <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
+                               min-h-[56px] flex items-center justify-center gap-2">
+                  <iconify-icon icon="mdi:check-circle" class="size-5"></iconify-icon>
+                  本日の登園完了
+                </div>
+              ) : nextReservation.status === 'チェックイン済' ? (
+                /* チェックイン済み → 降園ボタン表示 */
+                <button
+                  onClick={handleCheckOut}
+                  disabled={checkingOut}
+                  className="w-full bg-chart-5 text-white py-4 rounded-xl font-bold
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             active:scale-95 transition-transform min-h-[56px] shadow-lg
+                             flex items-center justify-center gap-2"
+                >
+                  {checkingOut ? (
+                    <>
+                      <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                      チェックアウト中...
+                    </>
+                  ) : (
+                    <>
+                      <iconify-icon icon="solar:qr-code-bold" class="size-5"></iconify-icon>
+                      降園する（QRコードスキャン）
+                    </>
+                  )}
+                </button>
               ) : (
-                <>
-                  <iconify-icon icon="solar:qr-code-bold" class="size-5"></iconify-icon>
-                  登園する（QRコードスキャン）
-                </>
+                /* 未チェックイン → 登園ボタン表示 */
+                <button
+                  onClick={handleCheckIn}
+                  disabled={checkingIn}
+                  className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             active:scale-95 transition-transform min-h-[56px] shadow-lg
+                             flex items-center justify-center gap-2"
+                >
+                  {checkingIn ? (
+                    <>
+                      <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                      チェックイン中...
+                    </>
+                  ) : (
+                    <>
+                      <iconify-icon icon="solar:qr-code-bold" class="size-5"></iconify-icon>
+                      登園する（QRコードスキャン）
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </>
           )}
         </div>
       ) : (
@@ -426,7 +541,7 @@ export default function Home() {
             <div className="flex items-center justify-between p-5 border-b border-border">
               <h2 className="text-base font-bold font-heading flex items-center gap-2">
                 <iconify-icon icon="solar:qr-code-bold" width="20" height="20" class="text-primary"></iconify-icon>
-                QRコード入力
+                {qrModalMode === 'checkout' ? '降園QRコード入力' : '登園QRコード入力'}
               </h2>
               <button
                 onClick={() => {
@@ -485,7 +600,11 @@ export default function Home() {
               <button
                 onClick={() => {
                   setShowQrModal(false);
-                  handleCheckIn();
+                  if (qrModalMode === 'checkout') {
+                    handleCheckOut();
+                  } else {
+                    handleCheckIn();
+                  }
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary text-primary text-sm font-bold hover:bg-primary/5 transition-colors"
               >
@@ -496,20 +615,23 @@ export default function Home() {
               {/* 送信ボタン */}
               <button
                 onClick={handleManualCheckIn}
-                disabled={!qrInput.trim() || checkingIn}
-                className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-sm font-bold 
+                disabled={!qrInput.trim() || checkingIn || checkingOut}
+                className={`w-full py-4 rounded-xl text-sm font-bold 
                            disabled:opacity-50 disabled:cursor-not-allowed
-                           active:scale-95 transition-transform flex items-center justify-center gap-2"
+                           active:scale-95 transition-transform flex items-center justify-center gap-2
+                           ${qrModalMode === 'checkout' 
+                             ? 'bg-chart-5 text-white' 
+                             : 'bg-primary text-primary-foreground'}`}
               >
-                {checkingIn ? (
+                {(checkingIn || checkingOut) ? (
                   <>
                     <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
-                    チェックイン中...
+                    {qrModalMode === 'checkout' ? 'チェックアウト中...' : 'チェックイン中...'}
                   </>
                 ) : (
                   <>
                     <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
-                    この内容でチェックイン
+                    {qrModalMode === 'checkout' ? 'この内容でチェックアウト' : 'この内容でチェックイン'}
                   </>
                 )}
               </button>

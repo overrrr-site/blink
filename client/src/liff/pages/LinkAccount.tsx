@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getLiffProfile, isLiffLoggedIn, initLiff } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
+import logoImage from '../../assets/logo.png';
 
 type Step = 'phone' | 'code';
 
@@ -125,10 +126,7 @@ export default function LinkAccount() {
       <div className="w-full max-w-sm">
         {/* ロゴ */}
         <div className="text-center mb-8">
-          <div className="size-20 bg-gradient-to-br from-primary to-primary/70 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <iconify-icon icon="solar:paw-print-bold" width="40" height="40" class="text-white"></iconify-icon>
-          </div>
-          <h1 className="text-2xl font-bold font-heading text-primary mb-2">BLINK</h1>
+          <img src={logoImage} alt="Blink" className="h-20 mx-auto mb-4" />
           <p className="text-sm text-muted-foreground">LINEアカウントの紐付け</p>
         </div>
 
