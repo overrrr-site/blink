@@ -333,7 +333,7 @@ export default function ReservationsCalendar() {
                 {reservation.status !== 'キャンセル' && (
                   <div className="flex gap-2 pt-3 border-t border-border">
                     <button
-                      onClick={() => navigate(`/reservations/${reservation.id}/edit`)}
+                      onClick={() => navigate(`/home/reservations/${reservation.id}/edit`)}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold active:bg-primary/10 transition-colors"
                     >
                       <iconify-icon icon="solar:pen-bold" width="18" height="18"></iconify-icon>
