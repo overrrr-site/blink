@@ -361,7 +361,7 @@ const AnnouncementList = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            <form id="announcement-form" onSubmit={handleSubmit} className="p-5 pb-8 space-y-4">
               {/* タイトル */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
@@ -496,34 +496,36 @@ const AnnouncementList = () => {
                 </p>
               </div>
 
-              {/* アクションボタン */}
-              <div className="flex gap-2 pt-2">
-                {editingAnnouncement && (
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="px-4 py-3 bg-destructive/10 text-destructive rounded-lg text-sm font-medium hover:bg-destructive/20 disabled:opacity-50 min-h-[48px]"
-                  >
-                    {deleting ? '削除中...' : '削除'}
-                  </button>
-                )}
+            </form>
+
+            {/* アクションボタン - 固定フッター */}
+            <div className="sticky bottom-0 bg-background border-t border-border px-5 py-4 flex gap-2">
+              {editingAnnouncement && (
                 <button
                   type="button"
-                  onClick={closeModal}
-                  className="flex-1 px-4 py-3 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 min-h-[48px]"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-4 py-3 bg-destructive/10 text-destructive rounded-lg text-sm font-medium hover:bg-destructive/20 disabled:opacity-50 min-h-[48px]"
                 >
-                  キャンセル
+                  {deleting ? '削除中...' : '削除'}
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 disabled:opacity-50 min-h-[48px]"
-                >
-                  {saving ? '保存中...' : editingAnnouncement ? '更新' : '作成'}
-                </button>
-              </div>
-            </form>
+              )}
+              <button
+                type="button"
+                onClick={closeModal}
+                className="flex-1 px-4 py-3 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 min-h-[48px]"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                form="announcement-form"
+                disabled={saving}
+                className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 disabled:opacity-50 min-h-[48px]"
+              >
+                {saving ? '保存中...' : editingAnnouncement ? '更新' : '作成'}
+              </button>
+            </div>
           </div>
         </div>
       )}
