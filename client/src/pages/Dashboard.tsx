@@ -476,7 +476,7 @@ function Dashboard(): JSX.Element {
             className="w-full bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-center gap-3 hover:bg-primary/15 transition-colors"
           >
             <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-              <iconify-icon icon="solar:megaphone-bold" className="size-5 text-primary"></iconify-icon>
+              <iconify-icon icon="solar:megaphone-bold" width="20" height="20" class="text-primary"></iconify-icon>
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm font-bold text-primary">お知らせ発信</p>
@@ -484,7 +484,7 @@ function Dashboard(): JSX.Element {
                 公開中: {data?.announcementStats?.published || 0}件 / 下書き: {data?.announcementStats?.draft || 0}件
               </p>
             </div>
-            <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+            <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
           </button>
 
           {/* 確認事項 */}
