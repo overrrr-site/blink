@@ -38,6 +38,9 @@ const ACHIEVEMENT_LABELS: Record<string, string> = {
 
 // 日誌コメント生成
 router.post('/generate-comment', async (req: AuthRequest, res) => {
+  console.log('🤖 /generate-comment エンドポイント到達');
+  console.log('🤖 GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
+
   try {
     const {
       dog_name,
