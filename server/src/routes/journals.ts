@@ -136,7 +136,7 @@ router.post('/', async (req: AuthRequest, res) => {
         afternoon_toilet_location,
         training_data ? JSON.stringify(training_data) : null,
         comment,
-        next_visit_date,
+        next_visit_date || null,
         photos ? JSON.stringify(photos) : null,
       ]
     );
@@ -221,7 +221,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
         afternoon_toilet_location,
         training_data ? JSON.stringify(training_data) : null,
         comment,
-        next_visit_date,
+        next_visit_date || null,
         photos ? JSON.stringify(photos) : null,
         id,
       ]
