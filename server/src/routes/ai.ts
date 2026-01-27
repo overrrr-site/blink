@@ -101,6 +101,9 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
             generationConfig: {
               maxOutputTokens: 500,
               temperature: 0.7,
+              thinkingConfig: {
+                thinkingBudget: 0,
+              },
             },
           }),
         });
@@ -331,6 +334,9 @@ ${dog_name ? `この犬の名前は「${dog_name}」です。` : ''}
           generationConfig: {
             maxOutputTokens: 500,
             temperature: 0.7,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
         }),
       });
