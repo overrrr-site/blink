@@ -87,7 +87,7 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
           photo_analyses
         );
         console.log('🤖 Gemini API呼び出し開始');
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -309,7 +309,7 @@ ${dog_name ? `この犬の名前は「${dog_name}」です。` : ''}
 分析結果を、日誌のコメントとして使えるような自然な日本語で、100文字程度でまとめてください。
 温かみのある表現で、飼い主さんに伝える形式で書いてください。`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
