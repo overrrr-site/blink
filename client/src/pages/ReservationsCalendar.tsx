@@ -156,13 +156,46 @@ const ReservationsCalendar = () => {
       <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">予約管理</h1>
-          <button
-            onClick={() => navigate('/reservations/new')}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
-          >
-            <iconify-icon icon="solar:add-circle-bold" className="size-4"></iconify-icon>
-            新規予約
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const monthStr = format(currentDate, 'yyyy-MM')
+                const token = localStorage.getItem('token')
+                const url = `${import.meta.env.VITE_API_URL}/reservations/export.ics?month=${monthStr}`
+
+                fetch(url, {
+                  headers: { Authorization: `Bearer ${token}` },
+                })
+                  .then((response) => response.blob())
+                  .then((blob) => {
+                    const blobUrl = URL.createObjectURL(blob)
+                    const link = document.createElement('a')
+                    link.href = blobUrl
+                    link.download = `reservations-${monthStr}.ics`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    URL.revokeObjectURL(blobUrl)
+                  })
+                  .catch((error) => {
+                    console.error('ICS export error:', error)
+                    alert('カレンダーのエクスポートに失敗しました')
+                  })
+              }}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors"
+              aria-label="カレンダーをエクスポート"
+              title="iCS形式でエクスポート"
+            >
+              <iconify-icon icon="solar:download-bold" className="size-5"></iconify-icon>
+            </button>
+            <button
+              onClick={() => navigate('/reservations/new')}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            >
+              <iconify-icon icon="solar:add-circle-bold" className="size-4"></iconify-icon>
+              新規予約
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center justify-between mb-4">

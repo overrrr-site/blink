@@ -114,7 +114,7 @@ export async function saveTokens(storeId: number, code: string) {
 /**
  * トークンをリフレッシュ
  */
-async function refreshToken(integration: any) {
+async function refreshAccessToken(integration: any) {
   const oauth2Client = createOAuth2Client();
   
   // 暗号化されたリフレッシュトークンを復号化
@@ -185,7 +185,7 @@ async function getAuthenticatedCalendar(storeId: number) {
     if (!refreshToken) {
       throw new Error('リフレッシュトークンがありません。再認証が必要です。');
     }
-    accessToken = await refreshToken(integration);
+    accessToken = await refreshAccessToken(integration);
   }
 
   oauth2Client.setCredentials({
@@ -204,12 +204,22 @@ async function getAuthenticatedCalendar(storeId: number) {
  */
 export async function createCalendarEvent(storeId: number, reservation: any, dogName: string, ownerName: string) {
   try {
+    console.log('📅 getAuthenticatedCalendar開始:', storeId);
     const { calendar, calendarId } = await getAuthenticatedCalendar(storeId);
+    console.log('📅 カレンダー取得成功:', calendarId);
+
+    // 日付を文字列形式に変換（Date型の場合に対応）
+    const dateStr = reservation.reservation_date instanceof Date
+      ? reservation.reservation_date.toISOString().split('T')[0]
+      : String(reservation.reservation_date).split('T')[0];
+    const timeStr = reservation.reservation_time || '09:00';
 
     // 日付と時間を結合してISO形式に変換
-    const startDateTime = new Date(`${reservation.reservation_date}T${reservation.reservation_time}:00`);
+    const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
     const endDateTime = new Date(startDateTime);
     endDateTime.setHours(endDateTime.getHours() + 8); // デフォルト8時間
+
+    console.log('📅 イベント時間:', { dateStr, timeStr, start: startDateTime.toISOString() });
 
     const event: CalendarEvent = {
       summary: `🐾 ${dogName}（${ownerName}様）`,

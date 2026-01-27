@@ -12,6 +12,8 @@ export async function syncCalendarOnCreate(params: {
 }): Promise<void> {
   try {
     const { storeId, reservation, dogId } = params
+    console.log('📅 Googleカレンダー同期開始:', { storeId, reservationId: reservation.id, dogId })
+
     const dogInfo = await pool.query(
       `SELECT d.name as dog_name, o.name as owner_name
        FROM dogs d
@@ -21,15 +23,17 @@ export async function syncCalendarOnCreate(params: {
     )
 
     if (dogInfo.rows.length > 0) {
-      await createCalendarEvent(
+      console.log('📅 カレンダーイベント作成中:', dogInfo.rows[0].dog_name)
+      const result = await createCalendarEvent(
         storeId,
         reservation,
         dogInfo.rows[0].dog_name,
         dogInfo.rows[0].owner_name
       )
+      console.log('📅 カレンダーイベント作成完了:', result?.id || 'no event id')
     }
-  } catch (error) {
-    console.error('Googleカレンダー同期エラー（予約は作成済み）:', error)
+  } catch (error: any) {
+    console.error('❌ Googleカレンダー同期エラー:', error?.message || error)
   }
 }
 
