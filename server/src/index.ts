@@ -90,8 +90,8 @@ app.post('/api/line/webhook', express.text({ type: '*/*' }), async (req, res) =>
   }
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 静的ファイル配信（アップロードされたファイル）
 // Vercel環境では、静的ファイルは別途設定が必要（Supabase Storage推奨）
