@@ -139,7 +139,7 @@ export default function Login() {
         <div className="text-center px-8">
           {/* ロゴ */}
           <img src={logoImage} alt="Blink" className="h-24 mx-auto mb-6 animate-pulse" />
-          <p className="text-sm text-muted-foreground mb-8">犬の幼稚園</p>
+          <p className="text-sm text-muted-foreground mb-8">犬の幼稚園・保育園</p>
           
           <iconify-icon
             icon="solar:spinner-bold"

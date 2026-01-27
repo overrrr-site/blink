@@ -44,7 +44,7 @@ const Login = () => {
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
       <header className="px-5 pt-8 pb-6 text-center">
         <img src={logoImage} alt="Blink" className="h-16 mx-auto mb-2" />
-        <p className="text-sm text-muted-foreground mt-1">犬の幼稚園 顧客管理システム</p>
+        <p className="text-sm text-muted-foreground mt-1">犬の幼稚園・保育園 顧客管理システム</p>
       </header>
 
       <main className="flex-1 px-5 pb-8">

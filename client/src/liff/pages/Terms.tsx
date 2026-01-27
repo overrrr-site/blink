@@ -6,8 +6,8 @@ export default function Terms() {
   const navigate = useNavigate();
   const { owner } = useLiffAuthStore();
 
-  // クライアント（犬の幼稚園事業者）情報
-  const clientName = owner?.storeName || '（ご利用の犬の幼稚園）';
+  // クライアント（犬の幼稚園・保育園事業者）情報
+  const clientName = owner?.storeName || '（ご利用の犬の幼稚園・保育園）';
   const clientAddress = owner?.storeAddress || '（店舗住所）';
 
   return (
@@ -85,7 +85,7 @@ export default function Terms() {
               <li>QRコードによる登園・降園チェックイン</li>
               <li>日誌・写真の閲覧</li>
               <li>契約情報・回数券残高の確認</li>
-              <li>その他、犬の幼稚園利用に関する各種機能</li>
+              <li>その他、犬の幼稚園・保育園利用に関する各種機能</li>
             </ul>
           </div>
         </section>
@@ -159,7 +159,7 @@ export default function Terms() {
               当社は、本サービスに起因してユーザーに生じたあらゆる損害について、当社の故意または重大な過失による場合を除き、一切の責任を負いません。
             </p>
             <p>
-              犬の幼稚園サービス自体に関する責任は、<strong>{clientName}</strong>が負うものとし、当社はこれについて責任を負いません。
+              犬の幼稚園・保育園サービス自体に関する責任は、<strong>{clientName}</strong>が負うものとし、当社はこれについて責任を負いません。
             </p>
           </div>
         </section>

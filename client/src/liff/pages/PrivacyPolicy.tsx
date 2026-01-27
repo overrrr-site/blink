@@ -6,8 +6,8 @@ export default function PrivacyPolicy() {
   const navigate = useNavigate();
   const { owner } = useLiffAuthStore();
 
-  // クライアント（犬の幼稚園事業者）情報
-  const clientName = owner?.storeName || '（ご利用の犬の幼稚園）';
+  // クライアント（犬の幼稚園・保育園事業者）情報
+  const clientName = owner?.storeName || '（ご利用の犬の幼稚園・保育園）';
   const clientAddress = owner?.storeAddress || '（店舗住所）';
 
   return (
@@ -132,7 +132,7 @@ export default function PrivacyPolicy() {
           <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
             <p>取得した個人情報は、以下の目的で利用いたします。</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>犬の幼稚園サービスの提供・運営</li>
+              <li>犬の幼稚園・保育園サービスの提供・運営</li>
               <li>予約の受付・管理・確認連絡</li>
               <li>登園日誌の作成・共有</li>
               <li>犬の健康管理・安全確保</li>

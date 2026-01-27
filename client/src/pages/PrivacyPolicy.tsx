@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
         {/* サービス提供者情報 */}
         <section className="bg-accent/30 rounded-2xl p-6 mb-8">
           <p className="text-sm leading-relaxed mb-4">
-            <strong>OVER株式会社</strong>は、LINEミニアプリ「<strong>Blink</strong>」を犬の幼稚園運営事業者様（以下「クライアント」）に提供しています。
+            <strong>OVER株式会社</strong>は、LINEミニアプリ「<strong>Blink</strong>」を犬の幼稚園・保育園運営事業者様（以下「クライアント」）に提供しています。
           </p>
           <p className="text-sm leading-relaxed mb-4">
             このサービスを提供するにあたり、クライアントの公式なプライバシーポリシーをOVER株式会社のドメイン内で作成しています。
@@ -80,7 +80,7 @@ export default function PrivacyPolicy() {
             
             <div className="bg-card rounded-xl p-4 border border-border my-4">
               <p className="text-xs text-muted-foreground mb-2">【情報提供先】</p>
-              <p className="text-sm font-bold text-foreground">ご利用の犬の幼稚園運営事業者（クライアント）</p>
+              <p className="text-sm font-bold text-foreground">ご利用の犬の幼稚園・保育園運営事業者（クライアント）</p>
               <p className="text-xs text-muted-foreground mt-2">
                 ※具体的な事業者名・住所は、各クライアントのサービス利用開始時に別途ご案内いたします。
               </p>
@@ -117,7 +117,7 @@ export default function PrivacyPolicy() {
           <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
             <p>取得した個人情報は、以下の目的で利用いたします。</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>犬の幼稚園サービスの提供・運営</li>
+              <li>犬の幼稚園・保育園サービスの提供・運営</li>
               <li>予約の受付・管理・確認連絡</li>
               <li>登園日誌の作成・共有</li>
               <li>犬の健康管理・安全確保</li>
@@ -171,7 +171,7 @@ export default function PrivacyPolicy() {
           <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
             <p>
               ユーザーは、当社が保有する自己の個人情報について、開示・訂正・削除を請求することができます。
-              ご請求の際は、ご利用の犬の幼稚園事業者またはOVER株式会社までお問い合わせください。
+              ご請求の際は、ご利用の犬の幼稚園・保育園事業者またはOVER株式会社までお問い合わせください。
             </p>
           </div>
         </section>

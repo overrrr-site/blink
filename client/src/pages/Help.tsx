@@ -20,7 +20,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: [
       {
         question: 'Blinkとは？',
-        answer: 'Blinkは犬の幼稚園向けの顧客管理システムです。予約管理、顧客情報管理、日誌作成、トレーニング記録などの機能を提供します。',
+        answer: 'Blinkは犬の幼稚園・保育園向けの顧客管理システムです。予約管理、顧客情報管理、日誌作成、トレーニング記録などの機能を提供します。',
       },
       {
         question: '基本的な使い方',
