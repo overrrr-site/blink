@@ -403,9 +403,8 @@ const JournalDetail = () => {
                   icon="solar:paw-print-bold"
                   width="32"
                   height="32"
-                  className="text-muted-foreground print:hidden"
+                  class="text-muted-foreground"
                 ></iconify-icon>
-                <span className="hidden print:block text-gray-400">🐕</span>
               </div>
             )}
             <div className="flex-1">
@@ -434,8 +433,7 @@ const JournalDetail = () => {
         {/* 写真セクション（写真→コメント→詳細の順） */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:gallery-bold" width="20" height="20" className="text-primary print:hidden"></iconify-icon>
-            <span className="hidden print:inline">📷</span>
+            <iconify-icon icon="solar:gallery-bold" width="20" height="20" class="text-primary"></iconify-icon>
             活動写真
           </h3>
           
@@ -551,8 +549,7 @@ const JournalDetail = () => {
         {/* コメント */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:pen-new-square-bold" width="20" height="20" className="text-primary print:hidden"></iconify-icon>
-            <span className="hidden print:inline">💬</span>
+            <iconify-icon icon="solar:pen-new-square-bold" width="20" height="20" class="text-primary"></iconify-icon>
             今日の様子
           </h3>
           <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300">
@@ -574,8 +571,7 @@ const JournalDetail = () => {
         {/* トイレ記録 */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:box-bold" width="20" height="20" className="text-chart-1 print:hidden"></iconify-icon>
-            <span className="hidden print:inline">🚽</span>
+            <iconify-icon icon="solar:box-bold" width="20" height="20" class="text-chart-1"></iconify-icon>
             トイレ記録
           </h3>
           <div className="grid grid-cols-2 gap-3 print:gap-2">
@@ -653,8 +649,7 @@ const JournalDetail = () => {
         {/* トレーニング記録 */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:star-bold" width="20" height="20" className="text-chart-4 print:hidden"></iconify-icon>
-            <span className="hidden print:inline">⭐</span>
+            <iconify-icon icon="solar:star-bold" width="20" height="20" class="text-chart-4"></iconify-icon>
             トレーニング記録
           </h3>
           
@@ -748,8 +743,7 @@ const JournalDetail = () => {
         {(isEditing || journal.next_visit_date) && (
           <section>
             <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-              <iconify-icon icon="solar:calendar-bold" width="20" height="20" className="text-chart-5 print:hidden"></iconify-icon>
-              <span className="hidden print:inline">📅</span>
+              <iconify-icon icon="solar:calendar-bold" width="20" height="20" class="text-chart-5"></iconify-icon>
               次回訪問予定日
             </h3>
             <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300">
