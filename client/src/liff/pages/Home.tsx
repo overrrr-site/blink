@@ -386,12 +386,17 @@ export default function Home() {
           {isToday(new Date(nextReservation.reservation_date)) &&
            nextReservation.status === '予定' && (
             nextReservation.has_pre_visit_input ? (
-              // 入力済みの場合
-              <div className="w-full bg-chart-2/10 text-chart-2 py-3 rounded-xl font-medium
-                             min-h-[48px] flex items-center justify-center gap-2 border border-chart-2/20">
+              // 入力済みの場合（タップで編集可能）
+              <button
+                onClick={() => navigate(`/home/pre-visit/${nextReservation.id}`)}
+                className="w-full bg-chart-2/10 text-chart-2 py-3 rounded-xl font-medium
+                           min-h-[48px] flex items-center justify-center gap-2 border border-chart-2/20
+                           active:scale-95 transition-transform hover:bg-chart-2/20"
+              >
                 <iconify-icon icon="solar:check-circle-bold" class="size-5"></iconify-icon>
                 登園前情報 入力済み
-              </div>
+                <iconify-icon icon="solar:pen-linear" class="size-4 ml-1 opacity-60"></iconify-icon>
+              </button>
             ) : (
               // 未入力の場合
               <button

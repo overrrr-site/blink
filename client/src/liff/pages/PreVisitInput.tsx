@@ -68,6 +68,18 @@ export default function PreVisitInput() {
         const res = response.data.find((r: any) => r.id === parseInt(reservationId || '0'));
         if (res) {
           setReservation(res);
+          // 既存の登園前入力データがあればフォームに読み込む
+          if (res.has_pre_visit_input) {
+            setFormData({
+              morning_urination: res.morning_urination ?? false,
+              morning_defecation: res.morning_defecation ?? false,
+              afternoon_urination: res.afternoon_urination ?? false,
+              afternoon_defecation: res.afternoon_defecation ?? false,
+              breakfast_status: res.breakfast_status ?? '',
+              health_status: res.health_status ?? '',
+              notes: res.pre_visit_notes ?? '',
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching reservation:', error);
