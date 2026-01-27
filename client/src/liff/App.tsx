@@ -15,6 +15,7 @@ const ReservationEdit = lazy(() => import('./pages/ReservationEdit'));
 const PreVisitInput = lazy(() => import('./pages/PreVisitInput'));
 const JournalList = lazy(() => import('./pages/JournalList'));
 const JournalDetail = lazy(() => import('./pages/JournalDetail'));
+const Announcements = lazy(() => import('./pages/Announcements'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Terms = lazy(() => import('./pages/Terms'));
 
@@ -73,6 +74,7 @@ function App() {
             <Route path="pre-visit/:reservationId" element={<PreVisitInput />} />
             <Route path="journals" element={<JournalList />} />
             <Route path="journals/:id" element={<JournalDetail />} />
+            <Route path="announcements" element={<Announcements />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

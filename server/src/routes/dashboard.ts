@@ -86,11 +86,32 @@ router.get('/', async (req: AuthRequest, res) => {
       [req.storeId, today]
     );
 
+    // お知らせ件数（公開中/下書き）
+    const now = new Date().toISOString();
+    const announcementStatsResult = await pool.query(
+      `SELECT
+        COUNT(*) FILTER (
+          WHERE published_at IS NOT NULL
+            AND published_at <= $2
+            AND (expires_at IS NULL OR expires_at > $2)
+        ) as published_count,
+        COUNT(*) FILTER (
+          WHERE published_at IS NULL OR published_at > $2
+        ) as draft_count
+       FROM store_announcements
+       WHERE store_id = $1`,
+      [req.storeId, now]
+    );
+
     res.json({
       todayReservations: reservationsResult.rows,
       incompleteJournals: incompleteJournalsResult.rows,
       alerts: alertsResult.rows,
       todayInspectionRecord: inspectionRecordResult.rows[0] || null,
+      announcementStats: {
+        published: parseInt(announcementStatsResult.rows[0]?.published_count || '0'),
+        draft: parseInt(announcementStatsResult.rows[0]?.draft_count || '0'),
+      },
     });
   } catch (error) {
     console.error('Error fetching dashboard data:', error);

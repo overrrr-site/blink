@@ -29,6 +29,10 @@ interface DashboardData {
   alerts: any[]
   todayInspectionRecord: any | null
   capacity?: number
+  announcementStats?: {
+    published: number
+    draft: number
+  }
 }
 
 type StatusFilter = 'all' | '来園待ち' | '在園中' | '帰宅済'
@@ -385,10 +389,8 @@ const Dashboard = () => {
         )}
       </section>
 
-      {/* アラートバナー - 画面上部に固定表示 */}
-      {(data?.incompleteJournals && data.incompleteJournals.length > 0) || 
-       (data?.alerts && data.alerts.length > 0) || 
-       !data?.todayInspectionRecord ? (
+      {/* クイックアクション */}
+      {data && (
         <section className="px-5 mt-4 space-y-2">
           {/* 今日の点検記録 */}
           <button
@@ -443,6 +445,23 @@ const Dashboard = () => {
             </button>
           )}
 
+          {/* お知らせ発信 */}
+          <button
+            onClick={() => navigate('/announcements')}
+            className="w-full bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-center gap-3 hover:bg-primary/15 transition-colors"
+          >
+            <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+              <iconify-icon icon="solar:megaphone-bold" className="size-5 text-primary"></iconify-icon>
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-bold text-primary">お知らせ発信</p>
+              <p className="text-xs text-muted-foreground">
+                公開中: {data?.announcementStats?.published || 0}件 / 下書き: {data?.announcementStats?.draft || 0}件
+              </p>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+          </button>
+
           {/* 確認事項 */}
           {data?.alerts && data.alerts.length > 0 && (
             <button
@@ -478,7 +497,7 @@ const Dashboard = () => {
             </button>
           )}
         </section>
-      ) : null}
+      )}
 
       {/* 確認事項モーダル */}
       <AlertsModal isOpen={alertsModalOpen} onClose={() => setAlertsModalOpen(false)} />

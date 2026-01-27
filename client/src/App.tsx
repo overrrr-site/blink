@@ -31,6 +31,7 @@ const Billing = lazy(() => import('./pages/Billing'))
 const Help = lazy(() => import('./pages/Help'))
 const InspectionRecord = lazy(() => import('./pages/InspectionRecord'))
 const InspectionRecordList = lazy(() => import('./pages/InspectionRecordList'))
+const AnnouncementList = lazy(() => import('./pages/AnnouncementList'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Terms = lazy(() => import('./pages/Terms'))
 
@@ -101,6 +102,7 @@ function App() {
               <Route path="journals/create/:reservationId" element={<JournalCreate />} />
               <Route path="inspection-records" element={<InspectionRecordList />} />
               <Route path="inspection-records/:date" element={<InspectionRecord />} />
+              <Route path="announcements" element={<AnnouncementList />} />
               <Route path="settings" element={<Settings />} />
               <Route path="billing" element={<Billing />} />
               <Route path="help" element={<Help />} />

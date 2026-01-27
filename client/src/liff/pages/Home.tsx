@@ -548,17 +548,12 @@ export default function Home() {
         </MenuCard>
 
         <MenuCard
-          onClick={() => alert('お知らせ機能は準備中です')}
+          onClick={() => navigate('/home/announcements')}
           icon="solar:bell-bold"
           iconBgColor="bg-accent/30"
           iconColor="text-accent-foreground"
           title="お知らせ"
           description="店舗からのお知らせ"
-          badge={
-            <span className="absolute top-4 right-4 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-              準備中
-            </span>
-          }
         />
       </div>
 
