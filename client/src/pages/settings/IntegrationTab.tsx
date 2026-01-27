@@ -418,12 +418,13 @@ function IntegrationTab() {
                   </p>
                   <div className="bg-background rounded-lg p-2 border border-border">
                     <code className="text-[10px] text-foreground break-all">
-                      https://blink-overrrr.vercel.app/api/line/webhook
+                      {import.meta.env.VITE_FRONTEND_URL || window.location.origin}/api/line/webhook
                     </code>
                   </div>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText('https://blink-overrrr.vercel.app/api/line/webhook');
+                      const webhookUrl = `${import.meta.env.VITE_FRONTEND_URL || window.location.origin}/api/line/webhook`;
+                      navigator.clipboard.writeText(webhookUrl);
                       alert('Webhook URLをコピーしました');
                     }}
                     className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
