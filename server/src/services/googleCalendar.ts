@@ -200,6 +200,20 @@ async function getAuthenticatedCalendar(storeId: number) {
 }
 
 /**
+ * 日付を YYYY-MM-DD 形式の文字列に変換
+ */
+function formatDateToYMD(date: Date | string): string {
+  if (date instanceof Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  // 文字列の場合はT以前の部分を取得
+  return String(date).split('T')[0];
+}
+
+/**
  * 予約をGoogleカレンダーに作成
  */
 export async function createCalendarEvent(storeId: number, reservation: any, dogName: string, ownerName: string) {
@@ -209,9 +223,8 @@ export async function createCalendarEvent(storeId: number, reservation: any, dog
     console.log('📅 カレンダー取得成功:', calendarId);
 
     // 日付を文字列形式に変換（Date型の場合に対応）
-    const dateStr = reservation.reservation_date instanceof Date
-      ? reservation.reservation_date.toISOString().split('T')[0]
-      : String(reservation.reservation_date).split('T')[0];
+    console.log('📅 reservation_date raw:', reservation.reservation_date, typeof reservation.reservation_date);
+    const dateStr = formatDateToYMD(reservation.reservation_date);
     const timeStr = reservation.reservation_time || '09:00';
 
     // 日付と時間を結合してISO形式に変換
@@ -280,7 +293,9 @@ export async function updateCalendarEvent(storeId: number, reservation: any, dog
     });
 
     // 日付と時間を結合してISO形式に変換
-    const startDateTime = new Date(`${reservation.reservation_date}T${reservation.reservation_time}:00`);
+    const dateStr = formatDateToYMD(reservation.reservation_date);
+    const timeStr = reservation.reservation_time || '09:00';
+    const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
     const endDateTime = new Date(startDateTime);
     endDateTime.setHours(endDateTime.getHours() + 8);
 
