@@ -645,6 +645,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
 
     res.json(result.rows[0]);
   } catch (error: any) {
+    console.error('Pre-visit input save error:', error);
     sendServerError(res, '登園前入力の保存に失敗しました', error);
   }
 });
