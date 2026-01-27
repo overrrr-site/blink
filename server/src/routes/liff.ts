@@ -607,7 +607,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
           morning_urination = $1, morning_defecation = $2,
           afternoon_urination = $3, afternoon_defecation = $4,
           breakfast_status = $5, health_status = $6, notes = $7,
-          updated_at = CURRENT_TIMESTAMP
+          submitted_at = CURRENT_TIMESTAMP
         WHERE reservation_id = $8
         RETURNING *`,
         [
