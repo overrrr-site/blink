@@ -11,6 +11,15 @@ interface Reservation {
   dog_name: string;
   dog_photo: string;
   status: string;
+  // 登園前入力情報
+  has_pre_visit_input: boolean;
+  morning_urination: boolean | null;
+  morning_defecation: boolean | null;
+  afternoon_urination: boolean | null;
+  afternoon_defecation: boolean | null;
+  breakfast_status: string | null;
+  health_status: string | null;
+  pre_visit_notes: string | null;
 }
 
 export default function ReservationsCalendar() {
@@ -254,6 +263,73 @@ export default function ReservationsCalendar() {
                     {reservation.status}
                   </span>
                 </div>
+                {/* 登園前入力情報（入力済みの場合のみ表示） */}
+                {reservation.has_pre_visit_input && (
+                  <div className="pt-3 border-t border-border">
+                    <div className="bg-chart-3/5 rounded-xl p-3 space-y-2">
+                      <h4 className="text-xs font-bold text-chart-3 flex items-center gap-1">
+                        <iconify-icon icon="solar:clipboard-text-bold" width="14" height="14"></iconify-icon>
+                        登園前入力
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {/* 排泄情報 */}
+                        <div className="space-y-1">
+                          <span className="text-muted-foreground">排泄</span>
+                          <div className="flex flex-wrap gap-1">
+                            {reservation.morning_urination && (
+                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
+                                朝オシッコ
+                              </span>
+                            )}
+                            {reservation.morning_defecation && (
+                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
+                                朝ウンチ
+                              </span>
+                            )}
+                            {reservation.afternoon_urination && (
+                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
+                                昨夜オシッコ
+                              </span>
+                            )}
+                            {reservation.afternoon_defecation && (
+                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
+                                昨夜ウンチ
+                              </span>
+                            )}
+                            {!reservation.morning_urination && !reservation.morning_defecation &&
+                             !reservation.afternoon_urination && !reservation.afternoon_defecation && (
+                              <span className="text-muted-foreground text-[10px]">なし</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* 食事 */}
+                        {reservation.breakfast_status && (
+                          <div className="space-y-1">
+                            <span className="text-muted-foreground">朝ごはん</span>
+                            <p className="font-medium">{reservation.breakfast_status}</p>
+                          </div>
+                        )}
+                      </div>
+                      {/* 体調・連絡事項 */}
+                      {(reservation.health_status || reservation.pre_visit_notes) && (
+                        <div className="text-xs space-y-1 pt-1 border-t border-chart-3/10">
+                          {reservation.health_status && (
+                            <div>
+                              <span className="text-muted-foreground">体調: </span>
+                              <span>{reservation.health_status}</span>
+                            </div>
+                          )}
+                          {reservation.pre_visit_notes && (
+                            <div>
+                              <span className="text-muted-foreground">連絡: </span>
+                              <span>{reservation.pre_visit_notes}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {reservation.status !== 'キャンセル' && (
                   <div className="flex gap-2 pt-3 border-t border-border">
                     <button

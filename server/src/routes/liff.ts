@@ -183,12 +183,14 @@ router.get('/me', async (req, res) => {
       console.warn('契約情報の取得をスキップしました:', contractError);
     }
 
-    // 次回予約を取得
+    // 次回予約を取得（登園前入力の有無も含める）
     const nextReservationResult = await pool.query(
-      `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo
+      `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
+              CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
        FROM reservations r
        JOIN dogs d ON r.dog_id = d.id
-       WHERE d.owner_id = $1 
+       LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
+       WHERE d.owner_id = $1
          AND r.reservation_date >= CURRENT_DATE
          AND r.status != 'キャンセル'
        ORDER BY r.reservation_date ASC, r.reservation_time ASC
@@ -216,9 +218,14 @@ router.get('/reservations', async (req, res) => {
     const { month } = req.query;
 
     let query = `
-      SELECT r.*, d.name as dog_name, d.photo_url as dog_photo
+      SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
+             pvi.morning_urination, pvi.morning_defecation,
+             pvi.afternoon_urination, pvi.afternoon_defecation,
+             pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
+             CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
       FROM reservations r
       JOIN dogs d ON r.dog_id = d.id
+      LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
       WHERE d.owner_id = $1 AND r.store_id = $2
     `;
     const params: any[] = [decoded.ownerId, decoded.storeId];

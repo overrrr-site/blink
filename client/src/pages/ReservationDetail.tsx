@@ -159,17 +159,31 @@ const ReservationDetail = () => {
             <h3 className="text-lg font-bold mb-4">登園前入力</h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-muted-foreground">午前の排泄</label>
-                <div className="flex gap-2 mt-1">
+                <label className="text-xs text-muted-foreground">排泄（前日夜〜当日朝）</label>
+                <div className="flex flex-wrap gap-2 mt-1">
                   {reservation.morning_urination && (
                     <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
-                      オシッコ
+                      朝オシッコ
                     </span>
                   )}
                   {reservation.morning_defecation && (
                     <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
-                      ウンチ
+                      朝ウンチ
                     </span>
+                  )}
+                  {reservation.afternoon_urination && (
+                    <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
+                      昨夜オシッコ
+                    </span>
+                  )}
+                  {reservation.afternoon_defecation && (
+                    <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
+                      昨夜ウンチ
+                    </span>
+                  )}
+                  {!reservation.morning_urination && !reservation.morning_defecation &&
+                   !reservation.afternoon_urination && !reservation.afternoon_defecation && (
+                    <span className="text-xs text-muted-foreground">なし</span>
                   )}
                 </div>
               </div>
@@ -185,10 +199,10 @@ const ReservationDetail = () => {
                   <p className="text-base font-medium">{reservation.health_status}</p>
                 </div>
               )}
-              {reservation.notes && (
+              {reservation.pre_visit_notes && (
                 <div>
                   <label className="text-xs text-muted-foreground">連絡事項</label>
-                  <p className="text-base font-medium">{reservation.notes}</p>
+                  <p className="text-base font-medium">{reservation.pre_visit_notes}</p>
                 </div>
               )}
             </div>

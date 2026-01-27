@@ -144,6 +144,33 @@ export async function sendLineMessages(
 }
 
 /**
+ * LINE Flexメッセージを送信（マルチテナント対応）
+ */
+export async function sendLineFlexMessage(
+  storeId: number,
+  lineUserId: string,
+  flexMessage: { type: string; altText: string; contents: any; quickReply?: any }
+): Promise<boolean> {
+  try {
+    const client = await getStoreLineClient(storeId);
+    if (!client) {
+      console.warn(`店舗ID ${storeId} のLINEクライアントが初期化されていません`);
+      return false;
+    }
+
+    await client.pushMessage(lineUserId, flexMessage as any, false);
+
+    return true;
+  } catch (error: any) {
+    console.error('Error sending LINE flex message:', error);
+    if (error.statusCode === 400) {
+      console.error('LINE API Error:', error.originalError?.response?.data);
+    }
+    return false;
+  }
+}
+
+/**
  * 飼い主のLINE IDを取得
  */
 export async function getOwnerLineId(ownerId: number): Promise<string | null> {

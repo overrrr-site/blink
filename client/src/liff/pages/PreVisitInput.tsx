@@ -165,28 +165,31 @@ export default function PreVisitInput() {
             <iconify-icon icon="solar:toilet-paper-bold" width="20" height="20" class="text-chart-3"></iconify-icon>
             排泄
           </h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            前日夜〜今朝の排泄状況をお知らせください
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <CheckboxItem
               id="morning_urination"
-              label="午前のオシッコ済"
+              label="今朝オシッコした"
               checked={formData.morning_urination}
               onChange={(checked) => setFormData({ ...formData, morning_urination: checked })}
             />
             <CheckboxItem
               id="morning_defecation"
-              label="午前のウンチ済"
+              label="今朝ウンチした"
               checked={formData.morning_defecation}
               onChange={(checked) => setFormData({ ...formData, morning_defecation: checked })}
             />
             <CheckboxItem
               id="afternoon_urination"
-              label="午後のオシッコ済"
+              label="昨夜オシッコした"
               checked={formData.afternoon_urination}
               onChange={(checked) => setFormData({ ...formData, afternoon_urination: checked })}
             />
             <CheckboxItem
               id="afternoon_defecation"
-              label="午後のウンチ済"
+              label="昨夜ウンチした"
               checked={formData.afternoon_defecation}
               onChange={(checked) => setFormData({ ...formData, afternoon_defecation: checked })}
             />

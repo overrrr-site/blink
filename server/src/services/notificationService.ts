@@ -1,6 +1,7 @@
 import pool from '../db/connection.js';
-import { sendLineMessage } from './lineMessagingService.js';
+import { sendLineMessage, sendLineFlexMessage } from './lineMessagingService.js';
 import { sendEmail } from './emailService.js';
+import { createReservationReminderFlexMessage } from './lineFlexMessages.js';
 
 export type OwnerContact = { lineId: string | null; email: string | null };
 
@@ -203,6 +204,7 @@ export async function sendNotification(data: NotificationData): Promise<void> {
 /**
  * 予約リマインド通知を送信（予約前日に実行）
  * 店舗ごとに設定1回・予約1回・owner連絡先1括取得でI/O削減
+ * LINE通知の場合はFlexメッセージ（登園前入力ボタン付き）を使用
  */
 export async function sendReservationReminders(): Promise<void> {
   try {
@@ -219,10 +221,13 @@ export async function sendReservationReminders(): Promise<void> {
       const targetDateStr = targetDate.toISOString().slice(0, 10);
 
       const reservationsResult = await pool.query<{
+        id: number;
         owner_id: number;
         dog_name: string;
+        reservation_date: string;
+        reservation_time: string;
       }>(
-        `SELECT r.id, d.owner_id, d.name as dog_name
+        `SELECT r.id, d.owner_id, d.name as dog_name, r.reservation_date, r.reservation_time
          FROM reservations r
          JOIN dogs d ON r.dog_id = d.id
          JOIN owners o ON d.owner_id = o.id
@@ -240,16 +245,69 @@ export async function sendReservationReminders(): Promise<void> {
       const contactMap = await getOwnerContactBatch(ownerIds);
 
       for (const r of rows) {
-        await sendNotificationWithSettings(
-          {
-            storeId: settings.store_id,
-            ownerId: r.owner_id,
-            notificationType: 'reminder',
-            title: '予約リマインド',
-            message: `${r.dog_name}ちゃんの予約が${daysBefore}日後（${targetDateStr}）です。`,
-          },
-          settings,
-          contactMap.get(r.owner_id) ?? null
+        const contact = contactMap.get(r.owner_id) ?? null;
+        const lineId = contact?.lineId ?? null;
+        const email = contact?.email ?? null;
+
+        let sent = false;
+        let sentVia: string | null = null;
+
+        // LINE通知が有効な場合はFlexメッセージを送信
+        if (settings.line_notification_enabled && lineId) {
+          const flexMessage = createReservationReminderFlexMessage({
+            id: r.id,
+            reservation_date: r.reservation_date,
+            reservation_time: r.reservation_time,
+            dog_name: r.dog_name,
+          });
+
+          const lineSent = await sendLineFlexMessage(settings.store_id, lineId, flexMessage);
+          if (lineSent) {
+            sentVia = 'line';
+            sent = true;
+          }
+        }
+
+        // LINEで送信できなかった場合はメール通知
+        if (!sent && settings.email_notification_enabled && email) {
+          const title = '予約リマインド';
+          const message = `${r.dog_name}ちゃんの予約が${daysBefore}日後（${targetDateStr}）です。\n\n登園前に体調や食事の情報をアプリからご入力ください。`;
+          const emailSent = await sendEmail(
+            email,
+            title,
+            message,
+            `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
+          );
+          if (emailSent) {
+            sentVia = 'email';
+            sent = true;
+          }
+        }
+
+        // ログ記録
+        const notificationData = {
+          storeId: settings.store_id,
+          ownerId: r.owner_id,
+          notificationType: 'reminder' as const,
+          title: '予約リマインド',
+          message: `${r.dog_name}ちゃんの予約が${daysBefore}日後（${targetDateStr}）です。`,
+        };
+
+        await pool.query(
+          `INSERT INTO notification_logs (
+            store_id, owner_id, notification_type, title, message,
+            sent_via, status, sent_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            notificationData.storeId,
+            notificationData.ownerId,
+            notificationData.notificationType,
+            notificationData.title,
+            notificationData.message,
+            sentVia ?? 'app',
+            sent ? 'sent' : 'pending',
+            sent ? new Date() : null,
+          ]
         );
       }
     }

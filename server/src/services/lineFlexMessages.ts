@@ -459,6 +459,134 @@ export function createContractFlexMessage(contract: any, calculatedRemaining: nu
 }
 
 /**
+ * 予約リマインド用Flexメッセージを作成（登園前入力ボタン付き）
+ */
+export function createReservationReminderFlexMessage(reservation: {
+  id: number;
+  reservation_date: string;
+  reservation_time: string;
+  dog_name: string;
+}) {
+  const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
+  const reservationTime = reservation.reservation_time.substring(0, 5);
+  const liffId = process.env.LIFF_ID;
+  const preVisitUrl = liffId
+    ? `https://liff.line.me/${liffId}/home/pre-visit/${reservation.id}`
+    : '#';
+
+  return {
+    type: 'flex',
+    altText: `【リマインド】${reservationDate} ${reservationTime} - ${reservation.dog_name}`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '🔔 明日の登園予定',
+            weight: 'bold',
+            size: 'lg',
+            color: '#FFFFFF',
+          },
+        ],
+        backgroundColor: '#F59E0B',
+        paddingAll: 'md',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '日時',
+                    size: 'sm',
+                    color: '#666666',
+                    flex: 1,
+                  },
+                  {
+                    type: 'text',
+                    text: `${reservationDate} ${reservationTime}`,
+                    size: 'sm',
+                    color: '#000000',
+                    align: 'end',
+                    flex: 2,
+                    weight: 'bold',
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'ワンちゃん',
+                    size: 'sm',
+                    color: '#666666',
+                    flex: 1,
+                  },
+                  {
+                    type: 'text',
+                    text: reservation.dog_name,
+                    size: 'sm',
+                    color: '#000000',
+                    align: 'end',
+                    flex: 2,
+                  },
+                ],
+              },
+              {
+                type: 'separator',
+                margin: 'md',
+              },
+              {
+                type: 'text',
+                text: '登園前に、体調や食事の情報をご入力ください。',
+                size: 'xs',
+                color: '#666666',
+                wrap: true,
+                margin: 'md',
+              },
+            ],
+          },
+        ],
+        paddingAll: 'md',
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '登園前情報を入力する',
+              uri: preVisitUrl,
+            },
+            color: '#10B981',
+          },
+        ],
+      },
+    },
+    quickReply: createQuickReply(),
+  };
+}
+
+/**
  * ヘルプメッセージを作成
  */
 export function createHelpMessage() {

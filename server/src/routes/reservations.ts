@@ -105,11 +105,9 @@ router.get('/:id', async (req: AuthRequest, res) => {
       `SELECT r.*,
               d.name as dog_name, d.photo_url as dog_photo,
               o.name as owner_name, o.phone as owner_phone,
-              pvi.morning_urination as pvi_morning_urination,
-              pvi.morning_defecation as pvi_morning_defecation,
-              pvi.afternoon_urination as pvi_afternoon_urination,
-              pvi.afternoon_defecation as pvi_afternoon_defecation,
-              pvi.breakfast_status, pvi.health_status, pvi.notes,
+              pvi.morning_urination, pvi.morning_defecation,
+              pvi.afternoon_urination, pvi.afternoon_defecation,
+              pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
               (
                 SELECT COUNT(*)
                 FROM reservations r2

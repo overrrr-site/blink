@@ -27,6 +27,7 @@ interface OwnerData {
     status: string;
     checked_in_at: string | null;
     checked_out_at: string | null;
+    has_pre_visit_input: boolean;
   } | null;
 }
 
@@ -380,6 +381,31 @@ export default function Home() {
               </div>
             </div>
           </section>
+
+          {/* 登園前入力ボタン（今日の予約で未登園の場合） */}
+          {isToday(new Date(nextReservation.reservation_date)) &&
+           nextReservation.status === '予定' && (
+            nextReservation.has_pre_visit_input ? (
+              // 入力済みの場合
+              <div className="w-full bg-chart-2/10 text-chart-2 py-3 rounded-xl font-medium
+                             min-h-[48px] flex items-center justify-center gap-2 border border-chart-2/20">
+                <iconify-icon icon="solar:check-circle-bold" class="size-5"></iconify-icon>
+                登園前情報 入力済み
+              </div>
+            ) : (
+              // 未入力の場合
+              <button
+                onClick={() => navigate(`/home/pre-visit/${nextReservation.id}`)}
+                className="w-full bg-chart-3/10 text-chart-3 py-3 rounded-xl font-bold
+                           active:scale-95 transition-transform min-h-[48px]
+                           flex items-center justify-center gap-2 border border-chart-3/30
+                           hover:bg-chart-3/20"
+              >
+                <iconify-icon icon="solar:clipboard-text-bold" class="size-5"></iconify-icon>
+                登園前情報を入力する
+              </button>
+            )
+          )}
 
           {/* 登園/降園ボタン（今日の予約の場合のみ表示） */}
           {isToday(new Date(nextReservation.reservation_date)) && (
