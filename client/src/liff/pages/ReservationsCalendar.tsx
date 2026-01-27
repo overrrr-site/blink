@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, startOfWeek, endOfWeek, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, startOfWeek, endOfWeek, addMonths, subMonths, isToday, isFuture } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
 interface Reservation {
@@ -330,37 +330,53 @@ export default function ReservationsCalendar() {
                     </div>
                   </div>
                 )}
-                {reservation.status !== 'キャンセル' && (
-                  <div className="flex gap-2 pt-3 border-t border-border">
-                    <button
-                      onClick={() => navigate(`/home/reservations/${reservation.id}/edit`)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold active:bg-primary/10 transition-colors"
-                    >
-                      <iconify-icon icon="solar:pen-bold" width="18" height="18"></iconify-icon>
-                      変更
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (confirm('この予約をキャンセルしますか？')) {
-                          try {
-                            await liffClient.put(`/reservations/${reservation.id}/cancel`);
-                            // 予約一覧を再取得
-                            const monthStr = format(currentMonth, 'yyyy-MM');
-                            const response = await liffClient.get('/reservations', {
-                              params: { month: monthStr },
-                            });
-                            setReservations(response.data);
-                          } catch (error) {
-                            console.error('Error canceling reservation:', error);
-                            alert('予約のキャンセルに失敗しました');
+                {reservation.status !== 'キャンセル' && reservation.status !== '退園済' && (
+                  <div className="flex flex-col gap-2 pt-3 border-t border-border">
+                    {/* 登園前入力ボタン（今日または未来の予約の場合） */}
+                    {(isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (
+                      <button
+                        onClick={() => navigate(`/home/pre-visit/${reservation.id}`)}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                          reservation.has_pre_visit_input
+                            ? 'border border-chart-2/30 bg-chart-2/5 text-chart-2 active:bg-chart-2/10'
+                            : 'border border-chart-3/30 bg-chart-3/5 text-chart-3 active:bg-chart-3/10'
+                        }`}
+                      >
+                        <iconify-icon icon={reservation.has_pre_visit_input ? "solar:check-circle-bold" : "solar:clipboard-text-bold"} width="18" height="18"></iconify-icon>
+                        {reservation.has_pre_visit_input ? '登園前入力を編集' : '登園前情報を入力'}
+                      </button>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => navigate(`/home/reservations/${reservation.id}/edit`)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold active:bg-primary/10 transition-colors"
+                      >
+                        <iconify-icon icon="solar:pen-bold" width="18" height="18"></iconify-icon>
+                        変更
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (confirm('この予約をキャンセルしますか？')) {
+                            try {
+                              await liffClient.put(`/reservations/${reservation.id}/cancel`);
+                              // 予約一覧を再取得
+                              const monthStr = format(currentMonth, 'yyyy-MM');
+                              const response = await liffClient.get('/reservations', {
+                                params: { month: monthStr },
+                              });
+                              setReservations(response.data);
+                            } catch (error) {
+                              console.error('Error canceling reservation:', error);
+                              alert('予約のキャンセルに失敗しました');
+                            }
                           }
-                        }
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 transition-colors"
-                    >
-                      <iconify-icon icon="solar:trash-bin-trash-bold" width="18" height="18"></iconify-icon>
-                      キャンセル
-                    </button>
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 transition-colors"
+                      >
+                        <iconify-icon icon="solar:trash-bin-trash-bold" width="18" height="18"></iconify-icon>
+                        キャンセル
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

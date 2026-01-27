@@ -285,9 +285,11 @@ router.get('/reservations/:id', async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo
+      `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
+              CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
        FROM reservations r
        JOIN dogs d ON r.dog_id = d.id
+       LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
        WHERE r.id = $1 AND d.owner_id = $2 AND r.store_id = $3`,
       [id, decoded.ownerId, decoded.storeId]
     );

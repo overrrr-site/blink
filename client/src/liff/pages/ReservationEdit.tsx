@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import liffClient from '../api/client';
-import { format } from 'date-fns';
+import { format, isToday, isFuture, parseISO } from 'date-fns';
 
 interface Reservation {
   id: number;
@@ -12,6 +12,7 @@ interface Reservation {
   pickup_time: string;
   notes: string;
   status: string;
+  has_pre_visit_input: boolean;
 }
 
 interface Dog {
@@ -197,6 +198,42 @@ export default function ReservationEdit() {
             className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
           />
         </section>
+
+        {/* 登園前入力（今日または未来の予約で、キャンセル以外の場合） */}
+        {reservation.status !== 'キャンセル' &&
+         reservation.status !== '退園済' &&
+         (isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (
+          <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+            <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
+              <iconify-icon icon="solar:clipboard-text-bold" width="16" height="16" class="text-chart-3"></iconify-icon>
+              登園前の情報入力
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              当日の朝の様子や健康状態を事前に共有できます
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(`/home/pre-visit/${reservation.id}`)}
+              className={`w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+                reservation.has_pre_visit_input
+                  ? 'bg-chart-2/10 text-chart-2 border border-chart-2/20 hover:bg-chart-2/20'
+                  : 'bg-chart-3/10 text-chart-3 border border-chart-3/20 hover:bg-chart-3/20'
+              }`}
+            >
+              {reservation.has_pre_visit_input ? (
+                <>
+                  <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+                  入力済み（タップして編集）
+                </>
+              ) : (
+                <>
+                  <iconify-icon icon="solar:pen-new-square-bold" width="20" height="20"></iconify-icon>
+                  登園前情報を入力する
+                </>
+              )}
+            </button>
+          </section>
+        )}
 
         {/* 保存ボタン */}
         <div className="pt-4 pb-8">
