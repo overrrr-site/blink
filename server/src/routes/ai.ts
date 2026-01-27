@@ -83,6 +83,7 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
           memo,
           photo_analyses
         );
+        console.log('🤖 Gemini API呼び出し開始');
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
@@ -101,17 +102,26 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
           }),
         });
 
+        console.log('🤖 Gemini API response status:', response.status);
+        const data = await response.json();
+        console.log('🤖 Gemini API response data:', JSON.stringify(data).substring(0, 500));
+
         if (response.ok) {
-          const data = await response.json();
           const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          console.log('🤖 Generated text length:', generatedText.length);
           if (generatedText) {
             return res.json({ comment: generatedText });
           }
+          console.log('🤖 Generated text is empty, falling back to template');
+        } else {
+          console.error('🤖 Gemini API error response:', data);
         }
       } catch (apiError) {
-        console.error('Gemini API error:', apiError);
+        console.error('🤖 Gemini API exception:', apiError);
         // APIエラー時はテンプレートにフォールバック
       }
+    } else {
+      console.log('🤖 No GEMINI_API_KEY, using template');
     }
 
     // テンプレートベースのフォールバック
