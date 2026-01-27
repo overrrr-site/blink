@@ -7,7 +7,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // ダッシュボードデータ取得
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', async function(req: AuthRequest, res): Promise<void> {
   try {
     if (!requireStoreId(req, res)) {
       return;

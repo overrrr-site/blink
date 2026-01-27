@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { format, isFuture, isToday, parseISO } from 'date-fns';
 import liffClient from '../api/client';
-import { format, isToday, isFuture, parseISO } from 'date-fns';
 
 interface Reservation {
   id: number;
@@ -21,27 +21,39 @@ interface Dog {
   photo_url: string;
 }
 
-export default function ReservationEdit() {
+interface ReservationForm {
+  reservation_date: string;
+  reservation_time: string;
+  pickup_time: string;
+  notes: string;
+}
+
+const INITIAL_FORM: ReservationForm = {
+  reservation_date: '',
+  reservation_time: '',
+  pickup_time: '',
+  notes: '',
+};
+
+function canShowPreVisitInput(reservation: Reservation): boolean {
+  if (reservation.status === 'キャンセル' || reservation.status === '退園済') {
+    return false;
+  }
+  const reservationDate = parseISO(reservation.reservation_date);
+  return isToday(reservationDate) || isFuture(reservationDate);
+}
+
+export default function ReservationEdit(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [dogs, setDogs] = useState<Dog[]>([]);
-  const [form, setForm] = useState({
-    reservation_date: '',
-    reservation_time: '',
-    pickup_time: '',
-    notes: '',
-  });
+  const [form, setForm] = useState<ReservationForm>(INITIAL_FORM);
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
-
-  const fetchData = async () => {
+  async function fetchData(): Promise<void> {
     try {
-      // 予約情報を取得
       const reservationRes = await liffClient.get(`/reservations/${id}`);
       const resData = reservationRes.data;
       setReservation(resData);
@@ -52,7 +64,6 @@ export default function ReservationEdit() {
         notes: resData.notes || '',
       });
 
-      // 登録犬一覧を取得
       const meRes = await liffClient.get('/me');
       setDogs(meRes.data.dogs || []);
     } catch (error) {
@@ -62,9 +73,13 @@ export default function ReservationEdit() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(function() {
+    fetchData();
+  }, [id]);
+
+  async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     if (!form.reservation_date) {
       alert('予約日を選択してください');
@@ -81,7 +96,7 @@ export default function ReservationEdit() {
     } finally {
       setSaving(false);
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -97,7 +112,7 @@ export default function ReservationEdit() {
   }
 
   if (!reservation) {
-    return null;
+    return <></>;
   }
 
   const selectedDog = dogs.find(d => d.id === reservation.dog_id);
@@ -107,7 +122,7 @@ export default function ReservationEdit() {
       {/* ヘッダー */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2">
         <button
-          onClick={() => navigate('/home/reservations')}
+          onClick={function() { navigate('/home/reservations'); }}
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
         >
           <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
@@ -154,7 +169,7 @@ export default function ReservationEdit() {
               <input
                 type="date"
                 value={form.reservation_date}
-                onChange={(e) => setForm(prev => ({ ...prev, reservation_date: e.target.value }))}
+                onChange={function(e) { setForm(function(prev) { return { ...prev, reservation_date: e.target.value }; }); }}
                 min={format(new Date(), 'yyyy-MM-dd')}
                 className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 required
@@ -167,7 +182,7 @@ export default function ReservationEdit() {
                 <input
                   type="time"
                   value={form.reservation_time}
-                  onChange={(e) => setForm(prev => ({ ...prev, reservation_time: e.target.value }))}
+                  onChange={function(e) { setForm(function(prev) { return { ...prev, reservation_time: e.target.value }; }); }}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
@@ -176,7 +191,7 @@ export default function ReservationEdit() {
                 <input
                   type="time"
                   value={form.pickup_time}
-                  onChange={(e) => setForm(prev => ({ ...prev, pickup_time: e.target.value }))}
+                  onChange={function(e) { setForm(function(prev) { return { ...prev, pickup_time: e.target.value }; }); }}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
@@ -192,17 +207,14 @@ export default function ReservationEdit() {
           </h3>
           <textarea
             value={form.notes}
-            onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
+            onChange={function(e) { setForm(function(prev) { return { ...prev, notes: e.target.value }; }); }}
             placeholder="特記事項があれば入力してください"
             rows={4}
             className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
           />
         </section>
 
-        {/* 登園前入力（今日または未来の予約で、キャンセル以外の場合） */}
-        {reservation.status !== 'キャンセル' &&
-         reservation.status !== '退園済' &&
-         (isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (
+        {canShowPreVisitInput(reservation) && (
           <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
             <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
               <iconify-icon icon="solar:clipboard-text-bold" width="16" height="16" class="text-chart-3"></iconify-icon>
@@ -213,7 +225,7 @@ export default function ReservationEdit() {
             </p>
             <button
               type="button"
-              onClick={() => navigate(`/home/pre-visit/${reservation.id}`)}
+              onClick={function() { navigate(`/home/pre-visit/${reservation.id}`); }}
               className={`w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
                 reservation.has_pre_visit_input
                   ? 'bg-chart-2/10 text-chart-2 border border-chart-2/20 hover:bg-chart-2/20'

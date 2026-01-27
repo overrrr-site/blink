@@ -13,11 +13,11 @@ import {
 
 const router = express.Router();
 
-type OwnerToken = {
+interface OwnerToken {
   ownerId: number;
   storeId: number;
   type: string;
-};
+}
 
 function requireOwnerToken(req: express.Request, res: express.Response): OwnerToken | null {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -43,8 +43,19 @@ function requireOwnerToken(req: express.Request, res: express.Response): OwnerTo
   }
 }
 
-// LINE認証（LIFF用）
-router.post('/auth', async (req, res) => {
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (local.length <= 2) {
+    return `${local[0]}***@${domain}`;
+  }
+  return `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}@${domain}`;
+}
+
+router.post('/auth', async function(req, res) {
   try {
     const { lineUserId, displayName, pictureUrl } = req.body;
 
@@ -103,7 +114,7 @@ router.post('/auth', async (req, res) => {
 });
 
 // 飼い主情報取得（認証済み）
-router.get('/me', async (req, res) => {
+router.get('/me', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -193,7 +204,7 @@ router.get('/me', async (req, res) => {
 });
 
 // 飼い主の予約一覧取得
-router.get('/reservations', async (req, res) => {
+router.get('/reservations', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -228,7 +239,7 @@ router.get('/reservations', async (req, res) => {
 });
 
 // 飼い主の日誌一覧取得
-router.get('/journals', async (req, res) => {
+router.get('/journals', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -260,7 +271,7 @@ router.get('/journals', async (req, res) => {
 });
 
 // 飼い主の予約詳細取得
-router.get('/reservations/:id', async (req, res) => {
+router.get('/reservations/:id', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -289,7 +300,7 @@ router.get('/reservations/:id', async (req, res) => {
 });
 
 // 空き状況取得
-router.get('/availability', async (req, res) => {
+router.get('/availability', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -385,7 +396,7 @@ router.get('/availability', async (req, res) => {
 });
 
 // 飼い主の予約作成
-router.post('/reservations', async (req, res) => {
+router.post('/reservations', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -475,7 +486,7 @@ router.post('/reservations', async (req, res) => {
 });
 
 // 飼い主の予約更新
-router.put('/reservations/:id', async (req, res) => {
+router.put('/reservations/:id', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -514,7 +525,7 @@ router.put('/reservations/:id', async (req, res) => {
 });
 
 // 飼い主の予約キャンセル
-router.put('/reservations/:id/cancel', async (req, res) => {
+router.put('/reservations/:id/cancel', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -548,7 +559,7 @@ router.put('/reservations/:id/cancel', async (req, res) => {
 });
 
 // 登園前入力（飼い主が入力）
-router.post('/pre-visit-inputs', async (req, res) => {
+router.post('/pre-visit-inputs', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -638,22 +649,7 @@ router.post('/pre-visit-inputs', async (req, res) => {
   }
 });
 
-// 確認コード生成（6桁）
-function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-// メールアドレスをマスク表示
-function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (local.length <= 2) {
-    return `${local[0]}***@${domain}`;
-  }
-  return `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}@${domain}`;
-}
-
-// LINE ID紐付けリクエスト（確認コード送信）
-router.post('/link/request', async (req, res) => {
+router.post('/link/request', async function(req, res) {
   try {
     const { phone, lineUserId } = req.body;
 
@@ -742,7 +738,7 @@ router.post('/link/request', async (req, res) => {
 });
 
 // LINE ID紐付け確認（確認コード検証）
-router.post('/link/verify', async (req, res) => {
+router.post('/link/verify', async function(req, res) {
   try {
     const { phone, code, lineUserId } = req.body;
 
@@ -837,7 +833,7 @@ router.post('/link/verify', async (req, res) => {
 });
 
 // 店舗側: 店舗固定のQRコード生成（店舗認証が必要）
-router.get('/qr-code', authenticate, async (req: AuthRequest, res) => {
+router.get('/qr-code', authenticate, async function(req: AuthRequest, res) {
   try {
     const storeId = req.storeId;
     
@@ -870,7 +866,7 @@ router.get('/qr-code', authenticate, async (req: AuthRequest, res) => {
 });
 
 // LIFF側: QRコードによるチェックイン
-router.post('/check-in', async (req, res) => {
+router.post('/check-in', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -982,7 +978,7 @@ router.post('/check-in', async (req, res) => {
 });
 
 // LIFF側: QRコードによるチェックアウト（降園）
-router.post('/check-out', async (req, res) => {
+router.post('/check-out', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -1072,7 +1068,7 @@ router.post('/check-out', async (req, res) => {
 });
 
 // 公開中のお知らせ一覧取得
-router.get('/announcements', async (req, res) => {
+router.get('/announcements', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
@@ -1098,7 +1094,7 @@ router.get('/announcements', async (req, res) => {
 });
 
 // お知らせ詳細取得
-router.get('/announcements/:id', async (req, res) => {
+router.get('/announcements/:id', async function(req, res) {
   try {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;

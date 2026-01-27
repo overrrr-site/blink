@@ -1,8 +1,21 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import liffClient from '../api/client';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, startOfWeek, endOfWeek, addMonths, subMonths, isToday, isFuture } from 'date-fns';
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isFuture,
+  isSameDay,
+  isToday,
+  parseISO,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from 'date-fns';
 import { ja } from 'date-fns/locale';
+import liffClient from '../api/client';
 
 interface Reservation {
   id: number;
@@ -11,7 +24,6 @@ interface Reservation {
   dog_name: string;
   dog_photo: string;
   status: string;
-  // 登園前入力情報
   has_pre_visit_input: boolean;
   morning_urination: boolean | null;
   morning_defecation: boolean | null;
@@ -22,7 +34,33 @@ interface Reservation {
   pre_visit_notes: string | null;
 }
 
-export default function ReservationsCalendar() {
+const SWIPE_THRESHOLD = 50;
+
+function getReservationsForDate(reservations: Reservation[], date: Date): Reservation[] {
+  return reservations.filter(function(r) {
+    return isSameDay(parseISO(r.reservation_date), date);
+  });
+}
+
+function hasNoExcretionRecords(reservation: Reservation): boolean {
+  return !reservation.morning_urination &&
+         !reservation.morning_defecation &&
+         !reservation.afternoon_urination &&
+         !reservation.afternoon_defecation;
+}
+
+function getStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'キャンセル':
+      return 'bg-destructive/10 text-destructive';
+    case '確定':
+      return 'bg-chart-2/10 text-chart-2';
+    default:
+      return 'bg-primary/10 text-primary';
+  }
+}
+
+export default function ReservationsCalendar(): JSX.Element {
   const navigate = useNavigate();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -31,36 +69,25 @@ export default function ReservationsCalendar() {
   const touchStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        const monthStr = format(currentMonth, 'yyyy-MM');
-        const response = await liffClient.get('/reservations', {
-          params: { month: monthStr },
-        });
-        setReservations(response.data);
-      } catch (error) {
-        console.error('Error fetching reservations:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  function handlePrevMonth(): void {
+    setCurrentMonth(subMonths(currentMonth, 1));
+  }
 
-    fetchReservations();
-  }, [currentMonth]);
+  function handleNextMonth(): void {
+    setCurrentMonth(addMonths(currentMonth, 1));
+  }
 
-  // スワイプジェスチャー対応
-  const handleTouchStart = (e: React.TouchEvent) => {
+  function handleTouchStart(e: React.TouchEvent): void {
     touchStartX.current = e.touches[0].clientX;
-  };
+  }
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  function handleTouchEnd(e: React.TouchEvent): void {
     if (touchStartX.current === null) return;
-    
+
     const touchEndX = e.changedTouches[0].clientX;
     const diff = touchStartX.current - touchEndX;
 
-    if (Math.abs(diff) > 50) {
+    if (Math.abs(diff) > SWIPE_THRESHOLD) {
       if (diff > 0) {
         handleNextMonth();
       } else {
@@ -68,27 +95,48 @@ export default function ReservationsCalendar() {
       }
     }
     touchStartX.current = null;
-  };
+  }
+
+  async function fetchReservations(): Promise<void> {
+    try {
+      const monthStr = format(currentMonth, 'yyyy-MM');
+      const response = await liffClient.get('/reservations', {
+        params: { month: monthStr },
+      });
+      setReservations(response.data);
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCancelReservation(reservationId: number): Promise<void> {
+    if (!confirm('この予約をキャンセルしますか？')) return;
+
+    try {
+      await liffClient.put(`/reservations/${reservationId}/cancel`);
+      const monthStr = format(currentMonth, 'yyyy-MM');
+      const response = await liffClient.get('/reservations', {
+        params: { month: monthStr },
+      });
+      setReservations(response.data);
+    } catch (error) {
+      console.error('Error canceling reservation:', error);
+      alert('予約のキャンセルに失敗しました');
+    }
+  }
+
+  useEffect(function() {
+    fetchReservations();
+  }, [currentMonth]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const calendarStart = startOfWeek(monthStart);
   const calendarEnd = endOfWeek(monthEnd);
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-
-  const getReservationsForDate = (date: Date) => {
-    return reservations.filter((r) => isSameDay(parseISO(r.reservation_date), date));
-  };
-
-  const handlePrevMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
-  };
-
-  const selectedReservations = selectedDate ? getReservationsForDate(selectedDate) : [];
+  const selectedReservations = selectedDate ? getReservationsForDate(reservations, selectedDate) : [];
 
   if (loading) {
     return (
@@ -147,24 +195,24 @@ export default function ReservationsCalendar() {
       >
         {/* 曜日ヘッダー */}
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
-          {['日', '月', '火', '水', '木', '金', '土'].map((day, idx) => (
-            <span
-              key={day}
-              className={`text-xs font-bold py-2 ${
-                idx === 0 ? 'text-destructive' : idx === 6 ? 'text-chart-3' : 'text-muted-foreground'
-              }`}
-            >
-              {day}
-            </span>
-          ))}
+          {['日', '月', '火', '水', '木', '金', '土'].map(function(day, idx) {
+            let colorClass = 'text-muted-foreground';
+            if (idx === 0) colorClass = 'text-destructive';
+            if (idx === 6) colorClass = 'text-chart-3';
+            return (
+              <span key={day} className={`text-xs font-bold py-2 ${colorClass}`}>
+                {day}
+              </span>
+            );
+          })}
         </div>
 
         {/* 日付グリッド */}
         <div className="grid grid-cols-7 gap-1">
-          {days.map((day) => {
-            const dayReservations = getReservationsForDate(day);
+          {days.map(function(day) {
+            const dayReservations = getReservationsForDate(reservations, day);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
-            const isToday = isSameDay(day, new Date());
+            const isTodayDate = isSameDay(day, new Date());
             const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
             const hasReservation = dayReservations.length > 0;
 
@@ -178,7 +226,7 @@ export default function ReservationsCalendar() {
                       ? 'bg-primary text-primary-foreground shadow-md'
                       : hasReservation
                       ? 'bg-primary/15 hover:bg-primary/25'
-                      : isToday
+                      : isTodayDate
                       ? 'bg-accent/50 ring-2 ring-primary/30'
                       : isCurrentMonth
                       ? 'hover:bg-muted'
@@ -187,7 +235,7 @@ export default function ReservationsCalendar() {
                 aria-label={`${format(day, 'M月d日')}${hasReservation ? `、${dayReservations.length}件の予約あり` : ''}`}
                 aria-pressed={!!isSelected}
               >
-                <span className={`text-sm ${isSelected || isToday ? 'font-bold' : ''}`}>
+                <span className={`text-sm ${isSelected || isTodayDate ? 'font-bold' : ''}`}>
                   {format(day, 'd')}
                 </span>
                 {hasReservation && (
@@ -251,15 +299,7 @@ export default function ReservationsCalendar() {
                       {reservation.reservation_time}
                     </p>
                   </div>
-                  <span
-                    className={`text-xs px-3 py-1.5 rounded-full font-bold ${
-                      reservation.status === 'キャンセル'
-                        ? 'bg-destructive/10 text-destructive'
-                        : reservation.status === '確定'
-                        ? 'bg-chart-2/10 text-chart-2'
-                        : 'bg-primary/10 text-primary'
-                    }`}
-                  >
+                  <span className={`text-xs px-3 py-1.5 rounded-full font-bold ${getStatusBadgeClass(reservation.status)}`}>
                     {reservation.status}
                   </span>
                 </div>
@@ -296,8 +336,7 @@ export default function ReservationsCalendar() {
                                 昨夜ウンチ
                               </span>
                             )}
-                            {!reservation.morning_urination && !reservation.morning_defecation &&
-                             !reservation.afternoon_urination && !reservation.afternoon_defecation && (
+                            {hasNoExcretionRecords(reservation) && (
                               <span className="text-muted-foreground text-[10px]">なし</span>
                             )}
                           </div>
@@ -355,22 +394,7 @@ export default function ReservationsCalendar() {
                         変更
                       </button>
                       <button
-                        onClick={async () => {
-                          if (confirm('この予約をキャンセルしますか？')) {
-                            try {
-                              await liffClient.put(`/reservations/${reservation.id}/cancel`);
-                              // 予約一覧を再取得
-                              const monthStr = format(currentMonth, 'yyyy-MM');
-                              const response = await liffClient.get('/reservations', {
-                                params: { month: monthStr },
-                              });
-                              setReservations(response.data);
-                            } catch (error) {
-                              console.error('Error canceling reservation:', error);
-                              alert('予約のキャンセルに失敗しました');
-                            }
-                          }
-                        }}
+                        onClick={function() { handleCancelReservation(reservation.id); }}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 transition-colors"
                       >
                         <iconify-icon icon="solar:trash-bin-trash-bold" width="18" height="18"></iconify-icon>

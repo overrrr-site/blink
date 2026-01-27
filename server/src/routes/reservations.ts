@@ -37,7 +37,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // 予約一覧取得（日付指定）
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { date, month } = req.query;
 
@@ -97,7 +97,7 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // 予約詳細取得
-router.get('/:id', async (req: AuthRequest, res) => {
+router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { id } = req.params;
 
@@ -152,7 +152,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // 予約作成
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { dog_id, reservation_date, reservation_time, memo, base_price } = req.body;
 
@@ -195,7 +195,7 @@ router.post('/', async (req: AuthRequest, res) => {
 });
 
 // 予約更新
-router.put('/:id', async (req: AuthRequest, res) => {
+router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { id } = req.params;
     const { reservation_date, reservation_time, status, memo } = req.body;
@@ -272,7 +272,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
 });
 
 // 予約削除
-router.delete('/:id', async (req: AuthRequest, res) => {
+router.delete('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { id } = req.params;
 

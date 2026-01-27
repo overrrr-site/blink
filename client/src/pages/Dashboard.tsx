@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import AlertsModal from '../components/AlertsModal'
@@ -51,7 +51,31 @@ const FILTER_OPTIONS: FilterConfig[] = [
   { id: '帰宅済', label: '帰宅済', icon: 'solar:check-circle-bold', borderColor: 'border-chart-3' },
 ]
 
-const Dashboard = () => {
+type DisplayStatus = '来園待ち' | '在園中' | '帰宅済'
+
+function getDisplayStatus(reservation: Reservation): DisplayStatus {
+  if (reservation.status === '退園済') {
+    return '帰宅済'
+  }
+  if (reservation.status === '登園済') {
+    return '在園中'
+  }
+  return '来園待ち'
+}
+
+function getStatusLabel(status: DisplayStatus): string {
+  switch (status) {
+    case '来園待ち': return '登園前'
+    case '在園中': return '利用中'
+    case '帰宅済': return '帰宅済み'
+  }
+}
+
+function hasPreVisitInput(reservation: Reservation): boolean {
+  return Boolean(reservation.notes || reservation.health_status || reservation.breakfast_status)
+}
+
+function Dashboard(): JSX.Element {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -60,11 +84,7 @@ const Dashboard = () => {
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    fetchDashboard()
-  }, [])
-
-  const fetchDashboard = async () => {
+  async function fetchDashboard(): Promise<void> {
     try {
       const response = await api.get('/dashboard')
       setData(response.data)
@@ -75,7 +95,11 @@ const Dashboard = () => {
     }
   }
 
-  const handleCheckIn = useCallback(async (reservationId: number) => {
+  useEffect(() => {
+    fetchDashboard()
+  }, [])
+
+  const handleCheckIn = useCallback(async function(reservationId: number): Promise<void> {
     setCheckingIn(reservationId)
     try {
       await api.put(`/reservations/${reservationId}`, {
@@ -90,74 +114,56 @@ const Dashboard = () => {
     }
   }, [])
 
-  // ステータスの内部値（フィルタリング用）- コンポーネント外に移動
-  const getDisplayStatus = useCallback((reservation: Reservation): '来園待ち' | '在園中' | '帰宅済' => {
-    if (reservation.status === '退園済') {
-      return '帰宅済'
-    }
-    if (reservation.status === '登園済') {
-      return '在園中'
-    }
-    return '来園待ち'
-  }, [])
-
-  // ステータスの表示名（UI表示用）
-  const getStatusLabel = useCallback((status: '来園待ち' | '在園中' | '帰宅済'): string => {
-    switch (status) {
-      case '来園待ち': return '登園前'
-      case '在園中': return '利用中'
-      case '帰宅済': return '帰宅済み'
-    }
-  }, [])
-
-  // フィルタリング - useMemoで最適化
-  const filteredReservations = useMemo(() => {
-    return data?.todayReservations.filter((r) => {
+  const filteredReservations = useMemo(function(): Reservation[] {
+    if (!data?.todayReservations) return []
+    return data.todayReservations.filter(function(r) {
       if (r.status === 'キャンセル') return false
       if (statusFilter === 'all') return true
       return getDisplayStatus(r) === statusFilter
-    }) || []
-  }, [data?.todayReservations, statusFilter, getDisplayStatus])
+    })
+  }, [data?.todayReservations, statusFilter])
 
-  // ステータス別のカウント - useMemoで最適化
-  const statusCounts = useMemo(() => ({
-    '来園待ち': data?.todayReservations.filter((r) => r.status !== 'キャンセル' && getDisplayStatus(r) === '来園待ち').length || 0,
-    '在園中': data?.todayReservations.filter((r) => r.status !== 'キャンセル' && getDisplayStatus(r) === '在園中').length || 0,
-    '帰宅済': data?.todayReservations.filter((r) => r.status !== 'キャンセル' && getDisplayStatus(r) === '帰宅済').length || 0,
-  }), [data?.todayReservations, getDisplayStatus])
+  const statusCounts = useMemo(function(): Record<DisplayStatus, number> {
+    const reservations = data?.todayReservations || []
+    const activeReservations = reservations.filter(function(r) {
+      return r.status !== 'キャンセル'
+    })
+    return {
+      '来園待ち': activeReservations.filter(function(r) { return getDisplayStatus(r) === '来園待ち' }).length,
+      '在園中': activeReservations.filter(function(r) { return getDisplayStatus(r) === '在園中' }).length,
+      '帰宅済': activeReservations.filter(function(r) { return getDisplayStatus(r) === '帰宅済' }).length,
+    }
+  }, [data?.todayReservations])
 
-  // 受入状況の計算 - useMemoで最適化
-  const currentCount = useMemo(() =>
-    data?.todayReservations.filter((r) => r.status !== 'キャンセル').length || 0,
-  [data?.todayReservations])
+  const currentCount = useMemo(function(): number {
+    if (!data?.todayReservations) return 0
+    return data.todayReservations.filter(function(r) {
+      return r.status !== 'キャンセル'
+    }).length
+  }, [data?.todayReservations])
 
-  // 連絡帳があるかチェック
-  const hasPreVisitInput = useCallback((reservation: Reservation) => {
-    return reservation.notes || reservation.health_status || reservation.breakfast_status
-  }, [])
-
-  // 時間でグループ化 - useMemoで最適化
-  const groupedReservations = useMemo(() => {
-    const groups: { [key: string]: Reservation[] } = {}
-    filteredReservations.forEach((r) => {
-      const time = r.reservation_time.slice(0, 5) // HH:MM形式
+  const groupedReservations = useMemo(function(): [string, Reservation[]][] {
+    const groups: Record<string, Reservation[]> = {}
+    filteredReservations.forEach(function(r) {
+      const time = r.reservation_time.slice(0, 5)
       if (!groups[time]) groups[time] = []
       groups[time].push(r)
     })
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
+    return Object.entries(groups).sort(function([a], [b]) {
+      return a.localeCompare(b)
+    })
   }, [filteredReservations])
 
-  // アラートサマリー - useMemoで最適化
-  const alertSummary = useMemo(() => {
+  const alertSummary = useMemo(function(): string {
     if (!data?.alerts || data.alerts.length === 0) return ''
-    const alertTypes = new Set(data.alerts.map((a: any) => a.alert_type))
+    const alertTypes = new Set(data.alerts.map(function(a: any) { return a.alert_type }))
     const messages: string[] = []
     if (alertTypes.has('mixed_vaccine_expired')) {
-      const count = data.alerts.filter((a: any) => a.alert_type === 'mixed_vaccine_expired').length
+      const count = data.alerts.filter(function(a: any) { return a.alert_type === 'mixed_vaccine_expired' }).length
       messages.push(`混合ワクチン期限切れ ${count}件`)
     }
     if (alertTypes.has('rabies_vaccine_expiring')) {
-      const count = data.alerts.filter((a: any) => a.alert_type === 'rabies_vaccine_expiring').length
+      const count = data.alerts.filter(function(a: any) { return a.alert_type === 'rabies_vaccine_expiring' }).length
       messages.push(`狂犬病ワクチン期限切れ間近 ${count}件`)
     }
     return messages.join('、') || '確認が必要な項目があります'

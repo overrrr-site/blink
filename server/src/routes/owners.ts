@@ -12,7 +12,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // 飼い主一覧取得
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { search, filter } = req.query;
     // N+1解消: LATERAL JOINで最終予約日を効率的に取得
@@ -56,7 +56,7 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // 飼い主詳細取得
-router.get('/:id', async (req: AuthRequest, res) => {
+router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { id } = req.params;
 
@@ -86,7 +86,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // 飼い主作成
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', async function(req: AuthRequest, res): Promise<void> {
   try {
     if (!requireStoreId(req, res)) {
       return;
@@ -137,7 +137,7 @@ router.post('/', async (req: AuthRequest, res) => {
 });
 
 // 飼い主更新
-router.put('/:id', async (req: AuthRequest, res) => {
+router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { id } = req.params;
     const {
@@ -187,7 +187,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
 });
 
 // 飼い主削除（論理削除）
-router.delete('/:id', async (req: AuthRequest, res) => {
+router.delete('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
     const { id } = req.params;
 
