@@ -1,10 +1,11 @@
 import axios from 'axios'
 
 // 本番環境では相対パス、開発環境ではlocalhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '')
+// VITE_API_URLは /api を含むので、/liff のみ追加
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : '/api')
 
 const liffClient = axios.create({
-  baseURL: `${API_BASE_URL}/api/liff`,
+  baseURL: `${API_BASE_URL}/liff`,
   headers: {
     'Content-Type': 'application/json',
   },
