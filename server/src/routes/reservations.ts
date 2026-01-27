@@ -101,6 +101,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
+    // 最適化: スカラーサブクエリをLATERAL JOINに変更
     const result = await pool.query(
       `SELECT r.*,
               d.name as dog_name, d.photo_url as dog_photo,
@@ -108,26 +109,28 @@ router.get('/:id', async (req: AuthRequest, res) => {
               pvi.morning_urination, pvi.morning_defecation,
               pvi.afternoon_urination, pvi.afternoon_defecation,
               pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
-              (
-                SELECT COUNT(*)
-                FROM reservations r2
-                WHERE r2.dog_id = r.dog_id
-                  AND r2.reservation_date <= r.reservation_date
-                  AND r2.status IN ('登園済', '退園済', '予定')
-              ) as visit_count,
-              (
-                SELECT r3.reservation_date
-                FROM reservations r3
-                WHERE r3.dog_id = r.dog_id
-                  AND r3.reservation_date > r.reservation_date
-                  AND r3.status = '予定'
-                ORDER BY r3.reservation_date
-                LIMIT 1
-              ) as next_visit_date
+              COALESCE(stats.visit_count, 0) as visit_count,
+              next.next_visit_date
        FROM reservations r
        JOIN dogs d ON r.dog_id = d.id
        JOIN owners o ON d.owner_id = o.id
        LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*) as visit_count
+         FROM reservations r2
+         WHERE r2.dog_id = r.dog_id
+           AND r2.reservation_date <= r.reservation_date
+           AND r2.status IN ('登園済', '退園済', '予定')
+       ) stats ON true
+       LEFT JOIN LATERAL (
+         SELECT r3.reservation_date as next_visit_date
+         FROM reservations r3
+         WHERE r3.dog_id = r.dog_id
+           AND r3.reservation_date > r.reservation_date
+           AND r3.status = '予定'
+         ORDER BY r3.reservation_date
+         LIMIT 1
+       ) next ON true
        WHERE r.id = $1 AND r.store_id = $2`,
       [id, req.storeId]
     );

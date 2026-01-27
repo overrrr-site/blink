@@ -15,23 +15,27 @@ router.use(authenticate);
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const { search, filter } = req.query;
+    // N+1解消: LATERAL JOINで最終予約日を効率的に取得
     let query = `
-      SELECT o.*, 
+      SELECT o.*,
              json_agg(json_build_object(
                'id', d.id,
                'name', d.name,
                'breed', d.breed,
                'photo_url', d.photo_url
              )) FILTER (WHERE d.id IS NOT NULL AND d.deleted_at IS NULL) as dogs,
-             (SELECT MAX(r.reservation_date)
-              FROM reservations r
-              JOIN dogs d2 ON r.dog_id = d2.id
-              WHERE d2.owner_id = o.id
-                AND r.status != 'キャンセル'
-                AND r.store_id = o.store_id
-                AND r.deleted_at IS NULL) as last_reservation_date
+             last_res.last_reservation_date
       FROM owners o
       LEFT JOIN dogs d ON o.id = d.owner_id AND d.deleted_at IS NULL
+      LEFT JOIN LATERAL (
+        SELECT MAX(r.reservation_date) as last_reservation_date
+        FROM reservations r
+        JOIN dogs d2 ON r.dog_id = d2.id
+        WHERE d2.owner_id = o.id
+          AND r.status != 'キャンセル'
+          AND r.store_id = o.store_id
+          AND r.deleted_at IS NULL
+      ) last_res ON true
       WHERE o.store_id = $1 AND o.deleted_at IS NULL
     `;
     const params: any[] = [req.storeId];
@@ -41,7 +45,7 @@ router.get('/', async (req: AuthRequest, res) => {
       params.push(`%${search}%`);
     }
 
-    query += ` GROUP BY o.id ORDER BY o.created_at DESC`;
+    query += ` GROUP BY o.id, last_res.last_reservation_date ORDER BY o.created_at DESC`;
 
     const result = await pool.query(query, params);
     res.json(result.rows);

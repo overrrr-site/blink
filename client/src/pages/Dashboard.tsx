@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import AlertsModal from '../components/AlertsModal'
@@ -75,7 +75,7 @@ const Dashboard = () => {
     }
   }
 
-  const handleCheckIn = async (reservationId: number) => {
+  const handleCheckIn = useCallback(async (reservationId: number) => {
     setCheckingIn(reservationId)
     try {
       await api.put(`/reservations/${reservationId}`, {
@@ -88,10 +88,10 @@ const Dashboard = () => {
     } finally {
       setCheckingIn(null)
     }
-  }
+  }, [])
 
-  // ステータスの内部値（フィルタリング用）
-  const getDisplayStatus = (reservation: Reservation): '来園待ち' | '在園中' | '帰宅済' => {
+  // ステータスの内部値（フィルタリング用）- コンポーネント外に移動
+  const getDisplayStatus = useCallback((reservation: Reservation): '来園待ち' | '在園中' | '帰宅済' => {
     if (reservation.status === '退園済') {
       return '帰宅済'
     }
@@ -99,50 +99,69 @@ const Dashboard = () => {
       return '在園中'
     }
     return '来園待ち'
-  }
+  }, [])
 
   // ステータスの表示名（UI表示用）
-  const getStatusLabel = (status: '来園待ち' | '在園中' | '帰宅済'): string => {
+  const getStatusLabel = useCallback((status: '来園待ち' | '在園中' | '帰宅済'): string => {
     switch (status) {
       case '来園待ち': return '登園前'
       case '在園中': return '利用中'
       case '帰宅済': return '帰宅済み'
     }
-  }
+  }, [])
 
-  // フィルタリング
-  const filteredReservations = data?.todayReservations.filter((r) => {
-    if (r.status === 'キャンセル') return false
-    if (statusFilter === 'all') return true
-    return getDisplayStatus(r) === statusFilter
-  }) || []
+  // フィルタリング - useMemoで最適化
+  const filteredReservations = useMemo(() => {
+    return data?.todayReservations.filter((r) => {
+      if (r.status === 'キャンセル') return false
+      if (statusFilter === 'all') return true
+      return getDisplayStatus(r) === statusFilter
+    }) || []
+  }, [data?.todayReservations, statusFilter, getDisplayStatus])
 
-  // ステータス別のカウント
-  const statusCounts = {
+  // ステータス別のカウント - useMemoで最適化
+  const statusCounts = useMemo(() => ({
     '来園待ち': data?.todayReservations.filter((r) => r.status !== 'キャンセル' && getDisplayStatus(r) === '来園待ち').length || 0,
     '在園中': data?.todayReservations.filter((r) => r.status !== 'キャンセル' && getDisplayStatus(r) === '在園中').length || 0,
     '帰宅済': data?.todayReservations.filter((r) => r.status !== 'キャンセル' && getDisplayStatus(r) === '帰宅済').length || 0,
-  }
+  }), [data?.todayReservations, getDisplayStatus])
 
-  // 受入状況の計算
-  const capacity = data?.capacity || 15
-  const currentCount = data?.todayReservations.filter((r) => r.status !== 'キャンセル').length || 0
+  // 受入状況の計算 - useMemoで最適化
+  const currentCount = useMemo(() =>
+    data?.todayReservations.filter((r) => r.status !== 'キャンセル').length || 0,
+  [data?.todayReservations])
 
   // 連絡帳があるかチェック
-  const hasPreVisitInput = (reservation: Reservation) => {
+  const hasPreVisitInput = useCallback((reservation: Reservation) => {
     return reservation.notes || reservation.health_status || reservation.breakfast_status
-  }
+  }, [])
 
-  // 時間でグループ化
-  const groupByTime = (reservations: Reservation[]) => {
+  // 時間でグループ化 - useMemoで最適化
+  const groupedReservations = useMemo(() => {
     const groups: { [key: string]: Reservation[] } = {}
-    reservations.forEach((r) => {
+    filteredReservations.forEach((r) => {
       const time = r.reservation_time.slice(0, 5) // HH:MM形式
       if (!groups[time]) groups[time] = []
       groups[time].push(r)
     })
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
-  }
+  }, [filteredReservations])
+
+  // アラートサマリー - useMemoで最適化
+  const alertSummary = useMemo(() => {
+    if (!data?.alerts || data.alerts.length === 0) return ''
+    const alertTypes = new Set(data.alerts.map((a: any) => a.alert_type))
+    const messages: string[] = []
+    if (alertTypes.has('mixed_vaccine_expired')) {
+      const count = data.alerts.filter((a: any) => a.alert_type === 'mixed_vaccine_expired').length
+      messages.push(`混合ワクチン期限切れ ${count}件`)
+    }
+    if (alertTypes.has('rabies_vaccine_expiring')) {
+      const count = data.alerts.filter((a: any) => a.alert_type === 'rabies_vaccine_expiring').length
+      messages.push(`狂犬病ワクチン期限切れ間近 ${count}件`)
+    }
+    return messages.join('、') || '確認が必要な項目があります'
+  }, [data?.alerts])
 
   if (loading) {
     return (
@@ -200,7 +219,7 @@ const Dashboard = () => {
           />
         ) : (
           <div className="space-y-4">
-            {groupByTime(filteredReservations).map(([time, reservations]) => (
+            {groupedReservations.map(([time, reservations]) => (
               <div key={time}>
                 {/* 時間ヘッダー - より大きく目立つように */}
                 <div className="flex items-center gap-3 mb-3">
@@ -475,19 +494,7 @@ const Dashboard = () => {
               <div className="flex-1 text-left">
                 <p className="text-sm font-bold text-chart-4">確認事項</p>
                 <p className="text-xs text-muted-foreground">
-                  {(() => {
-                    const alertTypes = new Set(data.alerts.map((a: any) => a.alert_type))
-                    const messages: string[] = []
-                    if (alertTypes.has('mixed_vaccine_expired')) {
-                      const count = data.alerts.filter((a: any) => a.alert_type === 'mixed_vaccine_expired').length
-                      messages.push(`混合ワクチン期限切れ ${count}件`)
-                    }
-                    if (alertTypes.has('rabies_vaccine_expiring')) {
-                      const count = data.alerts.filter((a: any) => a.alert_type === 'rabies_vaccine_expiring').length
-                      messages.push(`狂犬病ワクチン期限切れ間近 ${count}件`)
-                    }
-                    return messages.join('、') || '確認が必要な項目があります'
-                  })()}
+                  {alertSummary}
                 </p>
               </div>
               <div className="flex items-center justify-center bg-chart-4 text-white text-xs font-bold size-7 rounded-full shrink-0">

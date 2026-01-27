@@ -137,48 +137,31 @@ router.get('/me', async (req, res) => {
     );
 
     // 契約情報を取得（エラーが発生した場合は空配列を返す）
+    // N+1解消: 1回のクエリで契約と使用回数を同時に取得
     let contracts: any[] = [];
     try {
-      const contractsResult = await pool.query(
-        `SELECT * FROM contracts WHERE dog_id = ANY($1::int[])`,
-        [dogsResult.rows.map((d: any) => d.id)]
-      );
-
-      // 各契約の使用済み回数を計算
-      contracts = await Promise.all(
-        contractsResult.rows.map(async (contract: any) => {
-          if (contract.contract_type === '月謝制') {
-            // 月謝制の場合は残回数計算不要
-            return {
-              ...contract,
-              calculated_remaining: null,
-            };
-          }
-
-          // チケット制・単発の場合、使用済み回数（予定含む）を計算
-          const usedResult = await pool.query(
-            `SELECT COUNT(*) as used_count
+      const dogIds = dogsResult.rows.map((d: any) => d.id);
+      if (dogIds.length > 0) {
+        const contractsResult = await pool.query(
+          `SELECT c.*,
+                  CASE
+                    WHEN c.contract_type = '月謝制' THEN NULL
+                    ELSE GREATEST(0, COALESCE(c.total_sessions, 0) - COALESCE(usage.used_count, 0))
+                  END as calculated_remaining
+           FROM contracts c
+           LEFT JOIN LATERAL (
+             SELECT COUNT(*) as used_count
              FROM reservations r
-             WHERE r.dog_id = $1 
+             WHERE r.dog_id = c.dog_id
                AND r.status IN ('登園済', '退園済', '予定')
-               AND r.reservation_date >= $2
-               AND r.reservation_date <= COALESCE($3, CURRENT_DATE + INTERVAL '1 year')`,
-            [
-              contract.dog_id,
-              contract.created_at,
-              contract.valid_until,
-            ]
-          );
-
-          const usedCount = parseInt(usedResult.rows[0]?.used_count || '0', 10);
-          const calculatedRemaining = Math.max(0, (contract.total_sessions || 0) - usedCount);
-
-          return {
-            ...contract,
-            calculated_remaining: calculatedRemaining,
-          };
-        })
-      );
+               AND r.reservation_date >= c.created_at
+               AND r.reservation_date <= COALESCE(c.valid_until, CURRENT_DATE + INTERVAL '1 year')
+           ) usage ON true
+           WHERE c.dog_id = ANY($1::int[])`,
+          [dogIds]
+        );
+        contracts = contractsResult.rows;
+      }
     } catch (contractError) {
       console.warn('契約情報の取得をスキップしました:', contractError);
     }

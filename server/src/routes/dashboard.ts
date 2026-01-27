@@ -58,24 +58,28 @@ router.get('/', async (req: AuthRequest, res) => {
     );
 
     // アラート（ワクチン期限切れ等）
+    // 最適化: UNION ALLをやめて1回のスキャンでアラートを取得
     const alertsResult = await pool.query(
       `SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
-              'mixed_vaccine_expired' as alert_type,
-              dh.mixed_vaccine_date
+              CASE
+                WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN 'mixed_vaccine_expired'
+                WHEN dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days' THEN 'rabies_vaccine_expiring'
+              END as alert_type,
+              CASE
+                WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN dh.mixed_vaccine_date
+                ELSE dh.rabies_vaccine_date
+              END as mixed_vaccine_date
        FROM dogs d
        JOIN owners o ON d.owner_id = o.id
        JOIN dog_health dh ON d.id = dh.dog_id
        WHERE o.store_id = $1
-         AND dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days'
-       UNION ALL
-       SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
-              'rabies_vaccine_expiring' as alert_type,
-              dh.rabies_vaccine_date
-       FROM dogs d
-       JOIN owners o ON d.owner_id = o.id
-       JOIN dog_health dh ON d.id = dh.dog_id
-       WHERE o.store_id = $1
-         AND dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'`,
+         AND d.deleted_at IS NULL
+         AND (
+           dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days'
+           OR dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
+         )
+       ORDER BY mixed_vaccine_date ASC
+       LIMIT 20`,
       [req.storeId]
     );
 
