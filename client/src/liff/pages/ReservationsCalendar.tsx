@@ -163,6 +163,38 @@ export default function ReservationsCalendar(): JSX.Element {
           <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">予約カレンダー</h1>
+        <button
+          onClick={function() {
+            const monthStr = format(currentMonth, 'yyyy-MM');
+            const token = localStorage.getItem('liff_token');
+            const url = `${import.meta.env.VITE_API_URL}/liff/reservations/export.ics?month=${monthStr}`;
+
+            // tokenをAuthorizationヘッダーで送信するためにfetchを使用
+            fetch(url, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+              .then(function(response) { return response.blob(); })
+              .then(function(blob) {
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `reservations-${monthStr}.ics`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+              })
+              .catch(function(error) {
+                console.error('ICS export error:', error);
+                alert('カレンダーのエクスポートに失敗しました');
+              });
+          }}
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center text-primary rounded-full active:bg-primary/10 transition-colors"
+          aria-label="カレンダーをエクスポート"
+          title="iCS形式でエクスポート"
+        >
+          <iconify-icon icon="solar:download-bold" width="24" height="24"></iconify-icon>
+        </button>
       </div>
 
       {/* 月切り替え */}

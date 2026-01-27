@@ -238,6 +238,87 @@ router.get('/reservations', async function(req, res) {
   }
 });
 
+// 予約をiCS形式でエクスポート
+router.get('/reservations/export.ics', async function(req, res) {
+  try {
+    const decoded = requireOwnerToken(req, res);
+    if (!decoded) return;
+
+    const { month, reservation_id } = req.query;
+
+    // 店舗情報を取得
+    const storeResult = await pool.query(
+      `SELECT name, address FROM stores WHERE id = $1`,
+      [decoded.storeId]
+    );
+    const store = storeResult.rows[0] || { name: '店舗', address: '' };
+
+    let query = `
+      SELECT r.*, d.name as dog_name
+      FROM reservations r
+      JOIN dogs d ON r.dog_id = d.id
+      WHERE d.owner_id = $1 AND r.store_id = $2 AND r.status != 'キャンセル'
+    `;
+    const params: any[] = [decoded.ownerId, decoded.storeId];
+
+    if (reservation_id) {
+      query += ` AND r.id = $3`;
+      params.push(reservation_id);
+    } else if (month) {
+      query += ` AND r.reservation_date >= $3::date AND r.reservation_date < ($3::date + INTERVAL '1 month')`;
+      params.push(`${month}-01`);
+    }
+
+    query += ` ORDER BY r.reservation_date, r.reservation_time`;
+
+    const result = await pool.query(query, params);
+
+    // iCS形式に変換
+    const icsLines: string[] = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//PetCarte//LIFF//JP',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      `X-WR-CALNAME:${store.name} 予約`,
+    ];
+
+    for (const reservation of result.rows) {
+      const dateStr = reservation.reservation_date.toISOString().split('T')[0].replace(/-/g, '');
+      const startTime = (reservation.reservation_time || '09:00').replace(':', '') + '00';
+      const endTime = (reservation.pickup_time || '17:00').replace(':', '') + '00';
+      const uid = `reservation-${reservation.id}@petcarte`;
+      const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+      icsLines.push('BEGIN:VEVENT');
+      icsLines.push(`UID:${uid}`);
+      icsLines.push(`DTSTAMP:${now}`);
+      icsLines.push(`DTSTART;TZID=Asia/Tokyo:${dateStr}T${startTime}`);
+      icsLines.push(`DTEND;TZID=Asia/Tokyo:${dateStr}T${endTime}`);
+      icsLines.push(`SUMMARY:${reservation.dog_name} - ${store.name}`);
+      if (store.address) {
+        icsLines.push(`LOCATION:${store.address}`);
+      }
+      if (reservation.notes) {
+        icsLines.push(`DESCRIPTION:${reservation.notes.replace(/\n/g, '\\n')}`);
+      }
+      icsLines.push(`STATUS:CONFIRMED`);
+      icsLines.push('END:VEVENT');
+    }
+
+    icsLines.push('END:VCALENDAR');
+
+    const icsContent = icsLines.join('\r\n');
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="reservations.ics"');
+    res.send(icsContent);
+  } catch (error: any) {
+    console.error('ICS export error:', error);
+    sendServerError(res, 'カレンダーエクスポートに失敗しました', error);
+  }
+});
+
 // 飼い主の日誌一覧取得
 router.get('/journals', async function(req, res) {
   try {
