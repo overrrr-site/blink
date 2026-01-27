@@ -69,7 +69,7 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
 
     // シンプルなテンプレートベースの文章生成
     // Gemini APIを使用
-    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (apiKey) {
       // Gemini APIを使用した生成
@@ -256,7 +256,7 @@ router.post('/analyze-photo', async (req: AuthRequest, res) => {
       return;
     }
 
-    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       sendServerError(res, 'AI機能が利用できません', new Error('Missing Gemini API key'));
