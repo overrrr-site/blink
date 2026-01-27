@@ -56,6 +56,9 @@ function maskEmail(email: string): string {
 }
 
 router.post('/auth', async function(req, res) {
+  const startTime = Date.now();
+  console.log('🔐 LIFF auth開始');
+
   try {
     const { lineUserId, displayName, pictureUrl } = req.body;
 
@@ -63,6 +66,8 @@ router.post('/auth', async function(req, res) {
       sendBadRequest(res, 'LINEユーザーIDが必要です');
       return;
     }
+
+    console.log('🔐 DBクエリ開始:', Date.now() - startTime, 'ms');
 
     // LINE IDで飼い主を検索（店舗名・住所も含める）
     const ownerResult = await pool.query(
@@ -73,6 +78,8 @@ router.post('/auth', async function(req, res) {
        LIMIT 1`,
       [lineUserId]
     );
+
+    console.log('🔐 DBクエリ完了:', Date.now() - startTime, 'ms');
 
     if (ownerResult.rows.length === 0) {
       // 飼い主が見つからない場合は新規登録が必要
@@ -96,6 +103,8 @@ router.post('/auth', async function(req, res) {
       { expiresIn: '30d' } // 飼い主は30日間有効
     );
 
+    console.log('🔐 LIFF auth完了:', Date.now() - startTime, 'ms');
+
     res.json({
       token,
       owner: {
@@ -108,7 +117,7 @@ router.post('/auth', async function(req, res) {
       },
     });
   } catch (error) {
-    console.error('LINE auth error:', error);
+    console.error('LINE auth error:', error, 'elapsed:', Date.now() - startTime, 'ms');
     sendServerError(res, 'LINE認証に失敗しました', error);
   }
 });
