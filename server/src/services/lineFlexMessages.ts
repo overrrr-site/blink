@@ -263,9 +263,11 @@ export function createJournalFlexMessage(journal: any) {
             style: 'primary',
             height: 'sm',
             action: {
-              type: 'postback',
+              type: 'uri',
               label: '詳細を見る',
-              data: `action=view_journal&journal_id=${journal.id}`,
+              uri: process.env.LIFF_ID
+                ? `https://liff.line.me/${process.env.LIFF_ID}/home/journals/${journal.id}`
+                : '#',
             },
           },
         ],
@@ -578,6 +580,290 @@ export function createReservationReminderFlexMessage(reservation: {
               uri: preVisitUrl,
             },
             color: '#10B981',
+          },
+        ],
+      },
+    },
+    quickReply: createQuickReply(),
+  };
+}
+
+/**
+ * 日誌更新通知用Flexメッセージを作成
+ */
+export function createJournalNotificationFlexMessage(journal: {
+  id: number;
+  journal_date: string;
+  dog_name: string;
+  comment?: string | null;
+  photos?: string[] | null;
+}) {
+  const journalDate = format(new Date(journal.journal_date), 'M月d日(E)', { locale: ja });
+  const commentPreview = journal.comment
+    ? (journal.comment.length > 80 ? journal.comment.substring(0, 80) + '...' : journal.comment)
+    : null;
+  const liffId = process.env.LIFF_ID;
+  const journalUrl = liffId
+    ? `https://liff.line.me/${liffId}/home/journals/${journal.id}`
+    : '#';
+  const hasPhotos = journal.photos && journal.photos.length > 0;
+
+  return {
+    type: 'flex',
+    altText: `📝 ${journal.dog_name}ちゃんの日誌が届きました`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '📝 今日の日誌が届きました',
+            weight: 'bold',
+            size: 'lg',
+            color: '#FFFFFF',
+          },
+        ],
+        backgroundColor: '#3B82F6',
+        paddingAll: 'md',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '日付',
+                    size: 'sm',
+                    color: '#666666',
+                    flex: 1,
+                  },
+                  {
+                    type: 'text',
+                    text: journalDate,
+                    size: 'sm',
+                    color: '#000000',
+                    align: 'end',
+                    flex: 2,
+                    weight: 'bold',
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'ワンちゃん',
+                    size: 'sm',
+                    color: '#666666',
+                    flex: 1,
+                  },
+                  {
+                    type: 'text',
+                    text: journal.dog_name,
+                    size: 'sm',
+                    color: '#000000',
+                    align: 'end',
+                    flex: 2,
+                  },
+                ],
+              },
+              hasPhotos ? {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '写真',
+                    size: 'sm',
+                    color: '#666666',
+                    flex: 1,
+                  },
+                  {
+                    type: 'text',
+                    text: `📷 ${journal.photos!.length}枚`,
+                    size: 'sm',
+                    color: '#10B981',
+                    align: 'end',
+                    flex: 2,
+                  },
+                ],
+              } : null,
+              {
+                type: 'separator',
+                margin: 'md',
+              },
+              commentPreview ? {
+                type: 'text',
+                text: commentPreview,
+                size: 'sm',
+                color: '#333333',
+                wrap: true,
+                margin: 'md',
+              } : {
+                type: 'text',
+                text: '今日の様子をアプリでご確認ください 🐾',
+                size: 'sm',
+                color: '#666666',
+                wrap: true,
+                margin: 'md',
+              },
+            ].filter(Boolean),
+          },
+        ],
+        paddingAll: 'md',
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '日誌を見る',
+              uri: journalUrl,
+            },
+          },
+        ],
+      },
+    },
+    quickReply: createQuickReply(),
+  };
+}
+
+/**
+ * ワクチンアラート通知用Flexメッセージを作成
+ */
+export function createVaccineAlertFlexMessage(alert: {
+  dog_name: string;
+  alerts: string[];
+  alert_days: number;
+}) {
+  const alertText = alert.alerts.join('・');
+  const liffId = process.env.LIFF_ID;
+  const appUrl = liffId ? `https://liff.line.me/${liffId}/home` : '#';
+
+  return {
+    type: 'flex',
+    altText: `⚠️ ${alert.dog_name}ちゃんのワクチン期限が近づいています`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '⚠️ ワクチン期限のお知らせ',
+            weight: 'bold',
+            size: 'lg',
+            color: '#FFFFFF',
+          },
+        ],
+        backgroundColor: '#EF4444',
+        paddingAll: 'md',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'ワンちゃん',
+                    size: 'sm',
+                    color: '#666666',
+                    flex: 1,
+                  },
+                  {
+                    type: 'text',
+                    text: alert.dog_name,
+                    size: 'sm',
+                    color: '#000000',
+                    align: 'end',
+                    flex: 2,
+                    weight: 'bold',
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '対象',
+                    size: 'sm',
+                    color: '#666666',
+                    flex: 1,
+                  },
+                  {
+                    type: 'text',
+                    text: alertText,
+                    size: 'sm',
+                    color: '#EF4444',
+                    align: 'end',
+                    flex: 2,
+                    weight: 'bold',
+                  },
+                ],
+              },
+              {
+                type: 'separator',
+                margin: 'md',
+              },
+              {
+                type: 'text',
+                text: `${alert.alert_days}日以内に期限が切れます。\n早めの接種をお願いいたします。`,
+                size: 'sm',
+                color: '#666666',
+                wrap: true,
+                margin: 'md',
+              },
+            ],
+          },
+        ],
+        paddingAll: 'md',
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: 'アプリで確認する',
+              uri: appUrl,
+            },
+            color: '#6B7280',
           },
         ],
       },

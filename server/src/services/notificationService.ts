@@ -1,7 +1,7 @@
 import pool from '../db/connection.js';
 import { sendLineMessage, sendLineFlexMessage } from './lineMessagingService.js';
 import { sendEmail } from './emailService.js';
-import { createReservationReminderFlexMessage } from './lineFlexMessages.js';
+import { createReservationReminderFlexMessage, createJournalNotificationFlexMessage, createVaccineAlertFlexMessage } from './lineFlexMessages.js';
 
 export type OwnerContact = { lineId: string | null; email: string | null };
 
@@ -317,21 +317,92 @@ export async function sendReservationReminders(): Promise<void> {
 }
 
 /**
- * 日誌通知を送信
+ * 日誌通知を送信（Flexメッセージ対応）
  */
 export async function sendJournalNotification(
   storeId: number,
   ownerId: number,
   dogName: string,
-  journalDate: string
+  journalDate: string,
+  journalId?: number,
+  comment?: string | null,
+  photos?: string[] | null
 ): Promise<void> {
-  await sendNotification({
-    storeId,
-    ownerId,
-    notificationType: 'journal',
-    title: '日誌が更新されました',
-    message: `${dogName}ちゃんの${journalDate}の日誌が更新されました。`,
-  });
+  try {
+    // 通知設定を取得
+    const settingsResult = await pool.query<NotificationSettingsRow>(
+      `SELECT journal_notification, line_notification_enabled, email_notification_enabled
+       FROM notification_settings WHERE store_id = $1`,
+      [storeId]
+    );
+
+    if (settingsResult.rows.length === 0) {
+      console.warn(`通知設定が見つかりません: store_id=${storeId}`);
+      return;
+    }
+
+    const settings = settingsResult.rows[0];
+
+    if (!settings.journal_notification) {
+      console.log(`日誌通知が無効です: store_id=${storeId}`);
+      return;
+    }
+
+    // 飼い主の連絡先を取得
+    const contactMap = await getOwnerContactBatch([ownerId]);
+    const contact = contactMap.get(ownerId) ?? null;
+    const lineId = contact?.lineId ?? null;
+    const email = contact?.email ?? null;
+
+    let sent = false;
+    let sentVia: string | null = null;
+
+    // LINE通知（Flexメッセージ）
+    if (settings.line_notification_enabled && lineId && journalId) {
+      const flexMessage = createJournalNotificationFlexMessage({
+        id: journalId,
+        journal_date: journalDate,
+        dog_name: dogName,
+        comment,
+        photos,
+      });
+
+      const lineSent = await sendLineFlexMessage(storeId, lineId, flexMessage);
+      if (lineSent) {
+        sentVia = 'line';
+        sent = true;
+      }
+    }
+
+    // LINEで送信できなかった場合はメール通知
+    if (!sent && settings.email_notification_enabled && email) {
+      const title = '日誌が更新されました';
+      const message = `${dogName}ちゃんの${journalDate}の日誌が更新されました。\n\nアプリから詳細をご確認ください。`;
+      const emailSent = await sendEmail(
+        email,
+        title,
+        message,
+        `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
+      );
+      if (emailSent) {
+        sentVia = 'email';
+        sent = true;
+      }
+    }
+
+    // ログ記録
+    const notificationData: NotificationData = {
+      storeId,
+      ownerId,
+      notificationType: 'journal',
+      title: '日誌が更新されました',
+      message: `${dogName}ちゃんの${journalDate}の日誌が更新されました。`,
+    };
+
+    await insertNotificationLog({ data: notificationData, sentVia: sentVia ?? 'app', sent });
+  } catch (error) {
+    console.error('Error sending journal notification:', error);
+  }
 }
 
 /**
@@ -392,16 +463,68 @@ export async function sendVaccineAlerts(): Promise<void> {
         }
 
         if (alerts.length > 0) {
-          await sendNotificationWithSettings(
-            {
-              storeId: settings.store_id,
-              ownerId: dog.owner_id,
-              notificationType: 'vaccine_alert',
-              title: 'ワクチン期限切れ間近',
-              message: `${dog.name}ちゃんの${alerts.join('・')}の期限が${alertDays}日以内に切れます。`,
-            },
-            settings,
-            contactMap.get(dog.owner_id) ?? null
+          const contact = contactMap.get(dog.owner_id) ?? null;
+          const lineId = contact?.lineId ?? null;
+          const email = contact?.email ?? null;
+
+          let sent = false;
+          let sentVia: string | null = null;
+
+          // LINE通知（Flexメッセージ）
+          if (settings.line_notification_enabled && lineId) {
+            const flexMessage = createVaccineAlertFlexMessage({
+              dog_name: dog.name,
+              alerts,
+              alert_days: alertDays,
+            });
+
+            const lineSent = await sendLineFlexMessage(settings.store_id, lineId, flexMessage);
+            if (lineSent) {
+              sentVia = 'line';
+              sent = true;
+            }
+          }
+
+          // LINEで送信できなかった場合はメール通知
+          if (!sent && settings.email_notification_enabled && email) {
+            const title = 'ワクチン期限切れ間近';
+            const message = `${dog.name}ちゃんの${alerts.join('・')}の期限が${alertDays}日以内に切れます。\n\n早めの接種をお願いいたします。`;
+            const emailSent = await sendEmail(
+              email,
+              title,
+              message,
+              `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
+            );
+            if (emailSent) {
+              sentVia = 'email';
+              sent = true;
+            }
+          }
+
+          // ログ記録
+          const notificationData: NotificationData = {
+            storeId: settings.store_id,
+            ownerId: dog.owner_id,
+            notificationType: 'vaccine_alert',
+            title: 'ワクチン期限切れ間近',
+            message: `${dog.name}ちゃんの${alerts.join('・')}の期限が${alertDays}日以内に切れます。`,
+          };
+
+          await pool.query(
+            `INSERT INTO notification_logs (
+              store_id, owner_id, notification_type, title, message,
+              sent_via, status, sent_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              notificationData.storeId,
+              notificationData.ownerId,
+              notificationData.notificationType,
+              notificationData.title,
+              notificationData.message,
+              sentVia ?? 'app',
+              sent ? 'sent' : 'pending',
+              sent ? new Date() : null,
+            ]
           );
         }
       }

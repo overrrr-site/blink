@@ -2,41 +2,6 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
-// デフォルトのトレーニング項目（APIからデータがない場合のフォールバック）
-const DEFAULT_TRAINING_CATEGORIES: Record<string, { label: string; icon: string; items: Array<{ id: string; label: string }> }> = {
-  toiletTraining: {
-    label: 'トイレ',
-    icon: 'solar:box-bold',
-    items: [
-      { id: 'voice_cue', label: '声かけでプログラム' },
-      { id: 'relax_position', label: 'リラックスポジション' },
-      { id: 'house_training', label: 'ハウストレーニング' },
-    ],
-  },
-  basicTraining: {
-    label: '基本',
-    icon: 'solar:star-bold',
-    items: [
-      { id: 'eye_contact', label: 'アイコンタクト' },
-      { id: 'sit', label: 'オスワリ' },
-      { id: 'down', label: 'フセ' },
-      { id: 'stay', label: 'マテ' },
-      { id: 'come', label: 'オイデ' },
-      { id: 'heel', label: 'ツイテ' },
-    ],
-  },
-  socialization: {
-    label: '社会化',
-    icon: 'solar:users-group-rounded-bold',
-    items: [
-      { id: 'dog_interaction', label: '他犬との交流' },
-      { id: 'human_interaction', label: '人慣れ' },
-      { id: 'environment', label: '環境慣れ' },
-      { id: 'handling', label: 'ハンドリング' },
-    ],
-  },
-}
-
 // カテゴリのアイコンマッピング
 const CATEGORY_ICONS: Record<string, string> = {
   toiletTraining: 'solar:box-bold',
@@ -88,19 +53,17 @@ const JournalCreate = () => {
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([])
   const [photos, setPhotos] = useState<File[]>([])
-  const [trainingCategories, setTrainingCategories] = useState<Record<string, TrainingCategory>>(DEFAULT_TRAINING_CATEGORIES)
+  const [trainingCategories, setTrainingCategories] = useState<Record<string, TrainingCategory>>({})
 
   // 段階式入力の現在のステップ
   const [currentStep, setCurrentStep] = useState<Step>('photo')
-  const [showDetails, setShowDetails] = useState(false)
+  const [showDetails, setShowDetails] = useState(true)
 
   const [formData, setFormData] = useState({
     staff_id: '',
-    morning_urination: false,
-    morning_defecation: false,
-    afternoon_urination: false,
-    afternoon_defecation: false,
+    morning_toilet_status: '', // '成功' | '失敗' | ''
     morning_toilet_location: '',
+    afternoon_toilet_status: '', // '成功' | '失敗' | ''
     afternoon_toilet_location: '',
     training_data: {} as Record<string, string>,
     memo: '', // スタッフのメモ書き（AIが清書する素材）
@@ -206,16 +169,8 @@ const JournalCreate = () => {
           }
         })
       }
-
-      // 解析結果をコメントに追加（既存のコメントがある場合は追記）
-      if (response.data.suggested_comment) {
-        setFormData((prev) => ({
-          ...prev,
-          comment: prev.comment
-            ? `${prev.comment}\n\n[写真${index + 1}の分析]\n${response.data.suggested_comment}`
-            : response.data.suggested_comment,
-        }))
-      }
+      // 解析結果はphotoAnalysisに保存するだけにして、AI生成時にまとめて使用する
+      // コメントへの直接追加は行わない（AI生成で清書してもらう）
     } catch (error) {
       console.error('Error analyzing photo:', error)
       // エラーは静かに処理（ユーザー体験を損なわないため）
@@ -280,12 +235,10 @@ const JournalCreate = () => {
         staff_id: formData.staff_id ? parseInt(formData.staff_id) : null,
         journal_date: reservation?.reservation_date,
         visit_count: reservation?.visit_count,
-        morning_toilet_status:
-          formData.morning_urination || formData.morning_defecation ? '成功' : '失敗',
-        morning_toilet_location: formData.morning_toilet_location,
-        afternoon_toilet_status:
-          formData.afternoon_urination || formData.afternoon_defecation ? '成功' : '失敗',
-        afternoon_toilet_location: formData.afternoon_toilet_location,
+        morning_toilet_status: formData.morning_toilet_status || null,
+        morning_toilet_location: formData.morning_toilet_status ? formData.morning_toilet_location : null,
+        afternoon_toilet_status: formData.afternoon_toilet_status || null,
+        afternoon_toilet_location: formData.afternoon_toilet_status ? formData.afternoon_toilet_location : null,
         training_data: formData.training_data,
         comment: formData.comment,
         next_visit_date: formData.next_visit_date || null,
@@ -472,10 +425,10 @@ const JournalCreate = () => {
                 <button
                   type="button"
                   onClick={() => removePhoto(index)}
-                  className="absolute -top-2 -right-2 size-10 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-80 hover:opacity-100 transition-opacity"
+                  className="absolute top-2 left-2 size-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 transition-opacity"
                   aria-label="写真を削除"
                 >
-                  <iconify-icon icon="solar:close-circle-bold" className="size-6"></iconify-icon>
+                  <iconify-icon icon="solar:close-circle-bold" className="size-5"></iconify-icon>
                 </button>
                 {photoAnalysis[index] && analyzingPhoto !== index && (
                   <button
@@ -492,11 +445,11 @@ const JournalCreate = () => {
                       // 詳細ステップに移動
                       setCurrentStep('details')
                     }}
-                    className="absolute top-2 right-2 size-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg opacity-80 hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 size-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 transition-opacity"
                     title="解析結果をコメントに追加"
                     aria-label="解析結果をコメントに追加"
                   >
-                    <iconify-icon icon="solar:add-circle-bold" className="size-6"></iconify-icon>
+                    <iconify-icon icon="solar:add-circle-bold" className="size-5"></iconify-icon>
                   </button>
                 )}
               </div>
@@ -639,58 +592,54 @@ const JournalCreate = () => {
                 {/* 午前 */}
                 <div>
                   <p className="text-xs font-bold text-muted-foreground mb-2">午前</p>
-                  <div className="flex gap-3">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.morning_urination}
-                        onChange={(e) =>
-                          setFormData({ ...formData, morning_urination: e.target.checked })
-                        }
-                        className="size-5 rounded"
-                      />
-                      <span className="text-sm">オシッコ</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.morning_defecation}
-                        onChange={(e) =>
-                          setFormData({ ...formData, morning_defecation: e.target.checked })
-                        }
-                        className="size-5 rounded"
-                      />
-                      <span className="text-sm">ウンチ</span>
-                    </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={formData.morning_toilet_status}
+                      onChange={(e) => setFormData({ ...formData, morning_toilet_status: e.target.value })}
+                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                    >
+                      <option value="">未選択</option>
+                      <option value="成功">成功</option>
+                      <option value="失敗">失敗</option>
+                    </select>
+                    <select
+                      value={formData.morning_toilet_location}
+                      onChange={(e) => setFormData({ ...formData, morning_toilet_location: e.target.value })}
+                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                      disabled={!formData.morning_toilet_status}
+                    >
+                      <option value="">場所を選択</option>
+                      <option value="散歩中">散歩中</option>
+                      <option value="自ら指定の場所">自ら指定の場所</option>
+                      <option value="誘導して指定の場所">誘導して指定の場所</option>
+                    </select>
                   </div>
                 </div>
 
                 {/* 午後 */}
                 <div>
                   <p className="text-xs font-bold text-muted-foreground mb-2">午後</p>
-                  <div className="flex gap-3">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.afternoon_urination}
-                        onChange={(e) =>
-                          setFormData({ ...formData, afternoon_urination: e.target.checked })
-                        }
-                        className="size-5 rounded"
-                      />
-                      <span className="text-sm">オシッコ</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.afternoon_defecation}
-                        onChange={(e) =>
-                          setFormData({ ...formData, afternoon_defecation: e.target.checked })
-                        }
-                        className="size-5 rounded"
-                      />
-                      <span className="text-sm">ウンチ</span>
-                    </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={formData.afternoon_toilet_status}
+                      onChange={(e) => setFormData({ ...formData, afternoon_toilet_status: e.target.value })}
+                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                    >
+                      <option value="">未選択</option>
+                      <option value="成功">成功</option>
+                      <option value="失敗">失敗</option>
+                    </select>
+                    <select
+                      value={formData.afternoon_toilet_location}
+                      onChange={(e) => setFormData({ ...formData, afternoon_toilet_location: e.target.value })}
+                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                      disabled={!formData.afternoon_toilet_status}
+                    >
+                      <option value="">場所を選択</option>
+                      <option value="散歩中">散歩中</option>
+                      <option value="自ら指定の場所">自ら指定の場所</option>
+                      <option value="誘導して指定の場所">誘導して指定の場所</option>
+                    </select>
                   </div>
                 </div>
               </div>

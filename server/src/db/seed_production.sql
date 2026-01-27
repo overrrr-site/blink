@@ -165,6 +165,43 @@ ON CONFLICT (dog_id) DO UPDATE SET
   updated_at = CURRENT_TIMESTAMP;
 
 -- ============================================
+-- 5.5. トレーニング項目マスタの作成
+-- ============================================
+
+-- 既存のトレーニング項目をクリア
+DELETE FROM training_item_masters WHERE store_id = 1;
+
+-- デフォルトのトレーニング項目を追加
+INSERT INTO training_item_masters (store_id, category, item_key, item_label, display_order, enabled) VALUES
+  -- 基本トレーニング
+  (1, '基本トレーニング', 'eye_contact', 'アイコンタクト', 1, TRUE),
+  (1, '基本トレーニング', 'sit', 'オスワリ', 2, TRUE),
+  (1, '基本トレーニング', 'down', 'フセ', 3, TRUE),
+  (1, '基本トレーニング', 'stay', 'マテ', 4, TRUE),
+  (1, '基本トレーニング', 'come', 'オイデ', 5, TRUE),
+  (1, '基本トレーニング', 'heel', 'ツイテ', 6, TRUE),
+  -- トイレトレーニング
+  (1, 'トイレトレーニング', 'voice_cue', '声かけでプログラム', 1, TRUE),
+  (1, 'トイレトレーニング', 'relax_position', 'リラックスポジション', 2, TRUE),
+  (1, 'トイレトレーニング', 'house_training', 'ハウストレーニング', 3, TRUE),
+  -- 社会化トレーニング
+  (1, '社会化トレーニング', 'dog_interaction', '他犬との交流', 1, TRUE),
+  (1, '社会化トレーニング', 'human_interaction', '人慣れ', 2, TRUE),
+  (1, '社会化トレーニング', 'environment', '環境慣れ', 3, TRUE),
+  (1, '社会化トレーニング', 'handling', 'ハンドリング', 4, TRUE),
+  -- 問題行動対策
+  (1, '問題行動対策', 'teeth_brushing', '歯磨き練習', 1, TRUE),
+  (1, '問題行動対策', 'barking', '吠え対策', 2, TRUE),
+  (1, '問題行動対策', 'biting', '噛み対策', 3, TRUE),
+  (1, '問題行動対策', 'pulling', '引っ張り対策', 4, TRUE),
+  (1, '問題行動対策', 'jumping', '飛びつき対策', 5, TRUE)
+ON CONFLICT (store_id, item_key) DO UPDATE SET
+  category = EXCLUDED.category,
+  item_label = EXCLUDED.item_label,
+  display_order = EXCLUDED.display_order,
+  enabled = EXCLUDED.enabled;
+
+-- ============================================
 -- 6. 契約データの作成
 -- ============================================
 

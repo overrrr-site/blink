@@ -2,41 +2,6 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
-// デフォルトのトレーニング項目
-const DEFAULT_TRAINING_CATEGORIES: Record<string, { label: string; icon: string; items: Array<{ id: string; label: string }> }> = {
-  toiletTraining: {
-    label: 'トイレ',
-    icon: 'solar:box-bold',
-    items: [
-      { id: 'voice_cue', label: '声かけでプログラム' },
-      { id: 'relax_position', label: 'リラックスポジション' },
-      { id: 'house_training', label: 'ハウストレーニング' },
-    ],
-  },
-  basicTraining: {
-    label: '基本',
-    icon: 'solar:star-bold',
-    items: [
-      { id: 'eye_contact', label: 'アイコンタクト' },
-      { id: 'sit', label: 'オスワリ' },
-      { id: 'down', label: 'フセ' },
-      { id: 'stay', label: 'マテ' },
-      { id: 'come', label: 'オイデ' },
-      { id: 'heel', label: 'ツイテ' },
-    ],
-  },
-  socialization: {
-    label: '社会化',
-    icon: 'solar:users-group-rounded-bold',
-    items: [
-      { id: 'dog_interaction', label: '他犬との交流' },
-      { id: 'human_interaction', label: '人慣れ' },
-      { id: 'environment', label: '環境慣れ' },
-      { id: 'handling', label: 'ハンドリング' },
-    ],
-  },
-}
-
 // カテゴリのアイコンマッピング
 const CATEGORY_ICONS: Record<string, string> = {
   toiletTraining: 'solar:box-bold',
@@ -52,6 +17,29 @@ const ACHIEVEMENT_OPTIONS = [
   { value: 'almost', label: '△', color: 'text-chart-4 bg-chart-4/20' },
   { value: 'not_done', label: '−', color: 'text-muted-foreground bg-muted' },
 ]
+
+// トレーニング項目のフォールバックラベル（既知のtypoや古いキーに対応）
+const TRAINING_LABEL_FALLBACKS: Record<string, string> = {
+  human_interection: '人慣れ', // typo対応
+  human_interaction: '人慣れ',
+  dog_interaction: '他犬との交流',
+  eye_contact: 'アイコンタクト',
+  sit: 'オスワリ',
+  down: 'フセ',
+  stay: 'マテ',
+  come: 'オイデ',
+  heel: 'ツイテ',
+  voice_cue: '声かけでプログラム',
+  relax_position: 'リラックスポジション',
+  house_training: 'ハウストレーニング',
+  environment: '環境慣れ',
+  handling: 'ハンドリング',
+  teeth_brushing: '歯磨き練習',
+  barking: '吠え対策',
+  biting: '噛み対策',
+  pulling: '引っ張り対策',
+  jumping: '飛びつき対策',
+}
 
 interface Staff {
   id: number
@@ -73,7 +61,7 @@ const JournalDetail = () => {
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [staffList, setStaffList] = useState<Staff[]>([])
-  const [trainingCategories, setTrainingCategories] = useState<Record<string, TrainingCategory>>(DEFAULT_TRAINING_CATEGORIES)
+  const [trainingCategories, setTrainingCategories] = useState<Record<string, TrainingCategory>>({})
   const [storeInfo, setStoreInfo] = useState<{ name: string } | null>(null)
   
   // 写真関連
@@ -283,10 +271,16 @@ const JournalDetail = () => {
 
   // トレーニング記録のラベル取得
   const getTrainingLabel = (itemId: string): string => {
+    // トレーニングマスターから検索
     for (const category of Object.values(trainingCategories)) {
       const item = category.items.find((i) => i.id === itemId)
       if (item) return item.label
     }
+    // フォールバックラベルを確認
+    if (TRAINING_LABEL_FALLBACKS[itemId]) {
+      return TRAINING_LABEL_FALLBACKS[itemId]
+    }
+    // どちらにもない場合はキーをそのまま返す
     return itemId
   }
 
@@ -602,10 +596,16 @@ const JournalDetail = () => {
                 </div>
               ) : (
                 <>
-                  <p className={`text-sm font-medium print:text-xs ${journal.morning_toilet_status === '成功' ? 'text-chart-2' : 'text-destructive'}`}>
-                    {journal.morning_toilet_status || '-'}
+                  <p className={`text-sm font-medium print:text-xs ${
+                    journal.morning_toilet_status === '成功' ? 'text-chart-2' :
+                    journal.morning_toilet_status === '失敗' ? 'text-destructive' :
+                    'text-muted-foreground'
+                  }`}>
+                    {journal.morning_toilet_status || '未記録'}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">{journal.morning_toilet_location || '-'}</p>
+                  {journal.morning_toilet_location && (
+                    <p className="text-xs text-muted-foreground mt-1">{journal.morning_toilet_location}</p>
+                  )}
                 </>
               )}
             </div>
@@ -636,10 +636,16 @@ const JournalDetail = () => {
                 </div>
               ) : (
                 <>
-                  <p className={`text-sm font-medium print:text-xs ${journal.afternoon_toilet_status === '成功' ? 'text-chart-2' : 'text-destructive'}`}>
-                    {journal.afternoon_toilet_status || '-'}
+                  <p className={`text-sm font-medium print:text-xs ${
+                    journal.afternoon_toilet_status === '成功' ? 'text-chart-2' :
+                    journal.afternoon_toilet_status === '失敗' ? 'text-destructive' :
+                    'text-muted-foreground'
+                  }`}>
+                    {journal.afternoon_toilet_status || '未記録'}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">{journal.afternoon_toilet_location || '-'}</p>
+                  {journal.afternoon_toilet_location && (
+                    <p className="text-xs text-muted-foreground mt-1">{journal.afternoon_toilet_location}</p>
+                  )}
                 </>
               )}
             </div>

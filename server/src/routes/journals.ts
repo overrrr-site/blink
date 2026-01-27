@@ -153,11 +153,15 @@ router.post('/', async (req: AuthRequest, res) => {
 
       if (ownerResult.rows.length > 0) {
         const owner = ownerResult.rows[0];
+        const createdJournal = result.rows[0];
         await sendJournalNotification(
           owner.store_id,
           owner.id,
           owner.dog_name,
-          journal_date
+          journal_date,
+          createdJournal.id,
+          comment,
+          photos
         );
       }
     } catch (notifError) {

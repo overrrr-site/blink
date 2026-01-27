@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import { getRandomGreeting } from '../utils/greetings'
 import OnboardingGuide from './OnboardingGuide'
 
 const Layout = () => {
@@ -8,6 +9,7 @@ const Layout = () => {
   const location = useLocation()
   const { user } = useAuthStore()
   const [fabOpen, setFabOpen] = useState(false)
+  const [greeting] = useState(() => getRandomGreeting())
 
   // 新しい4タブ構成
   const navItems = [
@@ -36,13 +38,6 @@ const Layout = () => {
 
   const isHomePage = location.pathname === '/'
 
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'おはようございます'
-    if (hour < 18) return 'こんにちは'
-    return 'こんばんは'
-  }
-
   const handleFabAction = (path: string) => {
     setFabOpen(false)
     navigate(path)
@@ -62,7 +57,7 @@ const Layout = () => {
               })}
             </p>
             <h1 className="text-2xl font-bold font-heading text-foreground">
-              {getGreeting()}、<br />
+              {greeting}、<br />
               {user?.name || 'スタッフ'}さん
             </h1>
           </div>
