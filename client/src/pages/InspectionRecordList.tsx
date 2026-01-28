@@ -632,6 +632,34 @@ const InspectionRecordList = () => {
                         />
                       </div>
                     )}
+
+                    {/* 保存状態表示 */}
+                    <div className="pt-2 flex items-center justify-center">
+                      {isSaving ? (
+                        <div className="flex items-center gap-2 text-primary">
+                          <iconify-icon
+                            icon="solar:spinner-bold"
+                            width="20"
+                            height="20"
+                            class="animate-spin"
+                          ></iconify-icon>
+                          <span className="text-sm font-medium">保存中...</span>
+                        </div>
+                      ) : record ? (
+                        <div className="flex items-center gap-2 text-chart-2">
+                          <iconify-icon
+                            icon="solar:check-circle-bold"
+                            width="20"
+                            height="20"
+                          ></iconify-icon>
+                          <span className="text-sm font-medium">保存済み</span>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          入力すると自動保存されます
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
