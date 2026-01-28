@@ -403,7 +403,7 @@ export default function ReservationsCalendar(): JSX.Element {
                     </div>
                   </div>
                 )}
-                {reservation.status !== 'キャンセル' && reservation.status !== '降園済' && (
+                {reservation.status !== 'キャンセル' && reservation.status !== '降園済' && reservation.status !== '登園済' && (
                   <div className="flex flex-col gap-2 pt-3 border-t border-border">
                     {/* 登園前入力ボタン（今日または未来の予約の場合） */}
                     {(isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (
@@ -427,13 +427,16 @@ export default function ReservationsCalendar(): JSX.Element {
                         <iconify-icon icon="solar:pen-bold" width="18" height="18"></iconify-icon>
                         変更
                       </button>
-                      <button
-                        onClick={function() { handleCancelReservation(reservation.id); }}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 transition-colors"
-                      >
-                        <iconify-icon icon="solar:trash-bin-trash-bold" width="18" height="18"></iconify-icon>
-                        キャンセル
-                      </button>
+                      {/* キャンセルボタンは予約前日まで（予約日より前の日のみ）表示 */}
+                      {isFuture(parseISO(reservation.reservation_date)) && (
+                        <button
+                          onClick={function() { handleCancelReservation(reservation.id); }}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 transition-colors"
+                        >
+                          <iconify-icon icon="solar:trash-bin-trash-bold" width="18" height="18"></iconify-icon>
+                          キャンセル
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
