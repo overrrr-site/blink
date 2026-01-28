@@ -8,7 +8,6 @@ import SaveButton from '../components/SaveButton'
 interface StaffForm {
   name: string
   email: string
-  password: string
   is_owner: boolean
 }
 
@@ -20,17 +19,17 @@ function StaffEdit(): JSX.Element {
   const [form, setForm] = useState<StaffForm>({
     name: '',
     email: '',
-    password: '',
     is_owner: false,
   })
 
-  const isEditing = Boolean(id)
-
   useEffect(() => {
-    if (id) {
-      fetchStaff()
+    if (!id) {
+      // 新規作成ページへのアクセスは招待モーダルを使用するようリダイレクト
+      navigate('/settings')
+      return
     }
-  }, [id])
+    fetchStaff()
+  }, [id, navigate])
 
   async function fetchStaff(): Promise<void> {
     try {
@@ -39,8 +38,7 @@ function StaffEdit(): JSX.Element {
       setForm({
         name: response.data.name,
         email: response.data.email,
-        password: '',
-        is_owner: false,
+        is_owner: response.data.is_owner || false,
       })
     } catch (error) {
       console.error('Error fetching staff:', error)
@@ -66,25 +64,10 @@ function StaffEdit(): JSX.Element {
     try {
       const payload: Record<string, unknown> = {
         name: form.name,
-        email: form.email,
         is_owner: form.is_owner,
       }
 
-      if (form.password) {
-        payload.password = form.password
-      }
-
-      if (isEditing) {
-        await api.put(`/staff/${id}`, payload)
-      } else {
-        if (!form.password) {
-          alert('パスワードを入力してください')
-          setSaving(false)
-          return
-        }
-        await api.post('/staff', payload)
-      }
-
+      await api.put(`/staff/${id}`, payload)
       navigate('/settings')
     } catch (error: unknown) {
       console.error('Error saving staff:', error)
@@ -102,7 +85,7 @@ function StaffEdit(): JSX.Element {
   return (
     <div className="pb-32">
       <PageHeader
-        title={isEditing ? 'スタッフ編集' : '新規スタッフ'}
+        title="スタッフ編集"
         backPath="/settings"
       />
 
@@ -130,23 +113,10 @@ function StaffEdit(): JSX.Element {
                 type="email"
                 name="email"
                 value={form.email}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                disabled
+                className="w-full px-4 py-3 rounded-xl border border-border bg-muted text-sm text-muted-foreground cursor-not-allowed"
               />
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">
-                パスワード{isEditing ? '（変更する場合のみ）' : ''}
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required={!isEditing}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
+              <p className="text-[10px] text-muted-foreground mt-1">メールアドレスは変更できません</p>
             </div>
             <div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -166,7 +136,7 @@ function StaffEdit(): JSX.Element {
 
       <SaveButton
         saving={saving}
-        label={isEditing ? '更新する' : 'スタッフを登録する'}
+        label="更新する"
         onClick={() => handleSubmit()}
       />
     </div>

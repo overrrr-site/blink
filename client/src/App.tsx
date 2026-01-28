@@ -87,7 +87,6 @@ function App() {
               <Route path="dogs/:id/edit" element={<DogEdit />} />
               <Route path="dogs/:dogId/contracts/new" element={<ContractEdit />} />
               <Route path="dogs/:dogId/contracts/:id" element={<ContractEdit />} />
-              <Route path="settings/staff/new" element={<StaffEdit />} />
               <Route path="settings/staff/:id" element={<StaffEdit />} />
               <Route path="settings/courses/new" element={<CourseEdit />} />
               <Route path="settings/courses/:id" element={<CourseEdit />} />

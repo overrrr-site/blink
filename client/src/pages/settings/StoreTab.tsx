@@ -394,22 +394,13 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
             <iconify-icon icon="solar:user-id-bold" width="16" height="16" class="text-chart-3"></iconify-icon>
             スタッフ管理
           </h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowStaffInviteModal(true)}
-              className="text-xs font-bold text-chart-2 flex items-center gap-1"
-            >
-              <iconify-icon icon="solar:letter-bold" width="14" height="14"></iconify-icon>
-              招待
-            </button>
-            <button
-              onClick={() => navigate('/settings/staff/new')}
-              className="text-xs font-bold text-primary flex items-center gap-1"
-            >
-              <iconify-icon icon="solar:add-circle-bold" width="14" height="14"></iconify-icon>
-              追加
-            </button>
-          </div>
+          <button
+            onClick={() => setShowStaffInviteModal(true)}
+            className="text-xs font-bold text-primary flex items-center gap-1"
+          >
+            <iconify-icon icon="solar:add-circle-bold" width="14" height="14"></iconify-icon>
+            追加
+          </button>
         </div>
         {loadingStaff ? (
           <div className="text-center py-4">
