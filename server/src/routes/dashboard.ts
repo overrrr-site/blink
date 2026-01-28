@@ -15,18 +15,20 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // 今日の予約
+    // 今日の予約（日誌記入済みかどうかも取得）
     const reservationsResult = await pool.query(
-      `SELECT r.*, 
+      `SELECT r.*,
               d.name as dog_name, d.photo_url as dog_photo,
               o.name as owner_name,
-              pvi.morning_urination, pvi.morning_defecation, 
+              pvi.morning_urination, pvi.morning_defecation,
               pvi.afternoon_urination, pvi.afternoon_defecation,
-              pvi.breakfast_status, pvi.health_status, pvi.notes
+              pvi.breakfast_status, pvi.health_status, pvi.notes,
+              CASE WHEN j.id IS NOT NULL AND j.comment IS NOT NULL AND j.comment != '' THEN true ELSE false END as has_journal
        FROM reservations r
        JOIN dogs d ON r.dog_id = d.id
        JOIN owners o ON d.owner_id = o.id
        LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
+       LEFT JOIN journals j ON r.id = j.reservation_id
        WHERE r.store_id = $1 AND r.reservation_date = $2
        ORDER BY r.reservation_time`,
       [req.storeId, today]

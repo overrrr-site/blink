@@ -15,6 +15,7 @@ interface Reservation {
   reservation_time: string
   status: '予定' | '登園済' | '退園済' | 'キャンセル'
   checked_in_at?: string
+  has_journal?: boolean
   // 連絡帳（飼い主からの入力）
   pvi_morning_urination?: boolean
   pvi_morning_defecation?: boolean
@@ -109,6 +110,21 @@ function Dashboard(): JSX.Element {
     } catch (error) {
       console.error('Error checking in:', error)
       alert('登園処理に失敗しました')
+    } finally {
+      setCheckingIn(null)
+    }
+  }, [])
+
+  const handleCheckOut = useCallback(async function(reservationId: number): Promise<void> {
+    setCheckingIn(reservationId) // 同じstateを再利用
+    try {
+      await api.put(`/reservations/${reservationId}`, {
+        status: '退園済',
+      })
+      await fetchDashboard()
+    } catch (error) {
+      console.error('Error checking out:', error)
+      alert('降園処理に失敗しました')
     } finally {
       setCheckingIn(null)
     }
@@ -311,7 +327,7 @@ function Dashboard(): JSX.Element {
                                 登園
                               </button>
                             )}
-                            {isPresent && (
+                            {isPresent && !reservation.has_journal && (
                               <button
                                 onClick={() => navigate(`/journals/create/${reservation.id}`)}
                                 className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
@@ -319,6 +335,21 @@ function Dashboard(): JSX.Element {
                               >
                                 <iconify-icon icon="solar:pen-new-square-bold" className="size-4"></iconify-icon>
                                 日誌
+                              </button>
+                            )}
+                            {isPresent && reservation.has_journal && (
+                              <button
+                                onClick={() => handleCheckOut(reservation.id)}
+                                disabled={checkingIn === reservation.id}
+                                className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
+                                aria-label="降園"
+                              >
+                                {checkingIn === reservation.id ? (
+                                  <iconify-icon icon="solar:spinner-bold" className="size-4 animate-spin"></iconify-icon>
+                                ) : (
+                                  <iconify-icon icon="solar:logout-3-bold" className="size-4"></iconify-icon>
+                                )}
+                                降園
                               </button>
                             )}
                             {displayStatus === '帰宅済' && (
