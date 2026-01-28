@@ -83,7 +83,7 @@ export default function ContractsSection({
                         </span>
                       </div>
                       {contract.price && (
-                        <p className="text-xs text-muted-foreground">料金: ¥{contract.price.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">料金: ¥{Math.floor(contract.price).toLocaleString()}</p>
                       )}
                     </div>
                     {isExpired && (

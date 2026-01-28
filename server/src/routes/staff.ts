@@ -1,6 +1,6 @@
 import express from 'express';
 import pool from '../db/connection.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { authenticate, requireOwner, AuthRequest } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 import {
   requireStoreId,
@@ -11,6 +11,7 @@ import {
 
 const router = express.Router();
 router.use(authenticate);
+router.use(requireOwner); // スタッフ管理は管理者のみ
 
 // スタッフ一覧取得
 router.get('/', async (req: AuthRequest, res) => {

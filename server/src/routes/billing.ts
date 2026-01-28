@@ -1,6 +1,6 @@
 import express from 'express';
 import pool from '../db/connection.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { authenticate, requireOwner, AuthRequest } from '../middleware/auth.js';
 import Payjp from 'payjp';
 import {
   requireStoreId,
@@ -11,6 +11,7 @@ import {
 
 const router = express.Router();
 router.use(authenticate);
+router.use(requireOwner); // 課金関連は管理者のみ
 
 // PAY.JP初期化（APIキーが設定されていない場合はnull）
 const payjp = process.env.PAYJP_SECRET_KEY ? new Payjp(process.env.PAYJP_SECRET_KEY) : null;

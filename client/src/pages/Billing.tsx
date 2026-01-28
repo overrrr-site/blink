@@ -233,7 +233,7 @@ export default function Billing() {
                   </div>
                   <p className="text-lg font-bold mb-1">{currentPlan.display_name}</p>
                   <p className="text-xs text-muted-foreground mb-3">
-                    ¥{(currentPlan.price_monthly ?? 0).toLocaleString()}/月（税込）
+                    ¥{Math.floor(currentPlan.price_monthly ?? 0).toLocaleString()}/月（税込）
                   </p>
                   {currentPlan.max_dogs && (
                     <div className="pt-3 border-t border-border/50">
@@ -286,7 +286,7 @@ export default function Billing() {
                       <div>
                         <h4 className="font-bold text-base">{plan.display_name}</h4>
                         <p className="text-sm text-muted-foreground mt-1">
-                          ¥{(plan.price_monthly ?? 0).toLocaleString()}/月（税込）
+                          ¥{Math.floor(plan.price_monthly ?? 0).toLocaleString()}/月（税込）
                         </p>
                       </div>
                       {currentPlan?.plan_name === plan.name && (
@@ -387,7 +387,7 @@ export default function Billing() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-base">¥{(item.amount ?? 0).toLocaleString()}</p>
+                        <p className="font-bold text-base">¥{Math.floor(item.amount ?? 0).toLocaleString()}</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                           item.status === 'paid'
                             ? 'bg-chart-2/10 text-chart-2'

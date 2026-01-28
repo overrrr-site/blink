@@ -6,6 +6,7 @@ export interface AuthRequest extends Request {
   userId?: number;
   storeId?: number;
   supabaseUserId?: string;
+  isOwner?: boolean;
 }
 
 export const authenticate = async (
@@ -66,6 +67,7 @@ export const authenticate = async (
     req.userId = staff.id;
     req.storeId = staff.store_id;
     req.supabaseUserId = user.id;
+    req.isOwner = staff.is_owner || false;
     next();
   } catch (error: any) {
     console.error('認証エラー:', error);
@@ -74,9 +76,21 @@ export const authenticate = async (
       stack: error?.stack,
       name: error?.name
     });
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: '認証に失敗しました',
       details: error?.message || '不明なエラーが発生しました'
     });
   }
+};
+
+// 管理者専用ミドルウェア（authenticateの後に使用）
+export const requireOwner = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.isOwner) {
+    return res.status(403).json({ error: 'この操作は管理者のみ実行できます' });
+  }
+  next();
 };

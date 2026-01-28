@@ -1,5 +1,6 @@
-import { useState, useEffect, Suspense, lazy } from 'react'
+import { useState, useEffect, Suspense, lazy, useMemo } from 'react'
 import api from '../api/client'
+import { useAuthStore } from '../store/authStore'
 
 type TabId = 'store' | 'pricing' | 'integration' | 'other'
 
@@ -7,11 +8,12 @@ interface TabConfig {
   id: TabId
   label: string
   icon: string
+  ownerOnly?: boolean
 }
 
-const TABS: TabConfig[] = [
-  { id: 'store', label: '店舗設定', icon: 'solar:shop-bold' },
-  { id: 'pricing', label: '契約', icon: 'solar:tag-price-bold' },
+const ALL_TABS: TabConfig[] = [
+  { id: 'store', label: '店舗設定', icon: 'solar:shop-bold', ownerOnly: true },
+  { id: 'pricing', label: '契約', icon: 'solar:tag-price-bold', ownerOnly: true },
   { id: 'integration', label: '連携', icon: 'solar:link-bold' },
   { id: 'other', label: 'その他', icon: 'solar:settings-bold' },
 ]
@@ -54,12 +56,32 @@ function renderActiveTab(
 }
 
 function Settings() {
-  const [activeTab, setActiveTab] = useState<TabId>('store')
+  const { user } = useAuthStore()
+  const isOwner = user?.isOwner || false
+
+  // 権限に応じて表示するタブをフィルタリング
+  const TABS = useMemo(() => {
+    return ALL_TABS.filter(tab => !tab.ownerOnly || isOwner)
+  }, [isOwner])
+
+  // デフォルトタブ（管理者はstore、それ以外はintegration）
+  const defaultTab = isOwner ? 'store' : 'integration'
+  const [activeTab, setActiveTab] = useState<TabId>(defaultTab)
   const [storeInfo, setStoreInfo] = useState<any>(null)
 
+  // 権限変更時にタブをリセット
   useEffect(() => {
-    fetchStoreInfo()
-  }, [])
+    const validTabs = TABS.map(t => t.id)
+    if (!validTabs.includes(activeTab)) {
+      setActiveTab(defaultTab)
+    }
+  }, [TABS, activeTab, defaultTab])
+
+  useEffect(() => {
+    if (isOwner) {
+      fetchStoreInfo()
+    }
+  }, [isOwner])
 
   async function fetchStoreInfo() {
     try {

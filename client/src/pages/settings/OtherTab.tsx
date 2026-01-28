@@ -5,7 +5,8 @@ import api from '../../api/client'
 
 function OtherTab() {
   const navigate = useNavigate()
-  const { logout } = useAuthStore()
+  const { user, logout } = useAuthStore()
+  const isOwner = user?.isOwner || false
   const [exporting, setExporting] = useState<string | null>(null)
 
   function handleLogout() {
@@ -160,32 +161,34 @@ function OtherTab() {
         </div>
       </section>
 
-      {/* プラン・お支払い */}
-      <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:card-bold" width="16" height="16" class="text-primary"></iconify-icon>
-            プラン・お支払い
-          </h2>
-        </div>
-        <div className="p-4">
-          <div className="bg-accent/30 rounded-xl p-4 mb-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-accent-foreground">現在のプラン</span>
-              <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">アクティブ</span>
-            </div>
-            <p className="text-lg font-bold">スタンダードプラン</p>
-            <p className="text-xs text-muted-foreground">¥5,500/月（税込）</p>
+      {/* プラン・お支払い（管理者のみ） */}
+      {isOwner && (
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <iconify-icon icon="solar:card-bold" width="16" height="16" class="text-primary"></iconify-icon>
+              プラン・お支払い
+            </h2>
           </div>
-          <button
-            onClick={() => navigate('/billing')}
-            className="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors"
-          >
-            <span className="text-sm font-medium">プラン・お支払い管理</span>
-            <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
-          </button>
-        </div>
-      </section>
+          <div className="p-4">
+            <div className="bg-accent/30 rounded-xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-accent-foreground">現在のプラン</span>
+                <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">アクティブ</span>
+              </div>
+              <p className="text-lg font-bold">スタンダードプラン</p>
+              <p className="text-xs text-muted-foreground">¥5,500/月（税込）</p>
+            </div>
+            <button
+              onClick={() => navigate('/billing')}
+              className="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors"
+            >
+              <span className="text-sm font-medium">プラン・お支払い管理</span>
+              <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* ヘルプ・サポート */}
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">

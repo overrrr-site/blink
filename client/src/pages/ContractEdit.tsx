@@ -184,7 +184,7 @@ function ContractEdit(): JSX.Element {
                   {courseMasters.map((course) => (
                     <option key={course.id} value={course.id.toString()}>
                       {course.course_name}（{course.contract_type}）
-                      {course.price && ` - ¥${course.price.toLocaleString()}`}
+                      {course.price && ` - ¥${Math.floor(course.price).toLocaleString()}`}
                     </option>
                   ))}
                   <option value="custom">カスタム入力...</option>

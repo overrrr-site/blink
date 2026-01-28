@@ -96,7 +96,7 @@ function PricingTab() {
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   {course.sessions && `${course.sessions}回 / `}
-                  ¥{course.price?.toLocaleString()}
+                  ¥{Math.floor(course.price ?? 0).toLocaleString()}
                   {course.valid_days && ` / 有効期限${course.valid_days}日`}
                 </span>
               </div>

@@ -22,6 +22,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
   const [showStaffInviteModal, setShowStaffInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
+  const [inviteIsOwner, setInviteIsOwner] = useState(false)
   const [inviting, setInviting] = useState(false)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
@@ -86,11 +87,12 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
 
     setInviting(true)
     try {
-      await api.post('/auth/invite', { email: inviteEmail, name: inviteName })
+      await api.post('/auth/invite', { email: inviteEmail, name: inviteName, is_owner: inviteIsOwner })
       alert(`${inviteEmail} に招待メールを送信しました`)
       setShowStaffInviteModal(false)
       setInviteEmail('')
       setInviteName('')
+      setInviteIsOwner(false)
       fetchStaff()
     } catch (error: any) {
       console.error('Error inviting staff:', error)
@@ -700,6 +702,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                   setShowStaffInviteModal(false)
                   setInviteEmail('')
                   setInviteName('')
+                  setInviteIsOwner(false)
                 }}
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
@@ -734,12 +737,43 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                   className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2">権限</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setInviteIsOwner(false)}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors border ${
+                      !inviteIsOwner
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/50'
+                    }`}
+                  >
+                    スタッフ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInviteIsOwner(true)}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors border ${
+                      inviteIsOwner
+                        ? 'bg-chart-2 text-white border-chart-2'
+                        : 'bg-muted/50 text-muted-foreground border-border hover:border-chart-2/50'
+                    }`}
+                  >
+                    管理者
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  管理者は設定、料金管理、スタッフ管理ができます
+                </p>
+              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => {
                     setShowStaffInviteModal(false)
                     setInviteEmail('')
                     setInviteName('')
+                    setInviteIsOwner(false)
                   }}
                   className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
                 >

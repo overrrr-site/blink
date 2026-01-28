@@ -86,12 +86,22 @@ const InspectionRecordList = () => {
         if (shouldUpdate) {
           await api.put(`/inspection-records/${date}`, data)
         } else {
-          await api.post('/inspection-records', {
-            ...data,
-            inspection_date: date,
-          })
-          // 新規作成成功後、保存済みとしてマーク
-          savedRecordIds.current.add(date)
+          try {
+            await api.post('/inspection-records', {
+              ...data,
+              inspection_date: date,
+            })
+            // 新規作成成功後、保存済みとしてマーク
+            savedRecordIds.current.add(date)
+          } catch (postError: any) {
+            // 400エラー（重複）の場合はPUTでリトライ
+            if (postError.response?.status === 400) {
+              await api.put(`/inspection-records/${date}`, data)
+              savedRecordIds.current.add(date)
+            } else {
+              throw postError
+            }
+          }
         }
         // データを再取得
         await fetchData()

@@ -8,6 +8,7 @@ interface StaffUser {
   email: string
   name: string
   storeId: number
+  isOwner: boolean
 }
 
 interface AuthState {

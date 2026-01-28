@@ -57,6 +57,22 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
 }
 
+// 管理者専用ルート
+function OwnerRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuthStore()
+
+  if (isLoading) {
+    return <PageLoader />
+  }
+
+  // 管理者でない場合は設定ページにリダイレクト
+  if (!user?.isOwner) {
+    return <Navigate to="/settings" replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
   return (
     <ToastProvider>
@@ -87,11 +103,11 @@ function App() {
               <Route path="dogs/:id/edit" element={<DogEdit />} />
               <Route path="dogs/:dogId/contracts/new" element={<ContractEdit />} />
               <Route path="dogs/:dogId/contracts/:id" element={<ContractEdit />} />
-              <Route path="settings/staff/:id" element={<StaffEdit />} />
-              <Route path="settings/courses/new" element={<CourseEdit />} />
-              <Route path="settings/courses/:id" element={<CourseEdit />} />
-              <Route path="settings/training/new" element={<TrainingEdit />} />
-              <Route path="settings/training/:id" element={<TrainingEdit />} />
+              <Route path="settings/staff/:id" element={<OwnerRoute><StaffEdit /></OwnerRoute>} />
+              <Route path="settings/courses/new" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
+              <Route path="settings/courses/:id" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
+              <Route path="settings/training/new" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
+              <Route path="settings/training/:id" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
               <Route path="reservations" element={<ReservationsCalendar />} />
               <Route path="reservations/new" element={<ReservationCreate />} />
               <Route path="reservations/:id" element={<ReservationDetail />} />
@@ -103,7 +119,7 @@ function App() {
               <Route path="inspection-records/:date" element={<InspectionRecord />} />
               <Route path="announcements" element={<AnnouncementList />} />
               <Route path="settings" element={<Settings />} />
-              <Route path="billing" element={<Billing />} />
+              <Route path="billing" element={<OwnerRoute><Billing /></OwnerRoute>} />
               <Route path="help" element={<Help />} />
             </Route>
           </Routes>

@@ -1,7 +1,7 @@
 import express from 'express';
 import pool from '../db/connection.js';
 import { supabase } from '../db/supabase.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { authenticate, requireOwner, AuthRequest } from '../middleware/auth.js';
 import { requireStoreId, sendBadRequest, sendServerError } from '../utils/response.js';
 
 const router = express.Router();
@@ -14,7 +14,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
     }
 
     const result = await pool.query(
-      `SELECT s.id, s.email, s.name, ss.store_id
+      `SELECT s.id, s.email, s.name, s.is_owner, ss.store_id
        FROM staff s
        LEFT JOIN staff_stores ss ON s.id = ss.staff_id
        WHERE s.id = $1`,
@@ -32,6 +32,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       email: staff.email,
       name: staff.name,
       storeId: staff.store_id,
+      isOwner: staff.is_owner || false,
     });
   } catch (error: any) {
     console.error('Error fetching staff info:', error);
@@ -68,13 +69,13 @@ router.get('/staff', authenticate, async (req: AuthRequest, res) => {
 });
 
 // スタッフ招待（管理者のみ）
-router.post('/invite', authenticate, async (req: AuthRequest, res) => {
+router.post('/invite', authenticate, requireOwner, async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) {
       return;
     }
 
-    const { email, name } = req.body;
+    const { email, name, is_owner } = req.body;
 
     if (!email || !name) {
       sendBadRequest(res, 'メールアドレスと名前が必要です');
@@ -108,10 +109,10 @@ router.post('/invite', authenticate, async (req: AuthRequest, res) => {
 
     // スタッフレコードを作成（auth_user_idは招待受諾後に設定される）
     const result = await pool.query(
-      `INSERT INTO staff (email, name, auth_user_id)
-       VALUES ($1, $2, $3)
+      `INSERT INTO staff (email, name, auth_user_id, is_owner)
+       VALUES ($1, $2, $3, $4)
        RETURNING id`,
-      [email, name, data.user?.id]
+      [email, name, data.user?.id, is_owner || false]
     );
 
     const staffId = result.rows[0].id;
@@ -134,8 +135,8 @@ router.post('/invite', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// 招待の再送信
-router.post('/resend-invite', authenticate, async (req: AuthRequest, res) => {
+// 招待の再送信（管理者のみ）
+router.post('/resend-invite', authenticate, requireOwner, async (req: AuthRequest, res) => {
   try {
     const { email } = req.body;
 
