@@ -4,10 +4,8 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { sendJournalNotification } from '../services/notificationService.js';
 import {
   uploadBase64ToSupabaseStorage,
-  isSupabaseStorageAvailable,
 } from '../services/storageService.js';
 import {
-  sendBadRequest,
   sendForbidden,
   sendNotFound,
   sendServerError,
@@ -338,92 +336,6 @@ router.put('/:id', async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error updating journal:', error);
     sendServerError(res, '日誌の更新に失敗しました', error);
-  }
-});
-
-// Base64画像をSupabase Storageに移行（管理者用）
-router.post('/migrate-photos', async (req: AuthRequest, res) => {
-  try {
-    // Supabase Storageの確認
-    if (!isSupabaseStorageAvailable()) {
-      sendBadRequest(res, 'Supabase Storageが利用できません');
-      return;
-    }
-
-    // Base64画像を含む日誌を取得
-    const result = await pool.query(`
-      SELECT id, photos
-      FROM journals
-      WHERE photos IS NOT NULL
-      ORDER BY id
-    `);
-
-    const journals = result.rows;
-    const stats = {
-      totalJournals: journals.length,
-      totalPhotos: 0,
-      migrated: 0,
-      skipped: 0,
-      failed: 0,
-      updatedJournals: 0,
-    };
-
-    for (const journal of journals) {
-      if (!journal.photos || !Array.isArray(journal.photos)) {
-        continue;
-      }
-
-      const photos = journal.photos as string[];
-      const newPhotos: string[] = [];
-      let hasBase64 = false;
-
-      for (const photo of photos) {
-        stats.totalPhotos++;
-
-        // 既にURLの場合はスキップ
-        if (photo.startsWith('http')) {
-          newPhotos.push(photo);
-          stats.skipped++;
-          continue;
-        }
-
-        // Base64データの場合は移行
-        if (photo.startsWith('data:image/')) {
-          hasBase64 = true;
-          const uploadResult = await uploadBase64ToSupabaseStorage(photo, 'journals');
-
-          if (uploadResult) {
-            newPhotos.push(uploadResult.url);
-            stats.migrated++;
-          } else {
-            // 失敗時は元のデータを保持
-            newPhotos.push(photo);
-            stats.failed++;
-          }
-        } else {
-          newPhotos.push(photo);
-          stats.skipped++;
-        }
-      }
-
-      // Base64があった場合のみDBを更新
-      if (hasBase64) {
-        await pool.query(
-          `UPDATE journals SET photos = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
-          [JSON.stringify(newPhotos), journal.id]
-        );
-        stats.updatedJournals++;
-      }
-    }
-
-    res.json({
-      success: true,
-      message: '移行が完了しました',
-      stats,
-    });
-  } catch (error) {
-    console.error('Error migrating photos:', error);
-    sendServerError(res, '写真の移行に失敗しました', error);
   }
 });
 
