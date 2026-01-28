@@ -68,3 +68,10 @@ export function getAvatarUrl(url: string | null | undefined): string {
 export function getListThumbnailUrl(url: string | null | undefined): string {
   return getThumbnailUrl(url, 240, 240);
 }
+
+/**
+ * 詳細表示用のサムネイルURL（640px幅）
+ */
+export function getDetailThumbnailUrl(url: string | null | undefined): string {
+  return getThumbnailUrl(url, 640);
+}
