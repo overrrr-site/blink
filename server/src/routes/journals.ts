@@ -3,11 +3,54 @@ import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { sendJournalNotification } from '../services/notificationService.js';
 import {
+  uploadBase64ToSupabaseStorage,
+  isSupabaseStorageAvailable,
+} from '../services/storageService.js';
+import {
   sendBadRequest,
   sendForbidden,
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+
+/**
+ * 写真配列を処理し、Base64データをSupabase Storageにアップロード
+ * @param photos 写真配列（Base64またはURL）
+ * @returns 処理後のURL配列
+ */
+async function processPhotos(photos: string[] | null): Promise<string[] | null> {
+  if (!photos || photos.length === 0) {
+    return null;
+  }
+
+  const processedUrls: string[] = [];
+
+  for (const photo of photos) {
+    // 既にURLの場合はそのまま使用
+    if (photo.startsWith('http')) {
+      processedUrls.push(photo);
+      continue;
+    }
+
+    // Base64データの場合はSupabase Storageにアップロード
+    if (photo.startsWith('data:image/')) {
+      if (isSupabaseStorageAvailable()) {
+        const result = await uploadBase64ToSupabaseStorage(photo, 'journals');
+        if (result) {
+          processedUrls.push(result.url);
+        } else {
+          console.warn('Failed to upload photo to Supabase Storage');
+        }
+      } else {
+        // Supabase Storageが利用できない場合はBase64をそのまま保存（後方互換性）
+        console.warn('Supabase Storage is not available, storing Base64 directly');
+        processedUrls.push(photo);
+      }
+    }
+  }
+
+  return processedUrls.length > 0 ? processedUrls : null;
+}
 
 const router = express.Router();
 router.use(authenticate);
@@ -170,6 +213,9 @@ router.post('/', async (req: AuthRequest, res) => {
       return;
     }
 
+    // 写真をSupabase Storageにアップロード
+    const processedPhotos = await processPhotos(photos);
+
     const result = await pool.query(
       `INSERT INTO journals (
         reservation_id, dog_id, staff_id, journal_date, visit_count,
@@ -191,7 +237,7 @@ router.post('/', async (req: AuthRequest, res) => {
         training_data ? JSON.stringify(training_data) : null,
         comment,
         next_visit_date || null,
-        photos ? JSON.stringify(photos) : null,
+        processedPhotos ? JSON.stringify(processedPhotos) : null,
       ]
     );
 
@@ -215,7 +261,7 @@ router.post('/', async (req: AuthRequest, res) => {
           journal_date,
           createdJournal.id,
           comment,
-          photos
+          processedPhotos
         );
       }
     } catch (notifError) {
@@ -259,6 +305,9 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return;
     }
 
+    // 写真をSupabase Storageにアップロード
+    const processedPhotos = photos ? await processPhotos(photos) : undefined;
+
     const result = await pool.query(
       `UPDATE journals SET
         morning_toilet_status = COALESCE($1, morning_toilet_status),
@@ -280,7 +329,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
         training_data ? JSON.stringify(training_data) : null,
         comment,
         next_visit_date || null,
-        photos ? JSON.stringify(photos) : null,
+        processedPhotos ? JSON.stringify(processedPhotos) : null,
         id,
       ]
     );
@@ -289,6 +338,92 @@ router.put('/:id', async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error updating journal:', error);
     sendServerError(res, '日誌の更新に失敗しました', error);
+  }
+});
+
+// Base64画像をSupabase Storageに移行（管理者用）
+router.post('/migrate-photos', async (req: AuthRequest, res) => {
+  try {
+    // Supabase Storageの確認
+    if (!isSupabaseStorageAvailable()) {
+      sendBadRequest(res, 'Supabase Storageが利用できません');
+      return;
+    }
+
+    // Base64画像を含む日誌を取得
+    const result = await pool.query(`
+      SELECT id, photos
+      FROM journals
+      WHERE photos IS NOT NULL
+      ORDER BY id
+    `);
+
+    const journals = result.rows;
+    const stats = {
+      totalJournals: journals.length,
+      totalPhotos: 0,
+      migrated: 0,
+      skipped: 0,
+      failed: 0,
+      updatedJournals: 0,
+    };
+
+    for (const journal of journals) {
+      if (!journal.photos || !Array.isArray(journal.photos)) {
+        continue;
+      }
+
+      const photos = journal.photos as string[];
+      const newPhotos: string[] = [];
+      let hasBase64 = false;
+
+      for (const photo of photos) {
+        stats.totalPhotos++;
+
+        // 既にURLの場合はスキップ
+        if (photo.startsWith('http')) {
+          newPhotos.push(photo);
+          stats.skipped++;
+          continue;
+        }
+
+        // Base64データの場合は移行
+        if (photo.startsWith('data:image/')) {
+          hasBase64 = true;
+          const uploadResult = await uploadBase64ToSupabaseStorage(photo, 'journals');
+
+          if (uploadResult) {
+            newPhotos.push(uploadResult.url);
+            stats.migrated++;
+          } else {
+            // 失敗時は元のデータを保持
+            newPhotos.push(photo);
+            stats.failed++;
+          }
+        } else {
+          newPhotos.push(photo);
+          stats.skipped++;
+        }
+      }
+
+      // Base64があった場合のみDBを更新
+      if (hasBase64) {
+        await pool.query(
+          `UPDATE journals SET photos = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+          [JSON.stringify(newPhotos), journal.id]
+        );
+        stats.updatedJournals++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '移行が完了しました',
+      stats,
+    });
+  } catch (error) {
+    console.error('Error migrating photos:', error);
+    sendServerError(res, '写真の移行に失敗しました', error);
   }
 });
 

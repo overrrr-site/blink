@@ -28,19 +28,37 @@ export function getThumbnailUrl(
 ): string {
   if (!url) return '';
 
+  // Base64データの場合はそのまま返す（サムネイル変換不可）
+  if (url.startsWith('data:')) {
+    return url;
+  }
+
   // 相対パスの場合はAPIベースURLを追加
   const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
 
   // Supabase Storage のURLかどうかをチェック
   if (fullUrl.includes('supabase.co/storage')) {
+    // URLを解析して既存のクエリパラメータを分離
+    let baseUrl: string;
+    let existingParams: URLSearchParams;
+
+    try {
+      const urlObj = new URL(fullUrl);
+      existingParams = urlObj.searchParams;
+      baseUrl = `${urlObj.origin}${urlObj.pathname}`;
+    } catch {
+      // URLのパースに失敗した場合はそのまま返す
+      return fullUrl;
+    }
+
     // render/image エンドポイントを使用してリサイズ
     // 形式: /storage/v1/render/image/public/bucket/path?width=x&height=y
-    const transformedUrl = fullUrl.replace(
+    const transformedUrl = baseUrl.replace(
       '/storage/v1/object/public/',
       '/storage/v1/render/image/public/'
     );
 
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(existingParams);
     params.set('width', String(width));
     if (height) {
       params.set('height', String(height));

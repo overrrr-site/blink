@@ -13,7 +13,8 @@
     "db:migrate:store-info": "tsx src/db/migrate.ts",
     "db:check-migration": "tsx src/db/check-migration.ts",
     "db:seed": "tsx src/db/seed.ts",
-    "db:migrate-auth": "tsx src/db/migrate-staff-to-supabase.ts"
+    "db:migrate-auth": "tsx src/db/migrate-staff-to-supabase.ts",
+    "migrate:photos": "tsx src/db/migrate-base64-to-storage.ts"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.6.0",

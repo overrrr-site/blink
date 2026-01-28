@@ -85,6 +85,99 @@ export async function uploadMultipleToSupabaseStorage(
 }
 
 /**
+ * Base64データをSupabase Storageにアップロード
+ * @param base64Data Base64エンコードされた画像データ（data:image/jpeg;base64,...形式）
+ * @param category 保存先カテゴリ
+ * @returns アップロード結果（URLとパス）
+ */
+export async function uploadBase64ToSupabaseStorage(
+  base64Data: string,
+  category: string = 'journals'
+): Promise<{ url: string; path: string } | null> {
+  if (!supabase) {
+    console.error('Supabaseクライアントが初期化されていません');
+    return null;
+  }
+
+  try {
+    // Base64データからMIMEタイプとデータ部分を抽出
+    const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) {
+      console.error('無効なBase64データ形式です');
+      return null;
+    }
+
+    const mimeType = matches[1];
+    const base64Content = matches[2];
+
+    // MIMEタイプから拡張子を決定
+    const extMap: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+      'image/gif': '.gif',
+      'image/webp': '.webp',
+    };
+    const ext = extMap[mimeType] || '.jpg';
+
+    // Base64をBufferに変換
+    const buffer = Buffer.from(base64Content, 'base64');
+
+    // ユニークなファイル名を生成
+    const uniqueFilename = `${randomUUID()}${ext}`;
+    const filePath = `${category}/${uniqueFilename}`;
+
+    // Supabase Storageにアップロード
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, buffer, {
+        contentType: mimeType,
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Supabase Storage upload error:', error);
+      return null;
+    }
+
+    // 公開URLを取得
+    const { data: urlData } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filePath);
+
+    return {
+      url: urlData.publicUrl,
+      path: filePath,
+    };
+  } catch (error) {
+    console.error('Error uploading Base64 to Supabase Storage:', error);
+    return null;
+  }
+}
+
+/**
+ * 複数のBase64画像をSupabase Storageにアップロード
+ * @param base64DataArray Base64データの配列
+ * @param category 保存先カテゴリ
+ * @returns アップロードされた画像のURL配列
+ */
+export async function uploadMultipleBase64ToSupabaseStorage(
+  base64DataArray: string[],
+  category: string = 'journals'
+): Promise<string[]> {
+  const urls: string[] = [];
+
+  for (const base64Data of base64DataArray) {
+    const result = await uploadBase64ToSupabaseStorage(base64Data, category);
+    if (result) {
+      urls.push(result.url);
+    }
+  }
+
+  return urls;
+}
+
+/**
  * Supabase Storageからファイルを削除
  */
 export async function deleteFromSupabaseStorage(fileUrl: string): Promise<boolean> {
