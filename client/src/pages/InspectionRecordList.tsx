@@ -103,11 +103,12 @@ const InspectionRecordList = () => {
             }
           }
         }
-        // データを再取得
-        await fetchData()
+        // 保存成功: ローカル状態は既に楽観的に更新済みなので再取得しない
       } catch (error) {
         console.error('Error saving inspection record:', error)
         alert('点検記録の保存に失敗しました')
+        // エラー時はデータを再取得して正しい状態に戻す
+        await fetchData()
       } finally {
         setSavingDates((prev) => {
           const newSet = new Set(prev)
