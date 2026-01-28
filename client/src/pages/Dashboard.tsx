@@ -187,14 +187,14 @@ function Dashboard(): JSX.Element {
     <div className="pb-6">
       {/* ステータスフィルター */}
       <div className="px-5 pt-2 mb-4">
-        <div className="flex bg-muted rounded-xl p-1 gap-1">
+        <div className="flex bg-muted rounded-xl p-1 gap-0.5">
           {FILTER_OPTIONS.map((filter) => {
             const count = filter.id === 'all' ? currentCount : statusCounts[filter.id]
             return (
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 relative min-h-[48px] ${
+                className={`flex-1 py-2.5 px-1 rounded-lg text-[11px] font-bold transition-colors flex flex-col items-center justify-center gap-0.5 relative min-h-[48px] ${
                   statusFilter === filter.id
                     ? `bg-background text-foreground shadow-sm border-b-2 ${filter.borderColor}`
                     : 'text-muted-foreground font-normal'
@@ -202,8 +202,11 @@ function Dashboard(): JSX.Element {
                 aria-label={`${filter.label}の予約を表示`}
                 aria-pressed={statusFilter === filter.id}
               >
-                <iconify-icon icon={filter.icon} width="18" height="18"></iconify-icon>
-                {filter.label}{count > 0 && <span className="text-[10px] opacity-70">({count})</span>}
+                <div className="flex items-center gap-0.5">
+                  <iconify-icon icon={filter.icon} width="16" height="16"></iconify-icon>
+                  <span className="whitespace-nowrap">{filter.label}</span>
+                </div>
+                {count > 0 && <span className="text-[10px] opacity-70">({count})</span>}
               </button>
             )
           })}
