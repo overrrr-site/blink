@@ -23,6 +23,8 @@ const InspectionRecordList = () => {
 
   // デバウンス用のタイマー
   const saveTimers = useRef<Record<string, NodeJS.Timeout>>({})
+  // サーバーに保存済みのレコードIDを追跡
+  const savedRecordIds = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     fetchData()
@@ -47,6 +49,10 @@ const InspectionRecordList = () => {
       ])
       setRecords(recordsRes.data)
       setStaffList(staffRes.data)
+      // サーバーから取得したレコードの日付を保存済みとしてマーク
+      recordsRes.data.forEach((record: any) => {
+        savedRecordIds.current.add(record.inspection_date)
+      })
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -64,7 +70,7 @@ const InspectionRecordList = () => {
   }, [records])
 
   // デバウンス付き保存関数
-  const debouncedSave = useCallback((date: string, data: any) => {
+  const debouncedSave = useCallback((date: string, data: any, isExistingRecord: boolean) => {
     // 既存のタイマーをクリア
     if (saveTimers.current[date]) {
       clearTimeout(saveTimers.current[date])
@@ -74,14 +80,18 @@ const InspectionRecordList = () => {
     saveTimers.current[date] = setTimeout(async () => {
       setSavingDates((prev) => new Set(prev).add(date))
       try {
-        const existing = recordsByDate[date]
-        if (existing) {
+        // サーバー側に既にレコードがあるかどうかを判定
+        const shouldUpdate = isExistingRecord || savedRecordIds.current.has(date)
+
+        if (shouldUpdate) {
           await api.put(`/inspection-records/${date}`, data)
         } else {
           await api.post('/inspection-records', {
             ...data,
             inspection_date: date,
           })
+          // 新規作成成功後、保存済みとしてマーク
+          savedRecordIds.current.add(date)
         }
         // データを再取得
         await fetchData()
@@ -96,15 +106,25 @@ const InspectionRecordList = () => {
         })
       }
     }, 500)
-  }, [recordsByDate])
+  }, [])
 
   // フィールド変更ハンドラー
   const handleFieldChange = useCallback((date: string, field: string, value: boolean | string) => {
     const currentRecord = recordsByDate[date] || {}
+    // サーバーから取得した既存レコードかどうかを判定（idがあれば既存）
+    const isExistingRecord = !!currentRecord.id
+
+    // 送信用データ（DBカラムのみ）
     const newData = {
-      ...currentRecord,
+      inspection_time: currentRecord.inspection_time || null,
+      cleaning_done: currentRecord.cleaning_done || false,
+      disinfection_done: currentRecord.disinfection_done || false,
+      maintenance_done: currentRecord.maintenance_done || false,
+      animal_count_abnormal: currentRecord.animal_count_abnormal || false,
+      animal_state_abnormal: currentRecord.animal_state_abnormal || false,
+      inspector_name: currentRecord.inspector_name || null,
+      notes: currentRecord.notes || null,
       [field]: value,
-      inspection_date: date,
     }
 
     // ローカル状態を即座に更新
@@ -115,12 +135,12 @@ const InspectionRecordList = () => {
         updated[existingIndex] = { ...updated[existingIndex], [field]: value }
         return updated
       } else {
-        return [...prev, newData]
+        return [...prev, { ...newData, inspection_date: date }]
       }
     })
 
-    // デバウンス付きで保存
-    debouncedSave(date, newData)
+    // デバウンス付きで保存（既存レコードかどうかも渡す）
+    debouncedSave(date, newData, isExistingRecord)
   }, [recordsByDate, debouncedSave])
 
   const handlePrint = async () => {
