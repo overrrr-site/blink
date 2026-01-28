@@ -56,13 +56,13 @@ const Layout = () => {
                 weekday: 'short',
               })}
             </p>
-            <h1 className="text-lg font-bold font-heading text-foreground">
-              {greeting}、
+            <h1 className="text-xl font-bold font-heading text-foreground">
+              {greeting}、<br />
               {user?.name || 'スタッフ'}さん
             </h1>
           </div>
-          <div className="size-10 rounded-full border-2 border-primary/20 p-0.5 bg-muted">
-            <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+          <div className="size-12 rounded-full border-2 border-primary/20 p-0.5 bg-muted">
+            <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base">
               {user?.name?.charAt(0) || 'S'}
             </div>
           </div>

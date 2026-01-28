@@ -68,7 +68,7 @@ router.get('/photos/:dog_id', async (req: AuthRequest, res) => {
       return;
     }
 
-    // 日誌のIDと日付、写真のみを取得（軽量）
+    // 日誌のIDと日付、写真のみを取得（軽量・直近10件のみ）
     const result = await pool.query(
       `SELECT j.id, j.journal_date, j.photos
        FROM journals j
@@ -77,7 +77,7 @@ router.get('/photos/:dog_id', async (req: AuthRequest, res) => {
        WHERE j.dog_id = $1 AND o.store_id = $2
          AND j.photos IS NOT NULL
        ORDER BY j.journal_date DESC
-       LIMIT 50`,
+       LIMIT 10`,
       [dog_id, req.storeId]
     );
 
