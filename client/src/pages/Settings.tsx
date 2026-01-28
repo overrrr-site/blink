@@ -97,19 +97,19 @@ function Settings() {
       <header className="px-5 pt-6 pb-2 bg-background sticky top-0 z-10">
         <h1 className="text-2xl font-bold font-heading text-foreground mb-4">設定</h1>
 
-        <div className="flex bg-muted rounded-xl p-1 gap-1">
+        <div className="flex bg-muted rounded-xl p-1 gap-0.5">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 min-h-[48px] ${
+              className={`flex-1 py-2.5 px-1 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-0.5 min-h-[44px] ${
                 activeTab === tab.id
                   ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
                   : 'text-muted-foreground font-normal'
               }`}
               aria-pressed={activeTab === tab.id}
             >
-              <iconify-icon icon={tab.icon} width="14" height="14"></iconify-icon>
+              <iconify-icon icon={tab.icon} width="16" height="16"></iconify-icon>
               {tab.label}
             </button>
           ))}
