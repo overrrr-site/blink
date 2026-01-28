@@ -46,9 +46,9 @@ const Layout = () => {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans">
       {isHomePage && (
-        <header className="px-5 pt-6 pb-4 flex items-center justify-between bg-background sticky top-0 z-10 border-b border-border">
+        <header className="px-5 pt-4 pb-3 flex items-center justify-between bg-background sticky top-0 z-10 border-b border-border">
           <div>
-            <p className="text-sm text-muted-foreground font-medium mb-0.5">
+            <p className="text-xs text-muted-foreground font-medium mb-0.5">
               {new Date().toLocaleDateString('ja-JP', {
                 year: 'numeric',
                 month: 'long',
@@ -56,13 +56,13 @@ const Layout = () => {
                 weekday: 'short',
               })}
             </p>
-            <h1 className="text-2xl font-bold font-heading text-foreground">
-              {greeting}、<br />
+            <h1 className="text-lg font-bold font-heading text-foreground">
+              {greeting}、
               {user?.name || 'スタッフ'}さん
             </h1>
           </div>
-          <div className="size-12 rounded-full border-2 border-primary/20 p-0.5 bg-muted">
-            <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+          <div className="size-10 rounded-full border-2 border-primary/20 p-0.5 bg-muted">
+            <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
               {user?.name?.charAt(0) || 'S'}
             </div>
           </div>
