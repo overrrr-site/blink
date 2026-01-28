@@ -136,14 +136,14 @@ const ReservationDetail = () => {
             )}
             {reservation.status === '登園済' && (
               <button
-                onClick={() => updateStatus('退園済')}
+                onClick={() => updateStatus('降園済')}
                 className="w-full bg-chart-3 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-3/90 transition-colors flex items-center justify-center gap-2"
               >
                 <iconify-icon icon="solar:logout-3-bold" className="size-5"></iconify-icon>
                 降園
               </button>
             )}
-            {(reservation.status === '登園済' || reservation.status === '退園済') && (
+            {(reservation.status === '登園済' || reservation.status === '降園済') && (
               <button
                 onClick={() => updateStatus('予定')}
                 className="w-full bg-muted text-foreground py-2 rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors"

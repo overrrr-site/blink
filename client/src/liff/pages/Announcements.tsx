@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { getListThumbnailUrl, getDetailThumbnailUrl } from '../../utils/image';
 
 interface Announcement {
   id: number;
@@ -132,8 +133,9 @@ export default function Announcements() {
                     {announcement.image_url ? (
                       <div className="size-12 rounded-lg overflow-hidden bg-muted shrink-0">
                         <img
-                          src={announcement.image_url}
+                          src={getListThumbnailUrl(announcement.image_url)}
                           alt=""
+                          loading="lazy"
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -184,8 +186,9 @@ export default function Announcements() {
                     {announcement.image_url && (
                       <div className="p-4 pb-0">
                         <img
-                          src={announcement.image_url}
+                          src={getDetailThumbnailUrl(announcement.image_url)}
                           alt=""
+                          loading="lazy"
                           className="w-full rounded-lg object-cover max-h-64"
                         />
                       </div>

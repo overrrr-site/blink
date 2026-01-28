@@ -869,7 +869,7 @@ async function sendContracts(
           `SELECT COUNT(*) as used_count
            FROM reservations r
            WHERE r.dog_id = $1 
-             AND r.status IN ('登園済', '退園済', '予定')
+             AND r.status IN ('登園済', '降園済', '予定')
              AND r.reservation_date >= $2
              AND r.reservation_date <= COALESCE($3, CURRENT_DATE + INTERVAL '1 year')`,
           [contract.dog_id, contract.created_at, contract.valid_until]

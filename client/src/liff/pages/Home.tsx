@@ -5,6 +5,7 @@ import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { scanQRCode, getLiffDebugInfo } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
+import { getAvatarUrl } from '../../utils/image';
 
 interface OwnerData {
   id: number;
@@ -220,9 +221,9 @@ export default function Home() {
       return;
     }
 
-    // 既に退園済みか確認
-    if (data.nextReservation.checked_out_at || data.nextReservation.status === '退園済') {
-      alert('既に退園済みです');
+    // 既に降園済みか確認
+    if (data.nextReservation.checked_out_at || data.nextReservation.status === '降園済') {
+      alert('既に降園済みです');
       return;
     }
 
@@ -349,8 +350,9 @@ export default function Home() {
                     dog.photo_url ? (
                       <img
                         key={dog.id}
-                        src={dog.photo_url}
+                        src={getAvatarUrl(dog.photo_url)}
                         alt={dog.name}
+                        loading="lazy"
                         className="size-12 rounded-full border-3 border-white object-cover shadow-md"
                       />
                     ) : (
@@ -444,8 +446,8 @@ export default function Home() {
                     </>
                   )}
                 </button>
-              ) : nextReservation.status === '退園済' ? (
-                /* 退園済み → 完了表示 */
+              ) : nextReservation.status === '降園済' ? (
+                /* 降園済み → 完了表示 */
                 <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
                                min-h-[56px] flex items-center justify-center gap-2">
                   <iconify-icon icon="mdi:check-circle" class="size-5"></iconify-icon>
@@ -525,8 +527,9 @@ export default function Home() {
                 dog.photo_url ? (
                   <img
                     key={dog.id}
-                    src={dog.photo_url}
+                    src={getAvatarUrl(dog.photo_url)}
                     alt={dog.name}
+                    loading="lazy"
                     className="size-6 rounded-full border-2 border-white object-cover"
                   />
                 ) : (

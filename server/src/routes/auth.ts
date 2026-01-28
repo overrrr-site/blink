@@ -9,38 +9,20 @@ const router = express.Router();
 // 現在のログインユーザーのスタッフ情報を取得
 router.get('/me', authenticate, async (req: AuthRequest, res) => {
   try {
-    if (!req.userId) {
-      return res.status(400).json({ error: 'ユーザーIDが設定されていません' });
+    // ミドルウェアで取得済みのデータを再利用（二重クエリ解消）
+    if (!req.staffData) {
+      return res.status(400).json({ error: 'スタッフデータが設定されていません' });
     }
 
-    const result = await pool.query(
-      `SELECT s.id, s.email, s.name, s.is_owner, ss.store_id
-       FROM staff s
-       LEFT JOIN staff_stores ss ON s.id = ss.staff_id
-       WHERE s.id = $1`,
-      [req.userId]
-    );
-
-    if (result.rows.length === 0) {
-      console.error(`スタッフ情報が見つかりません (userId: ${req.userId})`);
-      return res.status(404).json({ error: 'スタッフ情報が見つかりません' });
-    }
-
-    const staff = result.rows[0];
     res.json({
-      id: staff.id,
-      email: staff.email,
-      name: staff.name,
-      storeId: staff.store_id,
-      isOwner: staff.is_owner || false,
+      id: req.staffData.id,
+      email: req.staffData.email,
+      name: req.staffData.name,
+      storeId: req.staffData.store_id,
+      isOwner: req.staffData.is_owner,
     });
   } catch (error: any) {
     console.error('Error fetching staff info:', error);
-    console.error('エラー詳細:', {
-      message: error?.message,
-      stack: error?.stack,
-      userId: req.userId
-    });
     sendServerError(res, 'スタッフ情報の取得に失敗しました', error);
   }
 });

@@ -14,100 +14,110 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
     }
 
     const today = new Date().toISOString().split('T')[0];
-
-    // 今日の予約（日誌記入済みかどうかも取得）
-    const reservationsResult = await pool.query(
-      `SELECT r.*,
-              d.name as dog_name, d.photo_url as dog_photo,
-              o.name as owner_name,
-              pvi.morning_urination, pvi.morning_defecation,
-              pvi.afternoon_urination, pvi.afternoon_defecation,
-              pvi.breakfast_status, pvi.health_status, pvi.notes,
-              CASE WHEN j.id IS NOT NULL AND j.comment IS NOT NULL AND j.comment != '' THEN true ELSE false END as has_journal
-       FROM reservations r
-       JOIN dogs d ON r.dog_id = d.id
-       JOIN owners o ON d.owner_id = o.id
-       LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
-       LEFT JOIN journals j ON r.id = j.reservation_id
-       WHERE r.store_id = $1 AND r.reservation_date = $2
-       ORDER BY r.reservation_time`,
-      [req.storeId, today]
-    );
-
-    // 未入力の日誌（日誌が作成されていない、または内容が空の予約）
-    const incompleteJournalsResult = await pool.query(
-      `SELECT r.id as reservation_id, 
-              r.reservation_date,
-              r.reservation_date as journal_date,
-              r.reservation_time,
-              r.dog_id,
-              d.name as dog_name, 
-              d.photo_url as dog_photo,
-              o.name as owner_name,
-              j.id as journal_id,
-              j.comment
-       FROM reservations r
-       JOIN dogs d ON r.dog_id = d.id
-       JOIN owners o ON d.owner_id = o.id
-       LEFT JOIN journals j ON r.id = j.reservation_id
-       WHERE r.store_id = $1 
-         AND r.reservation_date <= $2
-         AND r.status IN ('登園済', '退園済')
-         AND (j.id IS NULL OR j.comment IS NULL OR j.comment = '')
-       ORDER BY r.reservation_date DESC
-       LIMIT 10`,
-      [req.storeId, today]
-    );
-
-    // アラート（ワクチン期限切れ等）
-    // 最適化: UNION ALLをやめて1回のスキャンでアラートを取得
-    const alertsResult = await pool.query(
-      `SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
-              CASE
-                WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN 'mixed_vaccine_expired'
-                WHEN dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days' THEN 'rabies_vaccine_expiring'
-              END as alert_type,
-              CASE
-                WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN dh.mixed_vaccine_date
-                ELSE dh.rabies_vaccine_date
-              END as mixed_vaccine_date
-       FROM dogs d
-       JOIN owners o ON d.owner_id = o.id
-       JOIN dog_health dh ON d.id = dh.dog_id
-       WHERE o.store_id = $1
-         AND d.deleted_at IS NULL
-         AND (
-           dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days'
-           OR dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
-         )
-       ORDER BY mixed_vaccine_date ASC
-       LIMIT 20`,
-      [req.storeId]
-    );
-
-    // 今日の点検記録
-    const inspectionRecordResult = await pool.query(
-      `SELECT * FROM inspection_records
-       WHERE store_id = $1 AND inspection_date = $2`,
-      [req.storeId, today]
-    );
-
-    // お知らせ件数（公開中/下書き）
     const now = new Date().toISOString();
-    const announcementStatsResult = await pool.query(
-      `SELECT
-        COUNT(*) FILTER (
-          WHERE published_at IS NOT NULL
-            AND published_at <= $2
-            AND (expires_at IS NULL OR expires_at > $2)
-        ) as published_count,
-        COUNT(*) FILTER (
-          WHERE published_at IS NULL OR published_at > $2
-        ) as draft_count
-       FROM store_announcements
-       WHERE store_id = $1`,
-      [req.storeId, now]
-    );
+    // 未入力日誌の検索範囲を過去30日に制限（パフォーマンス改善）
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // 5つのクエリを並列実行（パフォーマンス改善）
+    const [
+      reservationsResult,
+      incompleteJournalsResult,
+      alertsResult,
+      inspectionRecordResult,
+      announcementStatsResult
+    ] = await Promise.all([
+      // 今日の予約（日誌記入済みかどうかも取得）
+      pool.query(
+        `SELECT r.*,
+                d.name as dog_name, d.photo_url as dog_photo,
+                o.name as owner_name,
+                pvi.morning_urination, pvi.morning_defecation,
+                pvi.afternoon_urination, pvi.afternoon_defecation,
+                pvi.breakfast_status, pvi.health_status, pvi.notes,
+                CASE WHEN j.id IS NOT NULL AND j.comment IS NOT NULL AND j.comment != '' THEN true ELSE false END as has_journal
+         FROM reservations r
+         JOIN dogs d ON r.dog_id = d.id
+         JOIN owners o ON d.owner_id = o.id
+         LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
+         LEFT JOIN journals j ON r.id = j.reservation_id
+         WHERE r.store_id = $1 AND r.reservation_date = $2
+         ORDER BY r.reservation_time`,
+        [req.storeId, today]
+      ),
+
+      // 未入力の日誌（過去30日に制限）
+      pool.query(
+        `SELECT r.id as reservation_id,
+                r.reservation_date,
+                r.reservation_date as journal_date,
+                r.reservation_time,
+                r.dog_id,
+                d.name as dog_name,
+                d.photo_url as dog_photo,
+                o.name as owner_name,
+                j.id as journal_id,
+                j.comment
+         FROM reservations r
+         JOIN dogs d ON r.dog_id = d.id
+         JOIN owners o ON d.owner_id = o.id
+         LEFT JOIN journals j ON r.id = j.reservation_id
+         WHERE r.store_id = $1
+           AND r.reservation_date BETWEEN $2 AND $3
+           AND r.status IN ('登園済', '降園済')
+           AND (j.id IS NULL OR j.comment IS NULL OR j.comment = '')
+         ORDER BY r.reservation_date DESC
+         LIMIT 10`,
+        [req.storeId, thirtyDaysAgo, today]
+      ),
+
+      // アラート（ワクチン期限切れ等）
+      pool.query(
+        `SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
+                CASE
+                  WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN 'mixed_vaccine_expired'
+                  WHEN dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days' THEN 'rabies_vaccine_expiring'
+                END as alert_type,
+                CASE
+                  WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN dh.mixed_vaccine_date
+                  ELSE dh.rabies_vaccine_date
+                END as mixed_vaccine_date
+         FROM dogs d
+         JOIN owners o ON d.owner_id = o.id
+         JOIN dog_health dh ON d.id = dh.dog_id
+         WHERE o.store_id = $1
+           AND d.deleted_at IS NULL
+           AND (
+             dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days'
+             OR dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
+           )
+         ORDER BY mixed_vaccine_date ASC
+         LIMIT 20`,
+        [req.storeId]
+      ),
+
+      // 今日の点検記録
+      pool.query(
+        `SELECT * FROM inspection_records
+         WHERE store_id = $1 AND inspection_date = $2`,
+        [req.storeId, today]
+      ),
+
+      // お知らせ件数（公開中/下書き）
+      pool.query(
+        `SELECT
+          COUNT(*) FILTER (
+            WHERE published_at IS NOT NULL
+              AND published_at <= $2
+              AND (expires_at IS NULL OR expires_at > $2)
+          ) as published_count,
+          COUNT(*) FILTER (
+            WHERE published_at IS NULL OR published_at > $2
+          ) as draft_count
+         FROM store_announcements
+         WHERE store_id = $1`,
+        [req.storeId, now]
+      )
+    ]);
 
     res.json({
       todayReservations: reservationsResult.rows,

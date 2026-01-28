@@ -7,6 +7,13 @@ export interface AuthRequest extends Request {
   storeId?: number;
   supabaseUserId?: string;
   isOwner?: boolean;
+  staffData?: {
+    id: number;
+    email: string;
+    name: string;
+    is_owner: boolean;
+    store_id: number;
+  };
 }
 
 export const authenticate = async (
@@ -68,6 +75,13 @@ export const authenticate = async (
     req.storeId = staff.store_id;
     req.supabaseUserId = user.id;
     req.isOwner = staff.is_owner || false;
+    req.staffData = {
+      id: staff.id,
+      email: staff.email,
+      name: staff.name,
+      is_owner: staff.is_owner || false,
+      store_id: staff.store_id
+    };
     next();
   } catch (error: any) {
     console.error('認証エラー:', error);

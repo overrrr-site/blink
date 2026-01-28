@@ -120,7 +120,7 @@ router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
          FROM reservations r2
          WHERE r2.dog_id = r.dog_id
            AND r2.reservation_date <= r.reservation_date
-           AND r2.status IN ('登園済', '退園済', '予定')
+           AND r2.status IN ('登園済', '降園済', '予定')
        ) stats ON true
        LEFT JOIN LATERAL (
          SELECT r3.reservation_date as next_visit_date
@@ -207,7 +207,7 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
         status = COALESCE($3, status),
         memo = COALESCE($4, memo),
         checked_in_at = CASE WHEN $3 = '登園済' THEN COALESCE(checked_in_at, CURRENT_TIMESTAMP) ELSE checked_in_at END,
-        checked_out_at = CASE WHEN $3 = '退園済' THEN COALESCE(checked_out_at, CURRENT_TIMESTAMP) ELSE checked_out_at END,
+        checked_out_at = CASE WHEN $3 = '降園済' THEN COALESCE(checked_out_at, CURRENT_TIMESTAMP) ELSE checked_out_at END,
         cancelled_at = CASE WHEN $3 = 'キャンセル' THEN COALESCE(cancelled_at, CURRENT_TIMESTAMP) ELSE cancelled_at END,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $5 AND store_id = $6

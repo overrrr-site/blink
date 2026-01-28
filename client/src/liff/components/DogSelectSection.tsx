@@ -1,3 +1,5 @@
+import { getAvatarUrl } from '../../utils/image'
+
 type Dog = {
   id: number
   name: string
@@ -39,8 +41,9 @@ export default function DogSelectSection({ dogs, selectedDogId, onChange }: DogS
               />
               {dog.photo_url ? (
                 <img
-                  src={dog.photo_url}
+                  src={getAvatarUrl(dog.photo_url)}
                   alt={dog.name}
+                  loading="lazy"
                   className="size-12 rounded-full object-cover border-2 border-primary/20"
                 />
               ) : (

@@ -16,6 +16,7 @@ import {
 } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import liffClient from '../api/client';
+import { getAvatarUrl } from '../../utils/image';
 
 interface Reservation {
   id: number;
@@ -315,8 +316,9 @@ export default function ReservationsCalendar(): JSX.Element {
                 <div className="flex items-center gap-3 mb-3">
                   {reservation.dog_photo ? (
                     <img
-                      src={reservation.dog_photo}
+                      src={getAvatarUrl(reservation.dog_photo)}
                       alt={reservation.dog_name}
+                      loading="lazy"
                       className="size-14 rounded-full object-cover border-2 border-primary/20"
                     />
                   ) : (
@@ -401,7 +403,7 @@ export default function ReservationsCalendar(): JSX.Element {
                     </div>
                   </div>
                 )}
-                {reservation.status !== 'キャンセル' && reservation.status !== '退園済' && (
+                {reservation.status !== 'キャンセル' && reservation.status !== '降園済' && (
                   <div className="flex flex-col gap-2 pt-3 border-t border-border">
                     {/* 登園前入力ボタン（今日または未来の予約の場合） */}
                     {(isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (

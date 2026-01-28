@@ -4,6 +4,7 @@ import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { getAvatarUrl } from '../../utils/image';
 
 interface OwnerData {
   id: number;
@@ -177,7 +178,7 @@ export default function MyPage() {
                 <div className="flex items-center gap-3">
                   <div className="size-14 rounded-full overflow-hidden border-2 border-primary shrink-0">
                     {dog.photo_url ? (
-                      <img src={dog.photo_url} alt={dog.name} className="w-full h-full object-cover" />
+                      <img src={getAvatarUrl(dog.photo_url)} alt={dog.name} loading="lazy" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-primary/10 flex items-center justify-center">
                         <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>

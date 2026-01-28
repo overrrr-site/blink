@@ -110,44 +110,25 @@ const InspectionRecord = () => {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-2 text-foreground rounded-full active:bg-muted transition-colors"
-            aria-label="ダッシュボードに戻る"
-          >
-            <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
-          </button>
-          <div>
-            <h1 className="text-lg font-bold font-heading">点検記録</h1>
-            <p className="text-xs text-muted-foreground">
-              {new Date(inspectionDate).toLocaleDateString('ja-JP', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'short',
-              })}
-            </p>
-          </div>
-        </div>
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
         <button
-          onClick={handleSubmit}
-          disabled={saving}
-          className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-bold min-h-[44px] disabled:opacity-50"
+          onClick={() => navigate('/dashboard')}
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-2 text-foreground rounded-full active:bg-muted transition-colors"
+          aria-label="ダッシュボードに戻る"
         >
-          {saving ? (
-            <>
-              <iconify-icon icon="solar:spinner-bold" width="18" height="18" class="animate-spin"></iconify-icon>
-              保存中...
-            </>
-          ) : (
-            <>
-              <iconify-icon icon="solar:check-circle-bold" width="18" height="18"></iconify-icon>
-              保存
-            </>
-          )}
+          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
         </button>
+        <div>
+          <h1 className="text-lg font-bold font-heading">点検記録</h1>
+          <p className="text-xs text-muted-foreground">
+            {new Date(inspectionDate).toLocaleDateString('ja-JP', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              weekday: 'short',
+            })}
+          </p>
+        </div>
       </header>
 
       <main className="px-5 pt-4 space-y-6">
@@ -379,6 +360,28 @@ const InspectionRecord = () => {
             </div>
           </section>
         )}
+
+        {/* 保存ボタン */}
+        <div className="pt-4 pb-8">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={saving}
+            className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+                保存中...
+              </>
+            ) : (
+              <>
+                <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+                点検記録を保存
+              </>
+            )}
+          </button>
+        </div>
       </main>
     </div>
   )

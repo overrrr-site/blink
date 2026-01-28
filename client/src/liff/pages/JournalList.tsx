@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { getAvatarUrl, getListThumbnailUrl } from '../../utils/image';
 
 interface Journal {
   id: number;
@@ -120,8 +121,9 @@ export default function JournalList() {
               <div className="flex items-center gap-3 mb-3">
                 {journal.dog_photo ? (
                   <img
-                    src={journal.dog_photo}
+                    src={getAvatarUrl(journal.dog_photo)}
                     alt={journal.dog_name}
+                    loading="lazy"
                     className="size-14 rounded-full object-cover border-2 border-primary/20"
                   />
                 ) : (
@@ -157,8 +159,9 @@ export default function JournalList() {
                   {journal.photos.slice(0, 3).map((photo, idx) => (
                     <div key={idx} className="relative">
                       <img
-                        src={photo}
+                        src={getListThumbnailUrl(photo)}
                         alt={`${journal.dog_name}の写真 ${idx + 1}`}
+                        loading="lazy"
                         className="size-20 rounded-lg object-cover"
                       />
                       {idx === 0 && journal.photos.length > 0 && (

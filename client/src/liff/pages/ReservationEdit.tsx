@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { format, isFuture, isToday, parseISO } from 'date-fns';
 import liffClient from '../api/client';
+import { getAvatarUrl } from '../../utils/image';
 
 interface Reservation {
   id: number;
@@ -36,7 +37,7 @@ const INITIAL_FORM: ReservationForm = {
 };
 
 function canShowPreVisitInput(reservation: Reservation): boolean {
-  if (reservation.status === 'キャンセル' || reservation.status === '退園済') {
+  if (reservation.status === 'キャンセル' || reservation.status === '降園済') {
     return false;
   }
   const reservationDate = parseISO(reservation.reservation_date);
@@ -137,8 +138,9 @@ export default function ReservationEdit(): JSX.Element {
             <div className="flex items-center gap-3">
               {selectedDog.photo_url ? (
                 <img
-                  src={selectedDog.photo_url}
+                  src={getAvatarUrl(selectedDog.photo_url)}
                   alt={selectedDog.name}
+                  loading="lazy"
                   className="size-16 rounded-full object-cover border-2 border-primary/20"
                 />
               ) : (

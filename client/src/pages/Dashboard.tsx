@@ -4,6 +4,7 @@ import api from '../api/client'
 import AlertsModal from '../components/AlertsModal'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
+import { getAvatarUrl } from '../utils/image'
 
 interface Reservation {
   id: number
@@ -13,7 +14,7 @@ interface Reservation {
   owner_name: string
   reservation_date: string
   reservation_time: string
-  status: '予定' | '登園済' | '退園済' | 'キャンセル'
+  status: '予定' | '登園済' | '降園済' | 'キャンセル'
   checked_in_at?: string
   has_journal?: boolean
   // 連絡帳（飼い主からの入力）
@@ -55,7 +56,7 @@ const FILTER_OPTIONS: FilterConfig[] = [
 type DisplayStatus = '来園待ち' | '在園中' | '帰宅済'
 
 function getDisplayStatus(reservation: Reservation): DisplayStatus {
-  if (reservation.status === '退園済') {
+  if (reservation.status === '降園済') {
     return '帰宅済'
   }
   if (reservation.status === '登園済') {
@@ -119,7 +120,7 @@ function Dashboard(): JSX.Element {
     setCheckingIn(reservationId) // 同じstateを再利用
     try {
       await api.put(`/reservations/${reservationId}`, {
-        status: '退園済',
+        status: '降園済',
       })
       await fetchDashboard()
     } catch (error) {
@@ -286,8 +287,9 @@ function Dashboard(): JSX.Element {
                           <div className="size-10 rounded-full overflow-hidden bg-muted shrink-0">
                             {reservation.dog_photo ? (
                               <img
-                                src={reservation.dog_photo}
+                                src={getAvatarUrl(reservation.dog_photo)}
                                 alt={reservation.dog_name}
+                                loading="lazy"
                                 className="w-full h-full object-cover"
                               />
                             ) : (

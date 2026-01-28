@@ -128,14 +128,42 @@ router.get('/me', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    // 飼い主情報と店舗情報を取得
-    const ownerResult = await pool.query(
-      `SELECT o.*, s.name as store_name, s.address as store_address 
-       FROM owners o 
-       JOIN stores s ON o.store_id = s.id
-       WHERE o.id = $1 AND o.store_id = $2`,
-      [decoded.ownerId, decoded.storeId]
-    );
+    // パフォーマンス改善: 飼い主情報と犬情報を並列取得
+    const [ownerResult, dogsResult, nextReservationResult] = await Promise.all([
+      // 飼い主情報と店舗情報を取得
+      pool.query(
+        `SELECT o.*, s.name as store_name, s.address as store_address
+         FROM owners o
+         JOIN stores s ON o.store_id = s.id
+         WHERE o.id = $1 AND o.store_id = $2`,
+        [decoded.ownerId, decoded.storeId]
+      ),
+      // 登録犬を取得
+      pool.query(
+        `SELECT d.*,
+                dh.mixed_vaccine_date, dh.rabies_vaccine_date,
+                (SELECT COUNT(*) FROM reservations r WHERE r.dog_id = d.id AND r.status != 'キャンセル') as reservation_count
+         FROM dogs d
+         LEFT JOIN dog_health dh ON d.id = dh.dog_id
+         WHERE d.owner_id = $1
+         ORDER BY d.created_at DESC`,
+        [decoded.ownerId]
+      ),
+      // 次回予約を取得（登園前入力の有無も含める）
+      pool.query(
+        `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
+                CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
+         FROM reservations r
+         JOIN dogs d ON r.dog_id = d.id
+         LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
+         WHERE d.owner_id = $1
+           AND r.reservation_date >= CURRENT_DATE
+           AND r.status != 'キャンセル'
+         ORDER BY r.reservation_date ASC, r.reservation_time ASC
+         LIMIT 1`,
+        [decoded.ownerId]
+      )
+    ]);
 
     if (ownerResult.rows.length === 0) {
       sendNotFound(res, '飼い主が見つかりません');
@@ -144,20 +172,7 @@ router.get('/me', async function(req, res) {
 
     const owner = ownerResult.rows[0];
 
-    // 登録犬を取得
-    const dogsResult = await pool.query(
-      `SELECT d.*, 
-              dh.mixed_vaccine_date, dh.rabies_vaccine_date,
-              (SELECT COUNT(*) FROM reservations r WHERE r.dog_id = d.id AND r.status != 'キャンセル') as reservation_count
-       FROM dogs d
-       LEFT JOIN dog_health dh ON d.id = dh.dog_id
-       WHERE d.owner_id = $1
-       ORDER BY d.created_at DESC`,
-      [owner.id]
-    );
-
     // 契約情報を取得（エラーが発生した場合は空配列を返す）
-    // N+1解消: 1回のクエリで契約と使用回数を同時に取得
     let contracts: any[] = [];
     try {
       const dogIds = dogsResult.rows.map((d: any) => d.id);
@@ -173,7 +188,7 @@ router.get('/me', async function(req, res) {
              SELECT COUNT(*) as used_count
              FROM reservations r
              WHERE r.dog_id = c.dog_id
-               AND r.status IN ('登園済', '退園済', '予定')
+               AND r.status IN ('登園済', '降園済', '予定')
                AND r.reservation_date >= c.created_at
                AND r.reservation_date <= COALESCE(c.valid_until, CURRENT_DATE + INTERVAL '1 year')
            ) usage ON true
@@ -185,21 +200,6 @@ router.get('/me', async function(req, res) {
     } catch (contractError) {
       console.warn('契約情報の取得をスキップしました:', contractError);
     }
-
-    // 次回予約を取得（登園前入力の有無も含める）
-    const nextReservationResult = await pool.query(
-      `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
-              CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
-       FROM reservations r
-       JOIN dogs d ON r.dog_id = d.id
-       LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
-       WHERE d.owner_id = $1
-         AND r.reservation_date >= CURRENT_DATE
-         AND r.status != 'キャンセル'
-       ORDER BY r.reservation_date ASC, r.reservation_time ASC
-       LIMIT 1`,
-      [owner.id]
-    );
 
     res.json({
       ...owner,
@@ -1017,7 +1017,7 @@ router.post('/check-in', async function(req, res) {
     }
 
     // 既に登園済みか確認
-    if (reservation.status === '登園済' || reservation.status === '退園済') {
+    if (reservation.status === '登園済' || reservation.status === '降園済') {
       return res.status(400).json({
         error: '既に登園済みです',
       });
@@ -1137,10 +1137,10 @@ router.post('/check-out', async function(req, res) {
       });
     }
 
-    // 退園時刻とステータスを更新
+    // 降園時刻とステータスを更新
     const result = await pool.query(
-      `UPDATE reservations 
-       SET status = '退園済',
+      `UPDATE reservations
+       SET status = '降園済',
            checked_out_at = CURRENT_TIMESTAMP,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
@@ -1149,7 +1149,7 @@ router.post('/check-out', async function(req, res) {
     );
 
     res.json({
-      message: '退園が完了しました',
+      message: '降園が完了しました',
       reservation: result.rows[0],
     });
   } catch (error: any) {

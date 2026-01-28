@@ -6,13 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- パフォーマンス改善: Supabase Storage と Iconify API への preconnect -->
+    <link rel="preconnect" href="https://fqepwzwkztjnpfeyxnke.supabase.co" />
+    <link rel="preconnect" href="https://api.iconify.design" />
+    <!-- LIFF SDK の preload -->
+    <link rel="preload" as="script" href="https://static.line-scdn.net/liff/edge/2/sdk.js" />
     <!-- 必要なウェイトのみ読み込み: 400(normal), 500(medium), 600(semibold), 700(bold) -->
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Iconifyを非同期で読み込み -->
+    <!-- Iconifyを非同期で読み込み、頻出アイコンをプリロード -->
     <script async src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <script>
+      // 頻出アイコンをプリロード
+      window.addEventListener('load', function() {
+        if (typeof IconifyIcon !== 'undefined') {
+          IconifyIcon.loadIcons([
+            'solar:spinner-bold', 'solar:paw-print-bold', 'solar:alt-arrow-right-linear',
+            'solar:check-circle-bold', 'solar:arrow-left-linear', 'solar:calendar-bold',
+            'solar:calendar-linear', 'solar:user-linear', 'solar:gallery-bold',
+            'solar:notebook-bold', 'solar:qr-code-bold', 'solar:home-smile-bold'
+          ]);
+        }
+      });
+    </script>
     <!-- LIFF SDKをdeferで読み込み -->
     <script defer charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <title>Blink - LINEミニアプリ</title>
