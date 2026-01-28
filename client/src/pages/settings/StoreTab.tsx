@@ -27,6 +27,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
+  const [qrExpanded, setQrExpanded] = useState(false)
 
   useEffect(() => {
     fetchStoreSettings()
@@ -336,57 +337,68 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
 
       {/* 登園用QRコード */}
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border">
+        <button
+          onClick={() => setQrExpanded(!qrExpanded)}
+          className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+        >
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
             <iconify-icon icon="solar:qr-code-bold" width="16" height="16" class="text-primary"></iconify-icon>
             登園用QRコード
           </h2>
-        </div>
-        <div className="p-4">
-          {qrLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <iconify-icon icon="solar:spinner-bold" width="24" height="24" class="text-primary animate-spin"></iconify-icon>
-            </div>
-          ) : qrCode ? (
-            <div className="space-y-4">
-              <div className="bg-muted/30 rounded-xl p-4 flex flex-col items-center">
-                <div id="qr-display" className="bg-white p-4 rounded-lg mb-3">
-                  <QRCodeSVG value={qrCode} size={200} />
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  このQRコードを印刷して店舗に設置してください
-                </p>
+          <iconify-icon
+            icon={qrExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
+            width="20"
+            height="20"
+            class="text-muted-foreground"
+          ></iconify-icon>
+        </button>
+        {qrExpanded && (
+          <div className="p-4 border-t border-border">
+            {qrLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <iconify-icon icon="solar:spinner-bold" width="24" height="24" class="text-primary animate-spin"></iconify-icon>
               </div>
-              <button
-                onClick={handlePrintQrCode}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
-              >
-                <iconify-icon icon="solar:printer-bold" width="16" height="16"></iconify-icon>
-                QRコードを印刷
-              </button>
-              <button
-                onClick={() => setShowQrModal(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
-              >
-                <iconify-icon icon="solar:eye-bold" width="16" height="16"></iconify-icon>
-                大きく表示
-              </button>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-sm text-muted-foreground mb-2">
-                QRコードの取得に失敗しました
-              </p>
-              <button
-                onClick={fetchQrCode}
-                disabled={qrLoading}
-                className="text-xs text-primary hover:underline disabled:opacity-50"
-              >
-                再試行
-              </button>
-            </div>
-          )}
-        </div>
+            ) : qrCode ? (
+              <div className="space-y-4">
+                <div className="bg-muted/30 rounded-xl p-4 flex flex-col items-center">
+                  <div id="qr-display" className="bg-white p-4 rounded-lg mb-3">
+                    <QRCodeSVG value={qrCode} size={200} />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    このQRコードを印刷して店舗に設置してください
+                  </p>
+                </div>
+                <button
+                  onClick={handlePrintQrCode}
+                  className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                >
+                  <iconify-icon icon="solar:printer-bold" width="16" height="16"></iconify-icon>
+                  QRコードを印刷
+                </button>
+                <button
+                  onClick={() => setShowQrModal(true)}
+                  className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
+                >
+                  <iconify-icon icon="solar:eye-bold" width="16" height="16"></iconify-icon>
+                  大きく表示
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-2">
+                  QRコードの取得に失敗しました
+                </p>
+                <button
+                  onClick={fetchQrCode}
+                  disabled={qrLoading}
+                  className="text-xs text-primary hover:underline disabled:opacity-50"
+                >
+                  再試行
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* スタッフ管理 */}
