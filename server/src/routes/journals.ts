@@ -50,6 +50,60 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 });
 
+// 特定の犬の日誌写真一覧を取得（軽量API - DogEdit用）
+router.get('/photos/:dog_id', async (req: AuthRequest, res) => {
+  try {
+    const { dog_id } = req.params;
+
+    // 犬のstore_idを確認
+    const dogCheck = await pool.query(
+      `SELECT o.store_id FROM dogs d
+       JOIN owners o ON d.owner_id = o.id
+       WHERE d.id = $1 AND o.store_id = $2`,
+      [dog_id, req.storeId]
+    );
+
+    if (dogCheck.rows.length === 0) {
+      sendForbidden(res);
+      return;
+    }
+
+    // 日誌のIDと日付、写真のみを取得（軽量）
+    const result = await pool.query(
+      `SELECT j.id, j.journal_date, j.photos
+       FROM journals j
+       JOIN dogs d ON j.dog_id = d.id
+       JOIN owners o ON d.owner_id = o.id
+       WHERE j.dog_id = $1 AND o.store_id = $2
+         AND j.photos IS NOT NULL
+       ORDER BY j.journal_date DESC
+       LIMIT 50`,
+      [dog_id, req.storeId]
+    );
+
+    // 写真URLのみを抽出してフラット化
+    const photos: { url: string; date: string }[] = [];
+    result.rows.forEach((journal: any) => {
+      if (journal.photos && Array.isArray(journal.photos)) {
+        journal.photos.forEach((photo: string) => {
+          // base64データはスキップ（URLのみ許可）
+          if (photo && typeof photo === 'string' && photo.startsWith('http')) {
+            photos.push({
+              url: photo,
+              date: journal.journal_date,
+            });
+          }
+        });
+      }
+    });
+
+    res.json(photos);
+  } catch (error) {
+    console.error('Error fetching journal photos:', error);
+    sendServerError(res, '日誌写真の取得に失敗しました', error);
+  }
+});
+
 // 日誌詳細取得
 router.get('/:id', async (req: AuthRequest, res) => {
   try {

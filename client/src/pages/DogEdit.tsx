@@ -79,23 +79,13 @@ const DogEdit = () => {
     }
   }
 
-  // 日誌から写真を取得
+  // 日誌から写真を取得（軽量API使用）
   const fetchJournalPhotos = async () => {
     setLoadingPhotos(true)
     try {
-      const response = await api.get(`/journals?dog_id=${id}`)
-      const photos: JournalPhoto[] = []
-      response.data.forEach((journal: any) => {
-        if (journal.photos && Array.isArray(journal.photos)) {
-          journal.photos.forEach((photo: string) => {
-            photos.push({
-              url: photo,
-              date: journal.journal_date,
-            })
-          })
-        }
-      })
-      setJournalPhotos(photos)
+      // 専用の軽量APIエンドポイントを使用
+      const response = await api.get(`/journals/photos/${id}`)
+      setJournalPhotos(response.data)
     } catch (error) {
       console.error('Error fetching journal photos:', error)
     } finally {

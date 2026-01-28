@@ -308,7 +308,7 @@ function Dashboard(): JSX.Element {
                                 ) : (
                                   <iconify-icon icon="solar:check-circle-bold" className="size-4"></iconify-icon>
                                 )}
-                                チェックイン
+                                登園
                               </button>
                             )}
                             {isPresent && (
