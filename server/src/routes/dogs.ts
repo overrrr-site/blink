@@ -205,7 +205,7 @@ router.post('/', async (req: AuthRequest, res) => {
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { name, breed, birth_date, gender, weight, color, photo_url, neutered, health } = req.body;
+    const { name, breed, birth_date, gender, weight, color, photo_url, neutered, health, personality } = req.body;
 
     // オーナーのstore_idを確認
     const dogCheck = await pool.query(
@@ -292,6 +292,56 @@ router.put('/:id', async (req: AuthRequest, res) => {
             health.vet_name || null,
             health.vet_phone || null,
             health.food_info || null
+          ]
+        );
+      }
+    }
+
+    // 性格情報の更新
+    if (personality) {
+      const personalityExists = await pool.query(
+        `SELECT id FROM dog_personality WHERE dog_id = $1`,
+        [id]
+      );
+
+      if (personalityExists.rows.length > 0) {
+        await pool.query(
+          `UPDATE dog_personality SET
+            personality_description = $1,
+            dog_compatibility = $2,
+            human_reaction = $3,
+            likes = $4,
+            dislikes = $5,
+            toilet_status = $6,
+            crate_training = $7,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE dog_id = $8`,
+          [
+            personality.personality_description || null,
+            personality.dog_compatibility || null,
+            personality.human_reaction || null,
+            personality.likes || null,
+            personality.dislikes || null,
+            personality.toilet_status || null,
+            personality.crate_training || null,
+            id
+          ]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO dog_personality (
+            dog_id, personality_description, dog_compatibility, human_reaction,
+            likes, dislikes, toilet_status, crate_training
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            id,
+            personality.personality_description || null,
+            personality.dog_compatibility || null,
+            personality.human_reaction || null,
+            personality.likes || null,
+            personality.dislikes || null,
+            personality.toilet_status || null,
+            personality.crate_training || null
           ]
         );
       }
