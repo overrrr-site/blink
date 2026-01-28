@@ -1,32 +1,20 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import pool from '../db/connection.js';
 
-// メール送信クライアント
-let transporter: nodemailer.Transporter | null = null;
+// Resendクライアント
+let resend: Resend | null = null;
 
 export function initializeEmailClient() {
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPassword = process.env.SMTP_PASSWORD;
-  const smtpFrom = process.env.SMTP_FROM || smtpUser;
+  const resendApiKey = process.env.RESEND_API_KEY;
 
-  if (!smtpHost || !smtpUser || !smtpPassword) {
-    console.warn('⚠️  メール送信の設定が不完全です');
+  if (!resendApiKey) {
+    console.warn('⚠️  RESEND_API_KEY が設定されていません');
     return null;
   }
 
-  transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpPort === 465, // true for 465, false for other ports
-    auth: {
-      user: smtpUser,
-      pass: smtpPassword,
-    },
-  });
-
-  return transporter;
+  resend = new Resend(resendApiKey);
+  console.log('✅ Resendメールクライアントが初期化されました');
+  return resend;
 }
 
 /**
@@ -39,29 +27,33 @@ export async function sendEmail(
   html?: string
 ): Promise<boolean> {
   try {
-    if (!transporter) {
+    if (!resend) {
       const client = initializeEmailClient();
       if (!client) {
         console.warn('メール送信クライアントが初期化されていません');
         return false;
       }
-      transporter = client;
+      resend = client;
     }
 
-    const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
-    if (!smtpFrom) {
-      console.error('SMTP_FROM または SMTP_USER が設定されていません');
-      return false;
-    }
+    // Resendの無料プランではonboarding@resend.devからのみ送信可能
+    // カスタムドメインを設定すれば任意のFromアドレスを使用可能
+    const fromAddress = process.env.RESEND_FROM || 'Blink <onboarding@resend.dev>';
 
-    await transporter.sendMail({
-      from: smtpFrom,
-      to,
+    const { error } = await resend.emails.send({
+      from: fromAddress,
+      to: [to],
       subject,
       text,
       html: html || text,
     });
 
+    if (error) {
+      console.error('Resend error:', error);
+      return false;
+    }
+
+    console.log(`✅ メール送信成功: ${to}`);
     return true;
   } catch (error: any) {
     console.error('Error sending email:', error);
