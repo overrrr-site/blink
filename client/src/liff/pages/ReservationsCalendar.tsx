@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import {
   addMonths,
@@ -142,12 +143,10 @@ export default function ReservationsCalendar(): JSX.Element {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -161,7 +160,7 @@ export default function ReservationsCalendar(): JSX.Element {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           aria-label="戻る"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">予約カレンダー</h1>
         <button
@@ -194,7 +193,7 @@ export default function ReservationsCalendar(): JSX.Element {
           aria-label="カレンダーをエクスポート"
           title="iCS形式でエクスポート"
         >
-          <iconify-icon icon="solar:download-bold" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:download-bold" width="24" height="24" />
         </button>
       </div>
 
@@ -205,7 +204,7 @@ export default function ReservationsCalendar(): JSX.Element {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-xl transition-colors active:scale-95"
           aria-label="前月"
         >
-          <iconify-icon icon="solar:alt-arrow-left-bold" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:alt-arrow-left-bold" width="24" height="24" />
         </button>
         <h2 className="text-lg font-bold font-heading">
           {format(currentMonth, 'yyyy年M月', { locale: ja })}
@@ -215,7 +214,7 @@ export default function ReservationsCalendar(): JSX.Element {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-xl transition-colors active:scale-95"
           aria-label="次月"
         >
-          <iconify-icon icon="solar:alt-arrow-right-bold" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-bold" width="24" height="24" />
         </button>
       </div>
 
@@ -302,7 +301,7 @@ export default function ReservationsCalendar(): JSX.Element {
       {/* 選択日の予約一覧 */}
       <div className="space-y-3">
         <h2 className="text-base font-bold font-heading flex items-center gap-2">
-          <iconify-icon icon="solar:calendar-bold" width="20" height="20" class="text-primary"></iconify-icon>
+          <Icon icon="solar:calendar-bold" width="20" height="20" className="text-primary" />
           {selectedDate ? format(selectedDate, 'M月d日 (E)', { locale: ja }) : '日付を選択してください'}
         </h2>
         
@@ -323,13 +322,13 @@ export default function ReservationsCalendar(): JSX.Element {
                     />
                   ) : (
                     <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-                      <iconify-icon icon="solar:paw-print-bold" width="28" height="28" class="text-primary"></iconify-icon>
+                      <Icon icon="solar:paw-print-bold" width="28" height="28" className="text-primary" />
                     </div>
                   )}
                   <div className="flex-1">
                     <h3 className="font-bold text-base">{reservation.dog_name}</h3>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <iconify-icon icon="solar:clock-circle-linear" width="16" height="16"></iconify-icon>
+                      <Icon icon="solar:clock-circle-linear" width="16" height="16" />
                       {reservation.reservation_time}
                     </p>
                   </div>
@@ -342,7 +341,7 @@ export default function ReservationsCalendar(): JSX.Element {
                   <div className="pt-3 border-t border-border">
                     <div className="bg-chart-3/5 rounded-xl p-3 space-y-2">
                       <h4 className="text-xs font-bold text-chart-3 flex items-center gap-1">
-                        <iconify-icon icon="solar:clipboard-text-bold" width="14" height="14"></iconify-icon>
+                        <Icon icon="solar:clipboard-text-bold" width="14" height="14" />
                         登園前入力
                       </h4>
                       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -415,7 +414,7 @@ export default function ReservationsCalendar(): JSX.Element {
                             : 'border border-chart-3/30 bg-chart-3/5 text-chart-3 active:bg-chart-3/10'
                         }`}
                       >
-                        <iconify-icon icon={reservation.has_pre_visit_input ? "solar:check-circle-bold" : "solar:clipboard-text-bold"} width="18" height="18"></iconify-icon>
+                        <Icon icon={reservation.has_pre_visit_input ? "solar:check-circle-bold" : "solar:clipboard-text-bold"} width="18" height="18" />
                         {reservation.has_pre_visit_input ? '登園前入力を編集' : '登園前情報を入力'}
                       </button>
                     )}
@@ -424,7 +423,7 @@ export default function ReservationsCalendar(): JSX.Element {
                         onClick={() => navigate(`/home/reservations/${reservation.id}/edit`)}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold active:bg-primary/10 transition-colors"
                       >
-                        <iconify-icon icon="solar:pen-bold" width="18" height="18"></iconify-icon>
+                        <Icon icon="solar:pen-bold" width="18" height="18" />
                         変更
                       </button>
                       {/* キャンセルボタンは予約前日まで（予約日より前の日のみ）表示 */}
@@ -433,7 +432,7 @@ export default function ReservationsCalendar(): JSX.Element {
                           onClick={function() { handleCancelReservation(reservation.id); }}
                           className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 transition-colors"
                         >
-                          <iconify-icon icon="solar:trash-bin-trash-bold" width="18" height="18"></iconify-icon>
+                          <Icon icon="solar:trash-bin-trash-bold" width="18" height="18" />
                           キャンセル
                         </button>
                       )}
@@ -445,7 +444,7 @@ export default function ReservationsCalendar(): JSX.Element {
           </div>
         ) : selectedDate ? (
           <div className="bg-muted/30 rounded-2xl p-8 border border-border text-center">
-            <iconify-icon icon="solar:calendar-minimalistic-linear" width="48" height="48" class="text-muted-foreground mx-auto mb-3"></iconify-icon>
+            <Icon icon="solar:calendar-minimalistic-linear" width="48" height="48" className="text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground mb-3">この日の予約はありません</p>
             <button
               onClick={() => navigate('/home/reservations/new')}
@@ -465,7 +464,7 @@ export default function ReservationsCalendar(): JSX.Element {
                    hover:shadow-xl hover:bg-primary/90"
         aria-label="新規予約を作成"
       >
-        <iconify-icon icon="solar:add-circle-bold" width="32" height="32"></iconify-icon>
+        <Icon icon="solar:add-circle-bold" width="32" height="32" />
       </button>
     </div>
   );

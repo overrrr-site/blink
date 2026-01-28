@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import api from '../../api/client'
@@ -105,7 +106,7 @@ function OtherTab() {
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:export-bold" width="16" height="16" class="text-chart-2"></iconify-icon>
+            <Icon icon="solar:export-bold" width="16" height="16" className="text-chart-2" />
             データエクスポート
           </h2>
         </div>
@@ -116,13 +117,13 @@ function OtherTab() {
             className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
-              <iconify-icon icon="solar:users-group-rounded-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+              <Icon icon="solar:users-group-rounded-bold" width="20" height="20" className="text-muted-foreground" />
               <span className="text-sm font-medium">飼い主データ</span>
             </div>
             {exporting === 'owners' ? (
               <span className="text-xs text-muted-foreground">エクスポート中...</span>
             ) : (
-              <iconify-icon icon="solar:download-bold" width="20" height="20" class="text-primary"></iconify-icon>
+              <Icon icon="solar:download-bold" width="20" height="20" className="text-primary" />
             )}
           </button>
           <button
@@ -131,13 +132,13 @@ function OtherTab() {
             className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
-              <iconify-icon icon="mdi:dog" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+              <Icon icon="mdi:dog" width="20" height="20" className="text-muted-foreground" />
               <span className="text-sm font-medium">犬データ</span>
             </div>
             {exporting === 'dogs' ? (
               <span className="text-xs text-muted-foreground">エクスポート中...</span>
             ) : (
-              <iconify-icon icon="solar:download-bold" width="20" height="20" class="text-primary"></iconify-icon>
+              <Icon icon="solar:download-bold" width="20" height="20" className="text-primary" />
             )}
           </button>
           <button
@@ -146,13 +147,13 @@ function OtherTab() {
             className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
-              <iconify-icon icon="solar:notebook-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+              <Icon icon="solar:notebook-bold" width="20" height="20" className="text-muted-foreground" />
               <span className="text-sm font-medium">日誌データ</span>
             </div>
             {exporting === 'journals' ? (
               <span className="text-xs text-muted-foreground">エクスポート中...</span>
             ) : (
-              <iconify-icon icon="solar:download-bold" width="20" height="20" class="text-primary"></iconify-icon>
+              <Icon icon="solar:download-bold" width="20" height="20" className="text-primary" />
             )}
           </button>
           <p className="text-[10px] text-muted-foreground text-center pt-2">
@@ -166,7 +167,7 @@ function OtherTab() {
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
             <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-              <iconify-icon icon="solar:card-bold" width="16" height="16" class="text-primary"></iconify-icon>
+              <Icon icon="solar:card-bold" width="16" height="16" className="text-primary" />
               プラン・お支払い
             </h2>
           </div>
@@ -184,7 +185,7 @@ function OtherTab() {
               className="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors"
             >
               <span className="text-sm font-medium">プラン・お支払い管理</span>
-              <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+              <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
             </button>
           </div>
         </section>
@@ -197,30 +198,30 @@ function OtherTab() {
           className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:question-circle-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:question-circle-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">ヘルプ・サポート</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button
           onClick={() => navigate('/terms')}
           className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:document-text-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:document-text-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">利用規約</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button
           onClick={() => navigate('/privacy')}
           className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:shield-check-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:shield-check-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">プライバシーポリシー</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
       </section>
 
@@ -231,10 +232,10 @@ function OtherTab() {
         aria-label="ログアウト"
       >
         <div className="flex items-center gap-3">
-          <iconify-icon icon="solar:logout-2-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:logout-2-bold" width="20" height="20" className="text-muted-foreground" />
           <span className="text-sm font-medium">ログアウト</span>
         </div>
-        <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+        <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
       </button>
 
       {/* バージョン情報 */}

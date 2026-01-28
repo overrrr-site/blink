@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api/client'
 
@@ -156,7 +157,7 @@ const DogCreate = () => {
             onClick={() => navigate(`/owners/${ownerId}`)}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           >
-            <iconify-icon icon="solar:close-circle-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:close-circle-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading">新規犬登録</h1>
         </div>
@@ -166,7 +167,7 @@ const DogCreate = () => {
         {/* プロフィール写真 */}
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-            <iconify-icon icon="solar:camera-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:camera-bold" width="16" height="16" className="text-primary" />
             プロフィール写真
           </h3>
 
@@ -185,12 +186,12 @@ const DogCreate = () => {
                     onClick={() => setForm(prev => ({ ...prev, photo_url: '' }))}
                     className="absolute -top-2 -right-2 size-8 rounded-full bg-destructive text-white flex items-center justify-center shadow-lg"
                   >
-                    <iconify-icon icon="solar:close-circle-bold" width="20" height="20"></iconify-icon>
+                    <Icon icon="solar:close-circle-bold" width="20" height="20" />
                   </button>
                 </div>
               ) : (
                 <div className="size-32 rounded-full bg-muted flex items-center justify-center border-4 border-dashed border-border">
-                  <iconify-icon icon="solar:paw-print-bold" width="48" height="48" class="text-muted-foreground"></iconify-icon>
+                  <Icon icon="solar:paw-print-bold" width="48" height="48" className="text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -212,12 +213,12 @@ const DogCreate = () => {
             >
               {uploading === 'photo' ? (
                 <>
-                  <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+                  <Icon icon="solar:spinner-bold" width="20" height="20" className="animate-spin" />
                   アップロード中...
                 </>
               ) : (
                 <>
-                  <iconify-icon icon="solar:camera-add-bold" width="20" height="20"></iconify-icon>
+                  <Icon icon="solar:camera-add-bold" width="20" height="20" />
                   写真をアップロード
                 </>
               )}
@@ -228,7 +229,7 @@ const DogCreate = () => {
         {/* 基本情報 */}
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-            <iconify-icon icon="solar:paw-print-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:paw-print-bold" width="16" height="16" className="text-primary" />
             基本情報
           </h3>
 
@@ -335,7 +336,7 @@ const DogCreate = () => {
         {/* 健康情報 */}
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-            <iconify-icon icon="solar:health-bold" width="16" height="16" class="text-chart-2"></iconify-icon>
+            <Icon icon="solar:health-bold" width="16" height="16" className="text-chart-2" />
             健康情報
           </h3>
 
@@ -373,7 +374,7 @@ const DogCreate = () => {
                         rel="noopener noreferrer"
                         className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
                       >
-                        <iconify-icon icon="solar:file-check-bold" width="20" height="20"></iconify-icon>
+                        <Icon icon="solar:file-check-bold" width="20" height="20" />
                         <span className="truncate">証明書をプレビュー</span>
                       </a>
                       <button
@@ -381,7 +382,7 @@ const DogCreate = () => {
                         onClick={() => setHealth(prev => ({ ...prev, mixed_vaccine_cert_url: '' }))}
                         className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                       >
-                        <iconify-icon icon="solar:trash-bin-trash-bold" width="20" height="20"></iconify-icon>
+                        <Icon icon="solar:trash-bin-trash-bold" width="20" height="20" />
                       </button>
                     </div>
                   ) : (
@@ -393,12 +394,12 @@ const DogCreate = () => {
                     >
                       {uploading === 'mixed' ? (
                         <>
-                          <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+                          <Icon icon="solar:spinner-bold" width="20" height="20" className="animate-spin" />
                           アップロード中...
                         </>
                       ) : (
                         <>
-                          <iconify-icon icon="solar:upload-bold" width="20" height="20"></iconify-icon>
+                          <Icon icon="solar:upload-bold" width="20" height="20" />
                           証明書をアップロード
                         </>
                       )}
@@ -441,7 +442,7 @@ const DogCreate = () => {
                         rel="noopener noreferrer"
                         className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
                       >
-                        <iconify-icon icon="solar:file-check-bold" width="20" height="20"></iconify-icon>
+                        <Icon icon="solar:file-check-bold" width="20" height="20" />
                         <span className="truncate">証明書をプレビュー</span>
                       </a>
                       <button
@@ -449,7 +450,7 @@ const DogCreate = () => {
                         onClick={() => setHealth(prev => ({ ...prev, rabies_vaccine_cert_url: '' }))}
                         className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                       >
-                        <iconify-icon icon="solar:trash-bin-trash-bold" width="20" height="20"></iconify-icon>
+                        <Icon icon="solar:trash-bin-trash-bold" width="20" height="20" />
                       </button>
                     </div>
                   ) : (
@@ -461,12 +462,12 @@ const DogCreate = () => {
                     >
                       {uploading === 'rabies' ? (
                         <>
-                          <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+                          <Icon icon="solar:spinner-bold" width="20" height="20" className="animate-spin" />
                           アップロード中...
                         </>
                       ) : (
                         <>
-                          <iconify-icon icon="solar:upload-bold" width="20" height="20"></iconify-icon>
+                          <Icon icon="solar:upload-bold" width="20" height="20" />
                           証明書をアップロード
                         </>
                       )}
@@ -524,7 +525,7 @@ const DogCreate = () => {
               '登録中...'
             ) : (
               <>
-                <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+                <Icon icon="solar:check-circle-bold" width="20" height="20" />
                 登録する
               </>
             )}

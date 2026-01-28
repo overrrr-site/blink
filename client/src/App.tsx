@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
+import { Icon } from '@/components/Icon'
 import { useAuthStore } from './store/authStore'
 import { ToastProvider } from './components/Toast'
 import Layout from './components/Layout'
@@ -39,7 +40,7 @@ function PageLoader() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="animate-spin text-primary">
-        <iconify-icon icon="solar:spinner-line-duotone" width="48" height="48"></iconify-icon>
+        <Icon icon="solar:spinner-line-duotone" width="48" height="48" />
       </div>
     </div>
   )

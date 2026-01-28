@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from '@rc-component/qrcode'
 import api from '../../api/client'
@@ -267,7 +268,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:shop-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:shop-bold" width="16" height="16" className="text-primary" />
             店舗情報
           </h2>
         </div>
@@ -276,38 +277,36 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
           className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:buildings-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:buildings-bold" width="20" height="20" className="text-muted-foreground" />
             <div className="text-left">
               <span className="text-sm font-medium block">基本情報</span>
               <span className="text-[10px] text-muted-foreground">店舗名、住所、電話番号</span>
             </div>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button
           onClick={() => setShowBusinessHoursModal(true)}
           className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:calendar-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:calendar-bold" width="20" height="20" className="text-muted-foreground" />
             <div className="text-left">
               <span className="text-sm font-medium block">営業日・定休日</span>
               <span className="text-[10px] text-muted-foreground">営業カレンダーの設定</span>
             </div>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <div className="w-full flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:users-group-rounded-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:users-group-rounded-bold" width="20" height="20" className="text-muted-foreground" />
             <div className="text-left flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium block">受入可能頭数</span>
                 <div className="relative group">
-                  <iconify-icon
-                    icon="solar:question-circle-bold"
-                    width="14" height="14" class="text-muted-foreground cursor-help"
-                  ></iconify-icon>
+                  <Icon icon="solar:question-circle-bold"
+                    width="14" height="14" className="text-muted-foreground cursor-help" />
                   <div className="absolute left-0 top-5 w-56 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
                     1日あたりの予約受入上限数です。この数を超える予約は登録できません。
                   </div>
@@ -342,21 +341,19 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
           className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
         >
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:qr-code-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:qr-code-bold" width="16" height="16" className="text-primary" />
             登園用QRコード
           </h2>
-          <iconify-icon
-            icon={qrExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
+          <Icon icon={qrExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
             width="20"
             height="20"
-            class="text-muted-foreground"
-          ></iconify-icon>
+            className="text-muted-foreground" />
         </button>
         {qrExpanded && (
           <div className="p-4 border-t border-border">
             {qrLoading ? (
               <div className="flex items-center justify-center py-8">
-                <iconify-icon icon="solar:spinner-bold" width="24" height="24" class="text-primary animate-spin"></iconify-icon>
+                <Icon icon="solar:spinner-bold" width="24" height="24" className="text-primary animate-spin" />
               </div>
             ) : qrCode ? (
               <div className="space-y-4">
@@ -372,14 +369,14 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                   onClick={handlePrintQrCode}
                   className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
                 >
-                  <iconify-icon icon="solar:printer-bold" width="16" height="16"></iconify-icon>
+                  <Icon icon="solar:printer-bold" width="16" height="16" />
                   QRコードを印刷
                 </button>
                 <button
                   onClick={() => setShowQrModal(true)}
                   className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
                 >
-                  <iconify-icon icon="solar:eye-bold" width="16" height="16"></iconify-icon>
+                  <Icon icon="solar:eye-bold" width="16" height="16" />
                   大きく表示
                 </button>
               </div>
@@ -405,14 +402,14 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:user-id-bold" width="16" height="16" class="text-chart-3"></iconify-icon>
+            <Icon icon="solar:user-id-bold" width="16" height="16" className="text-chart-3" />
             スタッフ管理
           </h2>
           <button
             onClick={() => setShowStaffInviteModal(true)}
             className="text-xs font-bold text-primary flex items-center gap-1"
           >
-            <iconify-icon icon="solar:add-circle-bold" width="14" height="14"></iconify-icon>
+            <Icon icon="solar:add-circle-bold" width="14" height="14" />
             追加
           </button>
         </div>
@@ -422,7 +419,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
           </div>
         ) : staffList.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <iconify-icon icon="solar:user-id-bold" width="48" height="48" class="mx-auto mb-2 opacity-50"></iconify-icon>
+            <Icon icon="solar:user-id-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">スタッフが登録されていません</p>
           </div>
         ) : (
@@ -454,14 +451,14 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                   className="p-2 rounded-full hover:bg-muted transition-colors"
                   aria-label={`${staff.name}の詳細`}
                 >
-                  <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+                  <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
                 </button>
                 <button
                   onClick={(e) => handleDeleteStaff(staff.id, e)}
                   className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
                   aria-label={`${staff.name}を削除`}
                 >
-                  <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16"></iconify-icon>
+                  <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
                 </button>
               </div>
             ))}
@@ -473,14 +470,14 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:checklist-bold" width="16" height="16" class="text-chart-2"></iconify-icon>
+            <Icon icon="solar:checklist-bold" width="16" height="16" className="text-chart-2" />
             トレーニング項目
           </h2>
           <button
             onClick={() => navigate('/settings/training/new')}
             className="text-xs font-bold text-primary flex items-center gap-1"
           >
-            <iconify-icon icon="solar:add-circle-bold" width="14" height="14"></iconify-icon>
+            <Icon icon="solar:add-circle-bold" width="14" height="14" />
             追加
           </button>
         </div>
@@ -490,7 +487,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
           </div>
         ) : Object.keys(trainingMasters).length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <iconify-icon icon="solar:checklist-bold" width="48" height="48" class="mx-auto mb-2 opacity-50"></iconify-icon>
+            <Icon icon="solar:checklist-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">トレーニング項目が登録されていません</p>
           </div>
         ) : (
@@ -515,7 +512,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                           className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                           aria-label={`${item.item_label}を上に移動`}
                         >
-                          <iconify-icon icon="solar:alt-arrow-up-linear" width="14" height="14"></iconify-icon>
+                          <Icon icon="solar:alt-arrow-up-linear" width="14" height="14" />
                         </button>
                         <button
                           onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
@@ -523,21 +520,21 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                           className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                           aria-label={`${item.item_label}を下に移動`}
                         >
-                          <iconify-icon icon="solar:alt-arrow-down-linear" width="14" height="14"></iconify-icon>
+                          <Icon icon="solar:alt-arrow-down-linear" width="14" height="14" />
                         </button>
                         <button
                           onClick={() => navigate(`/settings/training/${item.id}`)}
                           className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors"
                           aria-label={`${item.item_label}を編集`}
                         >
-                          <iconify-icon icon="solar:pen-bold" width="14" height="14"></iconify-icon>
+                          <Icon icon="solar:pen-bold" width="14" height="14" />
                         </button>
                         <button
                           onClick={(e) => handleDeleteTrainingItem(item.id, e)}
                           className="p-1.5 text-destructive rounded hover:bg-destructive/10 transition-colors"
                           aria-label={`${item.item_label}を削除`}
                         >
-                          <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14"></iconify-icon>
+                          <Icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14" />
                         </button>
                       </div>
                     </div>
@@ -560,7 +557,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
+                <Icon icon="solar:close-bold" width="24" height="24" />
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -626,7 +623,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
+                <Icon icon="solar:close-bold" width="24" height="24" />
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -719,12 +716,12 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
+                <Icon icon="solar:close-bold" width="24" height="24" />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div className="bg-accent/30 rounded-xl p-3 flex items-start gap-2">
-                <iconify-icon icon="solar:info-circle-bold" width="16" height="16" class="text-accent-foreground mt-0.5"></iconify-icon>
+                <Icon icon="solar:info-circle-bold" width="16" height="16" className="text-accent-foreground mt-0.5" />
                 <p className="text-xs text-muted-foreground">
                   入力したメールアドレス宛に招待メールが送信されます。招待されたスタッフはメールのリンクからパスワードを設定してログインできます。
                 </p>
@@ -815,7 +812,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
+                <Icon icon="solar:close-bold" width="24" height="24" />
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -829,7 +826,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                 onClick={handlePrintQrCode}
                 className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
               >
-                <iconify-icon icon="solar:printer-bold" width="16" height="16"></iconify-icon>
+                <Icon icon="solar:printer-bold" width="16" height="16" />
                 印刷
               </button>
             </div>

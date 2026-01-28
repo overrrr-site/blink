@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import AlertsModal from '../components/AlertsModal'
@@ -131,45 +132,35 @@ function Dashboard(): JSX.Element {
     }
   }, [])
 
-  const filteredReservations = useMemo(function(): Reservation[] {
-    if (!data?.todayReservations) return []
-    return data.todayReservations.filter(function(r) {
-      if (r.status === 'キャンセル') return false
-      if (statusFilter === 'all') return true
-      return getDisplayStatus(r) === statusFilter
-    })
-  }, [data?.todayReservations, statusFilter])
-
-  const statusCounts = useMemo(function(): Record<DisplayStatus, number> {
+  // 4つの計算を1回のループで統合処理（パフォーマンス最適化）
+  const { statusCounts, currentCount, filteredReservations, groupedReservations } = useMemo(function() {
     const reservations = data?.todayReservations || []
-    const activeReservations = reservations.filter(function(r) {
-      return r.status !== 'キャンセル'
-    })
-    return {
-      '来園待ち': activeReservations.filter(function(r) { return getDisplayStatus(r) === '来園待ち' }).length,
-      '在園中': activeReservations.filter(function(r) { return getDisplayStatus(r) === '在園中' }).length,
-      '帰宅済': activeReservations.filter(function(r) { return getDisplayStatus(r) === '帰宅済' }).length,
-    }
-  }, [data?.todayReservations])
-
-  const currentCount = useMemo(function(): number {
-    if (!data?.todayReservations) return 0
-    return data.todayReservations.filter(function(r) {
-      return r.status !== 'キャンセル'
-    }).length
-  }, [data?.todayReservations])
-
-  const groupedReservations = useMemo(function(): [string, Reservation[]][] {
+    const counts: Record<DisplayStatus, number> = { '来園待ち': 0, '在園中': 0, '帰宅済': 0 }
     const groups: Record<string, Reservation[]> = {}
-    filteredReservations.forEach(function(r) {
-      const time = r.reservation_time.slice(0, 5)
-      if (!groups[time]) groups[time] = []
-      groups[time].push(r)
-    })
-    return Object.entries(groups).sort(function([a], [b]) {
-      return a.localeCompare(b)
-    })
-  }, [filteredReservations])
+    const filtered: Reservation[] = []
+
+    for (const r of reservations) {
+      if (r.status === 'キャンセル') continue
+      const displayStatus = getDisplayStatus(r)
+      counts[displayStatus]++
+
+      if (statusFilter === 'all' || displayStatus === statusFilter) {
+        filtered.push(r)
+        const time = r.reservation_time.slice(0, 5)
+        if (!groups[time]) groups[time] = []
+        groups[time].push(r)
+      }
+    }
+
+    return {
+      statusCounts: counts,
+      currentCount: counts['来園待ち'] + counts['在園中'] + counts['帰宅済'],
+      filteredReservations: filtered,
+      groupedReservations: Object.entries(groups).sort(function([a], [b]) {
+        return a.localeCompare(b)
+      }) as [string, Reservation[]][]
+    }
+  }, [data?.todayReservations, statusFilter])
 
   const alertSummary = useMemo(function(): string {
     if (!data?.alerts || data.alerts.length === 0) return ''
@@ -219,7 +210,7 @@ function Dashboard(): JSX.Element {
                 aria-label={`${filter.label}の予約を表示`}
                 aria-pressed={statusFilter === filter.id}
               >
-                <iconify-icon icon={filter.icon} width="16" height="16"></iconify-icon>
+                <Icon icon={filter.icon} width="16" height="16" />
                 <span className="whitespace-nowrap">{filter.label}</span>
                 {count > 0 && <span className="text-[10px] opacity-70 hidden sm:inline">({count})</span>}
               </button>
@@ -248,7 +239,7 @@ function Dashboard(): JSX.Element {
                 {/* 時間ヘッダー - より大きく目立つように */}
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex items-center gap-2 min-w-[60px]">
-                    <iconify-icon icon="solar:clock-circle-bold" className="size-5 text-primary"></iconify-icon>
+                    <Icon icon="solar:clock-circle-bold" className="size-5 text-primary" />
                     <span className="text-base font-bold text-foreground">
                       {time}
                     </span>
@@ -294,7 +285,7 @@ function Dashboard(): JSX.Element {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <iconify-icon icon="solar:paw-print-bold" className="size-5 text-muted-foreground"></iconify-icon>
+                                <Icon icon="solar:paw-print-bold" className="size-5 text-muted-foreground" />
                               </div>
                             )}
                           </div>
@@ -305,7 +296,7 @@ function Dashboard(): JSX.Element {
                               <h3 className="font-bold text-sm">{reservation.dog_name}</h3>
                               {/* 連絡帳バッジ（アイコンのみ） */}
                               {hasPreVisitInput(reservation) && (
-                                <iconify-icon icon="solar:clipboard-check-bold" className="size-4 text-chart-3"></iconify-icon>
+                                <Icon icon="solar:clipboard-check-bold" className="size-4 text-chart-3" />
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -322,9 +313,9 @@ function Dashboard(): JSX.Element {
                                 className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
                               >
                                 {checkingIn === reservation.id ? (
-                                  <iconify-icon icon="solar:spinner-bold" className="size-4 animate-spin"></iconify-icon>
+                                  <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
                                 ) : (
-                                  <iconify-icon icon="solar:check-circle-bold" className="size-4"></iconify-icon>
+                                  <Icon icon="solar:check-circle-bold" className="size-4" />
                                 )}
                                 登園
                               </button>
@@ -335,7 +326,7 @@ function Dashboard(): JSX.Element {
                                 className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
                                 aria-label="日誌を作成"
                               >
-                                <iconify-icon icon="solar:pen-new-square-bold" className="size-4"></iconify-icon>
+                                <Icon icon="solar:pen-new-square-bold" className="size-4" />
                                 日誌
                               </button>
                             )}
@@ -347,26 +338,24 @@ function Dashboard(): JSX.Element {
                                 aria-label="降園"
                               >
                                 {checkingIn === reservation.id ? (
-                                  <iconify-icon icon="solar:spinner-bold" className="size-4 animate-spin"></iconify-icon>
+                                  <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
                                 ) : (
-                                  <iconify-icon icon="solar:logout-3-bold" className="size-4"></iconify-icon>
+                                  <Icon icon="solar:logout-3-bold" className="size-4" />
                                 )}
                                 降園
                               </button>
                             )}
                             {displayStatus === '帰宅済' && (
                               <div className="flex items-center gap-1 text-chart-3 px-2 py-1">
-                                <iconify-icon icon="solar:check-circle-bold" className="size-5"></iconify-icon>
+                                <Icon icon="solar:check-circle-bold" className="size-5" />
                                 <span className="text-xs font-bold">帰宅済</span>
                               </div>
                             )}
                           </div>
 
                           {/* 展開アイコン */}
-                          <iconify-icon
-                            icon={isExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
-                            className="size-5 text-muted-foreground shrink-0"
-                          ></iconify-icon>
+                          <Icon icon={isExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
+                            className="size-5 text-muted-foreground shrink-0" />
                         </div>
 
                         {/* 展開時の詳細 */}
@@ -376,7 +365,7 @@ function Dashboard(): JSX.Element {
                             {hasPreVisitInput(reservation) && (
                               <div className="bg-chart-3/5 px-4 py-3">
                                 <p className="text-xs font-bold text-chart-3 mb-1">
-                                  <iconify-icon icon="solar:clipboard-text-bold" className="size-4 mr-1"></iconify-icon>
+                                  <Icon icon="solar:clipboard-text-bold" className="size-4 mr-1" />
                                   飼い主さんからの連絡
                                 </p>
                                 {reservation.health_status && (
@@ -401,13 +390,13 @@ function Dashboard(): JSX.Element {
                                 'bg-muted text-muted-foreground border border-border'
                               }`}>
                                 {displayStatus === '来園待ち' && (
-                                  <iconify-icon icon="solar:clock-circle-bold" className="size-3 mr-1"></iconify-icon>
+                                  <Icon icon="solar:clock-circle-bold" className="size-3 mr-1" />
                                 )}
                                 {displayStatus === '在園中' && (
-                                  <iconify-icon icon="solar:home-smile-bold" className="size-3 mr-1"></iconify-icon>
+                                  <Icon icon="solar:home-smile-bold" className="size-3 mr-1" />
                                 )}
                                 {displayStatus === '帰宅済' && (
-                                  <iconify-icon icon="solar:check-circle-bold" className="size-3 mr-1"></iconify-icon>
+                                  <Icon icon="solar:check-circle-bold" className="size-3 mr-1" />
                                 )}
                                 {getStatusLabel(displayStatus)}
                               </span>
@@ -424,7 +413,7 @@ function Dashboard(): JSX.Element {
                                 onClick={() => navigate(`/reservations/${reservation.id}`)}
                                 className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
                               >
-                                <iconify-icon icon="solar:calendar-bold" className="size-4"></iconify-icon>
+                                <Icon icon="solar:calendar-bold" className="size-4" />
                                 予約詳細
                               </button>
                               <div className="w-px bg-border" />
@@ -432,7 +421,7 @@ function Dashboard(): JSX.Element {
                                 onClick={() => navigate(`/dogs/${reservation.dog_id}`)}
                                 className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
                               >
-                                <iconify-icon icon="solar:document-text-bold" className="size-4"></iconify-icon>
+                                <Icon icon="solar:document-text-bold" className="size-4" />
                                 カルテ
                               </button>
                             </div>
@@ -465,10 +454,8 @@ function Dashboard(): JSX.Element {
                 ? 'bg-chart-2/20'
                 : 'bg-chart-5/20'
             }`}>
-              <iconify-icon
-                icon={data?.todayInspectionRecord ? 'solar:check-circle-bold' : 'solar:clipboard-check-bold'}
-                className={`size-5 ${data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}`}
-              ></iconify-icon>
+              <Icon icon={data?.todayInspectionRecord ? 'solar:check-circle-bold' : 'solar:clipboard-check-bold'}
+                className={`size-5 ${data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}`} />
             </div>
             <div className="flex-1 text-left">
               <p className={`text-sm font-bold ${data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}`}>
@@ -478,7 +465,7 @@ function Dashboard(): JSX.Element {
                 {data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
               </p>
             </div>
-            <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+            <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
           </button>
 
           {/* 未入力の日誌 */}
@@ -488,7 +475,7 @@ function Dashboard(): JSX.Element {
               className="w-full bg-destructive/10 border border-destructive/20 rounded-xl p-3 flex items-center gap-3 hover:bg-destructive/15 transition-colors"
             >
               <div className="size-10 rounded-full bg-destructive/20 flex items-center justify-center shrink-0">
-                <iconify-icon icon="solar:document-text-bold" className="size-5 text-destructive"></iconify-icon>
+                <Icon icon="solar:document-text-bold" className="size-5 text-destructive" />
               </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-bold text-destructive">未入力の日誌</p>
@@ -500,7 +487,7 @@ function Dashboard(): JSX.Element {
               <div className="flex items-center justify-center bg-destructive text-white text-xs font-bold size-7 rounded-full shrink-0">
                 {data.incompleteJournals.length}
               </div>
-              <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+              <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
             </button>
           )}
 
@@ -510,7 +497,7 @@ function Dashboard(): JSX.Element {
             className="w-full bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-center gap-3 hover:bg-primary/15 transition-colors"
           >
             <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-              <iconify-icon icon="solar:mailbox-bold" className="size-5 text-primary"></iconify-icon>
+              <Icon icon="solar:mailbox-bold" className="size-5 text-primary" />
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm font-bold text-primary">お知らせ発信</p>
@@ -518,7 +505,7 @@ function Dashboard(): JSX.Element {
                 公開中: {data?.announcementStats?.published || 0}件 / 下書き: {data?.announcementStats?.draft || 0}件
               </p>
             </div>
-            <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+            <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
           </button>
 
           {/* 確認事項 */}
@@ -529,7 +516,7 @@ function Dashboard(): JSX.Element {
               aria-label="確認事項を表示"
             >
               <div className="size-10 rounded-full bg-chart-4/20 flex items-center justify-center shrink-0">
-                <iconify-icon icon="solar:bell-bold" className="size-5 text-chart-4"></iconify-icon>
+                <Icon icon="solar:bell-bold" className="size-5 text-chart-4" />
               </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-bold text-chart-4">確認事項</p>
@@ -540,7 +527,7 @@ function Dashboard(): JSX.Element {
               <div className="flex items-center justify-center bg-chart-4 text-white text-xs font-bold size-7 rounded-full shrink-0">
                 {data.alerts.length}
               </div>
-              <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+              <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
             </button>
           )}
         </section>

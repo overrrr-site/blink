@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getLiffProfile, isLiffLoggedIn, initLiff } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
@@ -169,12 +170,12 @@ export default function LinkAccount() {
             >
               {loading ? (
                 <>
-                  <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                  <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
                   送信中...
                 </>
               ) : (
                 <>
-                  <iconify-icon icon="solar:letter-bold" class="size-5"></iconify-icon>
+                  <Icon icon="solar:letter-bold" className="size-5" />
                   確認コードを送信
                 </>
               )}
@@ -226,12 +227,12 @@ export default function LinkAccount() {
               >
                 {loading ? (
                   <>
-                    <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                    <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
                     確認中...
                   </>
                 ) : (
                   <>
-                    <iconify-icon icon="solar:check-circle-bold" class="size-5"></iconify-icon>
+                    <Icon icon="solar:check-circle-bold" className="size-5" />
                     確認して紐付け
                   </>
                 )}

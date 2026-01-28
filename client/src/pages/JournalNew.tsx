@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import PageHeader from '../components/PageHeader'
@@ -65,7 +66,7 @@ function JournalNew(): JSX.Element {
         {validReservations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
-              <iconify-icon icon="solar:check-circle-bold" width="40" height="40" className="text-chart-2"></iconify-icon>
+              <Icon icon="solar:check-circle-bold" width="40" height="40" className="text-chart-2" />
             </div>
             <p className="text-lg font-medium text-foreground mb-2">すべての日誌が入力済みです</p>
             <p className="text-sm text-muted-foreground mb-6">未入力の日誌はありません</p>
@@ -73,7 +74,7 @@ function JournalNew(): JSX.Element {
               onClick={() => navigate('/reservations')}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium active:bg-primary/90 transition-colors"
             >
-              <iconify-icon icon="solar:calendar-bold" width="20" height="20"></iconify-icon>
+              <Icon icon="solar:calendar-bold" width="20" height="20" />
               予約カレンダーを開く
             </button>
           </div>
@@ -94,7 +95,7 @@ function JournalNew(): JSX.Element {
                     />
                   ) : (
                     <div className="size-12 rounded-full bg-muted flex items-center justify-center">
-                      <iconify-icon icon="solar:paw-print-bold" width="24" height="24" className="text-muted-foreground"></iconify-icon>
+                      <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-muted-foreground" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -111,7 +112,7 @@ function JournalNew(): JSX.Element {
                       {reservation.reservation_time || ''}
                     </p>
                   </div>
-                  <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground shrink-0"></iconify-icon>
+                  <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground shrink-0" />
                 </div>
               </button>
             ))}

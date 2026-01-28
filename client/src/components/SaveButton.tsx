@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 interface SaveButtonProps {
   saving: boolean
   label?: string
@@ -24,7 +25,7 @@ function SaveButton({
           savingLabel
         ) : (
           <>
-            <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:check-circle-bold" width="20" height="20" />
             {label}
           </>
         )}

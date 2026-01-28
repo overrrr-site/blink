@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
@@ -98,7 +99,7 @@ const AuthCallback = () => {
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="bg-card rounded-3xl p-8 border border-border shadow-sm max-w-md mx-auto text-center">
           <div className="text-destructive mb-4">
-            <iconify-icon icon="solar:danger-triangle-bold" width="48" height="48"></iconify-icon>
+            <Icon icon="solar:danger-triangle-bold" width="48" height="48" />
           </div>
           <h2 className="text-lg font-bold mb-2">認証エラー</h2>
           <p className="text-sm text-muted-foreground mb-4">{error}</p>
@@ -112,7 +113,7 @@ const AuthCallback = () => {
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
       <div className="bg-card rounded-3xl p-8 border border-border shadow-sm max-w-md mx-auto text-center">
         <div className="animate-spin text-primary mb-4 inline-block">
-          <iconify-icon icon="solar:spinner-line-duotone" width="48" height="48"></iconify-icon>
+          <Icon icon="solar:spinner-line-duotone" width="48" height="48" />
         </div>
         <h2 className="text-lg font-bold mb-2">認証中...</h2>
         <p className="text-sm text-muted-foreground">しばらくお待ちください</p>

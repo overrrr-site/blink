@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
@@ -343,7 +344,7 @@ const JournalCreate = () => {
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-foreground">
-            <iconify-icon icon="solar:arrow-left-linear" className="size-6"></iconify-icon>
+            <Icon icon="solar:arrow-left-linear" className="size-6" />
           </button>
           <div className="flex-1">
             <h1 className="text-lg font-bold font-heading">{reservation.dog_name}の日誌</h1>
@@ -384,7 +385,7 @@ const JournalCreate = () => {
       {currentStep === 'photo' && (
         <div className="px-5 py-6 space-y-6">
           <div className="text-center mb-6">
-            <iconify-icon icon="solar:camera-bold" width="48" height="48" class="text-primary mb-2"></iconify-icon>
+            <Icon icon="solar:camera-bold" width="48" height="48" className="text-primary mb-2" />
             <h2 className="text-lg font-bold">今日の写真を追加</h2>
             <p className="text-sm text-muted-foreground">活動の様子を撮影しましょう</p>
           </div>
@@ -410,7 +411,7 @@ const JournalCreate = () => {
                 {analyzingPhoto === index && (
                   <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
                     <div className="text-center">
-                      <iconify-icon icon="solar:spinner-bold" className="size-8 text-white animate-spin mb-2"></iconify-icon>
+                      <Icon icon="solar:spinner-bold" className="size-8 text-white animate-spin mb-2" />
                       <p className="text-xs text-white font-medium">AI解析中...</p>
                     </div>
                   </div>
@@ -428,7 +429,7 @@ const JournalCreate = () => {
                   className="absolute top-2 left-2 size-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 transition-opacity"
                   aria-label="写真を削除"
                 >
-                  <iconify-icon icon="solar:close-circle-bold" className="size-5"></iconify-icon>
+                  <Icon icon="solar:close-circle-bold" className="size-5" />
                 </button>
                 {photoAnalysis[index] && analyzingPhoto !== index && (
                   <button
@@ -449,7 +450,7 @@ const JournalCreate = () => {
                     title="解析結果をコメントに追加"
                     aria-label="解析結果をコメントに追加"
                   >
-                    <iconify-icon icon="solar:add-circle-bold" className="size-5"></iconify-icon>
+                    <Icon icon="solar:add-circle-bold" className="size-5" />
                   </button>
                 )}
               </div>
@@ -461,7 +462,7 @@ const JournalCreate = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className="aspect-square bg-muted rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
               >
-                <iconify-icon icon="solar:camera-add-bold" width="40" height="40"></iconify-icon>
+                <Icon icon="solar:camera-add-bold" width="40" height="40" />
                 <span className="text-sm font-medium">写真を追加</span>
               </button>
             )}
@@ -477,7 +478,7 @@ const JournalCreate = () => {
       {currentStep === 'comment' && (
         <div className="px-5 py-6 space-y-6">
           <div className="text-center mb-4">
-            <iconify-icon icon="solar:pen-new-square-bold" className="size-12 text-primary mb-2"></iconify-icon>
+            <Icon icon="solar:pen-new-square-bold" className="size-12 text-primary mb-2" />
             <h2 className="text-lg font-bold">今日の様子</h2>
             <p className="text-sm text-muted-foreground">飼い主さんへのメッセージを書きましょう</p>
           </div>
@@ -485,7 +486,7 @@ const JournalCreate = () => {
           {/* メモ入力エリア */}
           <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-2">
-              <iconify-icon icon="solar:notes-bold" className="size-5 text-chart-4"></iconify-icon>
+              <Icon icon="solar:notes-bold" className="size-5 text-chart-4" />
               <span className="text-sm font-bold">メモ書き（AIが清書します）</span>
             </div>
             <textarea
@@ -499,7 +500,7 @@ const JournalCreate = () => {
           {/* AI生成時に使われる情報の表示 */}
           <div className="bg-muted/30 rounded-xl p-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-2 mb-2">
-              <iconify-icon icon="solar:info-circle-bold" className="size-4"></iconify-icon>
+              <Icon icon="solar:info-circle-bold" className="size-4" />
               <span className="font-medium">AIが参照する情報</span>
             </div>
             <div className="space-y-1">
@@ -531,12 +532,12 @@ const JournalCreate = () => {
           >
             {generating ? (
               <>
-                <iconify-icon icon="solar:spinner-bold" className="size-5 animate-spin"></iconify-icon>
+                <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
                 生成中...
               </>
             ) : (
               <>
-                <iconify-icon icon="solar:magic-stick-3-bold" className="size-5"></iconify-icon>
+                <Icon icon="solar:magic-stick-3-bold" className="size-5" />
                 AIでコメントを生成
               </>
             )}
@@ -545,7 +546,7 @@ const JournalCreate = () => {
           {/* 生成されたコメント */}
           <div className="relative">
             <label className="text-sm font-bold flex items-center gap-2 mb-2">
-              <iconify-icon icon="solar:document-text-bold" className="size-4 text-primary"></iconify-icon>
+              <Icon icon="solar:document-text-bold" className="size-4 text-primary" />
               AIが生成したコメント（編集可能）
             </label>
             <textarea
@@ -565,7 +566,7 @@ const JournalCreate = () => {
       {currentStep === 'details' && (
         <div className="px-5 py-6 space-y-4">
           <div className="text-center mb-4">
-            <iconify-icon icon="solar:clipboard-check-bold" className="size-12 text-primary mb-2"></iconify-icon>
+            <Icon icon="solar:clipboard-check-bold" className="size-12 text-primary mb-2" />
             <h2 className="text-lg font-bold">詳細記録（任意）</h2>
             <p className="text-sm text-muted-foreground">時間があれば記録しましょう</p>
           </div>
@@ -578,13 +579,11 @@ const JournalCreate = () => {
               className="w-full px-4 py-3 flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
-                <iconify-icon icon="solar:box-bold" className="size-5 text-chart-1"></iconify-icon>
+                <Icon icon="solar:box-bold" className="size-5 text-chart-1" />
                 <span className="font-bold text-sm">トイレ記録</span>
               </div>
-              <iconify-icon
-                icon={showDetails ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
-                className="size-5 text-muted-foreground"
-              ></iconify-icon>
+              <Icon icon={showDetails ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
+                className="size-5 text-muted-foreground" />
             </button>
 
             {showDetails && (
@@ -650,7 +649,7 @@ const JournalCreate = () => {
           {Object.entries(trainingCategories).map(([categoryKey, category]) => (
             <div key={categoryKey} className="bg-card rounded-xl border border-border p-4">
               <div className="flex items-center gap-2 mb-3">
-                <iconify-icon icon={category.icon} className="size-5 text-primary"></iconify-icon>
+                <Icon icon={category.icon} className="size-5 text-primary" />
                 <span className="font-bold text-sm">{category.label}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -683,7 +682,7 @@ const JournalCreate = () => {
           {/* 担当スタッフ */}
           <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-3">
-              <iconify-icon icon="solar:user-bold" className="size-5 text-primary"></iconify-icon>
+              <Icon icon="solar:user-bold" className="size-5 text-primary" />
               <span className="font-bold text-sm">担当スタッフ</span>
             </div>
             <select
@@ -724,12 +723,12 @@ const JournalCreate = () => {
             >
               {submitting ? (
                 <>
-                  <iconify-icon icon="solar:spinner-bold" className="size-5 animate-spin"></iconify-icon>
+                  <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
                   送信中...
                 </>
               ) : (
                 <>
-                  <iconify-icon icon="solar:check-circle-bold" className="size-5"></iconify-icon>
+                  <Icon icon="solar:check-circle-bold" className="size-5" />
                   送信する
                 </>
               )}
@@ -741,7 +740,7 @@ const JournalCreate = () => {
               className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-bold text-sm flex items-center justify-center gap-2"
             >
               次へ
-              <iconify-icon icon="solar:arrow-right-linear" className="size-5"></iconify-icon>
+              <Icon icon="solar:arrow-right-linear" className="size-5" />
             </button>
           )}
         </div>

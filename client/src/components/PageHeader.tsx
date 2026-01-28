@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 import { useNavigate } from 'react-router-dom'
 
 interface PageHeaderProps {
@@ -27,7 +28,7 @@ function PageHeader({ title, backPath, onBack, rightContent }: PageHeaderProps):
           onClick={handleBack}
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading">{title}</h1>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
@@ -71,12 +72,10 @@ export default function MyPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -84,7 +83,7 @@ export default function MyPage() {
   if (!data) {
     return (
       <div className="px-5 pt-6 text-center">
-        <iconify-icon icon="solar:cloud-cross-bold" width="64" height="64" class="text-muted-foreground mx-auto mb-4"></iconify-icon>
+        <Icon icon="solar:cloud-cross-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground mb-4">データの取得に失敗しました</p>
         <button
           onClick={() => window.location.reload()}
@@ -107,7 +106,7 @@ export default function MyPage() {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           aria-label="戻る"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">マイページ</h1>
       </div>
@@ -116,7 +115,7 @@ export default function MyPage() {
       <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
         <div className="flex items-center gap-4 mb-4">
           <div className="size-16 rounded-full border-3 border-primary/20 p-0.5 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <iconify-icon icon="solar:user-bold" width="32" height="32" class="text-primary"></iconify-icon>
+            <Icon icon="solar:user-bold" width="32" height="32" className="text-primary" />
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-bold font-heading">{data.name}</h2>
@@ -136,7 +135,7 @@ export default function MyPage() {
               className="flex items-center gap-3 p-2 -m-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors min-h-[44px]"
               aria-label={`電話: ${data.phone}`}
             >
-              <iconify-icon icon="solar:phone-bold" width="20" height="20" class="text-primary"></iconify-icon>
+              <Icon icon="solar:phone-bold" width="20" height="20" className="text-primary" />
               <span className="text-sm">{data.phone}</span>
             </a>
           )}
@@ -146,13 +145,13 @@ export default function MyPage() {
               className="flex items-center gap-3 p-2 -m-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors min-h-[44px]"
               aria-label={`メール: ${data.email}`}
             >
-              <iconify-icon icon="solar:letter-bold" width="20" height="20" class="text-primary"></iconify-icon>
+              <Icon icon="solar:letter-bold" width="20" height="20" className="text-primary" />
               <span className="text-sm truncate">{data.email}</span>
             </a>
           )}
           {data.address && (
             <div className="flex items-start gap-3 p-2 -m-2 min-h-[44px]">
-              <iconify-icon icon="solar:home-2-bold" width="20" height="20" class="text-muted-foreground mt-0.5"></iconify-icon>
+              <Icon icon="solar:home-2-bold" width="20" height="20" className="text-muted-foreground mt-0.5" />
               <span className="text-sm">{data.address}</span>
             </div>
           )}
@@ -163,7 +162,7 @@ export default function MyPage() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:paw-print-bold" width="20" height="20" class="text-primary"></iconify-icon>
+            <Icon icon="solar:paw-print-bold" width="20" height="20" className="text-primary" />
             登録犬 ({data.dogs.length}頭)
           </h2>
         </div>
@@ -181,7 +180,7 @@ export default function MyPage() {
                       <img src={getAvatarUrl(dog.photo_url)} alt={dog.name} loading="lazy" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                        <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
+                        <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
                       </div>
                     )}
                   </div>
@@ -195,7 +194,7 @@ export default function MyPage() {
                     <p className="text-xs text-muted-foreground">{dog.breed}</p>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xs flex items-center gap-1">
-                        <iconify-icon icon="solar:calendar-bold" width="14" height="14" class="text-muted-foreground"></iconify-icon>
+                        <Icon icon="solar:calendar-bold" width="14" height="14" className="text-muted-foreground" />
                         <span className="text-muted-foreground">登園:</span>
                         <span className="font-bold text-primary">{dog.reservation_count || 0}回</span>
                       </span>
@@ -207,7 +206,7 @@ export default function MyPage() {
                 {(dog.mixed_vaccine_date || dog.rabies_vaccine_date) && (
                   <div className="mt-3 pt-3 border-t border-border">
                     <div className="flex items-center gap-2 mb-2">
-                      <iconify-icon icon="solar:shield-check-bold" width="16" height="16" class="text-chart-2"></iconify-icon>
+                      <Icon icon="solar:shield-check-bold" width="16" height="16" className="text-chart-2" />
                       <span className="text-[10px] font-semibold text-muted-foreground">ワクチン接種状況</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -219,7 +218,7 @@ export default function MyPage() {
                               ? 'bg-destructive/10 text-destructive' 
                               : 'bg-chart-2/10 text-chart-2'
                           }`}>
-                            {isExpired && <iconify-icon icon="solar:danger-triangle-bold" width="12" height="12" class="mr-1 inline-block align-middle"></iconify-icon>}
+                            {isExpired && <Icon icon="solar:danger-triangle-bold" width="12" height="12" className="mr-1 inline-block align-middle" />}
                             狂犬病 {format(new Date(dog.rabies_vaccine_date), 'yyyy/M/d', { locale: ja })}まで
                             {isExpired && ' (期限切れ)'}
                           </span>
@@ -233,7 +232,7 @@ export default function MyPage() {
                               ? 'bg-destructive/10 text-destructive' 
                               : 'bg-chart-2/10 text-chart-2'
                           }`}>
-                            {isExpired && <iconify-icon icon="solar:danger-triangle-bold" width="12" height="12" class="mr-1 inline-block align-middle"></iconify-icon>}
+                            {isExpired && <Icon icon="solar:danger-triangle-bold" width="12" height="12" className="mr-1 inline-block align-middle" />}
                             混合 {format(new Date(dog.mixed_vaccine_date), 'yyyy/M/d', { locale: ja })}まで
                             {isExpired && ' (期限切れ)'}
                           </span>
@@ -247,7 +246,7 @@ export default function MyPage() {
           </div>
         ) : (
           <div className="bg-muted/30 rounded-2xl p-6 text-center">
-            <iconify-icon icon="solar:paw-print-linear" width="48" height="48" class="text-muted-foreground mx-auto mb-2"></iconify-icon>
+            <Icon icon="solar:paw-print-linear" width="48" height="48" className="text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">登録されている犬がありません</p>
           </div>
         )}
@@ -258,7 +257,7 @@ export default function MyPage() {
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold font-heading flex items-center gap-2">
-              <iconify-icon icon="solar:document-bold" width="20" height="20" class="text-chart-4"></iconify-icon>
+              <Icon icon="solar:document-bold" width="20" height="20" className="text-chart-4" />
               契約情報
             </h2>
           </div>
@@ -339,11 +338,11 @@ export default function MyPage() {
           aria-label="通知設定"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:bell-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:bell-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">通知設定</span>
             <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">準備中</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button 
           onClick={() => alert('よくある質問ページは準備中です')}
@@ -351,11 +350,11 @@ export default function MyPage() {
           aria-label="よくある質問"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:question-circle-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:question-circle-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">よくある質問</span>
             <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">準備中</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button 
           onClick={() => alert('お問い合わせ機能は準備中です')}
@@ -363,11 +362,11 @@ export default function MyPage() {
           aria-label="お問い合わせ"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:chat-round-dots-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">お問い合わせ</span>
             <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">準備中</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button 
           onClick={() => navigate('/privacy')}
@@ -375,10 +374,10 @@ export default function MyPage() {
           aria-label="プライバシーポリシー"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:shield-check-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:shield-check-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">プライバシーポリシー</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button 
           onClick={() => navigate('/terms')}
@@ -386,10 +385,10 @@ export default function MyPage() {
           aria-label="利用規約"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:document-text-bold" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:document-text-bold" width="20" height="20" className="text-muted-foreground" />
             <span className="text-sm font-medium">利用規約</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
         <button
           onClick={handleLogout}
@@ -397,10 +396,10 @@ export default function MyPage() {
           aria-label="ログアウト"
         >
           <div className="flex items-center gap-3">
-            <iconify-icon icon="solar:logout-2-bold" width="20" height="20" class="text-destructive"></iconify-icon>
+            <Icon icon="solar:logout-2-bold" width="20" height="20" className="text-destructive" />
             <span className="text-sm font-medium text-destructive">ログアウト</span>
           </div>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
       </section>
 

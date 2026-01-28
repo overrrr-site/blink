@@ -1,4 +1,5 @@
 import { useEffect, useState, createContext, useContext, useCallback } from 'react'
+import { Icon } from './Icon'
 
 interface ToastItem {
   id: string
@@ -47,14 +48,14 @@ const ToastItem = ({ toast, onRemove }: { toast: ToastItem; onRemove: () => void
       className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg ${colors[toast.type]} animate-in slide-in-from-top-2 fade-in duration-200`}
       role="alert"
     >
-      <iconify-icon icon={icons[toast.type]} width="20" height="20" aria-hidden="true"></iconify-icon>
+      <Icon icon={icons[toast.type]} width="20" height="20" aria-hidden="true" />
       <span className="text-sm font-medium">{toast.message}</span>
       <button
         onClick={onRemove}
         className="ml-auto p-1 hover:opacity-80 transition-opacity"
         aria-label="閉じる"
       >
-        <iconify-icon icon="solar:close-circle-linear" width="18" height="18" aria-hidden="true"></iconify-icon>
+        <Icon icon="solar:close-circle-linear" width="18" height="18" aria-hidden="true" />
       </button>
     </div>
   )

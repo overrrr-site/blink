@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
@@ -68,7 +69,7 @@ const OwnerCreate = () => {
             onClick={() => navigate('/customers')}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           >
-            <iconify-icon icon="solar:close-circle-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:close-circle-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading">新規飼い主登録</h1>
         </div>
@@ -88,7 +89,7 @@ const OwnerCreate = () => {
               className="size-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20"
             />
             <label htmlFor="includeDog" className="text-sm font-bold font-heading flex items-center gap-2 cursor-pointer">
-              <iconify-icon icon="solar:paw-print-bold" class="text-primary size-4"></iconify-icon>
+              <Icon icon="solar:paw-print-bold" className="text-primary size-4" />
               同時に犬も登録する
             </label>
           </div>

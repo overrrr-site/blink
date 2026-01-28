@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format } from 'date-fns';
@@ -50,12 +51,10 @@ export default function Announcements() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -69,7 +68,7 @@ export default function Announcements() {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           aria-label="戻る"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">お知らせ</h1>
         <button
@@ -78,31 +77,27 @@ export default function Announcements() {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-full transition-colors active:scale-95 disabled:opacity-50"
           aria-label="更新"
         >
-          <iconify-icon
-            icon="solar:refresh-linear"
+          <Icon icon="solar:refresh-linear"
             width="24"
             height="24"
-            class={refreshing ? 'animate-spin' : ''}
-          ></iconify-icon>
+            className={refreshing ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {/* 更新中表示 */}
       {refreshing && (
         <div className="flex items-center justify-center py-2 mb-4">
-          <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="text-primary animate-spin mr-2"></iconify-icon>
+          <Icon icon="solar:spinner-bold" width="20" height="20" className="text-primary animate-spin mr-2" />
           <span className="text-sm text-muted-foreground">更新中...</span>
         </div>
       )}
 
       {announcements.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 border border-border shadow-sm text-center">
-          <iconify-icon
-            icon="solar:megaphone-linear"
+          <Icon icon="solar:megaphone-linear"
             width="64"
             height="64"
-            class="text-muted-foreground mx-auto mb-4"
-          ></iconify-icon>
+            className="text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground mb-2">お知らせはありません</p>
           <p className="text-xs text-muted-foreground">
             新しいお知らせがあるとここに表示されます
@@ -143,10 +138,8 @@ export default function Announcements() {
                       <div className={`size-12 rounded-lg flex items-center justify-center shrink-0 ${
                         announcement.is_important ? 'bg-chart-4/10' : 'bg-primary/10'
                       }`}>
-                        <iconify-icon
-                          icon={announcement.is_important ? 'solar:star-bold' : 'solar:megaphone-bold'}
-                          className={`size-6 ${announcement.is_important ? 'text-chart-4' : 'text-primary'}`}
-                        ></iconify-icon>
+                        <Icon icon={announcement.is_important ? 'solar:star-bold' : 'solar:megaphone-bold'}
+                          className={`size-6 ${announcement.is_important ? 'text-chart-4' : 'text-primary'}`} />
                       </div>
                     )}
 
@@ -160,7 +153,7 @@ export default function Announcements() {
                         <h3 className="font-bold text-sm truncate flex-1">{announcement.title}</h3>
                       </div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <iconify-icon icon="solar:calendar-linear" width="14" height="14"></iconify-icon>
+                        <Icon icon="solar:calendar-linear" width="14" height="14" />
                         {format(new Date(announcement.published_at), 'yyyy年M月d日', { locale: ja })}
                       </p>
                       {!isExpanded && (
@@ -170,12 +163,10 @@ export default function Announcements() {
                       )}
                     </div>
 
-                    <iconify-icon
-                      icon={isExpanded ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
+                    <Icon icon={isExpanded ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
                       width="20"
                       height="20"
-                      class="text-muted-foreground shrink-0 mt-1"
-                    ></iconify-icon>
+                      className="text-muted-foreground shrink-0 mt-1" />
                   </div>
                 </button>
 

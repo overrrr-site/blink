@@ -1,3 +1,4 @@
+import { Icon } from '../Icon'
 type Contract = {
   id: number
   contract_type: string
@@ -28,11 +29,11 @@ export default function ContractsSection({
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex items-center justify-between">
         <h3 className="text-lg font-bold flex items-center gap-2">
-          <iconify-icon icon="solar:document-bold" className="text-chart-4 size-5"></iconify-icon>
+          <Icon icon="solar:document-bold" className="text-chart-4 size-5" />
           契約情報
         </h3>
         <button onClick={onCreate} className="text-xs font-bold text-primary flex items-center gap-1">
-          <iconify-icon icon="solar:add-circle-bold" className="size-3.5"></iconify-icon>
+          <Icon icon="solar:add-circle-bold" className="size-3.5" />
           新規契約
         </button>
       </div>
@@ -138,7 +139,7 @@ export default function ContractsSection({
         ) : (
           <div className="text-center py-8">
             <div className="size-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <iconify-icon icon="solar:document-text-bold" className="size-8 text-muted-foreground"></iconify-icon>
+              <Icon icon="solar:document-text-bold" className="size-8 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium mb-1">契約情報がありません</p>
             <p className="text-xs text-muted-foreground mb-4">契約を登録して管理を開始しましょう</p>
@@ -147,7 +148,7 @@ export default function ContractsSection({
               className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 mx-auto hover:bg-primary/90 transition-colors"
               aria-label="新規契約を追加"
             >
-              <iconify-icon icon="solar:add-circle-bold" className="size-5"></iconify-icon>
+              <Icon icon="solar:add-circle-bold" className="size-5" />
               <span>新規契約を追加</span>
             </button>
           </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
 import api from '../api/client'
@@ -186,13 +187,13 @@ const ReservationsCalendar = () => {
               aria-label="カレンダーをエクスポート"
               title="iCS形式でエクスポート"
             >
-              <iconify-icon icon="solar:download-bold" className="size-5"></iconify-icon>
+              <Icon icon="solar:download-bold" className="size-5" />
             </button>
             <button
               onClick={() => navigate('/reservations/new')}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
             >
-              <iconify-icon icon="solar:add-circle-bold" className="size-4"></iconify-icon>
+              <Icon icon="solar:add-circle-bold" className="size-4" />
               新規予約
             </button>
           </div>
@@ -204,10 +205,8 @@ const ReservationsCalendar = () => {
             className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
             aria-label="前の月"
           >
-            <iconify-icon
-              icon="solar:alt-arrow-left-linear"
-              className="size-6 text-muted-foreground"
-            ></iconify-icon>
+            <Icon icon="solar:alt-arrow-left-linear"
+              className="size-6 text-muted-foreground" />
           </button>
           <h2 className="text-lg font-bold">{format(currentDate, 'yyyy年MM月')}</h2>
           <button 
@@ -215,10 +214,8 @@ const ReservationsCalendar = () => {
             className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
             aria-label="次の月"
           >
-            <iconify-icon
-              icon="solar:alt-arrow-right-linear"
-              className="size-6 text-muted-foreground"
-            ></iconify-icon>
+            <Icon icon="solar:alt-arrow-right-linear"
+              className="size-6 text-muted-foreground" />
           </button>
         </div>
 
@@ -291,7 +288,7 @@ const ReservationsCalendar = () => {
                 </button>
                 {isDragOver && (
                   <div className="absolute inset-0 flex items-center justify-center bg-chart-2/30 rounded-lg">
-                    <iconify-icon icon="solar:arrow-down-bold" className="size-6 text-chart-2"></iconify-icon>
+                    <Icon icon="solar:arrow-down-bold" className="size-6 text-chart-2" />
                   </div>
                 )}
               </div>
@@ -303,7 +300,7 @@ const ReservationsCalendar = () => {
           <section>
             <div className="mb-4">
               <h2 className="text-lg font-bold font-heading flex items-center gap-2">
-                <iconify-icon icon="solar:calendar-bold" className="text-primary size-5"></iconify-icon>
+                <Icon icon="solar:calendar-bold" className="text-primary size-5" />
                 {format(selectedDate, 'yyyy年MM月dd日')}の予約
               </h2>
             </div>
@@ -311,7 +308,7 @@ const ReservationsCalendar = () => {
             {selectedDateReservations.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <iconify-icon icon="solar:calendar-mark-bold" className="size-10 text-muted-foreground"></iconify-icon>
+                  <Icon icon="solar:calendar-mark-bold" className="size-10 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium mb-1">この日の予約はありません</p>
                 <p className="text-xs text-muted-foreground mb-4">新しい予約を追加してスケジュールを管理しましょう</p>
@@ -320,7 +317,7 @@ const ReservationsCalendar = () => {
                   className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
                   aria-label="新規予約を追加"
                 >
-                  <iconify-icon icon="solar:add-circle-bold" className="size-5"></iconify-icon>
+                  <Icon icon="solar:add-circle-bold" className="size-5" />
                   新規予約を追加
                 </button>
               </div>
@@ -345,10 +342,8 @@ const ReservationsCalendar = () => {
                         />
                       ) : (
                         <div className="size-12 rounded-full bg-muted flex items-center justify-center">
-                          <iconify-icon
-                            icon="solar:paw-print-bold"
-                            className="size-6 text-muted-foreground"
-                          ></iconify-icon>
+                          <Icon icon="solar:paw-print-bold"
+                            className="size-6 text-muted-foreground" />
                         </div>
                       )}
                       <div className="flex-1">

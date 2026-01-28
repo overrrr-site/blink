@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import { getLiffProfile, initLiff, isLiffLoggedIn } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
@@ -141,12 +142,10 @@ export default function Login() {
           <img src={logoImage} alt="Blink" className="h-24 mx-auto mb-6 animate-pulse" />
           <p className="text-sm text-muted-foreground mb-8">犬の幼稚園・保育園</p>
           
-          <iconify-icon
-            icon="solar:spinner-bold"
+          <Icon icon="solar:spinner-bold"
             width="40"
             height="40"
-            class="text-primary animate-spin mx-auto mb-4"
-          ></iconify-icon>
+            className="text-primary animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">ログイン中...</p>
         </div>
       </div>
@@ -161,12 +160,10 @@ export default function Login() {
           <img src={logoImage} alt="Blink" className="h-20 mx-auto mb-6" />
           
           <div className="bg-destructive/10 rounded-2xl p-6 mb-6">
-            <iconify-icon
-              icon="solar:danger-triangle-bold"
+            <Icon icon="solar:danger-triangle-bold"
               width="48"
               height="48"
-              class="text-destructive mx-auto mb-4"
-            ></iconify-icon>
+              className="text-destructive mx-auto mb-4" />
             <h1 className="text-lg font-bold mb-2">ログインエラー</h1>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{error}</p>
           </div>

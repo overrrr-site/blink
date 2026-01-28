@@ -1,3 +1,4 @@
+import { Icon } from '../Icon'
 type DogPersonality = {
   personality_description?: string
   dog_compatibility?: string
@@ -63,7 +64,7 @@ export default function PersonalitySection({ personality }: PersonalitySectionPr
   return (
     <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
       <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-        <iconify-icon icon="solar:heart-bold" className="size-5 text-chart-3"></iconify-icon>
+        <Icon icon="solar:heart-bold" className="size-5 text-chart-3" />
         性格・特徴
       </h3>
       <div className="space-y-4">
@@ -136,7 +137,7 @@ export default function PersonalitySection({ personality }: PersonalitySectionPr
           <div className="space-y-2">
             {personality.likes && (
               <div className="flex items-start gap-2">
-                <iconify-icon icon="solar:star-bold" className="size-4 text-chart-4 mt-0.5 shrink-0"></iconify-icon>
+                <Icon icon="solar:star-bold" className="size-4 text-chart-4 mt-0.5 shrink-0" />
                 <div>
                   <label className="text-xs text-muted-foreground">好きなこと</label>
                   <p className="text-sm">{personality.likes}</p>
@@ -145,7 +146,7 @@ export default function PersonalitySection({ personality }: PersonalitySectionPr
             )}
             {personality.dislikes && (
               <div className="flex items-start gap-2">
-                <iconify-icon icon="solar:info-circle-bold" className="size-4 text-primary mt-0.5 shrink-0"></iconify-icon>
+                <Icon icon="solar:info-circle-bold" className="size-4 text-primary mt-0.5 shrink-0" />
                 <div>
                   <label className="text-xs text-muted-foreground">配慮してほしいこと</label>
                   <p className="text-sm">{personality.dislikes}</p>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Icon } from './Icon'
 
 interface PayjpFormProps {
   publicKey: string;
@@ -166,12 +167,12 @@ export default function PayjpForm({ publicKey, onTokenCreated, onError, onSubmit
       >
         {loading ? (
           <>
-            <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+            <Icon icon="solar:spinner-bold" width="20" height="20" className="animate-spin" />
             処理中...
           </>
         ) : (
           <>
-            <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:check-circle-bold" width="20" height="20" />
             カード情報を登録
           </>
         )}

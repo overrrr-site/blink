@@ -11,32 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Iconifyを非同期で読み込み、頻出アイコンをプリロード -->
-    <link rel="preconnect" href="https://api.iconify.design" />
-    <script async src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
-    <script>
-      // 頻出アイコンをプリロード（ページロード完了後に実行）
-      window.addEventListener('load', function() {
-        if (typeof IconifyIcon !== 'undefined') {
-          // 上位30件の頻出アイコンをプリロード
-          var icons = [
-            'solar:spinner-bold', 'solar:paw-print-bold', 'solar:alt-arrow-right-linear',
-            'solar:check-circle-bold', 'solar:arrow-left-linear', 'solar:calendar-bold',
-            'solar:add-circle-bold', 'solar:danger-triangle-bold', 'solar:close-circle-bold',
-            'solar:user-bold', 'solar:document-text-bold', 'solar:info-circle-bold',
-            'solar:close-circle-linear', 'solar:question-circle-bold', 'solar:notebook-bold',
-            'solar:magnifer-linear', 'solar:trash-bin-trash-bold', 'solar:pen-new-square-bold',
-            'solar:pen-bold', 'solar:notes-bold', 'solar:letter-bold', 'solar:download-bold',
-            'solar:close-bold', 'solar:camera-add-bold', 'solar:bell-bold', 'solar:upload-bold',
-            'solar:tag-price-bold', 'solar:qr-code-bold', 'solar:printer-bold', 'solar:file-check-bold',
-            'solar:list-bold', 'solar:clock-circle-bold', 'solar:home-smile-bold', 'solar:gallery-bold',
-            'solar:clipboard-check-bold', 'solar:calendar-linear', 'solar:phone-bold', 'solar:mailbox-bold',
-            'solar:settings-bold', 'solar:widget-bold', 'solar:logout-3-bold', 'solar:clipboard-text-bold'
-          ];
-          IconifyIcon.loadIcons(icons);
-        }
-      });
-    </script>
+    <!-- アイコンはバンドルに埋め込み済み（API呼び出し不要） -->
     <title>Blink - 顧客管理システム</title>
   </head>
   <body>

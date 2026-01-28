@@ -1,3 +1,4 @@
+import { Icon } from '../Icon'
 import { formatDateFullWithWeekday } from '../../utils/date'
 
 type ReservationItem = {
@@ -94,14 +95,14 @@ export default function HistoryTabs({
                         {reservation.reservation_time} / {reservation.owner_name}様
                       </p>
                     </div>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground"></iconify-icon>
+                    <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground" />
                   </div>
                 )
               })}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              <iconify-icon icon="solar:calendar-mark-bold" className="size-12 mx-auto mb-2 opacity-50"></iconify-icon>
+              <Icon icon="solar:calendar-mark-bold" className="size-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm">利用履歴はありません</p>
             </div>
           )
@@ -126,14 +127,14 @@ export default function HistoryTabs({
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{journal.comment}</p>
                     )}
                   </div>
-                  <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground"></iconify-icon>
+                  <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground" />
                 </div>
               )
             })}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <iconify-icon icon="solar:notebook-bold" className="size-12 mx-auto mb-2 opacity-50"></iconify-icon>
+            <Icon icon="solar:notebook-bold" className="size-12 mx-auto mb-2 opacity-50" />
             <p className="text-sm">日誌履歴はありません</p>
           </div>
         )}

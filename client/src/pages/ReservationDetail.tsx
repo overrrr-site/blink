@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
@@ -49,7 +50,7 @@ const ReservationDetail = () => {
     return (
       <div className="flex flex-col items-center justify-center h-full px-5">
         <div className="size-20 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <iconify-icon icon="solar:danger-triangle-bold" className="size-10 text-destructive"></iconify-icon>
+          <Icon icon="solar:danger-triangle-bold" className="size-10 text-destructive" />
         </div>
         <h3 className="text-lg font-bold mb-2">{error || '予約が見つかりません'}</h3>
         <p className="text-sm text-muted-foreground mb-6 text-center">
@@ -80,7 +81,7 @@ const ReservationDetail = () => {
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/reservations')} className="p-2 -ml-2 text-foreground">
-            <iconify-icon icon="solar:arrow-left-linear" className="size-6"></iconify-icon>
+            <Icon icon="solar:arrow-left-linear" className="size-6" />
           </button>
           <h1 className="text-lg font-bold font-heading">予約詳細</h1>
         </div>
@@ -97,10 +98,8 @@ const ReservationDetail = () => {
               />
             ) : (
               <div className="size-20 rounded-full bg-muted flex items-center justify-center">
-                <iconify-icon
-                  icon="solar:paw-print-bold"
-                  className="size-10 text-muted-foreground"
-                ></iconify-icon>
+                <Icon icon="solar:paw-print-bold"
+                  className="size-10 text-muted-foreground" />
               </div>
             )}
             <div>
@@ -130,7 +129,7 @@ const ReservationDetail = () => {
                 onClick={() => updateStatus('登園済')}
                 className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
               >
-                <iconify-icon icon="solar:login-3-bold" className="size-5"></iconify-icon>
+                <Icon icon="solar:login-3-bold" className="size-5" />
                 登園
               </button>
             )}
@@ -139,7 +138,7 @@ const ReservationDetail = () => {
                 onClick={() => updateStatus('降園済')}
                 className="w-full bg-chart-3 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-3/90 transition-colors flex items-center justify-center gap-2"
               >
-                <iconify-icon icon="solar:logout-3-bold" className="size-5"></iconify-icon>
+                <Icon icon="solar:logout-3-bold" className="size-5" />
                 降園
               </button>
             )}

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import DogSelectSection from '../components/DogSelectSection';
+import { Icon } from '../../components/Icon'
 import ReservationFormFields from '../components/ReservationFormFields';
 import ReservationFooter from '../components/ReservationFooter';
 import { useLiffReservationCreate } from '../hooks/useLiffReservationCreate';
@@ -11,12 +12,10 @@ export default function ReservationCreate() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -30,7 +29,7 @@ export default function ReservationCreate() {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           aria-label="戻る"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">新規予約</h1>
       </div>

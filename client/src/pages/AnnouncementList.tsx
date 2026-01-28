@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import { SkeletonList } from '../components/Skeleton'
@@ -238,7 +239,7 @@ const AnnouncementList = () => {
               onClick={() => navigate(-1)}
               className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
             >
-              <iconify-icon icon="solar:alt-arrow-left-linear" width="20" height="20"></iconify-icon>
+              <Icon icon="solar:alt-arrow-left-linear" width="20" height="20" />
             </button>
             <h1 className="text-2xl font-bold font-heading text-foreground">お知らせ管理</h1>
           </div>
@@ -246,7 +247,7 @@ const AnnouncementList = () => {
             onClick={() => openModal()}
             className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
           >
-            <iconify-icon icon="solar:add-circle-bold" width="18" height="18"></iconify-icon>
+            <Icon icon="solar:add-circle-bold" width="18" height="18" />
             新規作成
           </button>
         </div>
@@ -309,14 +310,14 @@ const AnnouncementList = () => {
                       </div>
                     ) : (
                       <div className="size-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <iconify-icon icon="solar:megaphone-bold" className="size-6 text-muted-foreground"></iconify-icon>
+                        <Icon icon="solar:megaphone-bold" className="size-6 text-muted-foreground" />
                       </div>
                     )}
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         {announcement.is_important && (
-                          <iconify-icon icon="solar:star-bold" className="size-4 text-chart-4"></iconify-icon>
+                          <Icon icon="solar:star-bold" className="size-4 text-chart-4" />
                         )}
                         <h3 className="font-bold text-sm truncate">{announcement.title}</h3>
                       </div>
@@ -335,7 +336,7 @@ const AnnouncementList = () => {
                       </div>
                     </div>
 
-                    <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0"></iconify-icon>
+                    <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
                   </div>
                 </button>
               )
@@ -357,7 +358,7 @@ const AnnouncementList = () => {
                 onClick={closeModal}
                 className="size-10 rounded-lg bg-muted flex items-center justify-center"
               >
-                <iconify-icon icon="solar:close-circle-bold" width="24" height="24"></iconify-icon>
+                <Icon icon="solar:close-circle-bold" width="24" height="24" />
               </button>
             </div>
 
@@ -415,7 +416,7 @@ const AnnouncementList = () => {
                       onClick={() => setFormData((prev) => ({ ...prev, image_url: '' }))}
                       className="absolute top-2 right-2 size-8 bg-black/50 rounded-full flex items-center justify-center text-white"
                     >
-                      <iconify-icon icon="solar:close-circle-bold" width="20" height="20"></iconify-icon>
+                      <Icon icon="solar:close-circle-bold" width="20" height="20" />
                     </button>
                   </div>
                 ) : (
@@ -426,10 +427,10 @@ const AnnouncementList = () => {
                     className="w-full h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/30 transition-colors disabled:opacity-50"
                   >
                     {uploading ? (
-                      <iconify-icon icon="solar:spinner-bold" className="size-6 animate-spin"></iconify-icon>
+                      <Icon icon="solar:spinner-bold" className="size-6 animate-spin" />
                     ) : (
                       <>
-                        <iconify-icon icon="solar:camera-add-bold" className="size-8"></iconify-icon>
+                        <Icon icon="solar:camera-add-bold" className="size-8" />
                         <span className="text-xs">タップして画像を追加</span>
                       </>
                     )}
@@ -449,7 +450,7 @@ const AnnouncementList = () => {
                   }`}
                 >
                   {formData.is_important && (
-                    <iconify-icon icon="solar:check-bold" width="16" height="16"></iconify-icon>
+                    <Icon icon="solar:check-bold" width="16" height="16" />
                   )}
                 </button>
                 <label className="text-sm">重要なお知らせとして表示</label>

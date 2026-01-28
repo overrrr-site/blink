@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useReservationCreateData } from '../hooks/useReservationCreateData'
 import { useReservationCreate } from '../hooks/useReservationCreate'
@@ -59,7 +60,7 @@ const ReservationCreate = () => {
             onClick={() => navigate('/reservations')}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           >
-            <iconify-icon icon="solar:close-circle-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:close-circle-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading">予約登録</h1>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import PayjpForm from '../components/PayjpForm';
@@ -125,7 +126,7 @@ export default function Billing() {
   if (loading && !currentPlan) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon icon="solar:spinner-bold" width="48" height="48" class="text-primary animate-spin"></iconify-icon>
+        <Icon icon="solar:spinner-bold" width="48" height="48" className="text-primary animate-spin" />
       </div>
     );
   }
@@ -138,12 +139,12 @@ export default function Billing() {
             onClick={() => navigate('/settings')}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           >
-            <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:arrow-left-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading flex-1">プラン・お支払い</h1>
         </header>
         <div className="px-5 pt-8 text-center">
-          <iconify-icon icon="solar:danger-triangle-bold" width="48" height="48" class="text-destructive mx-auto mb-4"></iconify-icon>
+          <Icon icon="solar:danger-triangle-bold" width="48" height="48" className="text-destructive mx-auto mb-4" />
           <p className="text-destructive font-bold mb-2">エラーが発生しました</p>
           <p className="text-sm text-muted-foreground mb-4">{error}</p>
           <button
@@ -165,7 +166,7 @@ export default function Billing() {
           onClick={() => navigate('/settings')}
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">プラン・お支払い</h1>
       </header>
@@ -217,7 +218,7 @@ export default function Billing() {
             {currentPlan && (
               <section className="bg-card rounded-2xl border border-border shadow-sm p-5">
                 <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-                  <iconify-icon icon="solar:card-bold" width="16" height="16" class="text-primary"></iconify-icon>
+                  <Icon icon="solar:card-bold" width="16" height="16" className="text-primary" />
                   現在のプラン
                 </h3>
                 <div className="bg-accent/30 rounded-xl p-4">
@@ -260,12 +261,12 @@ export default function Billing() {
             {/* プラン一覧 */}
             <section className="bg-card rounded-2xl border border-border shadow-sm p-5">
               <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-                <iconify-icon icon="solar:tag-price-bold" width="16" height="16" class="text-primary"></iconify-icon>
+                <Icon icon="solar:tag-price-bold" width="16" height="16" className="text-primary" />
                 プランを選択
               </h3>
               {plans.length === 0 ? (
                 <div className="text-center py-8">
-                  <iconify-icon icon="solar:document-text-bold" width="48" height="48" class="text-muted-foreground mx-auto mb-3"></iconify-icon>
+                  <Icon icon="solar:document-text-bold" width="48" height="48" className="text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground mb-2">プランが設定されていません</p>
                   <p className="text-xs text-muted-foreground">
                     管理者がデータベースにプランを登録する必要があります。
@@ -324,7 +325,7 @@ export default function Billing() {
         {activeTab === 'payment' && (
           <section className="bg-card rounded-2xl border border-border shadow-sm p-5">
             <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-              <iconify-icon icon="solar:card-bold" width="16" height="16" class="text-primary"></iconify-icon>
+              <Icon icon="solar:card-bold" width="16" height="16" className="text-primary" />
               お支払い方法
             </h3>
             {showCardForm && payjpPublicKey ? (
@@ -364,12 +365,12 @@ export default function Billing() {
         {activeTab === 'history' && (
           <section className="bg-card rounded-2xl border border-border shadow-sm p-5">
             <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-              <iconify-icon icon="solar:document-text-bold" width="16" height="16" class="text-primary"></iconify-icon>
+              <Icon icon="solar:document-text-bold" width="16" height="16" className="text-primary" />
               請求履歴
             </h3>
             {billingHistory.length === 0 ? (
               <div className="text-center py-8">
-                <iconify-icon icon="solar:document-text-bold" width="48" height="48" class="text-muted-foreground mx-auto mb-3"></iconify-icon>
+                <Icon icon="solar:document-text-bold" width="48" height="48" className="text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground">請求履歴がありません</p>
               </div>
             ) : (

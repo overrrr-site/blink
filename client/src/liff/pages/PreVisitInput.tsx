@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format } from 'date-fns';
@@ -30,7 +31,7 @@ function CheckboxItem({
         checked ? 'bg-primary border-primary' : 'border-muted-foreground/30'
       }`}>
         {checked && (
-          <iconify-icon icon="solar:check-linear" width="16" height="16" class="text-white"></iconify-icon>
+          <Icon icon="solar:check-linear" width="16" height="16" className="text-white" />
         )}
       </div>
       <input
@@ -113,12 +114,10 @@ export default function PreVisitInput() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -126,7 +125,7 @@ export default function PreVisitInput() {
   if (!reservation) {
     return (
       <div className="px-5 pt-6 text-center">
-        <iconify-icon icon="solar:calendar-cross-bold" width="64" height="64" class="text-muted-foreground mx-auto mb-4"></iconify-icon>
+        <Icon icon="solar:calendar-cross-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground mb-4">予約が見つかりません</p>
         <button
           onClick={() => navigate('/home')}
@@ -147,7 +146,7 @@ export default function PreVisitInput() {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           aria-label="戻る"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold font-heading">登園前入力</h1>
@@ -160,7 +159,7 @@ export default function PreVisitInput() {
       {/* 予約情報カード */}
       <div className="bg-gradient-to-r from-primary/10 to-accent/30 rounded-2xl p-4 mb-6 flex items-center gap-3">
         <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
+          <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
         </div>
         <div>
           <p className="font-bold">{reservation.dog_name}</p>
@@ -174,7 +173,7 @@ export default function PreVisitInput() {
         {/* 排泄 */}
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <iconify-icon icon="solar:toilet-paper-bold" width="20" height="20" class="text-chart-3"></iconify-icon>
+            <Icon icon="solar:toilet-paper-bold" width="20" height="20" className="text-chart-3" />
             排泄
           </h2>
           <p className="text-xs text-muted-foreground mb-3">
@@ -211,7 +210,7 @@ export default function PreVisitInput() {
         {/* 食事 */}
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <iconify-icon icon="solar:bowl-bold" width="20" height="20" class="text-chart-2"></iconify-icon>
+            <Icon icon="solar:bowl-bold" width="20" height="20" className="text-chart-2" />
             食事
           </h2>
           <div>
@@ -241,7 +240,7 @@ export default function PreVisitInput() {
         {/* 体調 */}
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <iconify-icon icon="solar:heart-pulse-bold" width="20" height="20" class="text-destructive"></iconify-icon>
+            <Icon icon="solar:heart-pulse-bold" width="20" height="20" className="text-destructive" />
             体調
           </h2>
           <div>
@@ -263,7 +262,7 @@ export default function PreVisitInput() {
         {/* 連絡事項 */}
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <iconify-icon icon="solar:chat-round-dots-bold" width="20" height="20" class="text-chart-4"></iconify-icon>
+            <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-chart-4" />
             連絡事項
           </h2>
           <div>
@@ -297,12 +296,12 @@ export default function PreVisitInput() {
         >
           {saving ? (
             <>
-              <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+              <Icon icon="solar:spinner-bold" width="20" height="20" className="animate-spin" />
               送信中...
             </>
           ) : (
             <>
-              <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+              <Icon icon="solar:check-circle-bold" width="20" height="20" />
               送信する
             </>
           )}

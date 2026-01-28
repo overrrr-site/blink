@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/client'
 
@@ -52,14 +53,14 @@ function PricingTab() {
     <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-          <iconify-icon icon="solar:tag-price-bold" width="16" height="16" class="text-chart-4"></iconify-icon>
+          <Icon icon="solar:tag-price-bold" width="16" height="16" className="text-chart-4" />
           コース・料金設定
         </h2>
         <button
           onClick={() => navigate('/settings/courses/new')}
           className="text-xs font-bold text-primary flex items-center gap-1"
         >
-          <iconify-icon icon="solar:add-circle-bold" width="14" height="14"></iconify-icon>
+          <Icon icon="solar:add-circle-bold" width="14" height="14" />
           追加
         </button>
       </div>
@@ -69,7 +70,7 @@ function PricingTab() {
         </div>
       ) : courseList.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          <iconify-icon icon="solar:tag-price-bold" width="48" height="48" class="mx-auto mb-2 opacity-50"></iconify-icon>
+          <Icon icon="solar:tag-price-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
           <p className="text-sm">コースが登録されていません</p>
         </div>
       ) : (
@@ -106,14 +107,14 @@ function PricingTab() {
                   className="p-2 rounded-full hover:bg-muted transition-colors"
                   aria-label={`${course.course_name}の詳細`}
                 >
-                  <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+                  <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
                 </button>
                 <button
                   onClick={(e) => handleDeleteCourse(course.id, e)}
                   className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
                   aria-label={`${course.course_name}を削除`}
                 >
-                  <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16"></iconify-icon>
+                  <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
                 </button>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { Icon } from '../../components/Icon'
 import { getAvatarUrl } from '../../utils/image'
 
 type Dog = {
@@ -48,12 +49,12 @@ export default function DogSelectSection({ dogs, selectedDogId, onChange }: DogS
                 />
               ) : (
                 <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
+                  <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
                 </div>
               )}
               <span className="font-bold flex-1">{dog.name}</span>
               {selectedDogId === String(dog.id) && (
-                <iconify-icon icon="solar:check-circle-bold" width="24" height="24" class="text-primary"></iconify-icon>
+                <Icon icon="solar:check-circle-bold" width="24" height="24" className="text-primary" />
               )}
             </label>
           ))

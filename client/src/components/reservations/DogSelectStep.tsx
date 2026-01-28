@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../Icon'
 import type { RecentReservation, ReservationDog } from '../../hooks/useReservationCreateData'
 
 type DogSelectStepProps = {
@@ -44,7 +45,7 @@ export default function DogSelectStep({
     <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2">
-          <iconify-icon icon="solar:paw-print-bold" class="text-primary size-4"></iconify-icon>
+          <Icon icon="solar:paw-print-bold" className="text-primary size-4" />
           登園する犬
         </h3>
         {recentDogs.length > 0 && (
@@ -63,12 +64,10 @@ export default function DogSelectStep({
       </div>
 
       <div className="relative mb-3">
-        <iconify-icon
-          icon="solar:magnifer-linear"
+        <Icon icon="solar:magnifer-linear"
           width="18"
           height="18"
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-        ></iconify-icon>
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="犬名・飼い主名で検索"
@@ -103,7 +102,7 @@ export default function DogSelectStep({
                   <img src={dog.photo_url} alt={dog.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
-                    <iconify-icon icon="solar:paw-print-bold" class="size-5 text-muted-foreground"></iconify-icon>
+                    <Icon icon="solar:paw-print-bold" className="size-5 text-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -131,7 +130,7 @@ export default function DogSelectStep({
               </div>
               {selectedDogId === dog.id ? (
                 <div className="size-6 rounded-full bg-primary flex items-center justify-center">
-                  <iconify-icon icon="solar:check-circle-bold" class="size-4 text-white"></iconify-icon>
+                  <Icon icon="solar:check-circle-bold" className="size-4 text-white" />
                 </div>
               ) : (
                 <div className="size-6 rounded-full border-2 border-border"></div>
@@ -143,7 +142,7 @@ export default function DogSelectStep({
 
       {error && (
         <div className="mt-3 flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
-          <iconify-icon icon="solar:danger-triangle-bold" className="size-5 shrink-0"></iconify-icon>
+          <Icon icon="solar:danger-triangle-bold" className="size-5 shrink-0" />
           {error}
         </div>
       )}

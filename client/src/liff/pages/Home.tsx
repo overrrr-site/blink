@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format, differenceInDays, isToday } from 'date-fns';
@@ -62,12 +63,12 @@ function MenuCard({
     >
       {badge}
       <div className={`size-12 rounded-2xl ${iconBgColor} flex items-center justify-center ${iconColor} mb-1`}>
-        <iconify-icon icon={icon} width="28" height="28"></iconify-icon>
+        <Icon icon={icon} width="28" height="28" />
       </div>
       <div className="flex-1 w-full">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-base">{title}</h3>
-          <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20" class="text-muted-foreground"></iconify-icon>
+          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </div>
         <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight text-left">
           {description}
@@ -282,12 +283,10 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -295,7 +294,7 @@ export default function Home() {
   if (!data) {
     return (
       <div className="px-5 pt-6 text-center">
-        <iconify-icon icon="solar:cloud-cross-bold" width="64" height="64" class="text-muted-foreground mx-auto mb-4"></iconify-icon>
+        <Icon icon="solar:cloud-cross-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground mb-4">データの取得に失敗しました</p>
         <button
           onClick={handleRefresh}
@@ -317,7 +316,7 @@ export default function Home() {
       {/* プルダウンリフレッシュのヒント */}
       {refreshing && (
         <div className="flex items-center justify-center py-2">
-          <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="text-primary animate-spin mr-2"></iconify-icon>
+          <Icon icon="solar:spinner-bold" width="20" height="20" className="text-primary animate-spin mr-2" />
           <span className="text-sm text-muted-foreground">更新中...</span>
         </div>
       )}
@@ -334,7 +333,7 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-bold font-heading flex items-center gap-2">
-                <iconify-icon icon="solar:calendar-check-bold" width="20" height="20" class="text-primary"></iconify-icon>
+                <Icon icon="solar:calendar-check-bold" width="20" height="20" className="text-primary" />
                 次回登園予定
               </h2>
               {daysUntil !== null && daysUntil >= 0 && (
@@ -360,13 +359,13 @@ export default function Home() {
                         key={dog.id}
                         className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center shadow-md"
                       >
-                        <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
+                        <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
                       </div>
                     )
                   ))
                 ) : (
                   <div className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center">
-                    <iconify-icon icon="solar:paw-print-bold" width="24" height="24" class="text-primary"></iconify-icon>
+                    <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
                   </div>
                 )}
               </div>
@@ -379,7 +378,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <iconify-icon icon="solar:arrow-right-linear" width="20" height="20"></iconify-icon>
+                <Icon icon="solar:arrow-right-linear" width="20" height="20" />
               </div>
             </div>
           </section>
@@ -395,9 +394,9 @@ export default function Home() {
                            min-h-[48px] flex items-center justify-center gap-2 border border-chart-2/20
                            active:scale-95 transition-transform hover:bg-chart-2/20"
               >
-                <iconify-icon icon="solar:check-circle-bold" class="size-5"></iconify-icon>
+                <Icon icon="solar:check-circle-bold" className="size-5" />
                 登園前情報 入力済み
-                <iconify-icon icon="solar:pen-linear" class="size-4 ml-1 opacity-60"></iconify-icon>
+                <Icon icon="solar:pen-linear" className="size-4 ml-1 opacity-60" />
               </button>
             ) : (
               // 未入力の場合
@@ -408,7 +407,7 @@ export default function Home() {
                            flex items-center justify-center gap-2 border border-chart-3/30
                            hover:bg-chart-3/20"
               >
-                <iconify-icon icon="solar:clipboard-text-bold" class="size-5"></iconify-icon>
+                <Icon icon="solar:clipboard-text-bold" className="size-5" />
                 登園前情報を入力する
               </button>
             )
@@ -421,7 +420,7 @@ export default function Home() {
               {nextReservation.checked_out_at ? (
                 <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
                                min-h-[56px] flex items-center justify-center gap-2">
-                  <iconify-icon icon="mdi:check-circle" class="size-5"></iconify-icon>
+                  <Icon icon="mdi:check-circle" className="size-5" />
                   本日の登園完了
                 </div>
               ) : nextReservation.status === '登園済' ? (
@@ -436,12 +435,12 @@ export default function Home() {
                 >
                   {checkingOut ? (
                     <>
-                      <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                      <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
                       退園処理中...
                     </>
                   ) : (
                     <>
-                      <iconify-icon icon="solar:qr-code-bold" class="size-5"></iconify-icon>
+                      <Icon icon="solar:qr-code-bold" className="size-5" />
                       退園する（QRコードスキャン）
                     </>
                   )}
@@ -450,7 +449,7 @@ export default function Home() {
                 /* 降園済み → 完了表示 */
                 <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
                                min-h-[56px] flex items-center justify-center gap-2">
-                  <iconify-icon icon="mdi:check-circle" class="size-5"></iconify-icon>
+                  <Icon icon="mdi:check-circle" className="size-5" />
                   本日の登園完了
                 </div>
               ) : (
@@ -465,12 +464,12 @@ export default function Home() {
                 >
                   {checkingIn ? (
                     <>
-                      <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                      <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
                       チェックイン中...
                     </>
                   ) : (
                     <>
-                      <iconify-icon icon="solar:qr-code-bold" class="size-5"></iconify-icon>
+                      <Icon icon="solar:qr-code-bold" className="size-5" />
                       登園する（QRコードスキャン）
                     </>
                   )}
@@ -481,7 +480,7 @@ export default function Home() {
         </div>
       ) : (
         <section className="bg-muted/30 rounded-3xl p-5 border border-border text-center">
-          <iconify-icon icon="solar:calendar-add-bold" width="48" height="48" class="text-muted-foreground mx-auto mb-2"></iconify-icon>
+          <Icon icon="solar:calendar-add-bold" width="48" height="48" className="text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground mb-3">次回の予約はありません</p>
           <button
             onClick={() => navigate('/home/reservations/new')}
@@ -537,7 +536,7 @@ export default function Home() {
                     key={dog.id}
                     className="size-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center"
                   >
-                    <iconify-icon icon="solar:paw-print-bold" width="12" height="12" class="text-primary"></iconify-icon>
+                    <Icon icon="solar:paw-print-bold" width="12" height="12" className="text-primary" />
                   </div>
                 )
               ))}
@@ -570,7 +569,7 @@ export default function Home() {
                        flex items-center justify-center gap-2 active:scale-95 transition-transform"
             aria-label="新規予約"
           >
-            <iconify-icon icon="solar:add-circle-bold" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:add-circle-bold" width="20" height="20" />
             新規予約
           </button>
           <button
@@ -579,7 +578,7 @@ export default function Home() {
                        flex items-center justify-center gap-2 active:scale-95 transition-transform"
             aria-label="日誌を見る"
           >
-            <iconify-icon icon="solar:notebook-bold" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:notebook-bold" width="20" height="20" />
             日誌を見る
           </button>
         </div>
@@ -595,7 +594,7 @@ export default function Home() {
             {/* ヘッダー */}
             <div className="flex items-center justify-between p-5 border-b border-border">
               <h2 className="text-base font-bold font-heading flex items-center gap-2">
-                <iconify-icon icon="solar:qr-code-bold" width="20" height="20" class="text-primary"></iconify-icon>
+                <Icon icon="solar:qr-code-bold" width="20" height="20" className="text-primary" />
                 {qrModalMode === 'checkout' ? '降園QRコード入力' : '登園QRコード入力'}
               </h2>
               <button
@@ -607,7 +606,7 @@ export default function Home() {
                 className="size-10 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-circle-bold" width="24" height="24" class="text-muted-foreground"></iconify-icon>
+                <Icon icon="solar:close-circle-bold" width="24" height="24" className="text-muted-foreground" />
               </button>
             </div>
 
@@ -617,7 +616,7 @@ export default function Home() {
               {qrError && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-4">
                   <div className="flex items-start gap-3">
-                    <iconify-icon icon="solar:info-circle-bold" width="20" height="20" class="text-destructive shrink-0 mt-0.5"></iconify-icon>
+                    <Icon icon="solar:info-circle-bold" width="20" height="20" className="text-destructive shrink-0 mt-0.5" />
                     <p className="text-xs text-destructive whitespace-pre-line leading-relaxed">{qrError}</p>
                   </div>
                 </div>
@@ -663,7 +662,7 @@ export default function Home() {
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary text-primary text-sm font-bold hover:bg-primary/5 transition-colors"
               >
-                <iconify-icon icon="solar:camera-bold" width="20" height="20"></iconify-icon>
+                <Icon icon="solar:camera-bold" width="20" height="20" />
                 カメラで再試行
               </button>
 
@@ -680,12 +679,12 @@ export default function Home() {
               >
                 {(checkingIn || checkingOut) ? (
                   <>
-                    <iconify-icon icon="solar:spinner-bold" class="size-5 animate-spin"></iconify-icon>
+                    <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
                     {qrModalMode === 'checkout' ? 'チェックアウト中...' : 'チェックイン中...'}
                   </>
                 ) : (
                   <>
-                    <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+                    <Icon icon="solar:check-circle-bold" width="20" height="20" />
                     {qrModalMode === 'checkout' ? 'この内容でチェックアウト' : 'この内容でチェックイン'}
                   </>
                 )}

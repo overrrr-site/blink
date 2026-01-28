@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
@@ -328,7 +329,7 @@ const JournalDetail = () => {
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-2 text-foreground rounded-full active:bg-muted transition-colors"
             aria-label="日誌一覧に戻る"
           >
-            <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:arrow-left-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading">日誌詳細</h1>
         </div>
@@ -339,7 +340,7 @@ const JournalDetail = () => {
               className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-2.5 rounded-lg text-sm font-medium min-h-[44px]"
               aria-label="印刷"
             >
-              <iconify-icon icon="solar:printer-bold" width="18" height="18"></iconify-icon>
+              <Icon icon="solar:printer-bold" width="18" height="18" />
               印刷
             </button>
           )}
@@ -348,7 +349,7 @@ const JournalDetail = () => {
               onClick={() => setIsEditing(true)}
               className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-bold min-h-[44px]"
             >
-              <iconify-icon icon="solar:pen-bold" width="18" height="18"></iconify-icon>
+              <Icon icon="solar:pen-bold" width="18" height="18" />
               編集
             </button>
           ) : (
@@ -366,12 +367,12 @@ const JournalDetail = () => {
               >
                 {saving ? (
                   <>
-                    <iconify-icon icon="solar:spinner-bold" width="18" height="18" class="animate-spin"></iconify-icon>
+                    <Icon icon="solar:spinner-bold" width="18" height="18" className="animate-spin" />
                     保存中...
                   </>
                 ) : (
                   <>
-                    <iconify-icon icon="solar:check-circle-bold" width="18" height="18"></iconify-icon>
+                    <Icon icon="solar:check-circle-bold" width="18" height="18" />
                     保存
                   </>
                 )}
@@ -393,12 +394,10 @@ const JournalDetail = () => {
               />
             ) : (
               <div className="size-16 rounded-full bg-muted flex items-center justify-center print:size-12">
-                <iconify-icon
-                  icon="solar:paw-print-bold"
+                <Icon icon="solar:paw-print-bold"
                   width="32"
                   height="32"
-                  class="text-muted-foreground"
-                ></iconify-icon>
+                  className="text-muted-foreground" />
               </div>
             )}
             <div className="flex-1">
@@ -427,7 +426,7 @@ const JournalDetail = () => {
         {/* 写真セクション（写真→コメント→詳細の順） */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:gallery-bold" width="20" height="20" class="text-primary"></iconify-icon>
+            <Icon icon="solar:gallery-bold" width="20" height="20" className="text-primary" />
             活動写真
           </h3>
           
@@ -457,7 +456,7 @@ const JournalDetail = () => {
                       className="absolute -top-2 -right-2 size-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg"
                       aria-label="写真を削除"
                     >
-                      <iconify-icon icon="solar:close-circle-bold" width="20" height="20"></iconify-icon>
+                      <Icon icon="solar:close-circle-bold" width="20" height="20" />
                     </button>
                   </div>
                 ))}
@@ -476,7 +475,7 @@ const JournalDetail = () => {
                       className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl"
                       aria-label="削除を取り消す"
                     >
-                      <iconify-icon icon="solar:refresh-bold" width="24" height="24" class="text-white"></iconify-icon>
+                      <Icon icon="solar:refresh-bold" width="24" height="24" className="text-white" />
                     </button>
                   </div>
                 ))}
@@ -495,7 +494,7 @@ const JournalDetail = () => {
                       className="absolute -top-2 -right-2 size-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg"
                       aria-label="写真を削除"
                     >
-                      <iconify-icon icon="solar:close-circle-bold" width="20" height="20"></iconify-icon>
+                      <Icon icon="solar:close-circle-bold" width="20" height="20" />
                     </button>
                     <span className="absolute bottom-1 left-1 text-[10px] bg-primary text-white px-1.5 py-0.5 rounded">新規</span>
                   </div>
@@ -508,7 +507,7 @@ const JournalDetail = () => {
                     onClick={() => fileInputRef.current?.click()}
                     className="aspect-square bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                   >
-                    <iconify-icon icon="solar:camera-add-bold" width="24" height="24"></iconify-icon>
+                    <Icon icon="solar:camera-add-bold" width="24" height="24" />
                     <span className="text-xs">追加</span>
                   </button>
                 )}
@@ -543,7 +542,7 @@ const JournalDetail = () => {
         {/* コメント */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:pen-new-square-bold" width="20" height="20" class="text-primary"></iconify-icon>
+            <Icon icon="solar:pen-new-square-bold" width="20" height="20" className="text-primary" />
             今日の様子
           </h3>
           <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300">
@@ -565,7 +564,7 @@ const JournalDetail = () => {
         {/* トイレ記録 */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:box-bold" width="20" height="20" class="text-chart-1"></iconify-icon>
+            <Icon icon="solar:box-bold" width="20" height="20" className="text-chart-1" />
             トイレ記録
           </h3>
           <div className="grid grid-cols-2 gap-3 print:gap-2">
@@ -655,7 +654,7 @@ const JournalDetail = () => {
         {/* トレーニング記録 */}
         <section>
           <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-            <iconify-icon icon="solar:star-bold" width="20" height="20" class="text-chart-4"></iconify-icon>
+            <Icon icon="solar:star-bold" width="20" height="20" className="text-chart-4" />
             トレーニング記録
           </h3>
           
@@ -664,7 +663,7 @@ const JournalDetail = () => {
               {Object.entries(trainingCategories).map(([categoryKey, category]) => (
                 <div key={categoryKey} className="bg-card rounded-xl border border-border p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <iconify-icon icon={category.icon} width="18" height="18" class="text-primary"></iconify-icon>
+                    <Icon icon={category.icon} width="18" height="18" className="text-primary" />
                     <span className="font-bold text-sm">{category.label}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -725,7 +724,7 @@ const JournalDetail = () => {
         {isEditing && (
           <section>
             <h3 className="text-base font-bold mb-3 flex items-center gap-2">
-              <iconify-icon icon="solar:user-bold" width="20" height="20" className="text-chart-3"></iconify-icon>
+              <Icon icon="solar:user-bold" width="20" height="20" className="text-chart-3" />
               担当スタッフ
             </h3>
             <div className="bg-card rounded-xl border border-border p-4">
@@ -749,7 +748,7 @@ const JournalDetail = () => {
         {(isEditing || journal.next_visit_date) && (
           <section>
             <h3 className="text-base font-bold mb-3 flex items-center gap-2 print:text-sm">
-              <iconify-icon icon="solar:calendar-bold" width="20" height="20" class="text-chart-5"></iconify-icon>
+              <Icon icon="solar:calendar-bold" width="20" height="20" className="text-chart-5" />
               次回訪問予定日
             </h3>
             <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300">

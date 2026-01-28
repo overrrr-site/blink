@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
@@ -24,39 +25,41 @@ const JournalList = () => {
     }
   }
 
-  // ユニークな犬のリストを取得
-  const uniqueDogs = useMemo(() => {
-    const dogs = journals.map((j) => ({ id: j.dog_id, name: j.dog_name }))
-    return Array.from(new Map(dogs.map((d) => [d.id, d])).values())
-  }, [journals])
+  // 3つの計算を1回のループで統合処理（パフォーマンス最適化）
+  const { uniqueDogs, filteredJournals, groupedJournals } = useMemo(() => {
+    const dogMap = new Map<number, { id: number; name: string }>()
+    const filtered: any[] = []
+    const groups: { [key: string]: any[] } = {}
+    const query = searchQuery.toLowerCase()
 
-  // フィルタリングされた日誌
-  const filteredJournals = useMemo(() => {
-    return journals.filter((journal) => {
-      const matchesSearch =
-        searchQuery === '' ||
-        journal.dog_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        journal.owner_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (journal.comment && journal.comment.toLowerCase().includes(searchQuery.toLowerCase()))
+    for (const journal of journals) {
+      // ユニークな犬の収集
+      if (!dogMap.has(journal.dog_id)) {
+        dogMap.set(journal.dog_id, { id: journal.dog_id, name: journal.dog_name })
+      }
 
+      // フィルタリング
+      const matchesSearch = searchQuery === '' ||
+        journal.dog_name.toLowerCase().includes(query) ||
+        journal.owner_name.toLowerCase().includes(query) ||
+        (journal.comment && journal.comment.toLowerCase().includes(query))
       const matchesDog = selectedDog === '' || journal.dog_id.toString() === selectedDog
 
-      return matchesSearch && matchesDog
-    })
-  }, [journals, searchQuery, selectedDog])
-
-  // 日付でグループ化
-  const groupedJournals = useMemo(() => {
-    const groups: { [key: string]: any[] } = {}
-    filteredJournals.forEach((journal) => {
-      const date = journal.journal_date
-      if (!groups[date]) {
-        groups[date] = []
+      if (matchesSearch && matchesDog) {
+        filtered.push(journal)
+        // グループ化も同時実行
+        const date = journal.journal_date
+        if (!groups[date]) groups[date] = []
+        groups[date].push(journal)
       }
-      groups[date].push(journal)
-    })
-    return groups
-  }, [filteredJournals])
+    }
+
+    return {
+      uniqueDogs: Array.from(dogMap.values()),
+      filteredJournals: filtered,
+      groupedJournals: groups
+    }
+  }, [journals, searchQuery, selectedDog])
 
   // CSVエクスポート機能
   const exportToCSV = () => {
@@ -104,14 +107,14 @@ const JournalList = () => {
               onClick={exportToCSV}
               className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors min-h-[44px]"
             >
-              <iconify-icon icon="solar:export-bold" width="18" height="18"></iconify-icon>
+              <Icon icon="solar:export-bold" width="18" height="18" />
               CSV出力
             </button>
             <button
               onClick={() => navigate('/reservations')}
               className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium active:bg-primary/90 transition-colors"
             >
-              <iconify-icon icon="solar:pen-new-square-bold" width="18" height="18"></iconify-icon>
+              <Icon icon="solar:pen-new-square-bold" width="18" height="18" />
               予約から作成
             </button>
           </div>
@@ -120,12 +123,10 @@ const JournalList = () => {
         {/* 検索・フィルタ */}
         <div className="space-y-3">
           <div className="relative">
-            <iconify-icon
-              icon="solar:magnifer-linear"
+            <Icon icon="solar:magnifer-linear"
               width="20"
               height="20"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            ></iconify-icon>
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder="犬名・飼い主名・コメントで検索"
@@ -140,7 +141,7 @@ const JournalList = () => {
                 aria-label="検索をクリア"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                <iconify-icon icon="solar:close-circle-bold" width="20" height="20" aria-hidden="true"></iconify-icon>
+                <Icon icon="solar:close-circle-bold" width="20" height="20" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -179,7 +180,7 @@ const JournalList = () => {
         {journals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
-              <iconify-icon icon="solar:notebook-bold" width="40" height="40" className="text-muted-foreground"></iconify-icon>
+              <Icon icon="solar:notebook-bold" width="40" height="40" className="text-muted-foreground" />
             </div>
             <p className="text-lg font-medium text-foreground mb-2">日誌がありません</p>
             <p className="text-sm text-muted-foreground mb-6">予約カレンダーから日誌を作成できます</p>
@@ -187,13 +188,13 @@ const JournalList = () => {
               onClick={() => navigate('/reservations')}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium active:bg-primary/90 transition-colors"
             >
-              <iconify-icon icon="solar:calendar-bold" width="20" height="20"></iconify-icon>
+              <Icon icon="solar:calendar-bold" width="20" height="20" />
               予約カレンダーを開く
             </button>
           </div>
         ) : filteredJournals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <iconify-icon icon="solar:magnifer-linear" width="48" height="48" className="text-muted-foreground mb-4"></iconify-icon>
+            <Icon icon="solar:magnifer-linear" width="48" height="48" className="text-muted-foreground mb-4" />
             <p className="text-base font-medium text-foreground mb-1">該当する日誌がありません</p>
             <p className="text-sm text-muted-foreground">検索条件を変更してください</p>
           </div>
@@ -201,7 +202,7 @@ const JournalList = () => {
           Object.entries(groupedJournals).map(([date, dateJournals]) => (
             <div key={date}>
               <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                <iconify-icon icon="solar:calendar-linear" width="16" height="16"></iconify-icon>
+                <Icon icon="solar:calendar-linear" width="16" height="16" />
                 {new Date(date).toLocaleDateString('ja-JP', {
                   year: 'numeric',
                   month: 'long',
@@ -226,12 +227,10 @@ const JournalList = () => {
                         />
                       ) : (
                         <div className="size-12 rounded-full bg-muted flex items-center justify-center">
-                          <iconify-icon
-                            icon="solar:paw-print-bold"
+                          <Icon icon="solar:paw-print-bold"
                             width="24"
                             height="24"
-                            className="text-muted-foreground"
-                          ></iconify-icon>
+                            className="text-muted-foreground" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
@@ -240,12 +239,10 @@ const JournalList = () => {
                           {journal.owner_name} 様 / {journal.staff_name || '担当未設定'}
                         </p>
                       </div>
-                      <iconify-icon
-                        icon="solar:alt-arrow-right-linear"
+                      <Icon icon="solar:alt-arrow-right-linear"
                         width="20"
                         height="20"
-                        className="text-muted-foreground shrink-0"
-                      ></iconify-icon>
+                        className="text-muted-foreground shrink-0" />
                     </div>
                     {journal.comment && (
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{journal.comment}</p>

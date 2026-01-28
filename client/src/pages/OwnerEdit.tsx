@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api/client'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
@@ -72,7 +73,7 @@ const OwnerEdit = () => {
             onClick={() => navigate(`/owners/${id}`)}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           >
-            <iconify-icon icon="solar:close-circle-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:close-circle-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading">飼い主情報の編集</h1>
         </div>

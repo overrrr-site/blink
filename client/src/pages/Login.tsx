@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import logoImage from '../assets/logo.png'
@@ -101,7 +102,7 @@ const Login = () => {
               <label className="block text-sm font-medium mb-2">メールアドレス</label>
               <div className="relative flex items-center">
                 <span className="absolute left-3 flex items-center justify-center text-muted-foreground pointer-events-none">
-                  <iconify-icon icon="solar:letter-bold" width="20" height="20"></iconify-icon>
+                  <Icon icon="solar:letter-bold" width="20" height="20" />
                 </span>
                 <input
                   type="email"
@@ -118,7 +119,7 @@ const Login = () => {
               <label className="block text-sm font-medium mb-2">パスワード</label>
               <div className="relative flex items-center">
                 <span className="absolute left-3 flex items-center justify-center text-muted-foreground pointer-events-none">
-                  <iconify-icon icon="solar:lock-password-bold" width="20" height="20"></iconify-icon>
+                  <Icon icon="solar:lock-password-bold" width="20" height="20" />
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -134,11 +135,9 @@ const Login = () => {
                   className="absolute right-3 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors p-1"
                   aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
                 >
-                  <iconify-icon 
-                    icon={showPassword ? 'solar:eye-closed-bold' : 'solar:eye-bold'} 
+                  <Icon icon={showPassword ? 'solar:eye-closed-bold' : 'solar:eye-bold'} 
                     width="20" 
-                    height="20"
-                  ></iconify-icon>
+                    height="20" />
                 </button>
               </div>
             </div>
@@ -156,7 +155,7 @@ const Login = () => {
         <div className="bg-accent/30 rounded-2xl p-4 mt-8 max-w-md mx-auto">
           <div className="flex items-start gap-3">
             <span className="text-accent-foreground mt-0.5">
-              <iconify-icon icon="solar:info-circle-bold" width="20" height="20"></iconify-icon>
+              <Icon icon="solar:info-circle-bold" width="20" height="20" />
             </span>
             <div>
               <p className="text-sm font-bold text-accent-foreground mb-1">ログインについて</p>

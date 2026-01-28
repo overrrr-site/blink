@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom';
 import { format, isFuture, isToday, parseISO } from 'date-fns';
 import liffClient from '../api/client';
@@ -102,12 +103,10 @@ export default function ReservationEdit(): JSX.Element {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -126,7 +125,7 @@ export default function ReservationEdit(): JSX.Element {
           onClick={function() { navigate('/home/reservations'); }}
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">予約を変更</h1>
       </header>
@@ -145,7 +144,7 @@ export default function ReservationEdit(): JSX.Element {
                 />
               ) : (
                 <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-                  <iconify-icon icon="solar:paw-print-bold" width="32" height="32" class="text-primary"></iconify-icon>
+                  <Icon icon="solar:paw-print-bold" width="32" height="32" className="text-primary" />
                 </div>
               )}
               <div>
@@ -159,7 +158,7 @@ export default function ReservationEdit(): JSX.Element {
         {/* 予約日時 */}
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-            <iconify-icon icon="solar:calendar-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:calendar-bold" width="16" height="16" className="text-primary" />
             予約日時
           </h3>
 
@@ -204,7 +203,7 @@ export default function ReservationEdit(): JSX.Element {
         {/* 備考 */}
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-            <iconify-icon icon="solar:notes-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:notes-bold" width="16" height="16" className="text-primary" />
             備考・連絡事項
           </h3>
           <textarea
@@ -219,7 +218,7 @@ export default function ReservationEdit(): JSX.Element {
         {canShowPreVisitInput(reservation) && (
           <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
             <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
-              <iconify-icon icon="solar:clipboard-text-bold" width="16" height="16" class="text-chart-3"></iconify-icon>
+              <Icon icon="solar:clipboard-text-bold" width="16" height="16" className="text-chart-3" />
               登園前の情報入力
             </h3>
             <p className="text-xs text-muted-foreground mb-4">
@@ -236,12 +235,12 @@ export default function ReservationEdit(): JSX.Element {
             >
               {reservation.has_pre_visit_input ? (
                 <>
-                  <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+                  <Icon icon="solar:check-circle-bold" width="20" height="20" />
                   入力済み（タップして編集）
                 </>
               ) : (
                 <>
-                  <iconify-icon icon="solar:pen-new-square-bold" width="20" height="20"></iconify-icon>
+                  <Icon icon="solar:pen-new-square-bold" width="20" height="20" />
                   登園前情報を入力する
                 </>
               )}
@@ -258,12 +257,12 @@ export default function ReservationEdit(): JSX.Element {
           >
             {saving ? (
               <>
-                <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+                <Icon icon="solar:spinner-bold" width="20" height="20" className="animate-spin" />
                 保存中...
               </>
             ) : (
               <>
-                <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+                <Icon icon="solar:check-circle-bold" width="20" height="20" />
                 変更を保存
               </>
             )}

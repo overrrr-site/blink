@@ -9,6 +9,11 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@iconify-json/mdi": "^1.2.3",
+    "@iconify-json/solar": "^1.2.5",
+    "@iconify/icons-mdi": "^1.2.48",
+    "@iconify/icons-solar": "^1.2.3",
+    "@iconify/react": "^6.0.2",
     "@line/liff": "^2.27.3",
     "@rc-component/qrcode": "^1.1.1",
     "@supabase/supabase-js": "^2.91.0",
@@ -17,6 +22,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.0",
+    "unplugin-icons": "^23.0.1",
     "zustand": "^4.4.7"
   },
   "devDependencies": {

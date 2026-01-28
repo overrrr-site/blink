@@ -1,4 +1,5 @@
 import { useState, useEffect, Suspense, lazy, useMemo } from 'react'
+import { Icon } from '../components/Icon'
 import api from '../api/client'
 import { useAuthStore } from '../store/authStore'
 
@@ -26,7 +27,7 @@ const OtherTab = lazy(() => import('./settings/OtherTab'))
 function TabLoader() {
   return (
     <div className="flex items-center justify-center py-8">
-      <iconify-icon icon="solar:spinner-bold" width="24" height="24" class="text-primary animate-spin"></iconify-icon>
+      <Icon icon="solar:spinner-bold" width="24" height="24" className="text-primary animate-spin" />
     </div>
   )
 }
@@ -109,7 +110,7 @@ function Settings() {
               }`}
               aria-pressed={activeTab === tab.id}
             >
-              <iconify-icon icon={tab.icon} width="16" height="16"></iconify-icon>
+              <Icon icon={tab.icon} width="16" height="16" />
               {tab.label}
             </button>
           ))}

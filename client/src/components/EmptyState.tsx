@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 interface EmptyStateProps {
   icon: string
   title: string
@@ -13,7 +14,7 @@ const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div className="size-24 rounded-full bg-accent/30 flex items-center justify-center mb-6">
-        <iconify-icon icon={icon} width="48" height="48" className="text-accent-foreground"></iconify-icon>
+        <Icon icon={icon} width="48" height="48" className="text-accent-foreground" />
       </div>
       <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
       {description && (
@@ -25,7 +26,7 @@ const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
           className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-sm"
         >
           {action.icon && (
-            <iconify-icon icon={action.icon} width="20" height="20"></iconify-icon>
+            <Icon icon={action.icon} width="20" height="20" />
           )}
           {action.label}
         </button>

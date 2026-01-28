@@ -1,3 +1,4 @@
+import { Icon } from '../../components/Icon'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
 import logoImage from '../../assets/logo.png';
@@ -38,7 +39,7 @@ export default function Layout() {
           aria-label="マイページ"
         >
           <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <iconify-icon icon="solar:user-bold" width="20" height="20" class="text-primary"></iconify-icon>
+            <Icon icon="solar:user-bold" width="20" height="20" className="text-primary" />
           </div>
         </button>
       </header>
@@ -111,7 +112,7 @@ function NavButton({
       {isActive && (
         <span className="absolute inset-x-2 top-1 h-8 bg-primary/10 rounded-lg" aria-hidden="true"></span>
       )}
-      <iconify-icon icon={icon} width="24" height="24" aria-hidden="true" class="relative z-10"></iconify-icon>
+      <Icon icon={icon} width="24" height="24" aria-hidden="true" className="relative z-10" />
       <span className={`text-xs relative z-10 ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>
     </button>
   );

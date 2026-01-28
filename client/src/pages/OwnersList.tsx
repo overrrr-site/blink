@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
@@ -64,7 +65,7 @@ const OwnersList = () => {
             onClick={() => navigate('/owners/new')}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
           >
-            <iconify-icon icon="solar:user-plus-bold" className="size-4"></iconify-icon>
+            <Icon icon="solar:user-plus-bold" className="size-4" />
             新規登録
           </button>
         </div>
@@ -95,10 +96,8 @@ const OwnersList = () => {
 
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            <iconify-icon
-              icon="solar:magnifer-linear"
-              className="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2"
-            ></iconify-icon>
+            <Icon icon="solar:magnifer-linear"
+              className="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="検索..."
@@ -137,10 +136,8 @@ const OwnersList = () => {
                     />
                   ) : (
                     <div className="size-16 rounded-full bg-muted flex items-center justify-center">
-                      <iconify-icon
-                        icon="solar:paw-print-bold"
-                        className="size-8 text-muted-foreground"
-                      ></iconify-icon>
+                      <Icon icon="solar:paw-print-bold"
+                        className="size-8 text-muted-foreground" />
                     </div>
                   )}
                   <div className="flex-1">
@@ -148,10 +145,8 @@ const OwnersList = () => {
                     <p className="text-sm text-muted-foreground">{dog.breed}</p>
                     <p className="text-xs text-muted-foreground">飼い主: {dog.owner_name}</p>
                   </div>
-                  <iconify-icon
-                    icon="solar:alt-arrow-right-linear"
-                    className="size-5 text-muted-foreground"
-                  ></iconify-icon>
+                  <Icon icon="solar:alt-arrow-right-linear"
+                    className="size-5 text-muted-foreground" />
                 </div>
               </div>
             ))
@@ -202,10 +197,8 @@ const OwnersList = () => {
                             />
                           ) : (
                             <div className="size-6 rounded-full bg-muted flex items-center justify-center">
-                              <iconify-icon
-                                icon="solar:paw-print-bold"
-                                className="size-3 text-muted-foreground"
-                              ></iconify-icon>
+                              <Icon icon="solar:paw-print-bold"
+                                className="size-3 text-muted-foreground" />
                             </div>
                           )}
                           <span className="text-xs font-medium">{dog.name}</span>
@@ -215,7 +208,7 @@ const OwnersList = () => {
                   )}
                 </div>
                 <button className="text-muted-foreground hover:text-primary transition-colors p-1">
-                  <iconify-icon icon="solar:alt-arrow-right-linear" className="size-5"></iconify-icon>
+                  <Icon icon="solar:alt-arrow-right-linear" className="size-5" />
                 </button>
               </div>
             </div>

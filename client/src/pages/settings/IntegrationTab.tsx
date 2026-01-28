@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Icon } from '../../components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../../api/client'
 
@@ -231,7 +232,7 @@ function IntegrationTab() {
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:calendar-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:calendar-bold" width="16" height="16" className="text-primary" />
             Googleカレンダー連携
           </h2>
         </div>
@@ -260,7 +261,7 @@ function IntegrationTab() {
                 onClick={handleGoogleCalendarDisconnect}
                 className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium text-destructive"
               >
-                <iconify-icon icon="solar:unlink-bold" width="16" height="16"></iconify-icon>
+                <Icon icon="solar:unlink-bold" width="16" height="16" />
                 連携を解除
               </button>
             </div>
@@ -276,7 +277,7 @@ function IntegrationTab() {
                 onClick={handleGoogleCalendarConnect}
                 className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
               >
-                <iconify-icon icon="solar:calendar-bold" width="16" height="16"></iconify-icon>
+                <Icon icon="solar:calendar-bold" width="16" height="16" />
                 Googleカレンダーと連携
               </button>
             </div>
@@ -288,7 +289,7 @@ function IntegrationTab() {
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:chat-round-bold" width="16" height="16" class="text-primary"></iconify-icon>
+            <Icon icon="solar:chat-round-bold" width="16" height="16" className="text-primary" />
             LINE公式アカウント連携
           </h2>
         </div>
@@ -334,12 +335,12 @@ function IntegrationTab() {
               >
                 {testingLine ? (
                   <>
-                    <iconify-icon icon="solar:spinner-bold" width="16" height="16" class="animate-spin"></iconify-icon>
+                    <Icon icon="solar:spinner-bold" width="16" height="16" className="animate-spin" />
                     送信中...
                   </>
                 ) : (
                   <>
-                    <iconify-icon icon="solar:paper-plane-bold" width="16" height="16"></iconify-icon>
+                    <Icon icon="solar:paper-plane-bold" width="16" height="16" />
                     テストメッセージを送信
                   </>
                 )}
@@ -351,12 +352,10 @@ function IntegrationTab() {
                   lineTestResult.success ? 'bg-chart-2/10 text-chart-2' : 'bg-destructive/10 text-destructive'
                 }`}>
                   <div className="flex items-start gap-2">
-                    <iconify-icon
-                      icon={lineTestResult.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
+                    <Icon icon={lineTestResult.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
                       width="16"
                       height="16"
-                      class="mt-0.5"
-                    ></iconify-icon>
+                      className="mt-0.5" />
                     <p className="text-sm">{lineTestResult.message}</p>
                   </div>
                 </div>
@@ -366,14 +365,14 @@ function IntegrationTab() {
                 onClick={handleLineConnect}
                 className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
               >
-                <iconify-icon icon="solar:settings-bold" width="16" height="16"></iconify-icon>
+                <Icon icon="solar:settings-bold" width="16" height="16" />
                 設定を変更
               </button>
               <button
                 onClick={handleLineDisconnect}
                 className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium text-destructive"
               >
-                <iconify-icon icon="solar:unlink-bold" width="16" height="16"></iconify-icon>
+                <Icon icon="solar:unlink-bold" width="16" height="16" />
                 連携を解除
               </button>
             </div>
@@ -389,7 +388,7 @@ function IntegrationTab() {
                 onClick={handleLineConnect}
                 className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
               >
-                <iconify-icon icon="solar:chat-round-bold" width="16" height="16"></iconify-icon>
+                <Icon icon="solar:chat-round-bold" width="16" height="16" />
                 LINE公式アカウントと連携
               </button>
             </div>
@@ -402,7 +401,7 @@ function IntegrationTab() {
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
             <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-              <iconify-icon icon="solar:chat-round-dots-bold" width="16" height="16" class="text-primary"></iconify-icon>
+              <Icon icon="solar:chat-round-dots-bold" width="16" height="16" className="text-primary" />
               LINEチャットボット設定
             </h2>
           </div>
@@ -410,7 +409,7 @@ function IntegrationTab() {
             {/* Webhook URL表示 */}
             <div className="bg-accent/30 rounded-xl p-3">
               <div className="flex items-start gap-2 mb-2">
-                <iconify-icon icon="solar:info-circle-bold" width="16" height="16" class="text-accent-foreground mt-0.5"></iconify-icon>
+                <Icon icon="solar:info-circle-bold" width="16" height="16" className="text-accent-foreground mt-0.5" />
                 <div className="flex-1">
                   <p className="text-xs font-bold mb-1">Webhook URL</p>
                   <p className="text-[10px] text-muted-foreground mb-2">
@@ -429,7 +428,7 @@ function IntegrationTab() {
                     }}
                     className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
                   >
-                    <iconify-icon icon="solar:copy-bold" width="12" height="12"></iconify-icon>
+                    <Icon icon="solar:copy-bold" width="12" height="12" />
                     URLをコピー
                   </button>
                 </div>
@@ -470,7 +469,7 @@ function IntegrationTab() {
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:bell-bold" width="16" height="16" class="text-chart-5"></iconify-icon>
+            <Icon icon="solar:bell-bold" width="16" height="16" className="text-chart-5" />
             通知設定
           </h2>
         </div>
@@ -519,12 +518,12 @@ function IntegrationTab() {
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
-                <iconify-icon icon="solar:close-bold" width="24" height="24"></iconify-icon>
+                <Icon icon="solar:close-bold" width="24" height="24" />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div className="bg-accent/30 rounded-xl p-3 flex items-start gap-2">
-                <iconify-icon icon="solar:info-circle-bold" width="16" height="16" class="text-accent-foreground mt-0.5"></iconify-icon>
+                <Icon icon="solar:info-circle-bold" width="16" height="16" className="text-accent-foreground mt-0.5" />
                 <p className="text-xs text-muted-foreground">
                   LINE Developersコンソールで取得した、Messaging APIのチャネル情報を入力してください。
                 </p>

@@ -1,8 +1,23 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { Icon } from './Icon'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { getRandomGreeting } from '../utils/greetings'
 import OnboardingGuide from './OnboardingGuide'
+
+// 定数をコンポーネント外部に定義（毎レンダリングでの再生成を防止）
+const NAV_ITEMS = [
+  { path: '/', label: '今日', icon: 'solar:calendar-mark-bold' },
+  { path: '/reservations', label: '予定', icon: 'solar:calendar-bold' },
+  { path: '/customers', label: '顧客', icon: 'solar:users-group-rounded-bold' },
+  { path: '/settings', label: '設定', icon: 'solar:settings-bold' },
+] as const
+
+const FAB_ACTIONS = [
+  { label: '予約を追加', icon: 'solar:calendar-add-bold', path: '/reservations/new', color: 'bg-chart-1' },
+  { label: '顧客を登録', icon: 'solar:user-plus-bold', path: '/owners/new', color: 'bg-chart-2' },
+  { label: '日誌を作成', icon: 'solar:document-add-bold', path: '/journals/new', color: 'bg-chart-3' },
+] as const
 
 const Layout = () => {
   const navigate = useNavigate()
@@ -11,22 +26,8 @@ const Layout = () => {
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())
 
-  // 新しい4タブ構成
-  const navItems = [
-    { path: '/', label: '今日', icon: 'solar:calendar-mark-bold' },
-    { path: '/reservations', label: '予定', icon: 'solar:calendar-bold' },
-    { path: '/customers', label: '顧客', icon: 'solar:users-group-rounded-bold' },
-    { path: '/settings', label: '設定', icon: 'solar:settings-bold' },
-  ]
-
-  // FABメニューの項目
-  const fabActions = [
-    { label: '予約を追加', icon: 'solar:calendar-add-bold', path: '/reservations/new', color: 'bg-chart-1' },
-    { label: '顧客を登録', icon: 'solar:user-plus-bold', path: '/owners/new', color: 'bg-chart-2' },
-    { label: '日誌を作成', icon: 'solar:document-add-bold', path: '/journals/new', color: 'bg-chart-3' },
-  ]
-
-  const isActive = (path: string) => {
+  // isActive関数をuseCallbackでメモ化
+  const isActive = useCallback((path: string) => {
     if (path === '/') {
       return location.pathname === '/'
     }
@@ -34,7 +35,7 @@ const Layout = () => {
       return location.pathname.startsWith('/owners') || location.pathname.startsWith('/dogs') || location.pathname.startsWith('/customers')
     }
     return location.pathname.startsWith(path)
-  }
+  }, [location.pathname])
 
   const isHomePage = location.pathname === '/'
 
@@ -88,7 +89,7 @@ const Layout = () => {
           fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        {fabActions.map((action, index) => (
+        {FAB_ACTIONS.map((action, index) => (
           <button
             key={action.path}
             onClick={(e) => {
@@ -101,7 +102,7 @@ const Layout = () => {
             }}
             aria-label={action.label}
           >
-            <iconify-icon icon={action.icon} width="20" height="20" aria-hidden="true"></iconify-icon>
+            <Icon icon={action.icon} width="20" height="20" aria-hidden="true" />
             <span className="text-sm font-medium whitespace-nowrap">{action.label}</span>
           </button>
         ))}
@@ -111,7 +112,7 @@ const Layout = () => {
       <nav role="navigation" aria-label="メインナビゲーション" className="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 safe-area-pb">
         <div className="flex items-center justify-around px-1 relative">
           {/* 左側2つのタブ */}
-          {navItems.slice(0, 2).map((item) => (
+          {NAV_ITEMS.slice(0, 2).map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
@@ -127,7 +128,7 @@ const Layout = () => {
               {isActive(item.path) && (
                 <span className="absolute inset-x-2 top-1 h-8 bg-primary/10 rounded-lg" aria-hidden="true"></span>
               )}
-              <iconify-icon icon={item.icon} width="24" height="24" aria-hidden="true" className="relative z-10"></iconify-icon>
+              <Icon icon={item.icon} width="24" height="24" aria-hidden="true" className="relative z-10" />
               <span className={`text-xs relative z-10 ${isActive(item.path) ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
             </button>
           ))}
@@ -148,12 +149,12 @@ const Layout = () => {
               aria-label={fabOpen ? 'メニューを閉じる' : '新規作成'}
               style={{ minWidth: '56px', minHeight: '56px' }}
             >
-              <iconify-icon icon="solar:add-circle-bold" width="28" height="28"></iconify-icon>
+              <Icon icon="solar:add-circle-bold" width="28" height="28" />
             </button>
           </div>
 
           {/* 右側2つのタブ */}
-          {navItems.slice(2, 4).map((item) => (
+          {NAV_ITEMS.slice(2, 4).map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
@@ -169,7 +170,7 @@ const Layout = () => {
               {isActive(item.path) && (
                 <span className="absolute inset-x-2 top-1 h-8 bg-primary/10 rounded-lg" aria-hidden="true"></span>
               )}
-              <iconify-icon icon={item.icon} width="24" height="24" aria-hidden="true" className="relative z-10"></iconify-icon>
+              <Icon icon={item.icon} width="24" height="24" aria-hidden="true" className="relative z-10" />
               <span className={`text-xs relative z-10 ${isActive(item.path) ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
             </button>
           ))}

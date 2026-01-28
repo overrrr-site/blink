@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 
 interface HelpSection {
@@ -482,7 +483,7 @@ const Help = () => {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           aria-label="戻る"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">ヘルプ・サポート</h1>
       </header>
@@ -491,10 +492,8 @@ const Help = () => {
         {/* 検索バー */}
         <div className="bg-card rounded-2xl border border-border p-4">
           <div className="flex items-center gap-3">
-            <iconify-icon
-              icon="solar:magnifer-bold"
-              className="size-6 text-primary shrink-0"
-            ></iconify-icon>
+            <Icon icon="solar:magnifer-bold"
+              className="size-6 text-primary shrink-0" />
             <input
               type="text"
               value={searchQuery}
@@ -508,7 +507,7 @@ const Help = () => {
         {/* ヘルプセクション */}
         {filteredSections.length === 0 ? (
           <div className="text-center py-12">
-            <iconify-icon icon="solar:magnifer-bold" width="48" height="48" className="text-muted-foreground mx-auto mb-3"></iconify-icon>
+            <Icon icon="solar:magnifer-bold" width="48" height="48" className="text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">検索結果が見つかりませんでした</p>
           </div>
         ) : (
@@ -521,13 +520,11 @@ const Help = () => {
                   className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors min-h-[56px]"
                 >
                   <div className="flex items-center gap-3">
-                    <iconify-icon icon={section.icon} className="size-5 text-primary"></iconify-icon>
+                    <Icon icon={section.icon} className="size-5 text-primary" />
                     <span className="font-bold text-sm">{section.title}</span>
                   </div>
-                  <iconify-icon
-                    icon={expandedSections.has(section.id) ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold'}
-                    className="size-5 text-muted-foreground"
-                  ></iconify-icon>
+                  <Icon icon={expandedSections.has(section.id) ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold'}
+                    className="size-5 text-muted-foreground" />
                 </button>
 
                 {/* セクションコンテンツ */}
@@ -542,10 +539,8 @@ const Help = () => {
                             className="w-full px-5 py-3 flex items-start justify-between text-left hover:bg-muted/20 transition-colors min-h-[48px]"
                           >
                             <span className="text-sm font-medium flex-1 pr-4">{item.question}</span>
-                            <iconify-icon
-                              icon={expandedItems.has(itemId) ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold'}
-                              className="size-4 text-muted-foreground flex-shrink-0 mt-0.5"
-                            ></iconify-icon>
+                            <Icon icon={expandedItems.has(itemId) ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold'}
+                              className="size-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                           </button>
                           {expandedItems.has(itemId) && (
                             <div className="px-5 pb-4 pt-2 space-y-3">
@@ -577,7 +572,7 @@ const Help = () => {
         {/* お問い合わせセクション */}
         <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
           <div className="flex items-center gap-3 mb-3">
-            <iconify-icon icon="solar:question-circle-bold" className="size-5 text-primary"></iconify-icon>
+            <Icon icon="solar:question-circle-bold" className="size-5 text-primary" />
             <h3 className="font-bold text-sm">まだ解決しませんか？</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
@@ -587,7 +582,7 @@ const Help = () => {
             onClick={() => window.open('mailto:info@overrrr.com?subject=Blinkに関するお問い合わせ', '_blank')}
             className="w-full px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors min-h-[48px]"
           >
-            <iconify-icon icon="solar:letter-bold" className="size-4 inline-block mr-2"></iconify-icon>
+            <Icon icon="solar:letter-bold" className="size-4 inline-block mr-2" />
             メールでお問い合わせ
           </button>
         </div>

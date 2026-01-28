@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import PageHeader from '../components/PageHeader'
@@ -111,7 +112,7 @@ function CourseEdit(): JSX.Element {
       <form onSubmit={handleSubmit} className="px-5 pt-4 space-y-4">
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
-            <iconify-icon icon="solar:tag-price-bold" className="text-chart-4 size-4"></iconify-icon>
+            <Icon icon="solar:tag-price-bold" className="text-chart-4 size-4" />
             コース情報
           </h3>
           <div className="space-y-3">

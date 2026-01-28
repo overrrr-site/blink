@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import { calculateAge } from '../utils/dog'
 import HealthInfoSection from '../components/dogs/HealthInfoSection'
@@ -38,7 +39,7 @@ const DogDetail = () => {
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
             aria-label="戻る"
           >
-            <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:arrow-left-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading">ワンちゃん詳細</h1>
         </div>
@@ -47,7 +48,7 @@ const DogDetail = () => {
           className="flex items-center gap-2 px-4 py-2 text-primary font-bold rounded-xl active:bg-primary/10 transition-colors min-h-[44px]"
           aria-label="編集"
         >
-          <iconify-icon icon="solar:pen-bold" width="20" height="20"></iconify-icon>
+          <Icon icon="solar:pen-bold" width="20" height="20" />
           <span className="text-sm">編集</span>
         </button>
       </header>
@@ -63,10 +64,8 @@ const DogDetail = () => {
               />
             ) : (
               <div className="size-20 rounded-full bg-muted flex items-center justify-center">
-                <iconify-icon
-                  icon="solar:paw-print-bold"
-                  className="size-10 text-muted-foreground"
-                ></iconify-icon>
+                <Icon icon="solar:paw-print-bold"
+                  className="size-10 text-muted-foreground" />
               </div>
             )}
             <div>

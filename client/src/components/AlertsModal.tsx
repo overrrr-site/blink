@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from './Icon'
 import api from '../api/client'
 
 interface Alert {
@@ -95,7 +96,7 @@ const AlertsModal = ({ isOpen, onClose }: AlertsModalProps) => {
         {/* ヘッダー */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:bell-bold" className="text-chart-4 size-5"></iconify-icon>
+            <Icon icon="solar:bell-bold" className="text-chart-4 size-5" />
             確認事項
           </h2>
           <button
@@ -103,7 +104,7 @@ const AlertsModal = ({ isOpen, onClose }: AlertsModalProps) => {
             className="size-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             aria-label="閉じる"
           >
-            <iconify-icon icon="solar:close-circle-bold" className="size-6 text-muted-foreground"></iconify-icon>
+            <Icon icon="solar:close-circle-bold" className="size-6 text-muted-foreground" />
           </button>
         </div>
 
@@ -116,7 +117,7 @@ const AlertsModal = ({ isOpen, onClose }: AlertsModalProps) => {
           ) : alerts.length === 0 ? (
             <div className="text-center py-12">
               <div className="size-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <iconify-icon icon="solar:check-circle-bold" className="size-8 text-chart-2"></iconify-icon>
+                <Icon icon="solar:check-circle-bold" className="size-8 text-chart-2" />
               </div>
               <p className="text-sm font-medium mb-1">確認事項はありません</p>
               <p className="text-xs text-muted-foreground">すべて確認済みです</p>
@@ -130,7 +131,7 @@ const AlertsModal = ({ isOpen, onClose }: AlertsModalProps) => {
                 >
                   <div className="flex items-start gap-3">
                     <div className="size-10 rounded-full bg-chart-4/20 flex items-center justify-center shrink-0">
-                      <iconify-icon icon={getAlertIcon(alert.alert_type)} class="size-5 text-chart-4"></iconify-icon>
+                      <Icon icon={getAlertIcon(alert.alert_type)} className="size-5 text-chart-4" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">

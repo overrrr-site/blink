@@ -1,3 +1,4 @@
+import { Icon } from '../Icon'
 import { formatDateFullWithWeekday } from '../../utils/date'
 
 type ReservationFooterProps = {
@@ -42,7 +43,7 @@ export default function ReservationFooter({
           '登録中...'
         ) : (
           <>
-            <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:check-circle-bold" width="20" height="20" />
             予約を確定する
           </>
         )}

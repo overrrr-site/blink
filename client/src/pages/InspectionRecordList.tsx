@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import { Icon } from '../components/Icon'
 import api from '../api/client'
 
 interface Staff {
@@ -343,7 +344,7 @@ const InspectionRecordList = () => {
               onClick={handlePrint}
               className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors min-h-[44px]"
             >
-              <iconify-icon icon="solar:printer-bold" width="18" height="18"></iconify-icon>
+              <Icon icon="solar:printer-bold" width="18" height="18" />
               印刷
             </button>
           </div>
@@ -355,7 +356,7 @@ const InspectionRecordList = () => {
             onClick={() => changeMonth(-1)}
             className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
           >
-            <iconify-icon icon="solar:alt-arrow-left-linear" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:alt-arrow-left-linear" width="20" height="20" />
           </button>
           <h2 className="text-lg font-bold">
             {year}年{month}月
@@ -364,7 +365,7 @@ const InspectionRecordList = () => {
             onClick={() => changeMonth(1)}
             className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
           >
-            <iconify-icon icon="solar:alt-arrow-right-linear" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" />
           </button>
         </div>
       </header>
@@ -415,19 +416,15 @@ const InspectionRecordList = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {isSaving && (
-                      <iconify-icon
-                        icon="solar:spinner-bold"
+                      <Icon icon="solar:spinner-bold"
                         width="20"
                         height="20"
-                        class="text-primary animate-spin"
-                      ></iconify-icon>
+                        className="text-primary animate-spin" />
                     )}
-                    <iconify-icon
-                      icon={isExpanded ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
+                    <Icon icon={isExpanded ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
                       width="20"
                       height="20"
-                      class="text-muted-foreground"
-                    ></iconify-icon>
+                      className="text-muted-foreground" />
                   </div>
                 </button>
 
@@ -637,21 +634,17 @@ const InspectionRecordList = () => {
                     <div className="pt-2 flex items-center justify-center">
                       {isSaving ? (
                         <div className="flex items-center gap-2 text-primary">
-                          <iconify-icon
-                            icon="solar:spinner-bold"
+                          <Icon icon="solar:spinner-bold"
                             width="20"
                             height="20"
-                            class="animate-spin"
-                          ></iconify-icon>
+                            className="animate-spin" />
                           <span className="text-sm font-medium">保存中...</span>
                         </div>
                       ) : record ? (
                         <div className="flex items-center gap-2 text-chart-2">
-                          <iconify-icon
-                            icon="solar:check-circle-bold"
+                          <Icon icon="solar:check-circle-bold"
                             width="20"
-                            height="20"
-                          ></iconify-icon>
+                            height="20" />
                           <span className="text-sm font-medium">保存済み</span>
                         </div>
                       ) : (

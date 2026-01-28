@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
@@ -6,24 +7,38 @@ const DogsList = () => {
   const [dogs, setDogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const navigate = useNavigate()
 
+  // 検索クエリのデバウンス（300ms）
   useEffect(() => {
-    fetchDogs()
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
   }, [search])
 
-  const fetchDogs = async () => {
-    try {
-      const response = await api.get('/dogs', {
-        params: { search },
-      })
-      setDogs(response.data)
-    } catch (error) {
-      console.error('Error fetching dogs:', error)
-    } finally {
-      setLoading(false)
+  // デバウンスされた検索値でAPIコール
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const fetchDogs = async () => {
+      try {
+        const response = await api.get('/dogs', {
+          params: { search: debouncedSearch },
+          signal: controller.signal,
+        })
+        setDogs(response.data)
+      } catch (error: any) {
+        if (!controller.signal.aborted) {
+          console.error('Error fetching dogs:', error)
+        }
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+
+    fetchDogs()
+    return () => controller.abort()
+  }, [debouncedSearch])
 
   if (loading) {
     return (
@@ -42,10 +57,8 @@ const DogsList = () => {
 
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            <iconify-icon
-              icon="solar:magnifer-linear"
-              className="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2"
-            ></iconify-icon>
+            <Icon icon="solar:magnifer-linear"
+              className="size-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="犬名・飼い主名で検索"
@@ -78,10 +91,8 @@ const DogsList = () => {
                   />
                 ) : (
                   <div className="size-16 rounded-full bg-muted flex items-center justify-center">
-                    <iconify-icon
-                      icon="solar:paw-print-bold"
-                      className="size-8 text-muted-foreground"
-                    ></iconify-icon>
+                    <Icon icon="solar:paw-print-bold"
+                      className="size-8 text-muted-foreground" />
                   </div>
                 )}
                 <div className="flex-1">
@@ -89,10 +100,8 @@ const DogsList = () => {
                   <p className="text-sm text-muted-foreground">{dog.breed}</p>
                   <p className="text-xs text-muted-foreground">飼い主: {dog.owner_name}</p>
                 </div>
-                <iconify-icon
-                  icon="solar:alt-arrow-right-linear"
-                  className="size-5 text-muted-foreground"
-                ></iconify-icon>
+                <Icon icon="solar:alt-arrow-right-linear"
+                  className="size-5 text-muted-foreground" />
               </div>
             </div>
           ))

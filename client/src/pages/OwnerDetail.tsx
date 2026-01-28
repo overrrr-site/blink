@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 
@@ -50,7 +51,7 @@ const OwnerDetail = () => {
             className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
             aria-label="顧客一覧に戻る"
           >
-            <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+            <Icon icon="solar:arrow-left-linear" width="24" height="24" />
           </button>
           <h1 className="text-lg font-bold font-heading">飼い主詳細</h1>
         </div>
@@ -59,7 +60,7 @@ const OwnerDetail = () => {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -mr-3 text-primary rounded-full active:bg-primary/10 transition-colors"
           aria-label="編集"
         >
-          <iconify-icon icon="solar:pen-bold" width="22" height="22"></iconify-icon>
+          <Icon icon="solar:pen-bold" width="22" height="22" />
         </button>
       </header>
 
@@ -83,7 +84,7 @@ const OwnerDetail = () => {
                 href={`tel:${owner.phone}`} 
                 className="text-base font-medium text-primary flex items-center gap-2 hover:underline"
               >
-                <iconify-icon icon="solar:phone-calling-bold" className="size-4"></iconify-icon>
+                <Icon icon="solar:phone-calling-bold" className="size-4" />
                 {owner.phone}
               </a>
             </div>
@@ -94,7 +95,7 @@ const OwnerDetail = () => {
                   href={`mailto:${owner.email}`} 
                   className="text-base font-medium text-primary flex items-center gap-2 hover:underline"
                 >
-                  <iconify-icon icon="solar:letter-bold" className="size-4"></iconify-icon>
+                  <Icon icon="solar:letter-bold" className="size-4" />
                   {owner.email}
                 </a>
               </div>
@@ -115,7 +116,7 @@ const OwnerDetail = () => {
               onClick={() => navigate(`/owners/${id}/dogs/new`)}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors"
             >
-              <iconify-icon icon="solar:add-circle-bold" width="20" height="20"></iconify-icon>
+              <Icon icon="solar:add-circle-bold" width="20" height="20" />
               犬を追加
             </button>
           </div>
@@ -133,20 +134,16 @@ const OwnerDetail = () => {
                   />
                 ) : (
                   <div className="size-20 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <iconify-icon
-                      icon="solar:paw-print-bold"
-                      className="size-10 text-muted-foreground"
-                    ></iconify-icon>
+                    <Icon icon="solar:paw-print-bold"
+                      className="size-10 text-muted-foreground" />
                   </div>
                 )}
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">{owner.dogs[0].name}</h3>
                   <p className="text-sm text-muted-foreground">{owner.dogs[0].breed}</p>
                 </div>
-                <iconify-icon
-                  icon="solar:alt-arrow-right-linear"
-                  className="size-5 text-muted-foreground"
-                ></iconify-icon>
+                <Icon icon="solar:alt-arrow-right-linear"
+                  className="size-5 text-muted-foreground" />
               </div>
             ) : (
               <div className="overflow-x-auto pb-2 -mx-2 px-2">
@@ -168,10 +165,8 @@ const OwnerDetail = () => {
                         />
                       ) : (
                         <div className="size-16 rounded-full bg-muted flex items-center justify-center">
-                          <iconify-icon
-                            icon="solar:paw-print-bold"
-                            className="size-8 text-muted-foreground"
-                          ></iconify-icon>
+                          <Icon icon="solar:paw-print-bold"
+                            className="size-8 text-muted-foreground" />
                         </div>
                       )}
                       <div className="text-center">
@@ -185,16 +180,14 @@ const OwnerDetail = () => {
             )
           ) : (
             <div className="text-center py-8">
-              <iconify-icon
-                icon="solar:paw-print-bold"
-                className="size-12 text-muted-foreground mx-auto mb-3"
-              ></iconify-icon>
+              <Icon icon="solar:paw-print-bold"
+                className="size-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground mb-4">登録されている犬がいません</p>
               <button
                 onClick={() => navigate(`/owners/${id}/dogs/new`)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors"
               >
-                <iconify-icon icon="solar:add-circle-bold" width="20" height="20"></iconify-icon>
+                <Icon icon="solar:add-circle-bold" width="20" height="20" />
                 犬を追加
               </button>
             </div>

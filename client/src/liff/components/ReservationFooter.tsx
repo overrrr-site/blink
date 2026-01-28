@@ -1,3 +1,4 @@
+import { Icon } from '../../components/Icon'
 type ReservationFooterProps = {
   isSaving: boolean
   isDisabled: boolean
@@ -19,12 +20,12 @@ export default function ReservationFooter({ isSaving, isDisabled, onSubmit }: Re
       >
         {isSaving ? (
           <>
-            <iconify-icon icon="solar:spinner-bold" width="20" height="20" class="animate-spin"></iconify-icon>
+            <Icon icon="solar:spinner-bold" width="20" height="20" className="animate-spin" />
             送信中...
           </>
         ) : (
           <>
-            <iconify-icon icon="solar:check-circle-bold" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:check-circle-bold" width="20" height="20" />
             予約を確定する
           </>
         )}

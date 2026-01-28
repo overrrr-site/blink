@@ -1,4 +1,5 @@
 import { useEffect, Suspense, lazy } from 'react';
+import { Icon } from '../components/Icon'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useLiffAuthStore } from './store/authStore';
 import { initLiff } from './utils/liff';
@@ -24,7 +25,7 @@ function PageLoader() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="animate-spin text-primary">
-        <iconify-icon icon="solar:spinner-line-duotone" width="40" height="40"></iconify-icon>
+        <Icon icon="solar:spinner-line-duotone" width="40" height="40" />
       </div>
     </div>
   );

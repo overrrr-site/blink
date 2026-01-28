@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format } from 'date-fns';
@@ -77,12 +78,10 @@ export default function JournalDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <iconify-icon
-          icon="solar:spinner-bold"
+        <Icon icon="solar:spinner-bold"
           width="48"
           height="48"
-          class="text-primary animate-spin"
-        ></iconify-icon>
+          className="text-primary animate-spin" />
       </div>
     );
   }
@@ -90,7 +89,7 @@ export default function JournalDetail() {
   if (!journal) {
     return (
       <div className="px-5 pt-6 text-center">
-        <iconify-icon icon="solar:notebook-linear" width="64" height="64" class="text-muted-foreground mx-auto mb-4"></iconify-icon>
+        <Icon icon="solar:notebook-linear" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground mb-4">日誌が見つかりません</p>
         <button
           onClick={() => navigate('/home/journals')}
@@ -114,7 +113,7 @@ export default function JournalDetail() {
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
           aria-label="戻る"
         >
-          <iconify-icon icon="solar:arrow-left-linear" width="24" height="24"></iconify-icon>
+          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <h1 className="text-lg font-bold font-heading flex-1">日誌詳細</h1>
       </div>
@@ -130,17 +129,17 @@ export default function JournalDetail() {
           />
         ) : (
           <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-            <iconify-icon icon="solar:paw-print-bold" width="32" height="32" class="text-primary"></iconify-icon>
+            <Icon icon="solar:paw-print-bold" width="32" height="32" className="text-primary" />
           </div>
         )}
         <div>
           <h2 className="text-xl font-bold font-heading">{journal.dog_name}</h2>
           <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <iconify-icon icon="solar:calendar-linear" width="16" height="16"></iconify-icon>
+            <Icon icon="solar:calendar-linear" width="16" height="16" />
             {format(new Date(journal.journal_date), 'yyyy年M月d日', { locale: ja })}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <iconify-icon icon="solar:user-linear" width="14" height="14"></iconify-icon>
+            <Icon icon="solar:user-linear" width="14" height="14" />
             {journal.staff_name}
           </p>
         </div>
@@ -149,14 +148,14 @@ export default function JournalDetail() {
       {/* トイレ情報 */}
       <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
         <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-          <iconify-icon icon="solar:toilet-paper-bold" width="20" height="20" class="text-chart-3"></iconify-icon>
+          <Icon icon="solar:toilet-paper-bold" width="20" height="20" className="text-chart-3" />
           トイレ
         </h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-muted/30 rounded-xl p-3">
             <p className="text-xs text-muted-foreground mb-2 font-medium">午前</p>
             <div className={`flex items-center gap-2 text-sm font-medium ${morningStatus.colorClass}`}>
-              <iconify-icon icon={morningStatus.icon} width="18" height="18"></iconify-icon>
+              <Icon icon={morningStatus.icon} width="18" height="18" />
               {morningStatus.label}
             </div>
             {journal.morning_toilet_location && (
@@ -166,7 +165,7 @@ export default function JournalDetail() {
           <div className="bg-muted/30 rounded-xl p-3">
             <p className="text-xs text-muted-foreground mb-2 font-medium">午後</p>
             <div className={`flex items-center gap-2 text-sm font-medium ${afternoonStatus.colorClass}`}>
-              <iconify-icon icon={afternoonStatus.icon} width="18" height="18"></iconify-icon>
+              <Icon icon={afternoonStatus.icon} width="18" height="18" />
               {afternoonStatus.label}
             </div>
             {journal.afternoon_toilet_location && (
@@ -180,7 +179,7 @@ export default function JournalDetail() {
       {journal.comment && (
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <iconify-icon icon="solar:chat-round-dots-bold" width="20" height="20" class="text-chart-4"></iconify-icon>
+            <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-chart-4" />
             今日の様子
           </h2>
           <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{journal.comment}</p>
@@ -191,7 +190,7 @@ export default function JournalDetail() {
       {journal.photos && journal.photos.length > 0 && (
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <iconify-icon icon="solar:gallery-bold" width="20" height="20" class="text-primary"></iconify-icon>
+            <Icon icon="solar:gallery-bold" width="20" height="20" className="text-primary" />
             活動写真 ({journal.photos.length}枚)
           </h2>
           <div className="grid grid-cols-2 gap-3">

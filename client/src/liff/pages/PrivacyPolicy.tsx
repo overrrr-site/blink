@@ -1,3 +1,4 @@
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
 import logoImage from '../../assets/logo.png';
@@ -19,7 +20,7 @@ export default function PrivacyPolicy() {
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <iconify-icon icon="solar:arrow-left-linear" width="20" height="20"></iconify-icon>
+            <Icon icon="solar:arrow-left-linear" width="20" height="20" />
             <span className="text-sm">戻る</span>
           </button>
           <img src={logoImage} alt="Blink" className="h-8" />

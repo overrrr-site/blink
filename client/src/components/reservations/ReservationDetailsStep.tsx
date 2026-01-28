@@ -1,3 +1,4 @@
+import { Icon } from '../Icon'
 import { formatDateFullWithWeekday } from '../../utils/date'
 
 type ReservationForm = {
@@ -26,14 +27,12 @@ export default function ReservationDetailsStep({
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2">
-            <iconify-icon icon="solar:tag-bold" class="text-chart-4 size-4"></iconify-icon>
+            <Icon icon="solar:tag-bold" className="text-chart-4 size-4" />
             予約タイプ
           </h3>
           <div className="relative group">
-            <iconify-icon
-              icon="solar:question-circle-bold"
-              class="size-4 text-muted-foreground cursor-help"
-            ></iconify-icon>
+            <Icon icon="solar:question-circle-bold"
+              className="size-4 text-muted-foreground cursor-help" />
             <div className="absolute left-0 top-6 w-64 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
               予約タイプによって、料金の計算方法や回数券の消化方法が異なります
             </div>
@@ -111,7 +110,7 @@ export default function ReservationDetailsStep({
 
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
-          <iconify-icon icon="solar:notes-bold" class="text-muted-foreground size-4"></iconify-icon>
+          <Icon icon="solar:notes-bold" className="text-muted-foreground size-4" />
           備考
         </h3>
         <textarea
@@ -126,7 +125,7 @@ export default function ReservationDetailsStep({
 
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
-          <iconify-icon icon="solar:check-circle-bold" class="text-chart-2 size-4"></iconify-icon>
+          <Icon icon="solar:check-circle-bold" className="text-chart-2 size-4" />
           予約内容の確認
         </h3>
         <div className="space-y-2 text-sm">

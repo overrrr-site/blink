@@ -1,3 +1,4 @@
+import { Icon } from '../Icon'
 import { getVaccineStatus } from '../../utils/dog'
 
 type DogHealth = {
@@ -46,7 +47,7 @@ export default function HealthInfoSection({ health }: HealthInfoSectionProps) {
                     }`}
                   >
                     {vaccineStatus.status === 'expired' && (
-                      <iconify-icon icon="solar:danger-triangle-bold" width="12" height="12"></iconify-icon>
+                      <Icon icon="solar:danger-triangle-bold" width="12" height="12" />
                     )}
                     {vaccineStatus.status === 'expired'
                       ? `要確認：ワクチン更新（${vaccineStatus.days}日超過）`
@@ -91,7 +92,7 @@ export default function HealthInfoSection({ health }: HealthInfoSectionProps) {
                     }`}
                   >
                     {vaccineStatus.status === 'expired' && (
-                      <iconify-icon icon="solar:danger-triangle-bold" width="12" height="12"></iconify-icon>
+                      <Icon icon="solar:danger-triangle-bold" width="12" height="12" />
                     )}
                     {vaccineStatus.status === 'expired'
                       ? `要確認：ワクチン更新（${vaccineStatus.days}日超過）`

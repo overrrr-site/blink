@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Icon } from './Icon'
 
 export interface OwnerFormValues {
   name: string
@@ -66,7 +67,7 @@ const OwnerForm = ({
       {/* 基本情報 */}
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-          <iconify-icon icon="solar:user-bold" class="text-primary size-4"></iconify-icon>
+          <Icon icon="solar:user-bold" className="text-primary size-4" />
           基本情報
         </h3>
 
@@ -141,7 +142,7 @@ const OwnerForm = ({
       {/* 緊急連絡先 */}
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-          <iconify-icon icon="solar:danger-triangle-bold" class="text-destructive size-4"></iconify-icon>
+          <Icon icon="solar:danger-triangle-bold" className="text-destructive size-4" />
           緊急連絡先
         </h3>
 
@@ -176,7 +177,7 @@ const OwnerForm = ({
       {/* メモ */}
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
-          <iconify-icon icon="solar:notes-bold" class="text-muted-foreground size-4"></iconify-icon>
+          <Icon icon="solar:notes-bold" className="text-muted-foreground size-4" />
           メモ
         </h3>
         <textarea
@@ -200,7 +201,7 @@ const OwnerForm = ({
             '処理中...'
           ) : (
             <>
-              {submitIcon && <iconify-icon icon={submitIcon} width="20" height="20"></iconify-icon>}
+              {submitIcon && <Icon icon={submitIcon} width="20" height="20" />}
               {submitLabel}
             </>
           )}

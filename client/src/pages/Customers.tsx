@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import { SkeletonList } from '../components/Skeleton'
@@ -19,16 +20,28 @@ interface Dog {
   photo_url?: string
 }
 
+interface DogWithOwner extends Dog {
+  owner_id: number
+  owner_name: string
+}
+
 const Customers = () => {
   const navigate = useNavigate()
   const [owners, setOwners] = useState<Owner[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'owners' | 'dogs'>('owners')
 
   useEffect(() => {
     fetchCustomers()
   }, [])
+
+  // 検索クエリのデバウンス（200ms）
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 200)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const fetchCustomers = async () => {
     try {
@@ -41,38 +54,35 @@ const Customers = () => {
     }
   }
 
-  // 検索フィルタリング
-  const filteredOwners = owners.filter((owner) => {
-    const query = searchQuery.toLowerCase()
-    const matchOwner =
-      owner.name.toLowerCase().includes(query) ||
-      owner.name_kana?.toLowerCase().includes(query) ||
-      owner.phone.includes(query)
-    const matchDog = owner.dogs?.some(
-      (dog) =>
-        dog.name.toLowerCase().includes(query) ||
-        dog.breed.toLowerCase().includes(query)
-    )
-    return matchOwner || matchDog
-  })
+  // フィルタリング処理を1回のループで統合（パフォーマンス最適化）
+  const { filteredOwners, allDogs, filteredDogs } = useMemo(() => {
+    const query = debouncedSearchQuery.toLowerCase()
+    const all: DogWithOwner[] = []
+    const filteredO: Owner[] = []
+    const filteredD: DogWithOwner[] = []
 
-  // 犬一覧用のフラット化されたリスト
-  const allDogs = owners.flatMap((owner) =>
-    (owner.dogs || []).map((dog) => ({
-      ...dog,
-      owner_id: owner.id,
-      owner_name: owner.name,
-    }))
-  )
+    for (const owner of owners) {
+      const dogs = owner.dogs || []
+      const matchOwner = owner.name.toLowerCase().includes(query) ||
+                         owner.name_kana?.toLowerCase().includes(query) ||
+                         owner.phone.includes(query)
+      const matchDog = dogs.some(dog =>
+        dog.name.toLowerCase().includes(query) || dog.breed.toLowerCase().includes(query))
 
-  const filteredDogs = allDogs.filter((dog) => {
-    const query = searchQuery.toLowerCase()
-    return (
-      dog.name.toLowerCase().includes(query) ||
-      dog.breed.toLowerCase().includes(query) ||
-      dog.owner_name.toLowerCase().includes(query)
-    )
-  })
+      if (matchOwner || matchDog) filteredO.push(owner)
+
+      for (const dog of dogs) {
+        const dogWithOwner: DogWithOwner = { ...dog, owner_id: owner.id, owner_name: owner.name }
+        all.push(dogWithOwner)
+        if (dog.name.toLowerCase().includes(query) ||
+            dog.breed.toLowerCase().includes(query) ||
+            owner.name.toLowerCase().includes(query)) {
+          filteredD.push(dogWithOwner)
+        }
+      }
+    }
+    return { filteredOwners: filteredO, allDogs: all, filteredDogs: filteredD }
+  }, [owners, debouncedSearchQuery])
 
   if (loading) {
     return (
@@ -97,10 +107,8 @@ const Customers = () => {
       <div className="px-5 pt-4 space-y-4">
         {/* 検索バー */}
         <div className="relative">
-          <iconify-icon
-            icon="solar:magnifer-linear"
-            class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground"
-          ></iconify-icon>
+          <Icon icon="solar:magnifer-linear"
+            className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
@@ -114,7 +122,7 @@ const Customers = () => {
               onClick={() => setSearchQuery('')}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
             >
-              <iconify-icon icon="solar:close-circle-bold" className="size-5"></iconify-icon>
+              <Icon icon="solar:close-circle-bold" className="size-5" />
             </button>
           )}
         </div>
@@ -131,7 +139,7 @@ const Customers = () => {
             aria-label="飼い主一覧を表示"
             aria-pressed={viewMode === 'owners'}
           >
-            <iconify-icon icon="solar:user-bold" className="mr-1.5"></iconify-icon>
+            <Icon icon="solar:user-bold" className="mr-1.5" />
             飼い主
           </button>
           <button
@@ -144,7 +152,7 @@ const Customers = () => {
             aria-label="ワンちゃん一覧を表示"
             aria-pressed={viewMode === 'dogs'}
           >
-            <iconify-icon icon="solar:paw-print-bold" className="mr-1.5"></iconify-icon>
+            <Icon icon="solar:paw-print-bold" className="mr-1.5" />
             ワンちゃん
           </button>
         </div>
@@ -209,10 +217,8 @@ const Customers = () => {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <iconify-icon
-                                icon="solar:paw-print-bold"
-                                className="size-4 text-muted-foreground"
-                              ></iconify-icon>
+                              <Icon icon="solar:paw-print-bold"
+                                className="size-4 text-muted-foreground" />
                             </div>
                           )}
                         </div>
@@ -223,11 +229,9 @@ const Customers = () => {
                         </span>
                       )}
                     </div>
-                    <iconify-icon
-                      icon="solar:alt-arrow-right-linear"
+                    <Icon icon="solar:alt-arrow-right-linear"
                       className="size-6 text-muted-foreground"
-                      aria-hidden="true"
-                    ></iconify-icon>
+                      aria-hidden="true" />
                   </div>
                 </button>
               ))}
@@ -259,10 +263,8 @@ const Customers = () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <iconify-icon
-                            icon="solar:paw-print-bold"
-                            className="size-6 text-muted-foreground"
-                          ></iconify-icon>
+                          <Icon icon="solar:paw-print-bold"
+                            className="size-6 text-muted-foreground" />
                         </div>
                       )}
                     </div>
@@ -273,11 +275,9 @@ const Customers = () => {
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">{dog.owner_name} 様</p>
                     </div>
-                    <iconify-icon
-                      icon="solar:alt-arrow-right-linear"
+                    <Icon icon="solar:alt-arrow-right-linear"
                       className="size-6 text-muted-foreground"
-                      aria-hidden="true"
-                    ></iconify-icon>
+                      aria-hidden="true" />
                   </div>
                 </button>
               ))}

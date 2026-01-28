@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../Icon'
 
 type ReservationForm = {
   reservation_date: string
@@ -28,14 +29,12 @@ export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepPro
     <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2">
-          <iconify-icon icon="solar:calendar-bold" class="text-primary size-4"></iconify-icon>
+          <Icon icon="solar:calendar-bold" className="text-primary size-4" />
           予約日時
         </h3>
         <div className="relative group">
-          <iconify-icon
-            icon="solar:question-circle-bold"
-            class="size-4 text-muted-foreground cursor-help"
-          ></iconify-icon>
+          <Icon icon="solar:question-circle-bold"
+            className="size-4 text-muted-foreground cursor-help" />
           <div className="absolute left-0 top-6 w-64 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
             予約日時を選択してください。受入可能頭数を超える場合は予約できません。
           </div>
@@ -94,7 +93,7 @@ export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepPro
 
       {error && (
         <div className="mt-3 flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
-          <iconify-icon icon="solar:danger-triangle-bold" className="size-5 shrink-0"></iconify-icon>
+          <Icon icon="solar:danger-triangle-bold" className="size-5 shrink-0" />
           {error}
         </div>
       )}
