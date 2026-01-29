@@ -132,7 +132,7 @@ function OtherTab() {
           >
             <div className="flex items-center gap-3">
               <Icon icon="mdi:dog" width="20" height="20" className="text-muted-foreground" />
-              <span className="text-sm font-medium">犬データ</span>
+              <span className="text-sm font-medium">ワンちゃんデータ</span>
             </div>
             {exporting === 'dogs' ? (
               <span className="text-xs text-muted-foreground">エクスポート中...</span>

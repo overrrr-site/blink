@@ -49,7 +49,7 @@ export default function StepIndicator({
                 >
                   {step}
                 </span>
-                {stepNumber === 1 ? '日時' : stepNumber === 2 ? '犬選択' : '確認'}
+                {stepNumber === 1 ? '日時' : stepNumber === 2 ? 'ワンちゃん' : '確認'}
               </button>
               {stepNumber < 3 && <div className="w-2 h-px bg-border mx-1" />}
             </div>

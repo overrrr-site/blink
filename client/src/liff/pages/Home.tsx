@@ -508,7 +508,7 @@ export default function Home() {
           iconBgColor="bg-chart-2/10"
           iconColor="text-chart-2"
           title="マイページ"
-          description="飼い主・犬情報の確認"
+          description="飼い主・ワンちゃん情報の確認"
         >
           {data.dogs.length > 0 && (
             <div className="flex -space-x-2 mt-2">

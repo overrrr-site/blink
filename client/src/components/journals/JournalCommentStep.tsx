@@ -41,7 +41,7 @@ const JournalCommentStep = memo(function JournalCommentStep({
           value={memo}
           onChange={onMemoChange}
           className="w-full h-24 bg-muted/50 border-0 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
-          placeholder="走り書きでOK！例：今日はオスワリ完璧、他の犬とも仲良く遊べた、少し興奮気味だったけど落ち着いてトレーニングできた"
+          placeholder="走り書きでOK！例：今日はオスワリ完璧、他のワンちゃんとも仲良く遊べた、少し興奮気味だったけど落ち着いてトレーニングできた"
         />
       </div>
 

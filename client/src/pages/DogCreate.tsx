@@ -156,7 +156,7 @@ const DogCreate = () => {
           >
             <Icon icon="solar:close-circle-linear" width="24" height="24" />
           </button>
-          <h1 className="text-lg font-bold font-heading">新規犬登録</h1>
+          <h1 className="text-lg font-bold font-heading">新規ワンちゃん登録</h1>
         </div>
       </header>
 

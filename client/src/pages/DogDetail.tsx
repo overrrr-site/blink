@@ -25,7 +25,7 @@ const DogDetail = () => {
   if (!dog) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">犬が見つかりません</p>
+        <p className="text-muted-foreground">ワンちゃんが見つかりません</p>
       </div>
     )
   }

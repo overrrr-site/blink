@@ -142,7 +142,7 @@ export default function ReservationDetailsStep({
             <span className="font-medium">{form.pickup_time}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">犬</span>
+            <span className="text-muted-foreground">ワンちゃん</span>
             <span className="font-medium">{selectedDogName || '未選択'}</span>
           </div>
           <div className="flex justify-between">

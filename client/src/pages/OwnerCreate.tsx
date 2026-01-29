@@ -27,7 +27,7 @@ const OwnerCreate = () => {
     }
 
     if (includeDog && (!dogInfo.name || !dogInfo.breed || !dogInfo.birth_date)) {
-      alert('犬を登録する場合は、名前、犬種、生年月日は必須です')
+      alert('ワンちゃんを登録する場合は、名前、犬種、生年月日は必須です')
       return
     }
 
@@ -47,7 +47,7 @@ const OwnerCreate = () => {
             gender: dogInfo.gender,
           })
         } catch {
-          alert('飼い主は登録されましたが、犬の登録に失敗しました。飼い主詳細ページから再度登録してください。')
+          alert('飼い主は登録されましたが、ワンちゃんの登録に失敗しました。飼い主詳細ページから再度登録してください。')
         }
       }
 
@@ -88,7 +88,7 @@ const OwnerCreate = () => {
             />
             <label htmlFor="includeDog" className="text-sm font-bold font-heading flex items-center gap-2 cursor-pointer">
               <Icon icon="solar:paw-print-bold" className="text-primary size-4" />
-              同時に犬も登録する
+              同時にワンちゃんも登録する
             </label>
           </div>
 
@@ -152,7 +152,7 @@ const OwnerCreate = () => {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                詳細な健康情報は、登録後に犬の編集画面から追加できます
+                詳細な健康情報は、登録後にワンちゃんの編集画面から追加できます
               </p>
             </div>
           )}

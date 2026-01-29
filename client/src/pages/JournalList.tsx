@@ -177,7 +177,7 @@ const JournalList = () => {
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="犬名・飼い主名・コメントで検索"
+              placeholder="ワンちゃん名・飼い主名・コメントで検索"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="日誌を検索"

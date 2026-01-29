@@ -97,7 +97,7 @@ const DogEdit = () => {
         })
       }
     } catch {
-      alert('犬情報の取得に失敗しました')
+      alert('ワンちゃん情報の取得に失敗しました')
     } finally {
       setLoading(false)
     }
@@ -281,7 +281,7 @@ const DogEdit = () => {
           >
             <Icon icon="solar:close-circle-linear" width="24" height="24" />
           </button>
-          <h1 className="text-lg font-bold font-heading">犬情報の編集</h1>
+          <h1 className="text-lg font-bold font-heading">ワンちゃん情報の編集</h1>
         </div>
       </header>
 

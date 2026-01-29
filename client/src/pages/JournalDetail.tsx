@@ -25,7 +25,7 @@ const ACHIEVEMENT_OPTIONS = [
 const TRAINING_LABEL_FALLBACKS: Record<string, string> = {
   human_interection: '人慣れ', // typo対応
   human_interaction: '人慣れ',
-  dog_interaction: '他犬との交流',
+  dog_interaction: '他のワンちゃんとの交流',
   eye_contact: 'アイコンタクト',
   sit: 'オスワリ',
   down: 'フセ',

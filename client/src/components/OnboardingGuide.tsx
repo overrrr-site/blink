@@ -35,7 +35,7 @@ const GUIDE_STEPS: GuideStep[] = [
   {
     target: '[data-guide="nav-customers"]',
     title: '顧客タブ',
-    content: '飼い主と犬の情報を管理できます。検索機能で素早く顧客を見つけられます。',
+    content: '飼い主とワンちゃんの情報を管理できます。検索機能で素早く顧客を見つけられます。',
     position: 'top',
     path: '/',
   },

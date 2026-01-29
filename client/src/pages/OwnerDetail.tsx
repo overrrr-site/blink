@@ -99,13 +99,13 @@ const OwnerDetail = () => {
 
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">登録犬</h2>
+            <h2 className="text-xl font-bold">登録ワンちゃん</h2>
             <button
               onClick={() => navigate(`/owners/${id}/dogs/new`)}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors"
             >
               <Icon icon="solar:add-circle-bold" width="20" height="20" />
-              犬を追加
+              ワンちゃんを追加
             </button>
           </div>
           {owner.dogs && owner.dogs.length > 0 ? (
@@ -170,13 +170,13 @@ const OwnerDetail = () => {
             <div className="text-center py-8">
               <Icon icon="solar:paw-print-bold"
                 className="size-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground mb-4">登録されている犬がいません</p>
+              <p className="text-sm text-muted-foreground mb-4">登録されているワンちゃんがいません</p>
               <button
                 onClick={() => navigate(`/owners/${id}/dogs/new`)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors"
               >
                 <Icon icon="solar:add-circle-bold" width="20" height="20" />
-                犬を追加
+                ワンちゃんを追加
               </button>
             </div>
           )}

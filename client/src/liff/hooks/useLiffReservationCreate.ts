@@ -51,7 +51,7 @@ export function useLiffReservationCreate() {
 
   const handleSubmit = async () => {
     if (!formData.dog_id) {
-      alert('犬を選択してください')
+      alert('ワンちゃんを選択してください')
       return false
     }
 

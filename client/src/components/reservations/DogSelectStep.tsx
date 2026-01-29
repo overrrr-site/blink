@@ -34,7 +34,7 @@ export default function DogSelectStep({
 
   const handleNext = () => {
     if (!selectedDogId) {
-      setError('犬を選択してください')
+      setError('ワンちゃんを選択してください')
       return
     }
     setError('')
@@ -46,7 +46,7 @@ export default function DogSelectStep({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2">
           <Icon icon="solar:paw-print-bold" className="text-primary size-4" />
-          登園する犬
+          登園するワンちゃん
         </h3>
         {recentDogs.length > 0 && (
           <button
@@ -70,7 +70,7 @@ export default function DogSelectStep({
           className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
-          placeholder="犬名・飼い主名で検索"
+          placeholder="ワンちゃん名・飼い主名で検索"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 bg-muted border-none rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"

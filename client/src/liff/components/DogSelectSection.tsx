@@ -17,7 +17,7 @@ export default function DogSelectSection({ dogs, selectedDogId, onChange }: DogS
   return (
     <div>
       <label className="block text-sm font-bold mb-2">
-        登園する犬 <span className="text-destructive">*</span>
+        登園するワンちゃん <span className="text-destructive">*</span>
       </label>
       <div className="space-y-2">
         {dogs.length > 0 ? (
@@ -60,7 +60,7 @@ export default function DogSelectSection({ dogs, selectedDogId, onChange }: DogS
           ))
         ) : (
           <div className="p-4 bg-muted/50 rounded-2xl text-center">
-            <p className="text-muted-foreground">登録されている犬がありません</p>
+            <p className="text-muted-foreground">登録されているワンちゃんがいません</p>
           </div>
         )}
       </div>

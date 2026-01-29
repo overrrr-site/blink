@@ -162,7 +162,7 @@ export default function MyPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold font-heading flex items-center gap-2">
             <Icon icon="solar:paw-print-bold" width="20" height="20" className="text-primary" />
-            登録犬 ({data.dogs.length}頭)
+            登録ワンちゃん ({data.dogs.length}頭)
           </h2>
         </div>
 
@@ -246,7 +246,7 @@ export default function MyPage() {
         ) : (
           <div className="bg-muted/30 rounded-2xl p-6 text-center">
             <Icon icon="solar:paw-print-linear" width="48" height="48" className="text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">登録されている犬がありません</p>
+            <p className="text-sm text-muted-foreground">登録されているワンちゃんがいません</p>
           </div>
         )}
       </section>
