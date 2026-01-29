@@ -211,16 +211,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="lp-footer">
-        <div className="footer-inner">
-          <div className="footer-links">
-            <Link to="/terms">利用規約</Link>
-            <Link to="/privacy">プライバシーポリシー</Link>
-          </div>
-          <p className="footer-copy">&copy; 2025 OVER Inc.</p>
-        </div>
-      </footer>
     </div>
   )
 }
@@ -248,6 +238,10 @@ const lpStyles = `
     background: var(--color-bg-warm);
     color: var(--color-text-dark);
     overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    height: 100vh;
+    height: 100dvh;
   }
 
   .lp *, .lp *::before, .lp *::after { box-sizing: border-box; }
@@ -273,7 +267,7 @@ const lpStyles = `
     justify-content: space-between;
   }
   .lp-header-logo {
-    height: 32px;
+    height: 40px;
   }
   .lp-header-login {
     display: inline-flex;
@@ -301,6 +295,7 @@ const lpStyles = `
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    scroll-snap-align: start;
   }
 
   /* ===== HERO ===== */
@@ -311,7 +306,7 @@ const lpStyles = `
     flex-direction: column;
   }
   .hero-logo-img {
-    height: 72px;
+    height: clamp(120px, 20vw, 200px);
     margin-bottom: 48px;
   }
   .hero-title {
@@ -457,7 +452,7 @@ const lpStyles = `
     background: var(--color-bg-warm); padding: 80px 24px; flex-direction: column;
   }
   .company-content { max-width: 800px; margin: 0 auto; text-align: center; }
-  .company-logo-img { height: 40px; margin-bottom: 8px; }
+  .company-logo-img { height: 40px; margin: 0 auto 8px; display: block; }
   .company-tagline { font-size: 15px; color: var(--color-text-secondary); margin: 0 0 48px; }
   .company-title {
     font-size: clamp(28px, 4vw, 40px); font-weight: 800;
@@ -512,20 +507,6 @@ const lpStyles = `
   }
   .trust-badge svg, .trust-badge .iconify { color: var(--color-primary); }
 
-  /* ===== FOOTER ===== */
-  .lp-footer {
-    background: var(--color-bg-dark); color: var(--color-text-muted);
-    padding: 40px 24px;
-  }
-  .footer-inner { max-width: 1200px; margin: 0 auto; text-align: center; }
-  .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 16px; }
-  .footer-links a {
-    color: var(--color-text-muted); text-decoration: none; font-size: 14px;
-    transition: color 0.2s;
-  }
-  .footer-links a:hover { color: var(--color-text-light); }
-  .footer-copy { font-size: 13px; margin: 0; }
-
   /* ===== RESPONSIVE ===== */
   @media (max-width: 1024px) {
     .feature-visual-inner, .line-grid { grid-template-columns: 1fr; }
@@ -540,7 +521,7 @@ const lpStyles = `
     .trust-badges { flex-direction: column; gap: 24px; align-items: center; }
     .project-list { grid-template-columns: 1fr; }
     .company-projects { padding: 24px; }
-    .hero-logo-img { height: 56px; }
+    .hero-logo-img { height: 100px; }
   }
   @media (max-width: 480px) {
     .line-features { grid-template-columns: 1fr; }
