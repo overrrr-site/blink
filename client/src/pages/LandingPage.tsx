@@ -163,7 +163,7 @@ const LandingPage = () => {
           </div>
           <div className="feature-visual-image light">
             <div className="screen-mockup">
-              <img src="/lp/screenshots/08_liff_journal_detail.png" alt="日誌詳細画面" />
+              <img src="/lp/screenshots/10_ticket_management.png" alt="チケット管理画面" />
             </div>
           </div>
         </div>
@@ -525,38 +525,65 @@ const lpStyles = `
     .hero-subtitle { margin: 0 auto 32px; font-size: 15px; }
     .hero-cta { padding: 14px 32px; font-size: 15px; }
 
-    /* split-section: テキスト+スクショを1画面に */
-    .lp-snap.split-section { min-height: 100vh; min-height: 100dvh; }
-    .feature-visual-inner { min-height: 100vh; min-height: 100dvh; grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-    .feature-visual-content {
-      padding: 80px 20px 24px;
-      order: 1;
-    }
-    .feature-visual-eyebrow { margin: 0 0 8px; }
-    .feature-visual-title { font-size: 28px; margin: 0 0 12px; }
-    .feature-visual-desc { font-size: 14px; margin: 0 0 16px; line-height: 1.6; }
-    .feature-list { gap: 8px; }
-    .feature-list li { font-size: 13px; gap: 8px; }
-    .feature-visual-image {
-      order: 2;
-      padding: 16px 32px 24px;
+    /* split-section: テキストとスクショを別ページに分離 */
+    .lp-snap.split-section { min-height: auto; scroll-snap-align: none; }
+    .feature-visual-inner {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto;
       min-height: auto;
     }
-    .screen-mockup { max-width: 280px; border-radius: 12px; }
+    .feature-visual-content {
+      min-height: 100vh; min-height: 100dvh;
+      padding: 80px 24px 40px;
+      order: 1;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .feature-visual-eyebrow { margin: 0 0 12px; }
+    .feature-visual-title { font-size: 28px; margin: 0 0 16px; }
+    .feature-visual-desc { font-size: 15px; margin: 0 0 24px; line-height: 1.7; }
+    .feature-list { gap: 12px; }
+    .feature-list li { font-size: 14px; gap: 10px; }
+    .feature-visual-image {
+      order: 2;
+      min-height: 100vh; min-height: 100dvh;
+      padding: 40px 24px;
+      scroll-snap-align: start;
+    }
+    .screen-mockup { max-width: 320px; border-radius: 16px; }
     .split-section.reverse .feature-visual-inner { direction: ltr; }
 
-    /* LINE section */
-    .line-section { padding: 80px 20px 40px; }
-    .line-grid { gap: 24px; }
+    /* LINE section: テキストとフォンを別ページに */
+    .lp-snap.line-section { min-height: auto; scroll-snap-align: none; padding: 0; }
+    .line-grid { gap: 0; }
+    .line-content {
+      min-height: 100vh; min-height: 100dvh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 24px 40px;
+    }
     .line-section .headline-title { font-size: 28px; }
-    .line-section .headline-desc { font-size: 14px; margin-bottom: 24px !important; }
-    .line-features { grid-template-columns: 1fr 1fr; gap: 8px; }
-    .line-feature-card { padding: 12px; border-radius: 12px; }
-    .line-feature-card h4 { font-size: 13px; margin: 6px 0 2px; }
-    .line-feature-card p { font-size: 11px; }
-    .line-feature-card svg { width: 20px; height: 20px; }
-    .phone-mockup { width: 180px; height: 380px; border-radius: 32px; padding: 8px; }
-    .phone-screen { border-radius: 26px; }
+    .line-section .headline-desc { font-size: 15px; margin-bottom: 24px !important; }
+    .line-features { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .line-feature-card { padding: 16px; border-radius: 12px; }
+    .line-feature-card h4 { font-size: 14px; margin: 8px 0 2px; }
+    .line-feature-card p { font-size: 12px; }
+    .line-feature-card svg { width: 22px; height: 22px; }
+    .line-phone-area {
+      min-height: 100vh; min-height: 100dvh;
+      scroll-snap-align: start;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      background: var(--color-primary);
+    }
+    .phone-mockup { width: 240px; height: 500px; border-radius: 40px; padding: 10px; }
+    .phone-screen { border-radius: 32px; }
 
     /* Company */
     .company-section { padding: 80px 20px 40px; }
