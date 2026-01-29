@@ -7,7 +7,7 @@ import OnboardingGuide from './OnboardingGuide'
 
 // 定数をコンポーネント外部に定義（毎レンダリングでの再生成を防止）
 const NAV_ITEMS = [
-  { path: '/', label: '今日', icon: 'solar:calendar-mark-bold' },
+  { path: '/dashboard', label: '今日', icon: 'solar:calendar-mark-bold' },
   { path: '/reservations', label: '予定', icon: 'solar:calendar-bold' },
   { path: '/customers', label: '顧客', icon: 'solar:users-group-rounded-bold' },
   { path: '/settings', label: '設定', icon: 'solar:settings-bold' },
@@ -28,8 +28,8 @@ const Layout = () => {
 
   // isActive関数をuseCallbackでメモ化
   const isActive = useCallback((path: string) => {
-    if (path === '/') {
-      return location.pathname === '/'
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard'
     }
     if (path === '/customers') {
       return location.pathname.startsWith('/owners') || location.pathname.startsWith('/dogs') || location.pathname.startsWith('/customers')
@@ -37,7 +37,7 @@ const Layout = () => {
     return location.pathname.startsWith(path)
   }, [location.pathname])
 
-  const isHomePage = location.pathname === '/'
+  const isHomePage = location.pathname === '/dashboard'
 
   const handleFabAction = (path: string) => {
     setFabOpen(false)
@@ -118,7 +118,7 @@ const Layout = () => {
               onClick={() => navigate(item.path)}
               aria-label={`${item.label}へ移動`}
               aria-current={isActive(item.path) ? 'page' : undefined}
-              data-guide={item.path === '/' ? 'nav-today' : item.path === '/reservations' ? 'nav-reservations' : undefined}
+              data-guide={item.path === '/dashboard' ? 'nav-today' : item.path === '/reservations' ? 'nav-reservations' : undefined}
               className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[56px] py-2 px-3 gap-1 transition-all rounded-lg active:scale-95 ${
                 isActive(item.path)
                   ? 'text-primary'

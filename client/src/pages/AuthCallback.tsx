@@ -42,7 +42,7 @@ const AuthCallback = () => {
               // スタッフ情報を取得
               await fetchStaffInfo(data.session.access_token)
               // ダッシュボードにリダイレクト
-              navigate('/', { replace: true })
+              navigate('/dashboard', { replace: true })
               return
             }
           }
@@ -54,7 +54,7 @@ const AuthCallback = () => {
         await fetchStaffInfo(session.access_token)
 
         // ダッシュボードにリダイレクト
-        navigate('/', { replace: true })
+        navigate('/dashboard', { replace: true })
       } catch (err: any) {
         setError(err.message || '認証に失敗しました')
         // 3秒後にログインページにリダイレクト
