@@ -40,7 +40,7 @@ const LandingPage = () => {
       <section className="lp-snap headline-section">
         <div className="headline-content">
           <p className="headline-eyebrow">The Challenge</p>
-          <h2 className="headline-title">ワンちゃんと向き合う時間、<br />足りていますか</h2>
+          <h2 className="headline-title">ワンちゃんと<br />向き合う時間、<br />足りていますか</h2>
           <p className="headline-desc">電話対応、日報作成、チケットの残数確認。<br />本来の仕事以外に、時間を取られていませんか。</p>
         </div>
       </section>
