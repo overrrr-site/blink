@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
-import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { getAvatarUrl, getListThumbnailUrl } from '../../utils/image';
+import { usePaginatedData } from '../hooks/usePaginatedData';
+import { LazyImage } from '../../components/LazyImage';
 
 interface Journal {
   id: number;
@@ -18,32 +19,26 @@ interface Journal {
 
 export default function JournalList() {
   const navigate = useNavigate();
-  const [journals, setJournals] = useState<Journal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const fetchJournals = async () => {
-    try {
-      const response = await liffClient.get('/journals');
-      setJournals(response.data);
-    } catch (error) {
-      console.error('Error fetching journals:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchJournals();
-  }, []);
+  const {
+    data: journals,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    sentinelRef,
+    mutate,
+  } = usePaginatedData<Journal>({
+    baseUrl: '/journals',
+    limit: 20,
+  });
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchJournals();
+    mutate();
+    setRefreshing(false);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Icon icon="solar:spinner-bold"
@@ -115,11 +110,12 @@ export default function JournalList() {
             >
               <div className="flex items-center gap-3 mb-3">
                 {journal.dog_photo ? (
-                  <img
+                  <LazyImage
                     src={getAvatarUrl(journal.dog_photo)}
                     alt={journal.dog_name}
-                    loading="lazy"
-                    className="size-14 rounded-full object-cover border-2 border-primary/20"
+                    width={56}
+                    height={56}
+                    className="size-14 rounded-full border-2 border-primary/20"
                   />
                 ) : (
                   <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
@@ -151,11 +147,12 @@ export default function JournalList() {
                 <div className="flex gap-2">
                   {journal.photos.slice(0, 3).map((photo, idx) => (
                     <div key={idx} className="relative">
-                      <img
+                      <LazyImage
                         src={getListThumbnailUrl(photo)}
                         alt={`${journal.dog_name}の写真 ${idx + 1}`}
-                        loading="lazy"
-                        className="size-20 rounded-lg object-cover"
+                        width={80}
+                        height={80}
+                        className="size-20 rounded-lg"
                       />
                       {idx === 0 && journal.photos.length > 0 && (
                         <div className="absolute top-1 right-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
@@ -172,9 +169,17 @@ export default function JournalList() {
                     </div>
                   )}
                 </div>
-              )}
+                )}
             </button>
           ))}
+
+          {hasMore && <div ref={sentinelRef} className="h-10" />}
+          {isLoadingMore && (
+            <div className="flex items-center justify-center py-4">
+              <Icon icon="solar:spinner-bold" width="20" height="20" className="text-primary animate-spin mr-2" />
+              <span className="text-sm text-muted-foreground">読み込み中...</span>
+            </div>
+          )}
         </div>
       )}
     </div>

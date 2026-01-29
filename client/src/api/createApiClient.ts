@@ -8,6 +8,9 @@ type CreateApiClientOptions = {
   loginPath: string
 }
 
+let cachedToken: string | null = null
+let tokenExpiresAt = 0
+
 export function createApiClient({ baseURL, tokenKey, userKey, loginPath }: CreateApiClientOptions) {
   const client = axios.create({
     baseURL,
@@ -18,9 +21,18 @@ export function createApiClient({ baseURL, tokenKey, userKey, loginPath }: Creat
 
   client.interceptors.request.use(
     async (config) => {
+      const now = Date.now()
+      // 有効期限の1分前まではキャッシュを利用
+      if (cachedToken && now < tokenExpiresAt - 60_000) {
+        config.headers.Authorization = `Bearer ${cachedToken}`
+        return config
+      }
+
       // Supabase セッションからトークンを取得
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.access_token) {
+        cachedToken = session.access_token
+        tokenExpiresAt = (session.expires_at ?? 0) * 1000
         config.headers.Authorization = `Bearer ${session.access_token}`
       }
       return config

@@ -54,8 +54,7 @@ const InspectionRecordList = () => {
       recordsRes.data.forEach((record: any) => {
         savedRecordIds.current.add(record.inspection_date)
       })
-    } catch (error) {
-      console.error('Error fetching data:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -105,8 +104,7 @@ const InspectionRecordList = () => {
           }
         }
         // 保存成功: ローカル状態は既に楽観的に更新済みなので再取得しない
-      } catch (error) {
-        console.error('Error saving inspection record:', error)
+      } catch {
         alert('点検記録の保存に失敗しました')
         // エラー時はデータを再取得して正しい状態に戻す
         await fetchData()
@@ -170,8 +168,7 @@ const InspectionRecordList = () => {
       setTimeout(() => {
         printWindow.print()
       }, 250)
-    } catch (error) {
-      console.error('Error exporting inspection records:', error)
+    } catch {
       alert('印刷データの取得に失敗しました')
     }
   }

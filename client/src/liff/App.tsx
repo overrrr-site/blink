@@ -42,9 +42,7 @@ function App() {
 
   useEffect(() => {
     // LIFF初期化
-    initLiff().catch((error) => {
-      console.error('Failed to initialize LIFF:', error);
-    });
+    initLiff().catch(() => {});
 
     // 認証状態を復元
     initialize();

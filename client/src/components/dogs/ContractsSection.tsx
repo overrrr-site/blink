@@ -11,7 +11,6 @@ type Contract = {
 }
 
 type ContractsSectionProps = {
-  dogId: string
   contracts: Contract[]
   loading: boolean
   onCreate: () => void
@@ -19,7 +18,6 @@ type ContractsSectionProps = {
 }
 
 export default function ContractsSection({
-  dogId,
   contracts,
   loading,
   onCreate,

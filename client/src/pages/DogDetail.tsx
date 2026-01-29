@@ -115,7 +115,6 @@ const DogDetail = () => {
         {dog.personality && <PersonalitySection personality={dog.personality} />}
 
         <ContractsSection
-          dogId={id || ''}
           contracts={contracts}
           loading={loadingContracts}
           onCreate={() => navigate(`/dogs/${id}/contracts/new`)}

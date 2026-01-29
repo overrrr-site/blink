@@ -31,8 +31,7 @@ const OwnerEdit = () => {
         emergency_contact_phone: owner.emergency_contact_phone || '',
         notes: owner.notes || '',
       })
-    } catch (error) {
-      console.error('Error fetching owner:', error)
+    } catch {
       alert('飼い主情報の取得に失敗しました')
     } finally {
       setLoading(false)
@@ -49,8 +48,7 @@ const OwnerEdit = () => {
     try {
       await api.put(`/owners/${id}`, values)
       navigate(`/owners/${id}`)
-    } catch (error) {
-      console.error('Error updating owner:', error)
+    } catch {
       alert('更新に失敗しました')
     } finally {
       setSaving(false)

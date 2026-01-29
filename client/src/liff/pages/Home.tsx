@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
@@ -7,6 +7,9 @@ import { ja } from 'date-fns/locale';
 import { scanQRCode, getLiffDebugInfo } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import { getAvatarUrl } from '../../utils/image';
+import useSWR from 'swr';
+import { liffFetcher } from '../lib/swr';
+import { LazyImage } from '../../components/LazyImage';
 
 interface OwnerData {
   id: number;
@@ -34,7 +37,7 @@ interface OwnerData {
 }
 
 // メニューカードコンポーネント
-function MenuCard({
+const MenuCard = memo(function MenuCard({
   onClick,
   icon,
   iconBgColor,
@@ -77,13 +80,15 @@ function MenuCard({
       </div>
     </button>
   );
-}
+});
 
 export default function Home() {
   const navigate = useNavigate();
   const { owner, setAuth, token } = useLiffAuthStore();
-  const [data, setData] = useState<OwnerData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, error, isLoading, mutate } = useSWR<OwnerData>('/me', liffFetcher, {
+    dedupingInterval: 60_000,
+    revalidateOnFocus: false,
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -93,38 +98,26 @@ export default function Home() {
   const [qrError, setQrError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    if (data && token) {
+      setAuth(token, {
+        id: data.id,
+        name: data.name,
+        storeId: data.store_id,
+        storeName: data.store_name || '',
+        storeAddress: data.store_address || '',
+        lineUserId: data.line_id || owner?.lineUserId || '',
+      });
+    }
+  }, [data, owner?.lineUserId, setAuth, token]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
     try {
-      const response = await liffClient.get('/me');
-      setData(response.data);
-      
-      // authStoreの店舗情報を更新
-      if (response.data && token) {
-        const ownerData = response.data;
-        setAuth(token, {
-          id: ownerData.id,
-          name: ownerData.name,
-          storeId: ownerData.store_id,
-          storeName: ownerData.store_name || '',
-          storeAddress: ownerData.store_address || '',
-          lineUserId: ownerData.line_id || owner?.lineUserId || '',
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching owner data:', error);
+      await mutate();
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchData();
   };
 
   const handleCheckIn = async () => {
@@ -151,7 +144,6 @@ export default function Home() {
       const qrCode = await scanQRCode();
       await processCheckIn(qrCode);
     } catch (scanError: any) {
-      console.log('[CheckIn] QR scan failed:', scanError.message);
       setCheckingIn(false);
       
       // デバッグ情報を取得
@@ -188,9 +180,8 @@ export default function Home() {
       setQrInput('');
       setQrError(null);
       alert('チェックインが完了しました！');
-      fetchData();
+      mutate();
     } catch (error: any) {
-      console.error('Check-in error:', error);
       alert(error.response?.data?.error || 'チェックインに失敗しました');
     } finally {
       setCheckingIn(false);
@@ -223,7 +214,7 @@ export default function Home() {
     }
 
     // 既に降園済みか確認
-    if (data.nextReservation.checked_out_at || data.nextReservation.status === '降園済') {
+    if (data.nextReservation.checked_out_at) {
       alert('既に降園済みです');
       return;
     }
@@ -235,7 +226,6 @@ export default function Home() {
       const qrCode = await scanQRCode();
       await processCheckOut(qrCode);
     } catch (scanError: any) {
-      console.log('[CheckOut] QR scan failed:', scanError.message);
       setCheckingOut(false);
       
       // デバッグ情報を取得
@@ -271,16 +261,15 @@ export default function Home() {
       setQrInput('');
       setQrError(null);
       alert('チェックアウトが完了しました！お疲れさまでした。');
-      fetchData();
+      mutate();
     } catch (error: any) {
-      console.error('Check-out error:', error);
       alert(error.response?.data?.error || 'チェックアウトに失敗しました');
     } finally {
       setCheckingOut(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Icon icon="solar:spinner-bold"
@@ -291,7 +280,7 @@ export default function Home() {
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
       <div className="px-5 pt-6 text-center">
         <Icon icon="solar:cloud-cross-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
@@ -347,11 +336,12 @@ export default function Home() {
                 {data.dogs.length > 0 ? (
                   data.dogs.slice(0, 2).map((dog) => (
                     dog.photo_url ? (
-                      <img
+                      <LazyImage
                         key={dog.id}
                         src={getAvatarUrl(dog.photo_url)}
                         alt={dog.name}
-                        loading="lazy"
+                        width={48}
+                        height={48}
                         className="size-12 rounded-full border-3 border-white object-cover shadow-md"
                       />
                     ) : (
@@ -524,11 +514,12 @@ export default function Home() {
             <div className="flex -space-x-2 mt-2">
               {data.dogs.slice(0, 3).map((dog) => (
                 dog.photo_url ? (
-                  <img
+                  <LazyImage
                     key={dog.id}
                     src={getAvatarUrl(dog.photo_url)}
                     alt={dog.name}
-                    loading="lazy"
+                    width={24}
+                    height={24}
                     className="size-6 rounded-full border-2 border-white object-cover"
                   />
                 ) : (

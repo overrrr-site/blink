@@ -46,10 +46,11 @@ const pool = new Pool({
     ? { rejectUnauthorized: false } 
     : false,
   // サーバーレス環境では接続数を最小限に
-  max: isVercel ? 2 : 10,
+  max: isVercel ? 3 : 10,
   min: 0,
-  idleTimeoutMillis: isVercel ? 1000 : 30000,
-  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: isVercel ? 5000 : 30000,
+  connectionTimeoutMillis: 5000,
+  allowExitOnIdle: isVercel,
 });
 
 pool.on('error', (err) => {

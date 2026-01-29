@@ -50,8 +50,7 @@ function TrainingEdit(): JSX.Element {
         item_label: response.data.item_label || '',
         enabled: response.data.enabled !== false,
       })
-    } catch (error) {
-      console.error('Error fetching training item:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -88,7 +87,6 @@ function TrainingEdit(): JSX.Element {
 
       navigate('/settings')
     } catch (error: unknown) {
-      console.error('Error saving training item:', error)
       const err = error as { response?: { data?: { error?: string } } }
       alert(err.response?.data?.error || 'トレーニング項目の保存に失敗しました')
     } finally {

@@ -92,8 +92,7 @@ function OtherTab() {
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Export error:', error)
+    } catch {
       alert('エクスポートに失敗しました')
     } finally {
       setExporting(null)

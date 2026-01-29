@@ -5,6 +5,7 @@ import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { getAvatarUrl, getDetailThumbnailUrl } from '../../utils/image';
+import { LazyImage } from '../../components/LazyImage';
 
 interface Journal {
   id: number;
@@ -65,8 +66,7 @@ export default function JournalDetail() {
         if (journal) {
           setJournal(journal);
         }
-      } catch (error) {
-        console.error('Error fetching journal:', error);
+      } catch {
       } finally {
         setLoading(false);
       }
@@ -121,11 +121,12 @@ export default function JournalDetail() {
       {/* 犬情報 */}
       <div className="flex items-center gap-3">
         {journal.dog_photo ? (
-          <img
+          <LazyImage
             src={getAvatarUrl(journal.dog_photo)}
             alt={journal.dog_name}
-            loading="lazy"
-            className="size-16 rounded-full object-cover border-2 border-primary/20"
+            width={64}
+            height={64}
+            className="size-16 rounded-full border-2 border-primary/20"
           />
         ) : (
           <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
@@ -195,11 +196,10 @@ export default function JournalDetail() {
           </h2>
           <div className="grid grid-cols-2 gap-3">
             {journal.photos.map((photo, idx) => (
-              <img
+              <LazyImage
                 key={idx}
                 src={getDetailThumbnailUrl(photo)}
                 alt={`${journal.dog_name}の写真 ${idx + 1}`}
-                loading="lazy"
                 className="w-full aspect-square rounded-xl object-cover"
               />
             ))}

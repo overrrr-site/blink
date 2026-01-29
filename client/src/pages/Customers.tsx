@@ -1,9 +1,12 @@
-import { useEffect, useState, useMemo } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import api from '../api/client'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
+import useSWR from 'swr'
+import { fetcher, PaginatedResponse } from '../lib/swr'
+import { Pagination } from '../components/Pagination'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 
 interface Owner {
   id: number
@@ -25,34 +28,125 @@ interface DogWithOwner extends Dog {
   owner_name: string
 }
 
+const PAGE_SIZE = 50
+
+const OwnerCard = React.memo(function OwnerCard({
+  owner,
+  onNavigate,
+}: {
+  owner: Owner
+  onNavigate: (id: number) => void
+}) {
+  return (
+    <button
+      onClick={() => onNavigate(owner.id)}
+      className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow active:bg-muted/50 min-h-[72px]"
+    >
+      <div className="flex items-center gap-3">
+        <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+          {owner.name.charAt(0)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-base">{owner.name}</h3>
+          <p className="text-xs text-muted-foreground">{owner.phone}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          {owner.dogs?.slice(0, 3).map((dog) => (
+            <div
+              key={dog.id}
+              className="size-8 rounded-full bg-muted overflow-hidden border-2 border-background -ml-2 first:ml-0"
+            >
+              {dog.photo_url ? (
+                <img
+                  src={dog.photo_url}
+                  alt={dog.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Icon icon="solar:paw-print-bold"
+                    className="size-4 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          ))}
+          {(owner.dogs?.length || 0) > 3 && (
+            <span className="text-xs text-muted-foreground ml-1">
+              +{owner.dogs.length - 3}
+            </span>
+          )}
+        </div>
+        <Icon icon="solar:alt-arrow-right-linear"
+          className="size-6 text-muted-foreground"
+          aria-hidden="true" />
+      </div>
+    </button>
+  )
+})
+
+const DogCard = React.memo(function DogCard({
+  dog,
+  onNavigate,
+}: {
+  dog: DogWithOwner
+  onNavigate: (id: number) => void
+}) {
+  return (
+    <button
+      onClick={() => onNavigate(dog.id)}
+      className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow active:bg-muted/50 min-h-[72px]"
+    >
+      <div className="flex items-center gap-3">
+        <div className="size-12 rounded-full bg-muted overflow-hidden">
+          {dog.photo_url ? (
+            <img
+              src={dog.photo_url}
+              alt={dog.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Icon icon="solar:paw-print-bold"
+                className="size-6 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-base">{dog.name}</h3>
+          <p className="text-xs text-muted-foreground">{dog.breed}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">{dog.owner_name} 様</p>
+        </div>
+        <Icon icon="solar:alt-arrow-right-linear"
+          className="size-6 text-muted-foreground"
+          aria-hidden="true" />
+      </div>
+    </button>
+  )
+})
+
 const Customers = () => {
   const navigate = useNavigate()
-  const [owners, setOwners] = useState<Owner[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'owners' | 'dogs'>('owners')
+  const [page, setPage] = useState(1)
 
-  useEffect(() => {
-    fetchCustomers()
-  }, [])
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
+  const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}`
+  const { data, isLoading } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher, {
+    revalidateOnFocus: false,
+  })
+  const owners = data?.data ?? []
+  const pagination = data?.pagination
 
-  // 検索クエリのデバウンス（200ms）
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 200)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+  const handleNavigateOwner = useCallback((id: number) => {
+    navigate(`/owners/${id}`)
+  }, [navigate])
 
-  const fetchCustomers = async () => {
-    try {
-      const response = await api.get('/owners')
-      setOwners(response.data)
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleNavigateDog = useCallback((id: number) => {
+    navigate(`/dogs/${id}`)
+  }, [navigate])
 
   // フィルタリング処理を1回のループで統合（パフォーマンス最適化）
   const { filteredOwners, allDogs, filteredDogs } = useMemo(() => {
@@ -84,7 +178,7 @@ const Customers = () => {
     return { filteredOwners: filteredO, allDogs: all, filteredDogs: filteredD }
   }, [owners, debouncedSearchQuery])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pb-6">
         <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3">
@@ -161,7 +255,7 @@ const Customers = () => {
         <div className="flex gap-3">
           <div className="flex-1 bg-card rounded-xl p-3 border border-border">
             <p className="text-xs text-muted-foreground">飼い主</p>
-            <p className="text-2xl font-bold">{owners.length}<span className="text-sm font-normal text-muted-foreground">名</span></p>
+            <p className="text-2xl font-bold">{pagination?.total ?? owners.length}<span className="text-sm font-normal text-muted-foreground">名</span></p>
           </div>
           <div className="flex-1 bg-card rounded-xl p-3 border border-border">
             <p className="text-xs text-muted-foreground">ワンちゃん</p>
@@ -190,50 +284,7 @@ const Customers = () => {
           ) : (
             <div className="space-y-3">
               {filteredOwners.map((owner) => (
-                <button
-                  key={owner.id}
-                  onClick={() => navigate(`/owners/${owner.id}`)}
-                  className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow active:bg-muted/50 min-h-[72px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                      {owner.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base">{owner.name}</h3>
-                      <p className="text-xs text-muted-foreground">{owner.phone}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {owner.dogs?.slice(0, 3).map((dog) => (
-                        <div
-                          key={dog.id}
-                          className="size-8 rounded-full bg-muted overflow-hidden border-2 border-background -ml-2 first:ml-0"
-                        >
-                          {dog.photo_url ? (
-                            <img
-                              src={dog.photo_url}
-                              alt={dog.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Icon icon="solar:paw-print-bold"
-                                className="size-4 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      {(owner.dogs?.length || 0) > 3 && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          +{owner.dogs.length - 3}
-                        </span>
-                      )}
-                    </div>
-                    <Icon icon="solar:alt-arrow-right-linear"
-                      className="size-6 text-muted-foreground"
-                      aria-hidden="true" />
-                  </div>
-                </button>
+                <OwnerCard key={owner.id} owner={owner} onNavigate={handleNavigateOwner} />
               ))}
             </div>
           )
@@ -248,41 +299,18 @@ const Customers = () => {
           ) : (
             <div className="space-y-3">
               {filteredDogs.map((dog) => (
-                <button
-                  key={dog.id}
-                  onClick={() => navigate(`/dogs/${dog.id}`)}
-                  className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow active:bg-muted/50 min-h-[72px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-full bg-muted overflow-hidden">
-                      {dog.photo_url ? (
-                        <img
-                          src={dog.photo_url}
-                          alt={dog.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Icon icon="solar:paw-print-bold"
-                            className="size-6 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base">{dog.name}</h3>
-                      <p className="text-xs text-muted-foreground">{dog.breed}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">{dog.owner_name} 様</p>
-                    </div>
-                    <Icon icon="solar:alt-arrow-right-linear"
-                      className="size-6 text-muted-foreground"
-                      aria-hidden="true" />
-                  </div>
-                </button>
+                <DogCard key={dog.id} dog={dog} onNavigate={handleNavigateDog} />
               ))}
             </div>
           )
+        )}
+        {pagination && pagination.totalPages > 1 && viewMode === 'owners' && (
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            onPageChange={setPage}
+          />
         )}
       </div>
     </div>

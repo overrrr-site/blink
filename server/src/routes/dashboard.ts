@@ -1,13 +1,14 @@
 import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { cacheControl } from '../middleware/cache.js';
 import { requireStoreId, sendServerError } from '../utils/response.js';
 
 const router = express.Router();
 router.use(authenticate);
 
 // ダッシュボードデータ取得
-router.get('/', async function(req: AuthRequest, res): Promise<void> {
+router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<void> {
   try {
     if (!requireStoreId(req, res)) {
       return;

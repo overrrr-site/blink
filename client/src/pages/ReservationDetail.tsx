@@ -1,44 +1,59 @@
-import { useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import useSWR from 'swr'
 import api from '../api/client'
+import { fetcher } from '../lib/swr'
+
+interface ReservationDetailData {
+  id: number
+  dog_name: string
+  dog_photo?: string | null
+  owner_name: string
+  reservation_date: string
+  reservation_time?: string | null
+  status?: string | null
+  morning_urination?: boolean
+  morning_defecation?: boolean
+  afternoon_urination?: boolean
+  afternoon_defecation?: boolean
+  breakfast_status?: string | null
+  health_status?: string | null
+  pre_visit_notes?: string | null
+}
+
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const message = (error.response?.data as { error?: string } | undefined)?.error
+    return message || '予約の取得に失敗しました'
+  }
+  return '予約の取得に失敗しました'
+}
 
 const ReservationDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [reservation, setReservation] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data: reservation, error, isLoading, mutate } = useSWR<ReservationDetailData>(
+    id ? `/reservations/${id}` : null,
+    fetcher,
+    { revalidateOnFocus: true }
+  )
 
-  useEffect(() => {
-    if (id) {
-      fetchReservation()
-    }
-  }, [id])
-
-  const fetchReservation = async () => {
-    try {
-      setError(null)
-      const response = await api.get(`/reservations/${id}`)
-      setReservation(response.data)
-    } catch (error: any) {
-      console.error('Error fetching reservation:', error)
-      setError(error.response?.data?.error || '予約の取得に失敗しました')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const updateStatus = async (status: string) => {
+  const updateStatus = useCallback(async (status: string) => {
+    if (!id) return
     try {
       await api.put(`/reservations/${id}`, { status })
-      fetchReservation()
-    } catch (error) {
-      console.error('Error updating reservation:', error)
+      mutate()
+    } catch {
     }
-  }
+  }, [id, mutate])
 
-  if (loading) {
+  const handleRetry = useCallback(() => {
+    mutate()
+  }, [mutate])
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">読み込み中...</p>
@@ -47,12 +62,13 @@ const ReservationDetail = () => {
   }
 
   if (error || !reservation) {
+    const errorMessage = error ? getErrorMessage(error) : '予約が見つかりません'
     return (
       <div className="flex flex-col items-center justify-center h-full px-5">
         <div className="size-20 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
           <Icon icon="solar:danger-triangle-bold" className="size-10 text-destructive" />
         </div>
-        <h3 className="text-lg font-bold mb-2">{error || '予約が見つかりません'}</h3>
+        <h3 className="text-lg font-bold mb-2">{errorMessage}</h3>
         <p className="text-sm text-muted-foreground mb-6 text-center">
           {error ? '予約情報の取得に失敗しました。もう一度お試しください。' : '指定された予約は存在しないか、削除された可能性があります。'}
         </p>
@@ -65,7 +81,7 @@ const ReservationDetail = () => {
           </button>
           {error && (
             <button
-              onClick={fetchReservation}
+              onClick={handleRetry}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
             >
               再読み込み

@@ -14,7 +14,7 @@ router.use(authenticate);
 router.use(requireOwner); // 課金関連は管理者のみ
 
 // PAY.JP初期化（APIキーが設定されていない場合はnull）
-const payjp = process.env.PAYJP_SECRET_KEY ? new Payjp(process.env.PAYJP_SECRET_KEY) : null;
+const payjp = process.env.PAYJP_SECRET_KEY ? Payjp(process.env.PAYJP_SECRET_KEY) : null;
 
 // プラン一覧取得
 router.get('/plans', async (req: AuthRequest, res) => {
@@ -152,12 +152,29 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
       }
 
       // 新しいサブスクリプションを作成
-      // PAY.JPでは、プランIDを直接指定するか、金額を指定してサブスクリプションを作成
+      // PAY.JPはプランIDが必須のため、DBプランに対応するPAY.JPプランを用意する
+      const monthlyAmount = Math.floor(Number(plan.price_monthly));
+      const payjpPlanId = `plan_${plan.id}`;
+
+      try {
+        await payjp.plans.retrieve(payjpPlanId);
+      } catch (planError) {
+        await payjp.plans.create({
+          id: payjpPlanId,
+          amount: monthlyAmount,
+          currency: 'jpy',
+          interval: 'month',
+          name: plan.display_name,
+          metadata: {
+            plan_id: plan.id.toString(),
+            plan_name: plan.name,
+          },
+        });
+      }
+
       const subscription = await payjp.subscriptions.create({
         customer: customerId,
-        amount: Math.floor(plan.price_monthly),
-        currency: 'jpy',
-        interval: 'month',
+        plan: payjpPlanId,
         metadata: {
           plan_id: plan.id.toString(),
           plan_name: plan.name,

@@ -73,8 +73,7 @@ const AlertsModal = ({ isOpen, onClose }: AlertsModalProps) => {
     try {
       const response = await api.get('/dashboard')
       setAlerts(response.data.alerts || [])
-    } catch (error) {
-      console.error('Error fetching alerts:', error)
+    } catch {
     } finally {
       setLoading(false)
     }

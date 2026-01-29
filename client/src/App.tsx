@@ -4,6 +4,7 @@ import { Icon } from '@/components/Icon'
 import { useAuthStore } from './store/authStore'
 import { ToastProvider } from './components/Toast'
 import Layout from './components/Layout'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 // ページコンポーネントを遅延ロード
 const Login = lazy(() => import('./pages/Login'))
@@ -77,8 +78,9 @@ function App() {
   return (
     <ToastProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -121,8 +123,9 @@ function App() {
               <Route path="billing" element={<OwnerRoute><Billing /></OwnerRoute>} />
               <Route path="help" element={<Help />} />
             </Route>
-          </Routes>
-        </Suspense>
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </BrowserRouter>
     </ToastProvider>
   )

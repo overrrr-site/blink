@@ -27,8 +27,7 @@ const OwnersList = () => {
         params: { search },
       })
       setOwners(response.data)
-    } catch (error) {
-      console.error('Error fetching owners:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -41,8 +40,7 @@ const OwnersList = () => {
         params: { search },
       })
       setDogs(response.data)
-    } catch (error) {
-      console.error('Error fetching dogs:', error)
+    } catch {
     } finally {
       setLoading(false)
     }

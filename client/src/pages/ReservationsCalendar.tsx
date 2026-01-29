@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
 import api from '../api/client'
 
 const ReservationsCalendar = () => {
@@ -37,23 +37,13 @@ const ReservationsCalendar = () => {
   const fetchReservations = async () => {
     try {
       const monthStr = format(currentDate, 'yyyy-MM')
-      console.log('📅 Fetching reservations for month:', monthStr)
       
       const response = await api.get('/reservations', {
         params: { month: monthStr },
       })
       
-      console.log('📅 Reservations received:', response.data.length, 'items')
-      if (response.data.length > 0) {
-        console.log('📅 Sample reservation:', response.data[0])
-      }
-      
       setReservations(response.data)
-    } catch (error: any) {
-      console.error('❌ Error fetching reservations:', error)
-      if (error.response) {
-        console.error('Response error:', error.response.data)
-      }
+    } catch {
       // エラー時も空配列を設定して表示を続行
       setReservations([])
     } finally {
@@ -67,7 +57,6 @@ const ReservationsCalendar = () => {
 
   // カレンダーの前後の空白日を追加
   const firstDayOfWeek = monthStart.getDay()
-  const lastDayOfWeek = monthEnd.getDay()
   const paddingDays = []
   
   for (let i = 0; i < firstDayOfWeek; i++) {
@@ -135,8 +124,7 @@ const ReservationsCalendar = () => {
       })
       await fetchReservations()
       setSelectedDate(targetDate)
-    } catch (error) {
-      console.error('Error updating reservation:', error)
+    } catch {
       alert('予約の変更に失敗しました')
     } finally {
       setUpdating(null)
@@ -178,8 +166,7 @@ const ReservationsCalendar = () => {
                     document.body.removeChild(link)
                     URL.revokeObjectURL(blobUrl)
                   })
-                  .catch((error) => {
-                    console.error('ICS export error:', error)
+                  .catch(() => {
                     alert('カレンダーのエクスポートに失敗しました')
                   })
               }}

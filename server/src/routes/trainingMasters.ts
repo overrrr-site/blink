@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { cacheControl } from '../middleware/cache.js';
 import { requireStoreId, sendNotFound, sendBadRequest, sendServerError, sendSuccess } from '../utils/response.js';
 
 const router = express.Router();
@@ -14,7 +15,7 @@ const CATEGORY_ORDER = [
   '問題行動対策',
 ];
 
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', cacheControl(60, 120), async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
 

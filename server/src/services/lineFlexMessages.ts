@@ -1,10 +1,15 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
+import type { FlexComponent, FlexMessage, QuickReply } from '@line/bot-sdk';
+
+function compactFlexItems(items: Array<FlexComponent | null>): FlexComponent[] {
+  return items.filter((item): item is FlexComponent => item !== null);
+}
 
 /**
  * クイックリプライボタンを作成
  */
-export function createQuickReply() {
+export function createQuickReply(): QuickReply {
   return {
     items: [
       {
@@ -46,7 +51,7 @@ export function createQuickReply() {
 /**
  * 予約カードのFlexメッセージを作成
  */
-export function createReservationFlexMessage(reservation: any) {
+export function createReservationFlexMessage(reservation: any): FlexMessage {
   const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
   const reservationTime = reservation.reservation_time.substring(0, 5);
   const statusEmoji = reservation.status === '登園済' ? '✅' : reservation.status === '降園済' ? '🏠' : '📅';
@@ -77,7 +82,7 @@ export function createReservationFlexMessage(reservation: any) {
             layout: 'vertical',
             spacing: 'sm',
             margin: 'md',
-            contents: [
+            contents: compactFlexItems([
               {
                 type: 'box',
                 layout: 'horizontal',
@@ -142,7 +147,7 @@ export function createReservationFlexMessage(reservation: any) {
                   },
                 ],
               },
-            ],
+            ]),
           },
         ],
       },
@@ -171,7 +176,7 @@ export function createReservationFlexMessage(reservation: any) {
 /**
  * 日誌カードのFlexメッセージを作成
  */
-export function createJournalFlexMessage(journal: any) {
+export function createJournalFlexMessage(journal: any): FlexMessage {
   const journalDate = format(new Date(journal.journal_date), 'yyyy年M月d日(E)', { locale: ja });
   const commentPreview = journal.comment
     ? (journal.comment.length > 50 ? journal.comment.substring(0, 50) + '...' : journal.comment)
@@ -205,7 +210,7 @@ export function createJournalFlexMessage(journal: any) {
             type: 'box',
             layout: 'vertical',
             spacing: 'sm',
-            contents: [
+            contents: compactFlexItems([
               {
                 type: 'text',
                 text: journalDate,
@@ -248,7 +253,7 @@ export function createJournalFlexMessage(journal: any) {
                 wrap: true,
                 margin: 'md',
               },
-            ].filter(Boolean),
+            ]),
           },
         ],
         paddingAll: 'md',
@@ -279,7 +284,7 @@ export function createJournalFlexMessage(journal: any) {
 /**
  * 契約情報カードのFlexメッセージを作成
  */
-export function createContractFlexMessage(contract: any, calculatedRemaining: number | null) {
+export function createContractFlexMessage(contract: any, calculatedRemaining: number | null): FlexMessage {
   // 日付を安全にフォーマット（nullや無効な値に対応）
   const formatSafeDate = (dateValue: any, defaultText: string = '未設定'): string => {
     if (!dateValue) return defaultText;
@@ -327,7 +332,7 @@ export function createContractFlexMessage(contract: any, calculatedRemaining: nu
             type: 'box',
             layout: 'vertical',
             spacing: 'sm',
-            contents: [
+            contents: compactFlexItems([
               {
                 type: 'text',
                 text: contract.course_name || contract.contract_type,
@@ -451,7 +456,7 @@ export function createContractFlexMessage(contract: any, calculatedRemaining: nu
                   },
                 ],
               },
-            ].filter(Boolean),
+            ]),
           },
         ],
         paddingAll: 'md',
@@ -468,7 +473,7 @@ export function createReservationReminderFlexMessage(reservation: {
   reservation_date: string;
   reservation_time: string;
   dog_name: string;
-}) {
+}): FlexMessage {
   const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
   const reservationTime = reservation.reservation_time.substring(0, 5);
   const liffId = process.env.LIFF_ID;
@@ -504,7 +509,7 @@ export function createReservationReminderFlexMessage(reservation: {
             type: 'box',
             layout: 'vertical',
             spacing: 'sm',
-            contents: [
+            contents: compactFlexItems([
               {
                 type: 'box',
                 layout: 'horizontal',
@@ -560,7 +565,7 @@ export function createReservationReminderFlexMessage(reservation: {
                 wrap: true,
                 margin: 'md',
               },
-            ],
+            ]),
           },
         ],
         paddingAll: 'md',
@@ -597,7 +602,7 @@ export function createJournalNotificationFlexMessage(journal: {
   dog_name: string;
   comment?: string | null;
   photos?: string[] | null;
-}) {
+}): FlexMessage {
   const journalDate = format(new Date(journal.journal_date), 'M月d日(E)', { locale: ja });
   const commentPreview = journal.comment
     ? (journal.comment.length > 80 ? journal.comment.substring(0, 80) + '...' : journal.comment)
@@ -636,7 +641,7 @@ export function createJournalNotificationFlexMessage(journal: {
             type: 'box',
             layout: 'vertical',
             spacing: 'sm',
-            contents: [
+            contents: compactFlexItems([
               {
                 type: 'box',
                 layout: 'horizontal',
@@ -720,7 +725,7 @@ export function createJournalNotificationFlexMessage(journal: {
                 wrap: true,
                 margin: 'md',
               },
-            ].filter(Boolean),
+            ]),
           },
         ],
         paddingAll: 'md',
@@ -754,7 +759,7 @@ export function createVaccineAlertFlexMessage(alert: {
   dog_name: string;
   alerts: string[];
   alert_days: number;
-}) {
+}): FlexMessage {
   const alertText = alert.alerts.join('・');
   const liffId = process.env.LIFF_ID;
   const appUrl = liffId ? `https://liff.line.me/${liffId}/home` : '#';
@@ -875,7 +880,7 @@ export function createVaccineAlertFlexMessage(alert: {
 /**
  * ヘルプメッセージを作成
  */
-export function createHelpMessage() {
+export function createHelpMessage(): FlexMessage {
   return {
     type: 'flex',
     altText: '使い方ガイド',

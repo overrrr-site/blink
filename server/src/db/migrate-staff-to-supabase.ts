@@ -16,6 +16,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 import pool from './connection.js'
 import dotenv from 'dotenv'
 
@@ -67,7 +68,12 @@ async function migrateStaffToSupabase() {
       try {
         // Supabaseに既存ユーザーがいるかチェック
         const { data: existingUsers } = await supabase.auth.admin.listUsers()
-        const existingUser = existingUsers?.users?.find(u => u.email === staff.email)
+        const users = Array.isArray((existingUsers as { users?: User[] } | null)?.users)
+          ? (existingUsers as { users: User[] }).users
+          : Array.isArray(existingUsers)
+            ? existingUsers
+            : []
+        const existingUser = users.find(user => user.email === staff.email)
 
         let authUserId: string
 

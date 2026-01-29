@@ -1,7 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useCallback } from 'react'
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import useSWR from 'swr'
 import api from '../../api/client'
+import { fetcher } from '../../lib/swr'
+
+interface CourseMaster {
+  id: number
+  course_name: string
+  contract_type: string
+  enabled?: boolean | null
+  sessions?: number | null
+  price?: number | null
+  valid_days?: number | null
+}
 
 function getContractTypeStyle(contractType: string): string {
   switch (contractType) {
@@ -16,25 +29,14 @@ function getContractTypeStyle(contractType: string): string {
 
 function PricingTab() {
   const navigate = useNavigate()
-  const [courseList, setCourseList] = useState<any[]>([])
-  const [loadingCourses, setLoadingCourses] = useState(true)
+  const { data, isLoading, mutate } = useSWR<CourseMaster[]>(
+    '/course-masters',
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+  const courseList = data ?? []
 
-  useEffect(() => {
-    fetchCourses()
-  }, [])
-
-  async function fetchCourses() {
-    try {
-      const response = await api.get('/course-masters')
-      setCourseList(response.data)
-    } catch (error) {
-      console.error('Error fetching courses:', error)
-    } finally {
-      setLoadingCourses(false)
-    }
-  }
-
-  async function handleDeleteCourse(id: number, e: React.MouseEvent) {
+  const handleDeleteCourse = useCallback(async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
     if (!confirm('このコースを削除しますか？')) {
       return
@@ -42,12 +44,14 @@ function PricingTab() {
 
     try {
       await api.delete(`/course-masters/${id}`)
-      fetchCourses()
-    } catch (error: any) {
-      console.error('Error deleting course:', error)
-      alert(error.response?.data?.error || 'コースの削除に失敗しました')
+      mutate()
+    } catch (error: unknown) {
+      const errorMessage = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(errorMessage || 'コースの削除に失敗しました')
     }
-  }
+  }, [mutate])
 
   return (
     <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -64,7 +68,7 @@ function PricingTab() {
           追加
         </button>
       </div>
-      {loadingCourses ? (
+      {isLoading ? (
         <div className="text-center py-4">
           <span className="text-xs text-muted-foreground">読み込み中...</span>
         </div>

@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { cacheControl } from '../middleware/cache.js';
 import {
   requireStoreId,
   sendBadRequest,
@@ -37,7 +38,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // 予約一覧取得（日付指定）
-router.get('/', async function(req: AuthRequest, res): Promise<void> {
+router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<void> {
   try {
     const { date, month } = req.query;
 
@@ -180,12 +181,12 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
 
     const reservation = result.rows[0];
 
-    // Googleカレンダーに同期（エラーが発生しても予約は作成済み）
-    await syncCalendarOnCreate({
+    // Googleカレンダーに同期（非ブロッキング: レスポンスを先に返す）
+    syncCalendarOnCreate({
       storeId: req.storeId!,
       reservation,
       dogId: dog_id,
-    });
+    }).catch((err) => console.error('Calendar sync error (create):', err));
 
     res.status(201).json(reservation);
   } catch (error) {
@@ -256,13 +257,13 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
       }
     }
 
-    // Googleカレンダーに同期（エラーが発生しても予約は更新済み）
-    await syncCalendarOnUpdate({
+    // Googleカレンダーに同期（非ブロッキング: レスポンスを先に返す）
+    syncCalendarOnUpdate({
       storeId: req.storeId!,
       reservationId: parseInt(id, 10),
       reservation,
       status,
-    });
+    }).catch((err) => console.error('Calendar sync error (update):', err));
 
     res.json(reservation);
   } catch (error) {

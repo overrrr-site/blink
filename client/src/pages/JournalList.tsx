@@ -1,29 +1,85 @@
-import { useEffect, useState, useMemo } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import api from '../api/client'
+import useSWR from 'swr'
+import { fetcher, PaginatedResponse } from '../lib/swr'
+import { Pagination } from '../components/Pagination'
+
+interface Journal {
+  id: number
+  dog_id: number
+  dog_name: string
+  dog_photo?: string | null
+  owner_name: string
+  staff_name?: string | null
+  journal_date: string
+  comment?: string | null
+}
+
+const PAGE_SIZE = 50
+
+const JournalCard = React.memo(function JournalCard({
+  journal,
+  onNavigate,
+}: {
+  journal: Journal
+  onNavigate: (id: number) => void
+}) {
+  return (
+    <div
+      onClick={() => onNavigate(journal.id)}
+      className="bg-card rounded-2xl p-4 border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-center gap-3 mb-2">
+        {journal.dog_photo ? (
+          <img
+            src={journal.dog_photo}
+            alt={journal.dog_name}
+            className="size-12 rounded-full object-cover"
+          />
+        ) : (
+          <div className="size-12 rounded-full bg-muted flex items-center justify-center">
+            <Icon icon="solar:paw-print-bold"
+              width="24"
+              height="24"
+              className="text-muted-foreground" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-base">{journal.dog_name}</h3>
+          <p className="text-xs text-muted-foreground truncate">
+            {journal.owner_name} 様 / {journal.staff_name || '担当未設定'}
+          </p>
+        </div>
+        <Icon icon="solar:alt-arrow-right-linear"
+          width="20"
+          height="20"
+          className="text-muted-foreground shrink-0" />
+      </div>
+      {journal.comment && (
+        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{journal.comment}</p>
+      )}
+    </div>
+  )
+})
 
 const JournalList = () => {
-  const [journals, setJournals] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDog, setSelectedDog] = useState<string>('')
+  const [page, setPage] = useState(1)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    fetchJournals()
-  }, [])
+  const { data, isLoading } = useSWR<PaginatedResponse<Journal>>(
+    `/journals?page=${page}&limit=${PAGE_SIZE}`,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+  const journals = data?.data ?? []
+  const pagination = data?.pagination
 
-  const fetchJournals = async () => {
-    try {
-      const response = await api.get('/journals')
-      setJournals(response.data)
-    } catch (error) {
-      console.error('Error fetching journals:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleNavigateJournal = useCallback((id: number) => {
+    navigate(`/journals/${id}`)
+  }, [navigate])
 
   // 3つの計算を1回のループで統合処理（パフォーマンス最適化）
   const { uniqueDogs, filteredJournals, groupedJournals } = useMemo(() => {
@@ -89,7 +145,7 @@ const JournalList = () => {
     URL.revokeObjectURL(url)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">読み込み中...</p>
@@ -213,45 +269,23 @@ const JournalList = () => {
               </h2>
               <div className="space-y-3">
                 {dateJournals.map((journal) => (
-                  <div
+                  <JournalCard
                     key={journal.id}
-                    onClick={() => navigate(`/journals/${journal.id}`)}
-                    className="bg-card rounded-2xl p-4 border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      {journal.dog_photo ? (
-                        <img
-                          src={journal.dog_photo}
-                          alt={journal.dog_name}
-                          className="size-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="size-12 rounded-full bg-muted flex items-center justify-center">
-                          <Icon icon="solar:paw-print-bold"
-                            width="24"
-                            height="24"
-                            className="text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-base">{journal.dog_name}</h3>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {journal.owner_name} 様 / {journal.staff_name || '担当未設定'}
-                        </p>
-                      </div>
-                      <Icon icon="solar:alt-arrow-right-linear"
-                        width="20"
-                        height="20"
-                        className="text-muted-foreground shrink-0" />
-                    </div>
-                    {journal.comment && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{journal.comment}</p>
-                    )}
-                  </div>
+                    journal={journal}
+                    onNavigate={handleNavigateJournal}
+                  />
                 ))}
               </div>
             </div>
           ))
+        )}
+        {pagination && pagination.totalPages > 1 && (
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            onPageChange={setPage}
+          />
         )}
       </main>
     </div>

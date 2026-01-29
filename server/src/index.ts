@@ -2,7 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import compression from 'compression';
 import { initializeDatabase } from './db/init.js';
+import { requestLogger } from './middleware/requestLogger.js';
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -34,6 +36,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
+app.use(requestLogger);
 
 // LINE Webhook: Vercel環境では処理完了後にレスポンスを返す
 // express.text()でraw bodyを取得し、署名検証に使用
@@ -91,6 +94,7 @@ app.post('/api/line/webhook', express.text({ type: '*/*' }), async (req, res) =>
 });
 
 app.use(express.json({ limit: '10mb' }));
+app.use(compression());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 静的ファイル配信（アップロードされたファイル）

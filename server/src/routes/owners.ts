@@ -7,6 +7,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { buildPaginatedResponse, parsePaginationParams } from '../utils/pagination.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -14,7 +15,9 @@ router.use(authenticate);
 // 飼い主一覧取得
 router.get('/', async function(req: AuthRequest, res): Promise<void> {
   try {
-    const { search, filter } = req.query;
+    const queryParams = req.query as { search?: string | string[]; filter?: string | string[]; page?: string | string[]; limit?: string | string[] };
+    const { search } = queryParams;
+    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
     // N+1解消: LATERAL JOINで最終予約日を効率的に取得
     let query = `
       SELECT o.*,
@@ -24,7 +27,8 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
                'breed', d.breed,
                'photo_url', d.photo_url
              )) FILTER (WHERE d.id IS NOT NULL AND d.deleted_at IS NULL) as dogs,
-             last_res.last_reservation_date
+             last_res.last_reservation_date,
+             COUNT(*) OVER() as total_count
       FROM owners o
       LEFT JOIN dogs d ON o.id = d.owner_id AND d.deleted_at IS NULL
       LEFT JOIN LATERAL (
@@ -38,17 +42,25 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
       ) last_res ON true
       WHERE o.store_id = $1 AND o.deleted_at IS NULL
     `;
-    const params: any[] = [req.storeId];
+    const params: Array<string | number> = [req.storeId ?? 0];
 
     if (search) {
-      query += ` AND (o.name ILIKE $2 OR o.phone ILIKE $2)`;
-      params.push(`%${search}%`);
+      query += ` AND (o.name ILIKE $${params.length + 1} OR o.phone ILIKE $${params.length + 1})`;
+      const searchValue = Array.isArray(search) ? search[0] : search;
+      params.push(`%${searchValue}%`);
     }
 
     query += ` GROUP BY o.id, last_res.last_reservation_date ORDER BY o.created_at DESC`;
+    query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
+    const data = result.rows.map((row) => {
+      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
+      return rest;
+    });
+    res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error) {
     console.error('Error fetching owners:', error);
     sendServerError(res, '飼い主一覧の取得に失敗しました', error);

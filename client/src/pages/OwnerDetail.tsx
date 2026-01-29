@@ -1,32 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
-import api from '../api/client'
+import useSWR from 'swr'
+import { fetcher } from '../lib/swr'
 
 const OwnerDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [owner, setOwner] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading } = useSWR<any>(
+    id ? `/owners/${id}` : null,
+    fetcher,
+    { revalidateOnFocus: true }
+  )
+  const owner = useMemo(() => data ?? null, [data])
 
-  useEffect(() => {
-    if (id) {
-      fetchOwner()
-    }
-  }, [id])
-
-  const fetchOwner = async () => {
-    try {
-      const response = await api.get(`/owners/${id}`)
-      setOwner(response.data)
-    } catch (error) {
-      console.error('Error fetching owner:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">読み込み中...</p>

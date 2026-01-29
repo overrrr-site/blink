@@ -1,6 +1,6 @@
 import express from 'express';
 import pool from '../db/connection.js';
-import { authenticate, requireOwner, AuthRequest } from '../middleware/auth.js';
+import { authenticate, requireOwner, AuthRequest, invalidateStaffCache } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 import {
   requireStoreId,
@@ -194,6 +194,12 @@ router.put('/:id', async (req: AuthRequest, res) => {
       `UPDATE staff SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values
     );
+
+    const updatedStaff = result.rows[0] as { auth_user_id?: string | null };
+    if (updatedStaff.auth_user_id) {
+      // スタッフ情報更新時は認証キャッシュを無効化
+      invalidateStaffCache(updatedStaff.auth_user_id);
+    }
 
     res.json({
       ...result.rows[0],

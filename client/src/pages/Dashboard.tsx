@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
@@ -6,6 +6,8 @@ import AlertsModal from '../components/AlertsModal'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { getAvatarUrl } from '../utils/image'
+import useSWR from 'swr'
+import { fetcher } from '../lib/swr'
 
 interface Reservation {
   id: number
@@ -78,29 +80,245 @@ function hasPreVisitInput(reservation: Reservation): boolean {
   return Boolean(reservation.notes || reservation.health_status || reservation.breakfast_status)
 }
 
+const ReservationCard = React.memo(function ReservationCard({
+  reservation,
+  isExpanded,
+  onToggle,
+  onCheckIn,
+  onCheckOut,
+  onNavigateReservation,
+  onNavigateDog,
+  onNavigateJournal,
+  checkingIn,
+}: {
+  reservation: Reservation
+  isExpanded: boolean
+  onToggle: () => void
+  onCheckIn: (id: number) => void
+  onCheckOut: (id: number) => void
+  onNavigateReservation: (id: number) => void
+  onNavigateDog: (id: number) => void
+  onNavigateJournal: (id: number) => void
+  checkingIn: number | null
+}) {
+  const displayStatus = getDisplayStatus(reservation)
+  const isWaiting = displayStatus === '来園待ち'
+  const isPresent = displayStatus === '在園中'
+
+  return (
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onToggle()
+          }
+        }}
+        className="w-full p-3 flex items-center gap-3 text-left cursor-pointer"
+      >
+        <div className="size-10 rounded-full overflow-hidden bg-muted shrink-0">
+          {reservation.dog_photo ? (
+            <img
+              src={getAvatarUrl(reservation.dog_photo)}
+              alt={reservation.dog_name}
+              loading="lazy"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Icon icon="solar:paw-print-bold" className="size-5 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-sm">{reservation.dog_name}</h3>
+            {hasPreVisitInput(reservation) && (
+              <Icon icon="solar:clipboard-check-bold" className="size-4 text-chart-3" />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {reservation.owner_name}様
+          </p>
+        </div>
+
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          {isWaiting && (
+            <button
+              onClick={() => onCheckIn(reservation.id)}
+              disabled={checkingIn === reservation.id}
+              className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
+            >
+              {checkingIn === reservation.id ? (
+                <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
+              ) : (
+                <Icon icon="solar:check-circle-bold" className="size-4" />
+              )}
+              登園
+            </button>
+          )}
+          {isPresent && !reservation.has_journal && (
+            <button
+              onClick={() => onNavigateJournal(reservation.id)}
+              className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
+              aria-label="日誌を作成"
+            >
+              <Icon icon="solar:pen-new-square-bold" className="size-4" />
+              日誌
+            </button>
+          )}
+          {isPresent && reservation.has_journal && (
+            <button
+              onClick={() => onCheckOut(reservation.id)}
+              disabled={checkingIn === reservation.id}
+              className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
+              aria-label="降園"
+            >
+              {checkingIn === reservation.id ? (
+                <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
+              ) : (
+                <Icon icon="solar:logout-3-bold" className="size-4" />
+              )}
+              降園
+            </button>
+          )}
+          {displayStatus === '帰宅済' && (
+            <div className="flex items-center gap-1 text-chart-3 px-2 py-1">
+              <Icon icon="solar:check-circle-bold" className="size-5" />
+              <span className="text-xs font-bold">帰宅済</span>
+            </div>
+          )}
+        </div>
+
+        <Icon icon={isExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
+          className="size-5 text-muted-foreground shrink-0" />
+      </div>
+
+      {isExpanded && (
+        <div className="border-t border-border">
+          {hasPreVisitInput(reservation) && (
+            <div className="bg-chart-3/5 px-4 py-3">
+              <p className="text-xs font-bold text-chart-3 mb-1">
+                <Icon icon="solar:clipboard-text-bold" className="size-4 mr-1" />
+                飼い主さんからの連絡
+              </p>
+              {reservation.health_status && (
+                <p className="text-xs text-foreground">{reservation.health_status}</p>
+              )}
+              {reservation.notes && (
+                <p className="text-xs text-foreground">{reservation.notes}</p>
+              )}
+              {reservation.breakfast_status && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  朝ごはん: {reservation.breakfast_status}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="px-4 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className={`px-2.5 py-1 rounded-full font-bold text-xs ${
+              isPresent ? 'bg-chart-2/10 text-chart-2 border border-chart-2/30' :
+              isWaiting ? 'bg-chart-4/10 text-chart-4 border border-chart-4/30' :
+              'bg-muted text-muted-foreground border border-border'
+            }`}>
+              {displayStatus === '来園待ち' && (
+                <Icon icon="solar:clock-circle-bold" className="size-3 mr-1" />
+              )}
+              {displayStatus === '在園中' && (
+                <Icon icon="solar:home-smile-bold" className="size-3 mr-1" />
+              )}
+              {displayStatus === '帰宅済' && (
+                <Icon icon="solar:check-circle-bold" className="size-3 mr-1" />
+              )}
+              {getStatusLabel(displayStatus)}
+            </span>
+            {reservation.checked_in_at && (
+              <span className="text-chart-2">
+                {new Date(reservation.checked_in_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} 到着
+              </span>
+            )}
+          </div>
+
+          <div className="flex border-t border-border">
+            <button
+              onClick={() => onNavigateReservation(reservation.id)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
+            >
+              <Icon icon="solar:calendar-bold" className="size-4" />
+              予約詳細
+            </button>
+            <div className="w-px bg-border" />
+            <button
+              onClick={() => onNavigateDog(reservation.dog_id)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
+            >
+              <Icon icon="solar:document-text-bold" className="size-4" />
+              カルテ
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+})
+
+const QuickActionCard = React.memo(function QuickActionCard({
+  onClick,
+  icon,
+  iconClassName,
+  containerClassName,
+  title,
+  titleClassName,
+  description,
+  badge,
+}: {
+  onClick: () => void
+  icon: string
+  iconClassName: string
+  containerClassName: string
+  title: string
+  titleClassName: string
+  description: string
+  badge?: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full border rounded-xl p-3 flex items-center gap-3 transition-colors ${containerClassName}`}
+    >
+      <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${iconClassName}`}>
+        <Icon icon={icon} className="size-5" />
+      </div>
+      <div className="flex-1 text-left">
+        <p className={`text-sm font-bold ${titleClassName}`}>
+          {title}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {description}
+        </p>
+      </div>
+      {badge}
+      <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
+    </button>
+  )
+})
+
 function Dashboard(): JSX.Element {
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [checkingIn, setCheckingIn] = useState<number | null>(null)
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const navigate = useNavigate()
 
-  async function fetchDashboard(): Promise<void> {
-    try {
-      const response = await api.get('/dashboard')
-      setData(response.data)
-    } catch (error) {
-      console.error('Error fetching dashboard:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchDashboard()
-  }, [])
+  const { data, isLoading, mutate } = useSWR<DashboardData>('/dashboard', fetcher, {
+    revalidateOnFocus: true,
+    refreshInterval: 30000,
+  })
 
   const handleCheckIn = useCallback(async function(reservationId: number): Promise<void> {
     setCheckingIn(reservationId)
@@ -108,28 +326,66 @@ function Dashboard(): JSX.Element {
       await api.put(`/reservations/${reservationId}`, {
         status: '登園済',
       })
-      await fetchDashboard()
-    } catch (error) {
-      console.error('Error checking in:', error)
+      await mutate()
+    } catch {
       alert('登園処理に失敗しました')
     } finally {
       setCheckingIn(null)
     }
-  }, [])
+  }, [mutate])
 
   const handleCheckOut = useCallback(async function(reservationId: number): Promise<void> {
-    setCheckingIn(reservationId) // 同じstateを再利用
+    setCheckingIn(reservationId)
     try {
       await api.put(`/reservations/${reservationId}`, {
         status: '降園済',
       })
-      await fetchDashboard()
-    } catch (error) {
-      console.error('Error checking out:', error)
+      await mutate()
+    } catch {
       alert('降園処理に失敗しました')
     } finally {
       setCheckingIn(null)
     }
+  }, [mutate])
+
+  const handleNavigateReservation = useCallback((id: number) => {
+    navigate(`/reservations/${id}`)
+  }, [navigate])
+
+  const handleNavigateDog = useCallback((id: number) => {
+    navigate(`/dogs/${id}`)
+  }, [navigate])
+
+  const handleNavigateJournalCreate = useCallback((id: number) => {
+    navigate(`/journals/create/${id}`)
+  }, [navigate])
+
+  const handleNavigateInspection = useCallback(() => {
+    navigate('/inspection-records')
+  }, [navigate])
+
+  const handleNavigateAnnouncements = useCallback(() => {
+    navigate('/announcements')
+  }, [navigate])
+
+  const handleNavigateNewJournals = useCallback(() => {
+    navigate('/journals/new')
+  }, [navigate])
+
+  const handleNavigateNewReservation = useCallback(() => {
+    navigate('/reservations/new')
+  }, [navigate])
+
+  const handleToggleAlerts = useCallback(() => {
+    setAlertsModalOpen(true)
+  }, [])
+
+  const handleToggleCard = useCallback((id: number) => {
+    setExpandedCard((prev) => (prev === id ? null : id))
+  }, [])
+
+  const handleHideAlerts = useCallback(() => {
+    setAlertsModalOpen(false)
   }, [])
 
   // 4つの計算を1回のループで統合処理（パフォーマンス最適化）
@@ -177,7 +433,7 @@ function Dashboard(): JSX.Element {
     return messages.join('、') || '確認が必要な項目があります'
   }, [data?.alerts])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pb-6">
         <section className="px-5 pt-2">
@@ -228,7 +484,7 @@ function Dashboard(): JSX.Element {
             description={statusFilter === 'all' ? '新しい予約を追加して登園スケジュールを管理しましょう' : '他のステータスを確認してください'}
             action={statusFilter === 'all' ? {
               label: '新規予約を追加',
-              onClick: () => navigate('/reservations/new'),
+              onClick: handleNavigateNewReservation,
               icon: 'solar:add-circle-bold'
             } : undefined}
           />
@@ -250,186 +506,20 @@ function Dashboard(): JSX.Element {
 
                 {/* その時間の予約 - シンプルな展開式カード */}
                 <div className="space-y-2">
-                  {reservations.map((reservation) => {
-                    const displayStatus = getDisplayStatus(reservation)
-                    const isWaiting = displayStatus === '来園待ち'
-                    const isPresent = displayStatus === '在園中'
-                    const isExpanded = expandedCard === reservation.id
-
-                    return (
-                      <div
-                        key={reservation.id}
-                        className="bg-card rounded-xl border border-border shadow-sm overflow-hidden"
-                      >
-                        {/* コンパクトなメインカード */}
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => setExpandedCard(isExpanded ? null : reservation.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault()
-                              setExpandedCard(isExpanded ? null : reservation.id)
-                            }
-                          }}
-                          className="w-full p-3 flex items-center gap-3 text-left cursor-pointer"
-                        >
-                          {/* 犬の写真（小さめ） */}
-                          <div className="size-10 rounded-full overflow-hidden bg-muted shrink-0">
-                            {reservation.dog_photo ? (
-                              <img
-                                src={getAvatarUrl(reservation.dog_photo)}
-                                alt={reservation.dog_name}
-                                loading="lazy"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Icon icon="solar:paw-print-bold" className="size-5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* 基本情報のみ */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-bold text-sm">{reservation.dog_name}</h3>
-                              {/* 連絡帳バッジ（アイコンのみ） */}
-                              {hasPreVisitInput(reservation) && (
-                                <Icon icon="solar:clipboard-check-bold" className="size-4 text-chart-3" />
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {reservation.owner_name}様
-                            </p>
-                          </div>
-
-                          {/* 主アクションボタン1つのみ */}
-                          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                            {isWaiting && (
-                              <button
-                                onClick={() => handleCheckIn(reservation.id)}
-                                disabled={checkingIn === reservation.id}
-                                className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
-                              >
-                                {checkingIn === reservation.id ? (
-                                  <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
-                                ) : (
-                                  <Icon icon="solar:check-circle-bold" className="size-4" />
-                                )}
-                                登園
-                              </button>
-                            )}
-                            {isPresent && !reservation.has_journal && (
-                              <button
-                                onClick={() => navigate(`/journals/create/${reservation.id}`)}
-                                className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
-                                aria-label="日誌を作成"
-                              >
-                                <Icon icon="solar:pen-new-square-bold" className="size-4" />
-                                日誌
-                              </button>
-                            )}
-                            {isPresent && reservation.has_journal && (
-                              <button
-                                onClick={() => handleCheckOut(reservation.id)}
-                                disabled={checkingIn === reservation.id}
-                                className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
-                                aria-label="降園"
-                              >
-                                {checkingIn === reservation.id ? (
-                                  <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
-                                ) : (
-                                  <Icon icon="solar:logout-3-bold" className="size-4" />
-                                )}
-                                降園
-                              </button>
-                            )}
-                            {displayStatus === '帰宅済' && (
-                              <div className="flex items-center gap-1 text-chart-3 px-2 py-1">
-                                <Icon icon="solar:check-circle-bold" className="size-5" />
-                                <span className="text-xs font-bold">帰宅済</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* 展開アイコン */}
-                          <Icon icon={isExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
-                            className="size-5 text-muted-foreground shrink-0" />
-                        </div>
-
-                        {/* 展開時の詳細 */}
-                        {isExpanded && (
-                          <div className="border-t border-border">
-                            {/* 連絡帳（あれば） */}
-                            {hasPreVisitInput(reservation) && (
-                              <div className="bg-chart-3/5 px-4 py-3">
-                                <p className="text-xs font-bold text-chart-3 mb-1">
-                                  <Icon icon="solar:clipboard-text-bold" className="size-4 mr-1" />
-                                  飼い主さんからの連絡
-                                </p>
-                                {reservation.health_status && (
-                                  <p className="text-xs text-foreground">{reservation.health_status}</p>
-                                )}
-                                {reservation.notes && (
-                                  <p className="text-xs text-foreground">{reservation.notes}</p>
-                                )}
-                                {reservation.breakfast_status && (
-                                  <p className="text-[10px] text-muted-foreground mt-1">
-                                    朝ごはん: {reservation.breakfast_status}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
-                            {/* ステータス情報 */}
-                            <div className="px-4 py-2 flex items-center gap-2 text-xs text-muted-foreground">
-                              <span className={`px-2.5 py-1 rounded-full font-bold text-xs ${
-                                isPresent ? 'bg-chart-2/10 text-chart-2 border border-chart-2/30' :
-                                isWaiting ? 'bg-chart-4/10 text-chart-4 border border-chart-4/30' :
-                                'bg-muted text-muted-foreground border border-border'
-                              }`}>
-                                {displayStatus === '来園待ち' && (
-                                  <Icon icon="solar:clock-circle-bold" className="size-3 mr-1" />
-                                )}
-                                {displayStatus === '在園中' && (
-                                  <Icon icon="solar:home-smile-bold" className="size-3 mr-1" />
-                                )}
-                                {displayStatus === '帰宅済' && (
-                                  <Icon icon="solar:check-circle-bold" className="size-3 mr-1" />
-                                )}
-                                {getStatusLabel(displayStatus)}
-                              </span>
-                              {reservation.checked_in_at && (
-                                <span className="text-chart-2">
-                                  {new Date(reservation.checked_in_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} 到着
-                                </span>
-                              )}
-                            </div>
-
-                            {/* その他のアクション */}
-                            <div className="flex border-t border-border">
-                              <button
-                                onClick={() => navigate(`/reservations/${reservation.id}`)}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
-                              >
-                                <Icon icon="solar:calendar-bold" className="size-4" />
-                                予約詳細
-                              </button>
-                              <div className="w-px bg-border" />
-                              <button
-                                onClick={() => navigate(`/dogs/${reservation.dog_id}`)}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
-                              >
-                                <Icon icon="solar:document-text-bold" className="size-4" />
-                                カルテ
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                  {reservations.map((reservation) => (
+                    <ReservationCard
+                      key={reservation.id}
+                      reservation={reservation}
+                      isExpanded={expandedCard === reservation.id}
+                      onToggle={() => handleToggleCard(reservation.id)}
+                      onCheckIn={handleCheckIn}
+                      onCheckOut={handleCheckOut}
+                      onNavigateReservation={handleNavigateReservation}
+                      onNavigateDog={handleNavigateDog}
+                      onNavigateJournal={handleNavigateJournalCreate}
+                      checkingIn={checkingIn}
+                    />
+                  ))}
                 </div>
               </div>
             ))}
@@ -441,100 +531,67 @@ function Dashboard(): JSX.Element {
       {data && (
         <section className="px-5 mt-4 space-y-2">
           {/* 今日の点検記録 */}
-          <button
-            onClick={() => navigate('/inspection-records')}
-            className={`w-full border rounded-xl p-3 flex items-center gap-3 transition-colors ${
-              data?.todayInspectionRecord
-                ? 'bg-chart-2/10 border-chart-2/20 hover:bg-chart-2/15'
-                : 'bg-chart-5/10 border-chart-5/20 hover:bg-chart-5/15'
-            }`}
-          >
-            <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${
-              data?.todayInspectionRecord
-                ? 'bg-chart-2/20'
-                : 'bg-chart-5/20'
-            }`}>
-              <Icon icon={data?.todayInspectionRecord ? 'solar:check-circle-bold' : 'solar:clipboard-check-bold'}
-                className={`size-5 ${data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}`} />
-            </div>
-            <div className="flex-1 text-left">
-              <p className={`text-sm font-bold ${data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}`}>
-                今日の点検記録
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
-              </p>
-            </div>
-            <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
-          </button>
+          <QuickActionCard
+            onClick={handleNavigateInspection}
+            icon={data?.todayInspectionRecord ? 'solar:check-circle-bold' : 'solar:clipboard-check-bold'}
+            iconClassName={data?.todayInspectionRecord ? 'bg-chart-2/20 text-chart-2' : 'bg-chart-5/20 text-chart-5'}
+            containerClassName={data?.todayInspectionRecord ? 'bg-chart-2/10 border-chart-2/20 hover:bg-chart-2/15' : 'bg-chart-5/10 border-chart-5/20 hover:bg-chart-5/15'}
+            title="今日の点検記録"
+            titleClassName={data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}
+            description={data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
+          />
 
           {/* 未入力の日誌 */}
           {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
-            <button
-              onClick={() => navigate('/journals/new')}
-              className="w-full bg-destructive/10 border border-destructive/20 rounded-xl p-3 flex items-center gap-3 hover:bg-destructive/15 transition-colors"
-            >
-              <div className="size-10 rounded-full bg-destructive/20 flex items-center justify-center shrink-0">
-                <Icon icon="solar:document-text-bold" className="size-5 text-destructive" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-destructive">未入力の日誌</p>
-                <p className="text-xs text-muted-foreground">
-                  {data.incompleteJournals.slice(0, 2).map((j: any) => j.dog_name).join('、')}
-                  {data.incompleteJournals.length > 2 && ` 他${data.incompleteJournals.length - 2}件`}
-                </p>
-              </div>
-              <div className="flex items-center justify-center bg-destructive text-white text-xs font-bold size-7 rounded-full shrink-0">
-                {data.incompleteJournals.length}
-              </div>
-              <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
-            </button>
+            <QuickActionCard
+              onClick={handleNavigateNewJournals}
+              icon="solar:document-text-bold"
+              iconClassName="bg-destructive/20 text-destructive"
+              containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
+              title="未入力の日誌"
+              titleClassName="text-destructive"
+              description={`${data.incompleteJournals.slice(0, 2).map((j: any) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
+              badge={(
+                <div className="flex items-center justify-center bg-destructive text-white text-xs font-bold size-7 rounded-full shrink-0">
+                  {data.incompleteJournals.length}
+                </div>
+              )}
+            />
           )}
 
           {/* お知らせ発信 */}
-          <button
-            onClick={() => navigate('/announcements')}
-            className="w-full bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-center gap-3 hover:bg-primary/15 transition-colors"
-          >
-            <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-              <Icon icon="solar:mailbox-bold" className="size-5 text-primary" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-primary">お知らせ発信</p>
-              <p className="text-xs text-muted-foreground">
-                公開中: {data?.announcementStats?.published || 0}件 / 下書き: {data?.announcementStats?.draft || 0}件
-              </p>
-            </div>
-            <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
-          </button>
+          <QuickActionCard
+            onClick={handleNavigateAnnouncements}
+            icon="solar:mailbox-bold"
+            iconClassName="bg-primary/20 text-primary"
+            containerClassName="bg-primary/10 border-primary/20 hover:bg-primary/15"
+            title="お知らせ発信"
+            titleClassName="text-primary"
+            description={`公開中: ${data?.announcementStats?.published || 0}件 / 下書き: ${data?.announcementStats?.draft || 0}件`}
+          />
 
           {/* 確認事項 */}
           {data?.alerts && data.alerts.length > 0 && (
-            <button
-              onClick={() => setAlertsModalOpen(true)}
-              className="w-full bg-chart-4/10 border border-chart-4/20 rounded-xl p-3 flex items-center gap-3 hover:bg-chart-4/15 transition-colors"
-              aria-label="確認事項を表示"
-            >
-              <div className="size-10 rounded-full bg-chart-4/20 flex items-center justify-center shrink-0">
-                <Icon icon="solar:bell-bold" className="size-5 text-chart-4" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-chart-4">確認事項</p>
-                <p className="text-xs text-muted-foreground">
-                  {alertSummary}
-                </p>
-              </div>
-              <div className="flex items-center justify-center bg-chart-4 text-white text-xs font-bold size-7 rounded-full shrink-0">
-                {data.alerts.length}
-              </div>
-              <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
-            </button>
+            <QuickActionCard
+              onClick={handleToggleAlerts}
+              icon="solar:bell-bold"
+              iconClassName="bg-chart-4/20 text-chart-4"
+              containerClassName="bg-chart-4/10 border-chart-4/20 hover:bg-chart-4/15"
+              title="確認事項"
+              titleClassName="text-chart-4"
+              description={alertSummary}
+              badge={(
+                <div className="flex items-center justify-center bg-chart-4 text-white text-xs font-bold size-7 rounded-full shrink-0">
+                  {data.alerts.length}
+                </div>
+              )}
+            />
           )}
         </section>
       )}
 
       {/* 確認事項モーダル */}
-      <AlertsModal isOpen={alertsModalOpen} onClose={() => setAlertsModalOpen(false)} />
+      <AlertsModal isOpen={alertsModalOpen} onClose={handleHideAlerts} />
     </div>
   )
 }

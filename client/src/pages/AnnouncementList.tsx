@@ -1,9 +1,11 @@
-import { useEffect, useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import api from '../api/client'
+import useSWR from 'swr'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
+import api from '../api/client'
+import { fetcher } from '../lib/swr'
 
 interface Announcement {
   id: number
@@ -22,8 +24,11 @@ interface Announcement {
 type StatusFilter = 'all' | 'published' | 'draft' | 'expired'
 
 const AnnouncementList = () => {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading, mutate } = useSWR<Announcement[]>(
+    '/announcements',
+    fetcher,
+    { revalidateOnFocus: false }
+  )
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
@@ -43,20 +48,7 @@ const AnnouncementList = () => {
     expires_at: '',
   })
 
-  useEffect(() => {
-    fetchAnnouncements()
-  }, [])
-
-  const fetchAnnouncements = async () => {
-    try {
-      const response = await api.get('/announcements')
-      setAnnouncements(response.data)
-    } catch (error) {
-      console.error('Error fetching announcements:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const announcements = data ?? []
 
   const getStatus = (announcement: Announcement): 'published' | 'draft' | 'expired' => {
     const now = new Date()
@@ -146,8 +138,7 @@ const AnnouncementList = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       setFormData((prev) => ({ ...prev, image_url: response.data.url }))
-    } catch (error) {
-      console.error('Error uploading image:', error)
+    } catch {
       alert('画像のアップロードに失敗しました')
     } finally {
       setUploading(false)
@@ -178,10 +169,9 @@ const AnnouncementList = () => {
         await api.post('/announcements', payload)
       }
 
-      await fetchAnnouncements()
+      await mutate()
       closeModal()
-    } catch (error) {
-      console.error('Error saving announcement:', error)
+    } catch {
       alert('お知らせの保存に失敗しました')
     } finally {
       setSaving(false)
@@ -195,10 +185,9 @@ const AnnouncementList = () => {
     setDeleting(true)
     try {
       await api.delete(`/announcements/${editingAnnouncement.id}`)
-      await fetchAnnouncements()
+      await mutate()
       closeModal()
-    } catch (error) {
-      console.error('Error deleting announcement:', error)
+    } catch {
       alert('お知らせの削除に失敗しました')
     } finally {
       setDeleting(false)
@@ -214,7 +203,7 @@ const AnnouncementList = () => {
     }))
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pb-6">
         <header className="px-5 pt-6 pb-4">

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
-import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { getListThumbnailUrl, getDetailThumbnailUrl } from '../../utils/image';
+import useSWR from 'swr';
+import { liffFetcher } from '../lib/swr';
+import { LazyImage } from '../../components/LazyImage';
 
 interface Announcement {
   id: number;
@@ -18,37 +20,30 @@ interface Announcement {
 
 export default function Announcements() {
   const navigate = useNavigate();
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const fetchAnnouncements = async () => {
+  const { data, isLoading, mutate } = useSWR<Announcement[]>(
+    '/announcements',
+    liffFetcher,
+    { revalidateOnFocus: false }
+  );
+  const announcements = data ?? [];
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
     try {
-      const response = await liffClient.get('/announcements');
-      setAnnouncements(response.data);
-    } catch (error) {
-      console.error('Error fetching announcements:', error);
+      await mutate();
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchAnnouncements();
-  }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchAnnouncements();
   };
 
   const toggleExpand = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Icon icon="solar:spinner-bold"
@@ -127,11 +122,12 @@ export default function Announcements() {
                     {/* アイコンまたは画像サムネイル */}
                     {announcement.image_url ? (
                       <div className="size-12 rounded-lg overflow-hidden bg-muted shrink-0">
-                        <img
+                        <LazyImage
                           src={getListThumbnailUrl(announcement.image_url)}
                           alt=""
-                          loading="lazy"
-                          className="w-full h-full object-cover"
+                          width={48}
+                          height={48}
+                          className="w-full h-full"
                         />
                       </div>
                     ) : (
@@ -176,10 +172,9 @@ export default function Announcements() {
                     {/* 画像 */}
                     {announcement.image_url && (
                       <div className="p-4 pb-0">
-                        <img
+                        <LazyImage
                           src={getDetailThumbnailUrl(announcement.image_url)}
                           alt=""
-                          loading="lazy"
                           className="w-full rounded-lg object-cover max-h-64"
                         />
                       </div>

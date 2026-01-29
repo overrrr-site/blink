@@ -132,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
       if (session) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`
-        
+
         // キャッシュされたスタッフ情報があればまず設定
         if (cachedStaffUser) {
           set({

@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- API サーバーへの事前接続 -->
+    <link rel="preconnect" href="https://api.line.me" />
+    <link rel="dns-prefetch" href="https://api.line.me" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- パフォーマンス改善: Supabase Storage への preconnect -->
     <link rel="preconnect" href="https://fqepwzwkztjnpfeyxnke.supabase.co" />
+    <link rel="dns-prefetch" href="https://fqepwzwkztjnpfeyxnke.supabase.co" />
     <!-- LIFF SDK の preload -->
     <link rel="preload" as="script" href="https://static.line-scdn.net/liff/edge/2/sdk.js" />
     <!-- 必要なウェイトのみ読み込み: 400(normal), 500(medium), 600(semibold), 700(bold) -->

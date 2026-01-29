@@ -50,8 +50,7 @@ function CourseEdit(): JSX.Element {
         valid_days: response.data.valid_days?.toString() || '',
         enabled: response.data.enabled !== false,
       })
-    } catch (error) {
-      console.error('Error fetching course:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -90,7 +89,6 @@ function CourseEdit(): JSX.Element {
 
       navigate('/settings')
     } catch (error: unknown) {
-      console.error('Error saving course:', error)
       const err = error as { response?: { data?: { error?: string } } }
       alert(err.response?.data?.error || 'コースの保存に失敗しました')
     } finally {

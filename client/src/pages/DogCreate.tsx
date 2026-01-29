@@ -48,8 +48,7 @@ const DogCreate = () => {
       if (response.data.url) {
         setForm(prev => ({ ...prev, photo_url: response.data.url }))
       }
-    } catch (error) {
-      console.error('Error uploading photo:', error)
+    } catch {
       alert('写真のアップロードに失敗しました')
     } finally {
       setUploading(null)
@@ -92,8 +91,7 @@ const DogCreate = () => {
           setHealth(prev => ({ ...prev, rabies_vaccine_cert_url: response.data.url }))
         }
       }
-    } catch (error) {
-      console.error('Error uploading file:', error)
+    } catch {
       alert('ファイルのアップロードに失敗しました')
     } finally {
       setUploading(null)
@@ -134,8 +132,7 @@ const DogCreate = () => {
         health: Object.keys(health).some(key => health[key as keyof typeof health]) ? health : null,
       })
       navigate(`/owners/${ownerId}`)
-    } catch (error) {
-      console.error('Error creating dog:', error)
+    } catch {
       alert('登録に失敗しました')
     } finally {
       setSaving(false)

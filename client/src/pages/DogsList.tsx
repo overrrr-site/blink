@@ -1,46 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import api from '../api/client'
+import useSWR from 'swr'
+import { fetcher } from '../lib/swr'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+
+interface Dog {
+  id: number
+  name: string
+  breed: string
+  owner_name: string
+  photo_url?: string | null
+}
 
 const DogsList = () => {
-  const [dogs, setDogs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
   const navigate = useNavigate()
 
-  // 検索クエリのデバウンス（300ms）
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300)
-    return () => clearTimeout(timer)
-  }, [search])
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const listKey = `/dogs?search=${encodeURIComponent(debouncedSearch)}`
+  const { data, isLoading } = useSWR<Dog[]>(listKey, fetcher, { revalidateOnFocus: false })
+  const dogs = data ?? []
 
-  // デバウンスされた検索値でAPIコール
-  useEffect(() => {
-    const controller = new AbortController()
+  const handleNavigateDog = useCallback((id: number) => {
+    navigate(`/dogs/${id}`)
+  }, [navigate])
 
-    const fetchDogs = async () => {
-      try {
-        const response = await api.get('/dogs', {
-          params: { search: debouncedSearch },
-          signal: controller.signal,
-        })
-        setDogs(response.data)
-      } catch (error: any) {
-        if (!controller.signal.aborted) {
-          console.error('Error fetching dogs:', error)
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchDogs()
-    return () => controller.abort()
-  }, [debouncedSearch])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">読み込み中...</p>
@@ -79,7 +65,7 @@ const DogsList = () => {
           dogs.map((dog) => (
             <div
               key={dog.id}
-              onClick={() => navigate(`/dogs/${dog.id}`)}
+              onClick={() => handleNavigateDog(dog.id)}
               className="bg-card rounded-2xl p-4 border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex items-center gap-3">

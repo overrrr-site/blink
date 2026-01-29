@@ -41,8 +41,7 @@ function StaffEdit(): JSX.Element {
         email: response.data.email,
         is_owner: response.data.is_owner || false,
       })
-    } catch (error) {
-      console.error('Error fetching staff:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -71,7 +70,6 @@ function StaffEdit(): JSX.Element {
       await api.put(`/staff/${id}`, payload)
       navigate('/settings')
     } catch (error: unknown) {
-      console.error('Error saving staff:', error)
       const err = error as { response?: { data?: { error?: string } } }
       alert(err.response?.data?.error || 'スタッフの保存に失敗しました')
     } finally {

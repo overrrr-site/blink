@@ -1,23 +1,67 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from '@rc-component/qrcode'
+import axios from 'axios'
+import useSWR from 'swr'
 import api from '../../api/client'
+import { fetcher } from '../../lib/swr'
 
 interface StoreTabProps {
-  storeInfo: any
-  setStoreInfo: (info: any) => void
+  storeInfo: StoreInfo | null
+  setStoreInfo: Dispatch<SetStateAction<StoreInfo | null>>
   fetchStoreInfo: () => Promise<void>
+}
+
+interface StoreInfo {
+  name?: string | null
+  address?: string | null
+  phone?: string | null
+  business_hours?: {
+    open?: string | null
+    close?: string | null
+  } | null
+  closed_days?: string[] | null
+}
+
+interface StoreInfoPayload {
+  name?: string
+  address?: string
+  phone?: string
+}
+
+interface BusinessHoursPayload {
+  open: string
+  close: string
+}
+
+interface StoreSettings {
+  max_capacity: number
+}
+
+interface StaffItem {
+  id: number
+  name: string
+  email: string
+  is_owner?: boolean | null
+}
+
+interface TrainingItem {
+  id: number
+  item_label: string
+  display_order: number
+}
+
+type TrainingMasters = Record<string, TrainingItem[]>
+
+interface QrCodeResponse {
+  qrCode: string
 }
 
 const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) => {
   const navigate = useNavigate()
-  const [storeSettings, setStoreSettings] = useState({ max_capacity: 15 })
-  const [loadingStoreSettings, setLoadingStoreSettings] = useState(true)
-  const [staffList, setStaffList] = useState<any[]>([])
-  const [loadingStaff, setLoadingStaff] = useState(true)
-  const [trainingMasters, setTrainingMasters] = useState<Record<string, any[]>>({})
-  const [loadingTraining, setLoadingTraining] = useState(true)
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>({ max_capacity: 15 })
   const [showStoreInfoModal, setShowStoreInfoModal] = useState(false)
   const [showBusinessHoursModal, setShowBusinessHoursModal] = useState(false)
   const [showStaffInviteModal, setShowStaffInviteModal] = useState(false)
@@ -25,45 +69,44 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
   const [inviteName, setInviteName] = useState('')
   const [inviteIsOwner, setInviteIsOwner] = useState(false)
   const [inviting, setInviting] = useState(false)
-  const [qrCode, setQrCode] = useState<string | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrExpanded, setQrExpanded] = useState(false)
 
+  const {
+    data: storeSettingsData,
+    isLoading: loadingStoreSettings,
+  } = useSWR<StoreSettings>('/store-settings', fetcher, { revalidateOnFocus: false })
+
+  const {
+    data: staffList,
+    isLoading: loadingStaff,
+    mutate: mutateStaff,
+  } = useSWR<StaffItem[]>('/staff', fetcher, { revalidateOnFocus: false })
+
+  const {
+    data: trainingMasters,
+    isLoading: loadingTraining,
+    mutate: mutateTrainingMasters,
+  } = useSWR<TrainingMasters>('/training-masters', fetcher, { revalidateOnFocus: false })
+
+  const {
+    data: qrData,
+    isLoading: qrLoadingData,
+    mutate: mutateQrCode,
+  } = useSWR<QrCodeResponse>('/liff/qr-code', fetcher, { revalidateOnFocus: false })
+
   useEffect(() => {
-    fetchStoreSettings()
-    fetchStaff()
-    fetchTrainingMasters()
-    fetchQrCode()
-  }, [])
-
-  const fetchStoreSettings = async () => {
-    try {
-      const response = await api.get('/store-settings')
-      setStoreSettings(response.data)
-    } catch (error) {
-      console.error('Error fetching store settings:', error)
-    } finally {
-      setLoadingStoreSettings(false)
+    if (storeSettingsData) {
+      setStoreSettings(storeSettingsData)
     }
-  }
+  }, [storeSettingsData])
 
-  const handleStoreSettingsChange = (field: string, value: number) => {
+  const handleStoreSettingsChange = (field: keyof StoreSettings, value: number) => {
     setStoreSettings((prev) => ({
       ...prev,
       [field]: value,
     }))
-  }
-
-  const fetchStaff = async () => {
-    try {
-      const response = await api.get('/staff')
-      setStaffList(response.data)
-    } catch (error) {
-      console.error('Error fetching staff:', error)
-    } finally {
-      setLoadingStaff(false)
-    }
   }
 
   const handleDeleteStaff = async (id: number, e: React.MouseEvent) => {
@@ -74,10 +117,12 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
 
     try {
       await api.delete(`/staff/${id}`)
-      fetchStaff()
-    } catch (error: any) {
-      console.error('Error deleting staff:', error)
-      alert(error.response?.data?.error || 'スタッフの削除に失敗しました')
+      mutateStaff()
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || 'スタッフの削除に失敗しました')
     }
   }
 
@@ -95,23 +140,14 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
       setInviteEmail('')
       setInviteName('')
       setInviteIsOwner(false)
-      fetchStaff()
-    } catch (error: any) {
-      console.error('Error inviting staff:', error)
-      alert(error.response?.data?.error || 'スタッフの招待に失敗しました')
+      mutateStaff()
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || 'スタッフの招待に失敗しました')
     } finally {
       setInviting(false)
-    }
-  }
-
-  const fetchTrainingMasters = async () => {
-    try {
-      const response = await api.get('/training-masters')
-      setTrainingMasters(response.data)
-    } catch (error) {
-      console.error('Error fetching training masters:', error)
-    } finally {
-      setLoadingTraining(false)
     }
   }
 
@@ -123,20 +159,22 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
 
     try {
       await api.delete(`/training-masters/${id}`)
-      fetchTrainingMasters()
-    } catch (error: any) {
-      console.error('Error deleting training item:', error)
-      alert(error.response?.data?.error || 'トレーニング項目の削除に失敗しました')
+      mutateTrainingMasters()
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || 'トレーニング項目の削除に失敗しました')
     }
   }
 
   const handleReorderTrainingItem = async (category: string, itemId: number, direction: 'up' | 'down', e: React.MouseEvent) => {
     e.stopPropagation()
 
-    const items = trainingMasters[category]
+    const items = trainingMasters?.[category]
     if (!items) return
 
-    const currentIndex = items.findIndex((item: any) => item.id === itemId)
+    const currentIndex = items.findIndex((item) => item.id === itemId)
     if (currentIndex === -1) return
 
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
@@ -150,20 +188,21 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
         api.put(`/training-masters/${currentItem.id}`, { display_order: targetItem.display_order }),
         api.put(`/training-masters/${targetItem.id}`, { display_order: currentItem.display_order }),
       ])
-      fetchTrainingMasters()
-    } catch (error: any) {
-      console.error('Error reordering training item:', error)
+      mutateTrainingMasters()
+    } catch {
       alert('トレーニング項目の並び替えに失敗しました')
     }
   }
 
+  const qrCode = qrData?.qrCode ?? null
+  const isQrLoading = qrLoading || qrLoadingData
+  const resolvedStaffList = staffList ?? []
+  const resolvedTrainingMasters = trainingMasters ?? {}
+
   const fetchQrCode = async () => {
     setQrLoading(true)
     try {
-      const response = await api.get('/liff/qr-code')
-      setQrCode(response.data.qrCode)
-    } catch (error) {
-      console.error('Error fetching QR code:', error)
+      await mutateQrCode()
     } finally {
       setQrLoading(false)
     }
@@ -235,19 +274,21 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
     printWindow.document.close()
   }
 
-  const handleSaveStoreInfo = async (data: any) => {
+  const handleSaveStoreInfo = async (data: StoreInfoPayload) => {
     try {
       await api.put('/stores', data)
       fetchStoreInfo()
       setShowStoreInfoModal(false)
       alert('店舗情報を保存しました')
-    } catch (error: any) {
-      console.error('Error saving store info:', error)
-      alert(error.response?.data?.error || '店舗情報の保存に失敗しました')
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || '店舗情報の保存に失敗しました')
     }
   }
 
-  const handleSaveBusinessHours = async (businessHours: any, closedDays: string[]) => {
+  const handleSaveBusinessHours = async (businessHours: BusinessHoursPayload, closedDays: string[]) => {
     try {
       await api.put('/stores', {
         business_hours: businessHours,
@@ -256,9 +297,11 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
       fetchStoreInfo()
       setShowBusinessHoursModal(false)
       alert('営業日・定休日を保存しました')
-    } catch (error: any) {
-      console.error('Error saving business hours:', error)
-      alert(error.response?.data?.error || '営業日・定休日の保存に失敗しました')
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || '営業日・定休日の保存に失敗しました')
     }
   }
 
@@ -351,7 +394,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
         </button>
         {qrExpanded && (
           <div className="p-4 border-t border-border">
-            {qrLoading ? (
+            {isQrLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Icon icon="solar:spinner-bold" width="24" height="24" className="text-primary animate-spin" />
               </div>
@@ -387,7 +430,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                 </p>
                 <button
                   onClick={fetchQrCode}
-                  disabled={qrLoading}
+                  disabled={isQrLoading}
                   className="text-xs text-primary hover:underline disabled:opacity-50"
                 >
                   再試行
@@ -417,14 +460,14 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
           <div className="text-center py-4">
             <span className="text-xs text-muted-foreground">読み込み中...</span>
           </div>
-        ) : staffList.length === 0 ? (
+        ) : resolvedStaffList.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Icon icon="solar:user-id-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">スタッフが登録されていません</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {staffList.map((staff) => (
+            {resolvedStaffList.map((staff) => (
               <div
                 key={staff.id}
                 className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors group"
@@ -485,21 +528,21 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
           <div className="text-center py-4">
             <span className="text-xs text-muted-foreground">読み込み中...</span>
           </div>
-        ) : Object.keys(trainingMasters).length === 0 ? (
+        ) : Object.keys(resolvedTrainingMasters).length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Icon icon="solar:checklist-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">トレーニング項目が登録されていません</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {Object.entries(trainingMasters).map(([category, items]) => (
+            {Object.entries(resolvedTrainingMasters).map(([category, items]) => (
               <div key={category} className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-bold">{category}</h3>
                   <span className="text-[10px] text-muted-foreground">{items.length}項目</span>
                 </div>
                 <div className="space-y-1">
-                  {items.map((item: any, index: number) => (
+                  {items.map((item, index) => (
                     <div
                       key={item.id}
                       className="flex items-center justify-between p-2 hover:bg-muted/30 rounded-lg group"
@@ -642,7 +685,7 @@ const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) =>
                           const newClosed = isClosed
                             ? currentClosed.filter((d: string) => d !== dayKey)
                             : [...currentClosed, dayKey]
-                          setStoreInfo((prev: any) => ({ ...prev, closed_days: newClosed }))
+                          setStoreInfo((prev) => ({ ...(prev ?? {}), closed_days: newClosed }))
                         }}
                         className={`py-2 rounded-lg text-xs font-medium transition-colors ${
                           isClosed

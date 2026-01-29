@@ -36,6 +36,40 @@ const ACHIEVEMENT_LABELS: Record<string, string> = {
   not_done: '未実施',
 };
 
+function extractGeminiText(data: unknown): string {
+  if (!data || typeof data !== 'object') {
+    return '';
+  }
+
+  const candidatesValue = (data as { candidates?: unknown }).candidates;
+  if (!Array.isArray(candidatesValue) || candidatesValue.length === 0) {
+    return '';
+  }
+
+  const firstCandidate = candidatesValue[0];
+  if (!firstCandidate || typeof firstCandidate !== 'object') {
+    return '';
+  }
+
+  const contentValue = (firstCandidate as { content?: unknown }).content;
+  if (!contentValue || typeof contentValue !== 'object') {
+    return '';
+  }
+
+  const partsValue = (contentValue as { parts?: unknown }).parts;
+  if (!Array.isArray(partsValue) || partsValue.length === 0) {
+    return '';
+  }
+
+  const firstPart = partsValue[0];
+  if (!firstPart || typeof firstPart !== 'object') {
+    return '';
+  }
+
+  const textValue = (firstPart as { text?: unknown }).text;
+  return typeof textValue === 'string' ? textValue : '';
+}
+
 // 日誌コメント生成
 router.post('/generate-comment', async (req: AuthRequest, res) => {
   console.log('🤖 /generate-comment エンドポイント到達');
@@ -113,7 +147,7 @@ router.post('/generate-comment', async (req: AuthRequest, res) => {
         console.log('🤖 Gemini API response data:', JSON.stringify(data).substring(0, 500));
 
         if (response.ok) {
-          const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const generatedText = extractGeminiText(data);
           console.log('🤖 Generated text length:', generatedText.length);
           if (generatedText) {
             return res.json({ comment: generatedText });
@@ -343,7 +377,7 @@ ${dog_name ? `この犬の名前は「${dog_name}」です。` : ''}
 
       if (response.ok) {
         const data = await response.json();
-        const analysis = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const analysis = extractGeminiText(data);
         
         if (!analysis) {
           throw new Error('解析結果が取得できませんでした');

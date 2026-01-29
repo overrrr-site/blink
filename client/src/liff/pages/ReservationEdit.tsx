@@ -68,8 +68,7 @@ export default function ReservationEdit(): JSX.Element {
 
       const meRes = await liffClient.get('/me');
       setDogs(meRes.data.dogs || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch {
       alert('データの取得に失敗しました');
       navigate('/home/reservations');
     } finally {
@@ -93,7 +92,6 @@ export default function ReservationEdit(): JSX.Element {
       await liffClient.put(`/reservations/${id}`, form);
       navigate('/home/reservations');
     } catch (error: any) {
-      console.error('Error updating reservation:', error);
       alert(error.response?.data?.error || '予約の更新に失敗しました');
     } finally {
       setSaving(false);

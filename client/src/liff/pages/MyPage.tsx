@@ -52,8 +52,7 @@ export default function MyPage() {
       try {
         const response = await liffClient.get('/me');
         setData(response.data);
-      } catch (error) {
-        console.error('Error fetching owner data:', error);
+      } catch {
       } finally {
         setLoading(false);
       }

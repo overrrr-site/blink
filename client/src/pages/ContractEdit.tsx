@@ -62,8 +62,7 @@ function ContractEdit(): JSX.Element {
       const response = await api.get('/course-masters')
       const enabledCourses = response.data.filter((c: CourseMaster) => c.enabled)
       setCourseMasters(enabledCourses)
-    } catch (error) {
-      console.error('Error fetching course masters:', error)
+    } catch {
     }
   }
 
@@ -109,8 +108,7 @@ function ContractEdit(): JSX.Element {
         monthly_sessions: contract.monthly_sessions?.toString() || '',
         price: contract.price?.toString() || '',
       })
-    } catch (error) {
-      console.error('Error fetching contract:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -147,7 +145,6 @@ function ContractEdit(): JSX.Element {
 
       navigate(`/dogs/${dogId}`)
     } catch (error: unknown) {
-      console.error('Error saving contract:', error)
       const err = error as { response?: { data?: { error?: string } } }
       alert(err.response?.data?.error || '契約の保存に失敗しました')
     } finally {

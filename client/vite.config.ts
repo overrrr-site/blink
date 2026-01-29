@@ -21,6 +21,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    target: 'es2020',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
@@ -36,6 +44,10 @@ export default defineConfig({
           'vendor-supabase': ['@supabase/supabase-js'],
           // 状態管理を分離
           'vendor-state': ['zustand', 'axios'],
+          // LIFF SDKを分離
+          'vendor-liff': ['@line/liff'],
+          // SWRを分離
+          'vendor-swr': ['swr'],
         },
       },
     },

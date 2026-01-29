@@ -1,11 +1,15 @@
 import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { cacheControl } from '../middleware/cache.js';
+import { buildPaginatedResponse, parsePaginationParams } from '../utils/pagination.js';
 import { sendJournalNotification } from '../services/notificationService.js';
 import {
+  isSupabaseStorageAvailable,
   uploadBase64ToSupabaseStorage,
 } from '../services/storageService.js';
 import {
+  sendBadRequest,
   sendForbidden,
   sendNotFound,
   sendServerError,
@@ -54,37 +58,47 @@ const router = express.Router();
 router.use(authenticate);
 
 // 日誌一覧取得
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', cacheControl(), async (req: AuthRequest, res) => {
   try {
-    const { dog_id, date } = req.query;
+    const queryParams = req.query as { dog_id?: string | string[]; date?: string | string[]; page?: string | string[]; limit?: string | string[] };
+    const { dog_id, date } = queryParams;
+    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
 
     let query = `
       SELECT j.*, 
              d.name as dog_name, d.photo_url as dog_photo,
              o.name as owner_name,
-             s.name as staff_name
+             s.name as staff_name,
+             COUNT(*) OVER() as total_count
       FROM journals j
       JOIN dogs d ON j.dog_id = d.id
       JOIN owners o ON d.owner_id = o.id
       LEFT JOIN staff s ON j.staff_id = s.id
       WHERE o.store_id = $1
     `;
-    const params: any[] = [req.storeId];
+    const params: Array<string | number> = [req.storeId ?? 0];
 
     if (dog_id) {
-      query += ` AND j.dog_id = $2`;
-      params.push(dog_id);
+      query += ` AND j.dog_id = $${params.length + 1}`;
+      params.push(Array.isArray(dog_id) ? dog_id[0] : dog_id);
     }
 
     if (date) {
       query += ` AND j.journal_date = $${params.length + 1}`;
-      params.push(date);
+      params.push(Array.isArray(date) ? date[0] : date);
     }
 
     query += ` ORDER BY j.journal_date DESC, j.created_at DESC`;
+    query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
+    const data = result.rows.map((row) => {
+      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
+      return rest;
+    });
+    res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error) {
     console.error('Error fetching journals:', error);
     sendServerError(res, '日誌一覧の取得に失敗しました', error);
@@ -239,33 +253,35 @@ router.post('/', async (req: AuthRequest, res) => {
       ]
     );
 
-    // 飼い主情報を取得して通知を送信
-    try {
-      const ownerResult = await pool.query(
-        `SELECT o.id, o.store_id, d.name as dog_name
-         FROM dogs d
-         JOIN owners o ON d.owner_id = o.id
-         WHERE d.id = $1`,
-        [dog_id]
-      );
-
-      if (ownerResult.rows.length > 0) {
-        const owner = ownerResult.rows[0];
-        const createdJournal = result.rows[0];
-        await sendJournalNotification(
-          owner.store_id,
-          owner.id,
-          owner.dog_name,
-          journal_date,
-          createdJournal.id,
-          comment,
-          processedPhotos
+    // 通知送信（非ブロッキング）
+    (async () => {
+      try {
+        const ownerResult = await pool.query(
+          `SELECT o.id, o.store_id, d.name as dog_name
+           FROM dogs d
+           JOIN owners o ON d.owner_id = o.id
+           WHERE d.id = $1`,
+          [dog_id]
         );
+
+        if (ownerResult.rows.length > 0) {
+          const owner = ownerResult.rows[0];
+          const createdJournal = result.rows[0];
+          await sendJournalNotification(
+            owner.store_id,
+            owner.id,
+            owner.dog_name,
+            journal_date,
+            createdJournal.id,
+            comment,
+            processedPhotos
+          );
+        }
+      } catch (notifError) {
+        console.error('Error sending journal notification:', notifError);
+        // 通知エラーは日誌作成を阻害しない
       }
-    } catch (notifError) {
-      console.error('Error sending journal notification:', notifError);
-      // 通知エラーは日誌作成を阻害しない
-    }
+    })();
 
     res.status(201).json(result.rows[0]);
   } catch (error) {

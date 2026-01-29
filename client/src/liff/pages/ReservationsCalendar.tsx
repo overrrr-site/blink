@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,6 +18,8 @@ import {
 import { ja } from 'date-fns/locale';
 import liffClient from '../api/client';
 import { getAvatarUrl } from '../../utils/image';
+import useSWR from 'swr';
+import { liffFetcher } from '../lib/swr';
 
 interface Reservation {
   id: number;
@@ -62,76 +64,122 @@ function getStatusBadgeClass(status: string): string {
   }
 }
 
+interface CalendarDayCellProps {
+  date: Date
+  isSelected: boolean
+  isTodayDate: boolean
+  isCurrentMonth: boolean
+  reservationCount: number
+  onSelect: (date: Date) => void
+}
+
+const CalendarDayCell = memo(function CalendarDayCell({
+  date,
+  isSelected,
+  isTodayDate,
+  isCurrentMonth,
+  reservationCount,
+  onSelect,
+}: CalendarDayCellProps) {
+  const hasReservation = reservationCount > 0
+  return (
+    <button
+      onClick={() => onSelect(date)}
+      className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center transition-all min-w-[40px] min-h-[40px]
+        active:scale-95 ${
+          isSelected
+            ? 'bg-primary text-primary-foreground shadow-md'
+            : hasReservation
+            ? 'bg-primary/15 hover:bg-primary/25'
+            : isTodayDate
+            ? 'bg-accent/50 ring-2 ring-primary/30'
+            : isCurrentMonth
+            ? 'hover:bg-muted'
+            : 'text-muted-foreground/40 hover:bg-muted/50'
+        }`}
+      aria-label={`${format(date, 'M月d日')}${hasReservation ? `、${reservationCount}件の予約あり` : ''}`}
+      aria-pressed={isSelected}
+    >
+      <span className={`text-sm ${isSelected || isTodayDate ? 'font-bold' : ''}`}>
+        {format(date, 'd')}
+      </span>
+      {hasReservation && (
+        <div className={`w-2 h-2 rounded-full mt-0.5 ${
+          isSelected ? 'bg-white' : 'bg-primary'
+        }`}></div>
+      )}
+    </button>
+  )
+});
+
 export default function ReservationsCalendar(): JSX.Element {
   const navigate = useNavigate();
-  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const touchStartX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  function handlePrevMonth(): void {
-    setCurrentMonth(subMonths(currentMonth, 1));
-  }
+  const monthStr = useMemo(() => format(currentMonth, 'yyyy-MM'), [currentMonth])
+  const { data, isLoading, mutate } = useSWR(
+    `/reservations?month=${monthStr}`,
+    liffFetcher,
+    { revalidateOnFocus: false }
+  )
+  const reservations: Reservation[] = data
+    ? (Array.isArray(data) ? data : data.data ?? [])
+    : []
 
-  function handleNextMonth(): void {
-    setCurrentMonth(addMonths(currentMonth, 1));
-  }
+  const handlePrevMonth = useCallback((): void => {
+    setCurrentMonth((prev) => subMonths(prev, 1));
+  }, []);
 
-  function handleTouchStart(e: React.TouchEvent): void {
-    touchStartX.current = e.touches[0].clientX;
-  }
-
-  function handleTouchEnd(e: React.TouchEvent): void {
-    if (touchStartX.current === null) return;
-
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX;
-
-    if (Math.abs(diff) > SWIPE_THRESHOLD) {
-      if (diff > 0) {
-        handleNextMonth();
-      } else {
-        handlePrevMonth();
-      }
-    }
-    touchStartX.current = null;
-  }
-
-  async function fetchReservations(): Promise<void> {
-    try {
-      const monthStr = format(currentMonth, 'yyyy-MM');
-      const response = await liffClient.get('/reservations', {
-        params: { month: monthStr },
-      });
-      setReservations(response.data);
-    } catch (error) {
-      console.error('Error fetching reservations:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const handleNextMonth = useCallback((): void => {
+    setCurrentMonth((prev) => addMonths(prev, 1));
+  }, []);
 
   async function handleCancelReservation(reservationId: number): Promise<void> {
     if (!confirm('この予約をキャンセルしますか？')) return;
 
     try {
       await liffClient.put(`/reservations/${reservationId}/cancel`);
-      const monthStr = format(currentMonth, 'yyyy-MM');
-      const response = await liffClient.get('/reservations', {
-        params: { month: monthStr },
-      });
-      setReservations(response.data);
-    } catch (error) {
-      console.error('Error canceling reservation:', error);
+      mutate();
+    } catch {
       alert('予約のキャンセルに失敗しました');
     }
   }
 
-  useEffect(function() {
-    fetchReservations();
-  }, [currentMonth]);
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0]?.clientX ?? null;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null) return;
+
+      const touchEndX = e.changedTouches[0]?.clientX ?? touchStartX.current;
+      const diff = touchStartX.current - touchEndX;
+
+      if (Math.abs(diff) > SWIPE_THRESHOLD) {
+        if (diff > 0) {
+          handleNextMonth();
+        } else {
+          handlePrevMonth();
+        }
+      }
+      touchStartX.current = null;
+    };
+
+    element.addEventListener('touchstart', handleTouchStart, { passive: true });
+    element.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      element.removeEventListener('touchstart', handleTouchStart);
+      element.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleNextMonth, handlePrevMonth]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -140,7 +188,7 @@ export default function ReservationsCalendar(): JSX.Element {
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const selectedReservations = selectedDate ? getReservationsForDate(reservations, selectedDate) : [];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Icon icon="solar:spinner-bold"
@@ -184,8 +232,7 @@ export default function ReservationsCalendar(): JSX.Element {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(blobUrl);
               })
-              .catch(function(error) {
-                console.error('ICS export error:', error);
+              .catch(function() {
                 alert('カレンダーのエクスポートに失敗しました');
               });
           }}
@@ -222,8 +269,7 @@ export default function ReservationsCalendar(): JSX.Element {
       <div 
         ref={containerRef}
         className="bg-card rounded-3xl p-4 border border-border shadow-sm mb-4"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        style={{ willChange: 'transform' }}
       >
         {/* 曜日ヘッダー */}
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
@@ -243,39 +289,16 @@ export default function ReservationsCalendar(): JSX.Element {
         <div className="grid grid-cols-7 gap-1">
           {days.map(function(day) {
             const dayReservations = getReservationsForDate(reservations, day);
-            const isSelected = selectedDate && isSameDay(day, selectedDate);
-            const isTodayDate = isSameDay(day, new Date());
-            const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
-            const hasReservation = dayReservations.length > 0;
-
             return (
-              <button
+              <CalendarDayCell
                 key={day.toISOString()}
-                onClick={() => setSelectedDate(day)}
-                className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center transition-all min-w-[40px] min-h-[40px]
-                  active:scale-95 ${
-                    isSelected
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : hasReservation
-                      ? 'bg-primary/15 hover:bg-primary/25'
-                      : isTodayDate
-                      ? 'bg-accent/50 ring-2 ring-primary/30'
-                      : isCurrentMonth
-                      ? 'hover:bg-muted'
-                      : 'text-muted-foreground/40 hover:bg-muted/50'
-                  }`}
-                aria-label={`${format(day, 'M月d日')}${hasReservation ? `、${dayReservations.length}件の予約あり` : ''}`}
-                aria-pressed={!!isSelected}
-              >
-                <span className={`text-sm ${isSelected || isTodayDate ? 'font-bold' : ''}`}>
-                  {format(day, 'd')}
-                </span>
-                {hasReservation && (
-                  <div className={`w-2 h-2 rounded-full mt-0.5 ${
-                    isSelected ? 'bg-white' : 'bg-primary'
-                  }`}></div>
-                )}
-              </button>
+                date={day}
+                isSelected={!!(selectedDate && isSameDay(day, selectedDate))}
+                isTodayDate={isSameDay(day, new Date())}
+                isCurrentMonth={day.getMonth() === currentMonth.getMonth()}
+                reservationCount={dayReservations.length}
+                onSelect={setSelectedDate}
+              />
             );
           })}
         </div>

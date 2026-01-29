@@ -70,7 +70,6 @@ export default function Billing() {
         setBillingHistory(historyRes.data.history || []);
       }
     } catch (error: any) {
-      console.error('Error fetching billing data:', error);
       setError(error.response?.data?.error || 'プラン情報の取得に失敗しました');
     } finally {
       setLoading(false);
@@ -98,7 +97,6 @@ export default function Billing() {
       setSelectedPlan(null);
       fetchData();
     } catch (error: any) {
-      console.error('Error changing plan:', error);
       alert(error.response?.data?.error || 'プラン変更に失敗しました');
     } finally {
       setProcessing(false);
@@ -118,7 +116,6 @@ export default function Billing() {
       alert('サブスクリプションをキャンセルしました');
       fetchData();
     } catch (error: any) {
-      console.error('Error canceling subscription:', error);
       alert(error.response?.data?.error || 'キャンセルに失敗しました');
     }
   };

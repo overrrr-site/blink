@@ -1,7 +1,9 @@
-import { useState, useEffect, Suspense, lazy, useMemo } from 'react'
+import { useState, useEffect, Suspense, lazy, useMemo, useCallback } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { Icon } from '../components/Icon'
-import api from '../api/client'
 import { useAuthStore } from '../store/authStore'
+import useSWR from 'swr'
+import { fetcher } from '../lib/swr'
 
 type TabId = 'store' | 'pricing' | 'integration' | 'other'
 
@@ -10,6 +12,17 @@ interface TabConfig {
   label: string
   icon: string
   ownerOnly?: boolean
+}
+
+interface StoreInfo {
+  name?: string | null
+  address?: string | null
+  phone?: string | null
+  business_hours?: {
+    open?: string | null
+    close?: string | null
+  } | null
+  closed_days?: string[] | null
 }
 
 const ALL_TABS: TabConfig[] = [
@@ -34,8 +47,8 @@ function TabLoader() {
 
 function renderActiveTab(
   activeTab: TabId,
-  storeInfo: any,
-  setStoreInfo: (info: any) => void,
+  storeInfo: StoreInfo | null,
+  setStoreInfo: Dispatch<SetStateAction<StoreInfo | null>>,
   fetchStoreInfo: () => Promise<void>
 ) {
   switch (activeTab) {
@@ -68,7 +81,13 @@ function Settings() {
   // デフォルトタブ（管理者はstore、それ以外はintegration）
   const defaultTab = isOwner ? 'store' : 'integration'
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab)
-  const [storeInfo, setStoreInfo] = useState<any>(null)
+  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
+
+  const { data: storeInfoData, mutate: mutateStoreInfo } = useSWR<StoreInfo>(
+    isOwner ? '/stores' : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
 
   // 権限変更時にタブをリセット
   useEffect(() => {
@@ -79,19 +98,16 @@ function Settings() {
   }, [TABS, activeTab, defaultTab])
 
   useEffect(() => {
-    if (isOwner) {
-      fetchStoreInfo()
+    if (storeInfoData) {
+      setStoreInfo(storeInfoData)
+    } else if (!isOwner) {
+      setStoreInfo(null)
     }
-  }, [isOwner])
+  }, [storeInfoData, isOwner])
 
-  async function fetchStoreInfo() {
-    try {
-      const response = await api.get('/stores')
-      setStoreInfo(response.data)
-    } catch (error) {
-      console.error('Error fetching store info:', error)
-    }
-  }
+  const fetchStoreInfo = useCallback(async () => {
+    await mutateStoreInfo()
+  }, [mutateStoreInfo])
 
   return (
     <div className="pb-32">

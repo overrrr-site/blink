@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
+import useSWR from 'swr'
+import { fetcher } from '../lib/swr'
 
 // カテゴリのアイコンマッピング
 const CATEGORY_ICONS: Record<string, string> = {
@@ -58,7 +60,6 @@ const JournalDetail = () => {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [journal, setJournal] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [staffList, setStaffList] = useState<Staff[]>([])
@@ -82,50 +83,31 @@ const JournalDetail = () => {
     training_data: {} as Record<string, string>,
   })
 
-  useEffect(() => {
-    if (id) {
-      fetchData()
-    }
-  }, [id])
+  const { data: journalData, isLoading: journalLoading, mutate } = useSWR<any>(
+    id ? `/journals/${id}` : null,
+    fetcher,
+    { revalidateOnFocus: true }
+  )
+  const { data: staffData, isLoading: staffLoading } = useSWR<Staff[]>(
+    '/auth/staff',
+    fetcher,
+    { revalidateOnFocus: true }
+  )
+  const { data: trainingData } = useSWR<Record<string, Array<{ item_key: string; item_label: string }>>>(
+    '/training-masters',
+    fetcher,
+    { revalidateOnFocus: true }
+  )
+  const { data: storeData } = useSWR<{ name: string } | null>(
+    '/stores',
+    fetcher,
+    { revalidateOnFocus: true }
+  )
 
-  const fetchData = async () => {
-    try {
-      const [journalRes, staffRes, trainingRes, storeRes] = await Promise.all([
-        api.get(`/journals/${id}`),
-        api.get('/auth/staff'),
-        api.get('/training-masters').catch(() => ({ data: {} })),
-        api.get('/stores').catch(() => ({ data: null })),
-      ])
-      
-      const journalData = journalRes.data
-      setJournal(journalData)
-      setStaffList(staffRes.data)
-      if (storeRes.data) {
-        setStoreInfo(storeRes.data)
-      }
-      
-      // 既存の写真を設定
-      if (journalData.photos && Array.isArray(journalData.photos)) {
-        setExistingPhotos(journalData.photos)
-      }
-      
-      // トレーニングマスタをカテゴリ形式に変換
-      if (trainingRes.data && Object.keys(trainingRes.data).length > 0) {
-        const convertedCategories: Record<string, TrainingCategory> = {}
-        for (const [category, items] of Object.entries(trainingRes.data)) {
-          const itemsArray = items as Array<{ item_key: string; item_label: string }>
-          convertedCategories[category] = {
-            label: getCategoryLabel(category),
-            icon: CATEGORY_ICONS[category] || CATEGORY_ICONS.default,
-            items: itemsArray.map((item) => ({
-              id: item.item_key,
-              label: item.item_label,
-            })),
-          }
-        }
-        setTrainingCategories(convertedCategories)
-      }
-      
+  useEffect(() => {
+    if (!journalData) return
+    setJournal(journalData)
+    if (!isEditing) {
       setFormData({
         morning_toilet_status: journalData.morning_toilet_status || '',
         morning_toilet_location: journalData.morning_toilet_location || '',
@@ -136,12 +118,40 @@ const JournalDetail = () => {
         next_visit_date: journalData.next_visit_date || '',
         training_data: journalData.training_data || {},
       })
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
     }
-  }
+    if (journalData.photos && Array.isArray(journalData.photos)) {
+      setExistingPhotos(journalData.photos)
+    }
+  }, [journalData, isEditing])
+
+  useEffect(() => {
+    if (staffData) {
+      setStaffList(staffData)
+    }
+  }, [staffData])
+
+  useEffect(() => {
+    if (storeData) {
+      setStoreInfo(storeData)
+    }
+  }, [storeData])
+
+  useEffect(() => {
+    if (!trainingData || Object.keys(trainingData).length === 0) return
+    const convertedCategories: Record<string, TrainingCategory> = {}
+    for (const [category, items] of Object.entries(trainingData)) {
+      const itemsArray = items as Array<{ item_key: string; item_label: string }>
+      convertedCategories[category] = {
+        label: getCategoryLabel(category),
+        icon: CATEGORY_ICONS[category] || CATEGORY_ICONS.default,
+        items: itemsArray.map((item) => ({
+          id: item.item_key,
+          label: item.item_label,
+        })),
+      }
+    }
+    setTrainingCategories(convertedCategories)
+  }, [trainingData])
 
   const getCategoryLabel = (category: string): string => {
     const labels: Record<string, string> = {
@@ -167,7 +177,6 @@ const JournalDetail = () => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
-    const totalPhotos = existingPhotos.length - photosToDelete.length + photos.length + files.length
     const maxNewPhotos = Math.min(files.length, 5 - (existingPhotos.length - photosToDelete.length + photos.length))
     
     if (maxNewPhotos <= 0) {
@@ -231,9 +240,8 @@ const JournalDetail = () => {
       setPhotos([])
       setPhotoPreviewUrls([])
       setPhotosToDelete([])
-      fetchData()
-    } catch (error) {
-      console.error('Error updating journal:', error)
+      await mutate()
+    } catch {
       alert('日誌の更新に失敗しました')
     } finally {
       setSaving(false)
@@ -290,7 +298,7 @@ const JournalDetail = () => {
     return option || { label: value, color: 'text-muted-foreground' }
   }
 
-  if (loading) {
+  if (journalLoading || staffLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">読み込み中...</p>

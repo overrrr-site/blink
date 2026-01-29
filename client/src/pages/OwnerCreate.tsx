@@ -46,15 +46,13 @@ const OwnerCreate = () => {
             birth_date: dogInfo.birth_date,
             gender: dogInfo.gender,
           })
-        } catch (dogError) {
-          console.error('Error creating dog:', dogError)
-          // 犬の登録に失敗しても飼い主は作成済みなので、飼い主詳細ページへ遷移
+        } catch {
+          alert('飼い主は登録されましたが、犬の登録に失敗しました。飼い主詳細ページから再度登録してください。')
         }
       }
 
       navigate(`/owners/${ownerId}`)
-    } catch (error) {
-      console.error('Error creating owner:', error)
+    } catch {
       alert('登録に失敗しました')
     } finally {
       setLoading(false)

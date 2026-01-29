@@ -2,6 +2,17 @@ import { useEffect, useState, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
+import JournalPhotoStep from '../components/journals/JournalPhotoStep'
+import JournalCommentStep from '../components/journals/JournalCommentStep'
+import JournalDetailsStep from '../components/journals/JournalDetailsStep'
+import type {
+  AchievementOption,
+  JournalFormData,
+  PhotoAnalysisResult,
+  ReservationSummary,
+  Staff,
+  TrainingCategory,
+} from '../components/journals/types'
 
 // カテゴリのアイコンマッピング
 const CATEGORY_ICONS: Record<string, string> = {
@@ -13,16 +24,11 @@ const CATEGORY_ICONS: Record<string, string> = {
 }
 
 // 達成度の選択肢
-const ACHIEVEMENT_OPTIONS = [
+const ACHIEVEMENT_OPTIONS: AchievementOption[] = [
   { value: 'done', label: '○', color: 'text-chart-2 bg-chart-2/20' },
   { value: 'almost', label: '△', color: 'text-chart-4 bg-chart-4/20' },
   { value: 'not_done', label: '−', color: 'text-muted-foreground bg-muted' },
 ]
-
-interface Staff {
-  id: number
-  name: string
-}
 
 type Step = 'photo' | 'comment' | 'details'
 
@@ -34,23 +40,16 @@ const STEP_INFO: Record<Step, { title: string }> = {
   details: { title: '詳細' },
 }
 
-// トレーニングマスタから変換したカテゴリ形式
-interface TrainingCategory {
-  label: string
-  icon: string
-  items: Array<{ id: string; label: string }>
-}
-
 const JournalCreate = () => {
   const { reservationId } = useParams<{ reservationId: string }>()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [reservation, setReservation] = useState<any>(null)
+  const [reservation, setReservation] = useState<ReservationSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [analyzingPhoto, setAnalyzingPhoto] = useState<number | null>(null)
-  const [photoAnalysis, setPhotoAnalysis] = useState<Record<number, any>>({})
+  const [photoAnalysis, setPhotoAnalysis] = useState<Record<number, PhotoAnalysisResult>>({})
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([])
   const [photos, setPhotos] = useState<File[]>([])
@@ -60,13 +59,13 @@ const JournalCreate = () => {
   const [currentStep, setCurrentStep] = useState<Step>('photo')
   const [showDetails, setShowDetails] = useState(true)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<JournalFormData>({
     staff_id: '',
     morning_toilet_status: '', // '成功' | '失敗' | ''
     morning_toilet_location: '',
     afternoon_toilet_status: '', // '成功' | '失敗' | ''
     afternoon_toilet_location: '',
-    training_data: {} as Record<string, string>,
+    training_data: {},
     memo: '', // スタッフのメモ書き（AIが清書する素材）
     comment: '',
     next_visit_date: '',
@@ -113,8 +112,7 @@ const JournalCreate = () => {
           next_visit_date: reservationRes.data.next_visit_date || '',
         }))
       }
-    } catch (error) {
-      console.error('Error fetching data:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -149,17 +147,17 @@ const JournalCreate = () => {
         photo_base64: base64,
         dog_name: reservation?.dog_name,
       })
-      
+      const analysis = response.data as PhotoAnalysisResult
       setPhotoAnalysis((prev) => ({
         ...prev,
-        [index]: response.data,
+        [index]: analysis,
       }))
 
       // 解析結果をトレーニングデータに自動反映
-      if (response.data.training_suggestions && response.data.training_suggestions.length > 0) {
+      if (analysis.training_suggestions && analysis.training_suggestions.length > 0) {
         setFormData((prev) => {
           const newTrainingData = { ...prev.training_data }
-          response.data.training_suggestions.forEach((suggestion: string) => {
+          analysis.training_suggestions?.forEach((suggestion: string) => {
             if (!newTrainingData[suggestion]) {
               newTrainingData[suggestion] = 'done'
             }
@@ -172,8 +170,7 @@ const JournalCreate = () => {
       }
       // 解析結果はphotoAnalysisに保存するだけにして、AI生成時にまとめて使用する
       // コメントへの直接追加は行わない（AI生成で清書してもらう）
-    } catch (error) {
-      console.error('Error analyzing photo:', error)
+    } catch {
       // エラーは静かに処理（ユーザー体験を損なわないため）
     } finally {
       setAnalyzingPhoto(null)
@@ -205,7 +202,7 @@ const JournalCreate = () => {
     delete newAnalysis[index]
     
     // インデックスを再マッピング
-    const remappedAnalysis: Record<number, any> = {}
+    const remappedAnalysis: Record<number, PhotoAnalysisResult> = {}
     Object.keys(newAnalysis).forEach((key) => {
       const oldIndex = parseInt(key, 10)
       if (oldIndex > index) {
@@ -218,6 +215,23 @@ const JournalCreate = () => {
     setPhotos(newPhotos)
     setPhotoPreviewUrls(newUrls)
     setPhotoAnalysis(remappedAnalysis)
+  }
+
+  const handleApplyAnalysis = (index: number) => {
+    const analysis = photoAnalysis[index]
+    const analysisText = analysis?.suggested_comment || analysis?.analysis
+    if (!analysisText) return
+    setFormData((prev) => ({
+      ...prev,
+      comment: prev.comment
+        ? `${prev.comment}\n\n[写真${index + 1}]\n${analysisText}`
+        : analysisText,
+    }))
+    setCurrentStep('details')
+  }
+
+  const updateFormData = (patch: Partial<JournalFormData>) => {
+    setFormData((prev) => ({ ...prev, ...patch }))
   }
 
   const handleSubmit = async () => {
@@ -246,8 +260,7 @@ const JournalCreate = () => {
         photos: photoBase64List.length > 0 ? photoBase64List : null,
       })
       navigate('/journals')
-    } catch (error) {
-      console.error('Error creating journal:', error)
+    } catch {
       alert('日誌の作成に失敗しました')
     } finally {
       setSubmitting(false)
@@ -283,13 +296,11 @@ const JournalCreate = () => {
         dog_name: reservation?.dog_name,
         training_data: formData.training_data,
         morning_toilet: {
-          urination: formData.morning_urination,
-          defecation: formData.morning_defecation,
+          status: formData.morning_toilet_status,
           location: formData.morning_toilet_location,
         },
         afternoon_toilet: {
-          urination: formData.afternoon_urination,
-          defecation: formData.afternoon_defecation,
+          status: formData.afternoon_toilet_status,
           location: formData.afternoon_toilet_location,
         },
         memo: formData.memo, // スタッフのメモを送信
@@ -300,8 +311,7 @@ const JournalCreate = () => {
         ...prev,
         comment: response.data.comment,
       }))
-    } catch (error) {
-      console.error('Error generating comment:', error)
+    } catch {
       alert('コメントの生成に失敗しました')
     } finally {
       setGenerating(false)
@@ -383,322 +393,44 @@ const JournalCreate = () => {
 
       {/* ステップ1: 写真 */}
       {currentStep === 'photo' && (
-        <div className="px-5 py-6 space-y-6">
-          <div className="text-center mb-6">
-            <Icon icon="solar:camera-bold" width="48" height="48" className="text-primary mb-2" />
-            <h2 className="text-lg font-bold">今日の写真を追加</h2>
-            <p className="text-sm text-muted-foreground">活動の様子を撮影しましょう</p>
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handlePhotoSelect}
-            className="hidden"
-          />
-
-          {/* 写真グリッド */}
-          <div className="grid grid-cols-2 gap-3">
-            {photoPreviewUrls.map((url, index) => (
-              <div key={index} className="relative aspect-square group">
-                <img
-                  src={url}
-                  alt={`写真 ${index + 1}`}
-                  className="w-full h-full object-cover rounded-2xl"
-                />
-                {analyzingPhoto === index && (
-                  <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
-                    <div className="text-center">
-                      <Icon icon="solar:spinner-bold" className="size-8 text-white animate-spin mb-2" />
-                      <p className="text-xs text-white font-medium">AI解析中...</p>
-                    </div>
-                  </div>
-                )}
-                {photoAnalysis[index] && analyzingPhoto !== index && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl p-2">
-                    <p className="text-[10px] text-white line-clamp-2">
-                      {photoAnalysis[index].analysis}
-                    </p>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => removePhoto(index)}
-                  className="absolute top-2 left-2 size-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 transition-opacity"
-                  aria-label="写真を削除"
-                >
-                  <Icon icon="solar:close-circle-bold" className="size-5" />
-                </button>
-                {photoAnalysis[index] && analyzingPhoto !== index && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // 解析結果をコメントに追加
-                      const analysisText = photoAnalysis[index].suggested_comment || photoAnalysis[index].analysis
-                      setFormData((prev) => ({
-                        ...prev,
-                        comment: prev.comment
-                          ? `${prev.comment}\n\n[写真${index + 1}]\n${analysisText}`
-                          : analysisText,
-                      }))
-                      // 詳細ステップに移動
-                      setCurrentStep('details')
-                    }}
-                    className="absolute top-2 right-2 size-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 transition-opacity"
-                    title="解析結果をコメントに追加"
-                    aria-label="解析結果をコメントに追加"
-                  >
-                    <Icon icon="solar:add-circle-bold" className="size-5" />
-                  </button>
-                )}
-              </div>
-            ))}
-
-            {photos.length < 5 && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="aspect-square bg-muted rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-              >
-                <Icon icon="solar:camera-add-bold" width="40" height="40" />
-                <span className="text-sm font-medium">写真を追加</span>
-              </button>
-            )}
-          </div>
-
-          <p className="text-xs text-center text-muted-foreground">
-            {photos.length}/5枚 （後でも追加できます）
-          </p>
-        </div>
+        <JournalPhotoStep
+          fileInputRef={fileInputRef}
+          onPhotoSelect={handlePhotoSelect}
+          onRemovePhoto={removePhoto}
+          onApplyAnalysis={handleApplyAnalysis}
+          photoPreviewUrls={photoPreviewUrls}
+          photosCount={photos.length}
+          photoAnalysis={photoAnalysis}
+          analyzingPhoto={analyzingPhoto}
+        />
       )}
 
       {/* ステップ2: コメント */}
       {currentStep === 'comment' && (
-        <div className="px-5 py-6 space-y-6">
-          <div className="text-center mb-4">
-            <Icon icon="solar:pen-new-square-bold" className="size-12 text-primary mb-2" />
-            <h2 className="text-lg font-bold">今日の様子</h2>
-            <p className="text-sm text-muted-foreground">飼い主さんへのメッセージを書きましょう</p>
-          </div>
-
-          {/* メモ入力エリア */}
-          <div className="bg-card rounded-xl border border-border p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Icon icon="solar:notes-bold" className="size-5 text-chart-4" />
-              <span className="text-sm font-bold">メモ書き（AIが清書します）</span>
-            </div>
-            <textarea
-              value={formData.memo}
-              onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
-              className="w-full h-24 bg-muted/50 border-0 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
-              placeholder="走り書きでOK！例：今日はオスワリ完璧、他の犬とも仲良く遊べた、少し興奮気味だったけど落ち着いてトレーニングできた"
-            />
-          </div>
-
-          {/* AI生成時に使われる情報の表示 */}
-          <div className="bg-muted/30 rounded-xl p-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2 mb-2">
-              <Icon icon="solar:info-circle-bold" className="size-4" />
-              <span className="font-medium">AIが参照する情報</span>
-            </div>
-            <div className="space-y-1">
-              <p>
-                ✓ メモ書き
-                {formData.memo.trim() ? ` (${formData.memo.length}文字)` : ' (未入力)'}
-              </p>
-              <p>
-                ✓ 写真解析
-                {Object.keys(photoAnalysis).length > 0
-                  ? ` (${Object.keys(photoAnalysis).length}枚分)`
-                  : ' (なし)'}
-              </p>
-              <p>
-                ✓ トレーニング記録
-                {Object.keys(formData.training_data).length > 0
-                  ? ` (${Object.keys(formData.training_data).length}項目)`
-                  : ' (未入力)'}
-              </p>
-            </div>
-          </div>
-
-          {/* AI生成ボタン */}
-          <button
-            type="button"
-            onClick={handleGenerateComment}
-            disabled={generating}
-            className="w-full py-3 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {generating ? (
-              <>
-                <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
-                生成中...
-              </>
-            ) : (
-              <>
-                <Icon icon="solar:magic-stick-3-bold" className="size-5" />
-                AIでコメントを生成
-              </>
-            )}
-          </button>
-
-          {/* 生成されたコメント */}
-          <div className="relative">
-            <label className="text-sm font-bold flex items-center gap-2 mb-2">
-              <Icon icon="solar:document-text-bold" className="size-4 text-primary" />
-              AIが生成したコメント（編集可能）
-            </label>
-            <textarea
-              value={formData.comment}
-              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-              className="w-full h-56 bg-card border border-border rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
-              placeholder="今日のワンちゃんの様子を記入してください..."
-            />
-            <p className="absolute bottom-3 right-3 text-xs text-muted-foreground">
-              {formData.comment.length}文字
-            </p>
-          </div>
-        </div>
+        <JournalCommentStep
+          memo={formData.memo}
+          comment={formData.comment}
+          photoAnalysisCount={Object.keys(photoAnalysis).length}
+          trainingCount={Object.keys(formData.training_data).length}
+          generating={generating}
+          onMemoChange={(e) => updateFormData({ memo: e.target.value })}
+          onCommentChange={(e) => updateFormData({ comment: e.target.value })}
+          onGenerateComment={handleGenerateComment}
+        />
       )}
 
       {/* ステップ3: 詳細（オプション） */}
       {currentStep === 'details' && (
-        <div className="px-5 py-6 space-y-4">
-          <div className="text-center mb-4">
-            <Icon icon="solar:clipboard-check-bold" className="size-12 text-primary mb-2" />
-            <h2 className="text-lg font-bold">詳細記録（任意）</h2>
-            <p className="text-sm text-muted-foreground">時間があれば記録しましょう</p>
-          </div>
-
-          {/* トイレ記録（シンプル版） */}
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowDetails(!showDetails)}
-              className="w-full px-4 py-3 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <Icon icon="solar:box-bold" className="size-5 text-chart-1" />
-                <span className="font-bold text-sm">トイレ記録</span>
-              </div>
-              <Icon icon={showDetails ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
-                className="size-5 text-muted-foreground" />
-            </button>
-
-            {showDetails && (
-              <div className="border-t border-border p-4 space-y-4">
-                {/* 午前 */}
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground mb-2">午前</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={formData.morning_toilet_status}
-                      onChange={(e) => setFormData({ ...formData, morning_toilet_status: e.target.value })}
-                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
-                    >
-                      <option value="">未選択</option>
-                      <option value="成功">成功</option>
-                      <option value="失敗">失敗</option>
-                    </select>
-                    <select
-                      value={formData.morning_toilet_location}
-                      onChange={(e) => setFormData({ ...formData, morning_toilet_location: e.target.value })}
-                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
-                      disabled={!formData.morning_toilet_status}
-                    >
-                      <option value="">場所を選択</option>
-                      <option value="散歩中">散歩中</option>
-                      <option value="自ら指定の場所">自ら指定の場所</option>
-                      <option value="誘導して指定の場所">誘導して指定の場所</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 午後 */}
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground mb-2">午後</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={formData.afternoon_toilet_status}
-                      onChange={(e) => setFormData({ ...formData, afternoon_toilet_status: e.target.value })}
-                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
-                    >
-                      <option value="">未選択</option>
-                      <option value="成功">成功</option>
-                      <option value="失敗">失敗</option>
-                    </select>
-                    <select
-                      value={formData.afternoon_toilet_location}
-                      onChange={(e) => setFormData({ ...formData, afternoon_toilet_location: e.target.value })}
-                      className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
-                      disabled={!formData.afternoon_toilet_status}
-                    >
-                      <option value="">場所を選択</option>
-                      <option value="散歩中">散歩中</option>
-                      <option value="自ら指定の場所">自ら指定の場所</option>
-                      <option value="誘導して指定の場所">誘導して指定の場所</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* トレーニング記録（設定から取得） */}
-          {Object.entries(trainingCategories).map(([categoryKey, category]) => (
-            <div key={categoryKey} className="bg-card rounded-xl border border-border p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Icon icon={category.icon} className="size-5 text-primary" />
-                <span className="font-bold text-sm">{category.label}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {category.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
-                    <span className="text-xs">{item.label}</span>
-                    <div className="flex gap-1">
-                      {ACHIEVEMENT_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => handleTrainingChange(item.id, option.value)}
-                          className={`size-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                            formData.training_data[item.id] === option.value
-                              ? option.color + ' ring-2 ring-primary'
-                              : 'text-muted-foreground/30 hover:bg-muted active:bg-muted'
-                          }`}
-                          aria-label={`${item.label}を${option.label}に設定`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {/* 担当スタッフ */}
-          <div className="bg-card rounded-xl border border-border p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Icon icon="solar:user-bold" className="size-5 text-primary" />
-              <span className="font-bold text-sm">担当スタッフ</span>
-            </div>
-            <select
-              value={formData.staff_id}
-              onChange={(e) => setFormData({ ...formData, staff_id: e.target.value })}
-              className="w-full bg-muted border-0 rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">選択してください</option>
-              {staffList.map((staff) => (
-                <option key={staff.id} value={staff.id}>
-                  {staff.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <JournalDetailsStep
+          formData={formData}
+          showDetails={showDetails}
+          onToggleDetails={() => setShowDetails(!showDetails)}
+          onUpdateForm={updateFormData}
+          onTrainingChange={handleTrainingChange}
+          trainingCategories={trainingCategories}
+          staffList={staffList}
+          achievementOptions={ACHIEVEMENT_OPTIONS}
+        />
       )}
 
       {/* 下部ボタン */}

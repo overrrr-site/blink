@@ -18,10 +18,6 @@ export default function PayjpForm({ publicKey, onTokenCreated, onError, onSubmit
   const [loading, setLoading] = useState(false);
   const [payjpLoaded, setPayjpLoaded] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const cardNumberRef = useRef<HTMLDivElement>(null);
-  const cardExpiryRef = useRef<HTMLDivElement>(null);
-  const cardCvcRef = useRef<HTMLDivElement>(null);
-  const cardNameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // PAY.JPのJavaScript SDKを読み込む

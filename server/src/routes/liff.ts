@@ -10,6 +10,7 @@ import {
   sendServerError,
   sendUnauthorized,
 } from '../utils/response.js';
+import { buildPaginatedResponse, parsePaginationParams } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -129,7 +130,7 @@ router.get('/me', async function(req, res) {
     if (!decoded) return;
 
     // パフォーマンス改善: 飼い主情報と犬情報を並列取得
-    const [ownerResult, dogsResult, nextReservationResult] = await Promise.all([
+    const [ownerResult, dogsResult, nextReservationResult, contractsResult] = await Promise.all([
       // 飼い主情報と店舗情報を取得
       pool.query(
         `SELECT o.*, s.name as store_name, s.address as store_address
@@ -162,6 +163,26 @@ router.get('/me', async function(req, res) {
          ORDER BY r.reservation_date ASC, r.reservation_time ASC
          LIMIT 1`,
         [decoded.ownerId]
+      ),
+      // 契約情報を取得（犬情報への依存を排除）
+      pool.query(
+        `SELECT c.*,
+                CASE
+                  WHEN c.contract_type = '月謝制' THEN NULL
+                  ELSE GREATEST(0, COALESCE(c.total_sessions, 0) - COALESCE(usage.used_count, 0))
+                END as calculated_remaining
+         FROM contracts c
+         JOIN dogs d ON c.dog_id = d.id
+         LEFT JOIN LATERAL (
+           SELECT COUNT(*) as used_count
+           FROM reservations r
+           WHERE r.dog_id = c.dog_id
+             AND r.status IN ('登園済', '降園済', '予定')
+             AND r.reservation_date >= c.created_at
+             AND r.reservation_date <= COALESCE(c.valid_until, CURRENT_DATE + INTERVAL '1 year')
+         ) usage ON true
+         WHERE d.owner_id = $1`,
+        [decoded.ownerId]
       )
     ]);
 
@@ -172,34 +193,7 @@ router.get('/me', async function(req, res) {
 
     const owner = ownerResult.rows[0];
 
-    // 契約情報を取得（エラーが発生した場合は空配列を返す）
-    let contracts: any[] = [];
-    try {
-      const dogIds = dogsResult.rows.map((d: any) => d.id);
-      if (dogIds.length > 0) {
-        const contractsResult = await pool.query(
-          `SELECT c.*,
-                  CASE
-                    WHEN c.contract_type = '月謝制' THEN NULL
-                    ELSE GREATEST(0, COALESCE(c.total_sessions, 0) - COALESCE(usage.used_count, 0))
-                  END as calculated_remaining
-           FROM contracts c
-           LEFT JOIN LATERAL (
-             SELECT COUNT(*) as used_count
-             FROM reservations r
-             WHERE r.dog_id = c.dog_id
-               AND r.status IN ('登園済', '降園済', '予定')
-               AND r.reservation_date >= c.created_at
-               AND r.reservation_date <= COALESCE(c.valid_until, CURRENT_DATE + INTERVAL '1 year')
-           ) usage ON true
-           WHERE c.dog_id = ANY($1::int[])`,
-          [dogIds]
-        );
-        contracts = contractsResult.rows;
-      }
-    } catch (contractError) {
-      console.warn('契約情報の取得をスキップしました:', contractError);
-    }
+    const contracts = contractsResult.rows;
 
     res.json({
       ...owner,
@@ -218,30 +212,41 @@ router.get('/reservations', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    const { month } = req.query;
+    const queryParams = req.query as { month?: string | string[]; page?: string | string[]; limit?: string | string[] };
+    const { month } = queryParams;
+    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
 
     let query = `
       SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
              pvi.morning_urination, pvi.morning_defecation,
              pvi.afternoon_urination, pvi.afternoon_defecation,
              pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
-             CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
+             CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input,
+             COUNT(*) OVER() as total_count
       FROM reservations r
       JOIN dogs d ON r.dog_id = d.id
       LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
       WHERE d.owner_id = $1 AND r.store_id = $2
     `;
-    const params: any[] = [decoded.ownerId, decoded.storeId];
+    const params: Array<string | number> = [decoded.ownerId, decoded.storeId];
 
     if (month) {
-      query += ` AND r.reservation_date >= $3::date AND r.reservation_date < ($3::date + INTERVAL '1 month')`;
-      params.push(`${month}-01`);
+      query += ` AND r.reservation_date >= $${params.length + 1}::date AND r.reservation_date < ($${params.length + 1}::date + INTERVAL '1 month')`;
+      const monthValue = Array.isArray(month) ? month[0] : month;
+      params.push(`${monthValue}-01`);
     }
 
     query += ` ORDER BY r.reservation_date DESC, r.reservation_time DESC`;
+    query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
+    const data = result.rows.map((row) => {
+      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
+      return rest;
+    });
+    res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error: any) {
     sendServerError(res, '予約情報の取得に失敗しました', error);
   }
@@ -334,27 +339,37 @@ router.get('/journals', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    const { dog_id } = req.query;
+    const queryParams = req.query as { dog_id?: string | string[]; page?: string | string[]; limit?: string | string[] };
+    const { dog_id } = queryParams;
+    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
 
     let query = `
-      SELECT j.*, d.name as dog_name, d.photo_url as dog_photo, s.name as staff_name
+      SELECT j.*, d.name as dog_name, d.photo_url as dog_photo, s.name as staff_name,
+             COUNT(*) OVER() as total_count
       FROM journals j
       JOIN dogs d ON j.dog_id = d.id
       JOIN owners o ON d.owner_id = o.id
       LEFT JOIN staff s ON j.staff_id = s.id
       WHERE d.owner_id = $1 AND o.store_id = $2
     `;
-    const params: any[] = [decoded.ownerId, decoded.storeId];
+    const params: Array<string | number> = [decoded.ownerId, decoded.storeId];
 
     if (dog_id) {
-      query += ` AND d.id = $3`;
-      params.push(dog_id);
+      query += ` AND d.id = $${params.length + 1}`;
+      params.push(Array.isArray(dog_id) ? dog_id[0] : dog_id);
     }
 
     query += ` ORDER BY j.journal_date DESC, j.created_at DESC`;
+    query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
+    const data = result.rows.map((row) => {
+      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
+      return rest;
+    });
+    res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error: any) {
     sendServerError(res, '日誌情報の取得に失敗しました', error);
   }

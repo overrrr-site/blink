@@ -37,7 +37,6 @@ export default function LinkAccount() {
           // ログイン状態を確認
           if (!isLiffLoggedIn()) {
             // 未ログインの場合、getLiffProfileがliff.login()を呼び出しリダイレクト
-            console.log('LIFF未ログイン。ログインページへリダイレクト中...');
             await getLiffProfile();
             return;
           }
@@ -49,7 +48,6 @@ export default function LinkAccount() {
           if (err.message === 'Redirecting to LINE login...') {
             return;
           }
-          console.error('Failed to get LINE profile:', err);
           setError('LINEアカウント情報の取得に失敗しました');
         }
       };
@@ -80,7 +78,6 @@ export default function LinkAccount() {
       setMaskedEmail(response.data.maskedEmail);
       setStep('code');
     } catch (err: any) {
-      console.error('Link request error:', err);
       setError(err.response?.data?.error || '確認コードの送信に失敗しました');
     } finally {
       setLoading(false);
@@ -115,7 +112,6 @@ export default function LinkAccount() {
         setError('認証に失敗しました');
       }
     } catch (err: any) {
-      console.error('Link verify error:', err);
       setError(err.response?.data?.error || '確認コードの検証に失敗しました');
     } finally {
       setLoading(false);

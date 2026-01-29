@@ -82,8 +82,7 @@ export default function PreVisitInput() {
             });
           }
         }
-      } catch (error) {
-        console.error('Error fetching reservation:', error);
+      } catch {
       } finally {
         setLoading(false);
       }
@@ -104,7 +103,6 @@ export default function PreVisitInput() {
       });
       navigate('/home');
     } catch (error: any) {
-      console.error('Error saving pre-visit input:', error);
       alert(error.response?.data?.error || '登園前入力の保存に失敗しました');
     } finally {
       setSaving(false);

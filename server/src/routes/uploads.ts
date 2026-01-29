@@ -96,7 +96,7 @@ router.post('/', upload.single('file'), async (req: AuthRequest, res) => {
     if (useSupabaseStorage) {
       const result = await uploadToSupabaseStorage(req.file, category);
       if (!result) {
-        sendServerError(res, 'ファイルのアップロードに失敗しました');
+        sendServerError(res, 'ファイルのアップロードに失敗しました', new Error('Supabase Storage upload failed'));
         return;
       }
 
@@ -192,7 +192,7 @@ router.delete('/', async (req: AuthRequest, res) => {
       if (success) {
         res.json({ success: true, message: 'ファイルを削除しました' });
       } else {
-        sendServerError(res, 'ファイルの削除に失敗しました');
+        sendServerError(res, 'ファイルの削除に失敗しました', new Error('Supabase Storage delete failed'));
       }
       return;
     }

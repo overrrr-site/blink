@@ -1,13 +1,14 @@
 import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { cacheControl } from '../middleware/cache.js';
 import { requireStoreId, sendBadRequest, sendServerError } from '../utils/response.js';
 
 const router = express.Router();
 router.use(authenticate);
 
 // 店舗設定取得
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', cacheControl(30, 60), async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) {
       return;

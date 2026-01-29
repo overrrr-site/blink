@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Icon } from '../../components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import axios from 'axios'
+import useSWR from 'swr'
 import api from '../../api/client'
+import { fetcher } from '../../lib/swr'
 
 interface ToggleSwitchProps {
   checked: boolean
@@ -25,33 +28,43 @@ function ToggleSwitch({ checked, onChange }: ToggleSwitchProps) {
   )
 }
 
+interface GoogleCalendarStatus {
+  connected: boolean
+  calendarId: string | null
+  enabled: boolean
+}
+
+interface NotificationSettings {
+  reminder_before_visit: boolean
+  journal_notification: boolean
+  vaccine_alert: boolean
+  line_notification_enabled: boolean
+  email_notification_enabled: boolean
+  line_bot_enabled: boolean
+}
+
+interface StoreLineStatus {
+  line_connected?: boolean | null
+  line_channel_id?: string | null
+}
+
+const defaultNotificationSettings: NotificationSettings = {
+  reminder_before_visit: true,
+  journal_notification: true,
+  vaccine_alert: true,
+  line_notification_enabled: false,
+  email_notification_enabled: false,
+  line_bot_enabled: false,
+}
+
 function IntegrationTab() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [googleCalendarStatus, setGoogleCalendarStatus] = useState<{
-    connected: boolean
-    calendarId: string | null
-    enabled: boolean
-  } | null>(null)
-  const [loadingCalendar, setLoadingCalendar] = useState(true)
-  const [notificationSettings, setNotificationSettings] = useState({
-    reminder_before_visit: true,
-    journal_notification: true,
-    vaccine_alert: true,
-    line_notification_enabled: false,
-    email_notification_enabled: false,
-    line_bot_enabled: false,
-  })
   const [testingLine, setTestingLine] = useState(false)
   const [lineTestResult, setLineTestResult] = useState<{
     success: boolean
     message: string
   } | null>(null)
-  const [lineStatus, setLineStatus] = useState<{
-    connected: boolean
-    channelId: string | null
-  } | null>(null)
-  const [loadingLine, setLoadingLine] = useState(true)
   const [showLineModal, setShowLineModal] = useState(false)
   const [lineSettings, setLineSettings] = useState({
     channelId: '',
@@ -60,46 +73,43 @@ function IntegrationTab() {
   })
   const [savingLine, setSavingLine] = useState(false)
 
-  useEffect(() => {
-    fetchGoogleCalendarStatus()
-    fetchNotificationSettings()
-    fetchLineStatus()
+  const {
+    data: googleCalendarStatus,
+    isLoading: loadingCalendar,
+    mutate: mutateGoogleCalendarStatus,
+  } = useSWR<GoogleCalendarStatus>('/google-calendar/status', fetcher, { revalidateOnFocus: false })
 
+  const {
+    data: notificationSettingsData,
+    mutate: mutateNotificationSettings,
+  } = useSWR<NotificationSettings>('/notifications/settings', fetcher, { revalidateOnFocus: false })
+
+  const {
+    data: storeData,
+    isLoading: loadingLine,
+    mutate: mutateStore,
+  } = useSWR<StoreLineStatus>('/stores', fetcher, { revalidateOnFocus: false })
+
+  const notificationSettings = notificationSettingsData
+    ? { ...defaultNotificationSettings, ...notificationSettingsData }
+    : defaultNotificationSettings
+  const lineStatus = storeData
+    ? {
+        connected: storeData.line_connected ?? false,
+        channelId: storeData.line_channel_id ?? null,
+      }
+    : null
+
+  useEffect(() => {
     const status = searchParams.get('google_calendar')
     if (status === 'connected') {
-      setTimeout(() => {
-        fetchGoogleCalendarStatus()
+      const timer = setTimeout(() => {
+        mutateGoogleCalendarStatus()
         navigate('/settings', { replace: true })
       }, 1000)
+      return () => clearTimeout(timer)
     }
-  }, [])
-
-  async function fetchGoogleCalendarStatus() {
-    try {
-      const response = await api.get('/google-calendar/status')
-      setGoogleCalendarStatus(response.data)
-    } catch (error) {
-      console.error('Error fetching Google Calendar status:', error)
-    } finally {
-      setLoadingCalendar(false)
-    }
-  }
-
-  async function fetchNotificationSettings() {
-    try {
-      const response = await api.get('/notifications/settings')
-      setNotificationSettings({
-        reminder_before_visit: response.data.reminder_before_visit ?? true,
-        journal_notification: response.data.journal_notification ?? true,
-        vaccine_alert: response.data.vaccine_alert ?? true,
-        line_notification_enabled: response.data.line_notification_enabled ?? false,
-        email_notification_enabled: response.data.email_notification_enabled ?? false,
-        line_bot_enabled: response.data.line_bot_enabled ?? false,
-      })
-    } catch (error) {
-      console.error('Error fetching notification settings:', error)
-    }
-  }
+  }, [searchParams, mutateGoogleCalendarStatus, navigate])
 
   async function handleTestLineMessage() {
     setTestingLine(true)
@@ -110,8 +120,8 @@ function IntegrationTab() {
         success: response.data.success,
         message: response.data.message,
       })
-    } catch (error: any) {
-      const errorData = error.response?.data
+    } catch (error: unknown) {
+      const errorData = axios.isAxiosError(error) ? error.response?.data : null
       setLineTestResult({
         success: false,
         message: errorData?.message || 'テスト送信に失敗しました',
@@ -125,8 +135,7 @@ function IntegrationTab() {
     try {
       const response = await api.get('/google-calendar/auth')
       window.location.href = response.data.authUrl
-    } catch (error) {
-      console.error('Error connecting Google Calendar:', error)
+    } catch {
       alert('Googleカレンダー連携の開始に失敗しました')
     }
   }
@@ -138,25 +147,14 @@ function IntegrationTab() {
 
     try {
       await api.post('/google-calendar/disconnect')
-      setGoogleCalendarStatus({ connected: false, calendarId: null, enabled: false })
+      mutateGoogleCalendarStatus(
+        { connected: false, calendarId: null, enabled: false },
+        { revalidate: false }
+      )
+      mutateGoogleCalendarStatus()
       alert('Googleカレンダー連携を解除しました')
-    } catch (error) {
-      console.error('Error disconnecting Google Calendar:', error)
+    } catch {
       alert('連携の解除に失敗しました')
-    }
-  }
-
-  async function fetchLineStatus() {
-    try {
-      const response = await api.get('/stores')
-      setLineStatus({
-        connected: response.data.line_connected || false,
-        channelId: response.data.line_channel_id || null,
-      })
-    } catch (error) {
-      console.error('Error fetching LINE status:', error)
-    } finally {
-      setLoadingLine(false)
     }
   }
 
@@ -183,10 +181,9 @@ function IntegrationTab() {
         line_channel_access_token: lineSettings.channelAccessToken,
       })
       setShowLineModal(false)
-      fetchLineStatus()
+      mutateStore()
       alert('LINE公式アカウント連携を設定しました')
-    } catch (error) {
-      console.error('Error saving LINE settings:', error)
+    } catch {
       alert('LINE連携の設定に失敗しました')
     } finally {
       setSavingLine(false)
@@ -204,17 +201,22 @@ function IntegrationTab() {
         line_channel_secret: null,
         line_channel_access_token: null,
       })
-      fetchLineStatus()
+      mutateStore()
       alert('LINE公式アカウント連携を解除しました')
-    } catch (error) {
-      console.error('Error disconnecting LINE:', error)
+    } catch {
       alert('連携の解除に失敗しました')
     }
   }
 
   async function updateNotificationSetting(key: keyof typeof notificationSettings, value: boolean) {
-    setNotificationSettings(prev => ({ ...prev, [key]: value }))
-    await api.put('/notifications/settings', { [key]: value })
+    const previousSettings = notificationSettings
+    mutateNotificationSettings({ ...notificationSettings, [key]: value }, { revalidate: false })
+    try {
+      await api.put('/notifications/settings', { [key]: value })
+      mutateNotificationSettings()
+    } catch {
+      mutateNotificationSettings(previousSettings, { revalidate: false })
+    }
   }
 
   function closeLineModal() {

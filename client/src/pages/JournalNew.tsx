@@ -32,8 +32,7 @@ function JournalNew(): JSX.Element {
       const response = await api.get('/dashboard')
       const incompleteJournals = response.data.incompleteJournals || []
       setReservations(incompleteJournals)
-    } catch (error) {
-      console.error('Error fetching reservations:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
