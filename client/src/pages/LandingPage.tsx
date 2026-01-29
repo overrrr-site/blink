@@ -515,16 +515,71 @@ const lpStyles = `
     .split-section.reverse .feature-visual-inner { direction: ltr; }
   }
   @media (max-width: 768px) {
-    .feature-visual-content { padding: 60px 24px; }
-    .phone-mockup { width: 260px; height: 540px; border-radius: 40px; }
-    .phone-screen { border-radius: 32px; }
-    .trust-badges { flex-direction: column; gap: 24px; align-items: center; }
-    .project-list { grid-template-columns: 1fr; }
-    .company-projects { padding: 24px; }
-    .hero-logo-img { height: 100px; }
-  }
-  @media (max-width: 480px) {
-    .line-features { grid-template-columns: 1fr; }
+    /* スナップをスマホ向けに調整 */
+    .lp { scroll-snap-type: y proximity; }
+
+    /* ヒーロー */
+    .hero { padding: 80px 20px 60px; }
+    .hero-logo-img { height: 80px; margin-bottom: 24px; }
+    .hero-title { margin: 0 0 16px; }
+    .hero-subtitle { margin: 0 auto 32px; font-size: 15px; }
+    .hero-cta { padding: 14px 32px; font-size: 15px; }
+
+    /* split-section: テキスト+スクショを1画面に */
+    .lp-snap.split-section { min-height: 100vh; min-height: 100dvh; }
+    .feature-visual-inner { min-height: 100vh; min-height: 100dvh; grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    .feature-visual-content {
+      padding: 80px 20px 24px;
+      order: 1;
+    }
+    .feature-visual-eyebrow { margin: 0 0 8px; }
+    .feature-visual-title { font-size: 28px; margin: 0 0 12px; }
+    .feature-visual-desc { font-size: 14px; margin: 0 0 16px; line-height: 1.6; }
+    .feature-list { gap: 8px; }
+    .feature-list li { font-size: 13px; gap: 8px; }
+    .feature-visual-image {
+      order: 2;
+      padding: 16px 32px 24px;
+      min-height: auto;
+    }
+    .screen-mockup { max-width: 280px; border-radius: 12px; }
+    .split-section.reverse .feature-visual-inner { direction: ltr; }
+
+    /* LINE section */
+    .line-section { padding: 80px 20px 40px; }
+    .line-grid { gap: 24px; }
+    .line-section .headline-title { font-size: 28px; }
+    .line-section .headline-desc { font-size: 14px; margin-bottom: 24px !important; }
+    .line-features { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .line-feature-card { padding: 12px; border-radius: 12px; }
+    .line-feature-card h4 { font-size: 13px; margin: 6px 0 2px; }
+    .line-feature-card p { font-size: 11px; }
+    .line-feature-card svg { width: 20px; height: 20px; }
+    .phone-mockup { width: 180px; height: 380px; border-radius: 32px; padding: 8px; }
+    .phone-screen { border-radius: 26px; }
+
+    /* Company */
+    .company-section { padding: 80px 20px 40px; }
+    .company-tagline { margin: 0 0 24px; font-size: 13px; }
+    .company-title { font-size: 24px; margin: 0 0 16px; }
+    .company-desc { font-size: 14px; margin: 0 0 24px; line-height: 1.7; }
+    .company-projects { padding: 20px; border-radius: 16px; }
+    .company-projects h4 { font-size: 12px; margin: 0 0 12px; }
+    .project-list { grid-template-columns: 1fr; gap: 8px; }
+    .project-item { font-size: 13px; }
+
+    /* Final CTA */
+    .final-cta { padding: 60px 20px; }
+    .final-cta-title { margin: 0 0 16px; }
+    .final-cta-desc { font-size: 14px; margin: 0 auto 32px; }
+    .cta-buttons { margin-bottom: 32px; }
+    .trust-badges { flex-direction: column; gap: 16px; align-items: center; }
+    .trust-badge { font-size: 13px; }
+
+    /* Header */
+    .lp-header { padding: 12px 16px; }
+    .lp-header-logo { height: 28px; }
+    .lp-header-login { padding: 6px 16px; font-size: 13px; min-height: 36px; }
   }
 `
 
