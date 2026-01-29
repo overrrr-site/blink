@@ -51,7 +51,7 @@ app.post('/api/line/webhook', express.text({ type: '*/*' }), async (req, res) =>
 
     // bodyを文字列化（express.text()で取得した場合は文字列）
     let bodyString: string;
-    let parsedBody: any;
+    let parsedBody: { events?: Array<{ type: string; [key: string]: unknown }> };
 
     if (typeof req.body === 'string') {
       bodyString = req.body;
@@ -77,7 +77,7 @@ app.post('/api/line/webhook', express.text({ type: '*/*' }), async (req, res) =>
       return;
     }
 
-    console.log('LINE Webhook: イベント数:', events.length, 'タイプ:', events.map((e: any) => e.type).join(','));
+    console.log('LINE Webhook: イベント数:', events.length, 'タイプ:', events.map((e: { type: string }) => e.type).join(','));
 
     // イベント処理を実行（完了を待つ）
     const { processLineWebhookEvents } = await import('./services/lineBotService.js');

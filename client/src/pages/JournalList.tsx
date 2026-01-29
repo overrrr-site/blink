@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import useSWR from 'swr'
 import { fetcher, PaginatedResponse } from '../lib/swr'
 import { Pagination } from '../components/Pagination'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 
 interface Journal {
   id: number
@@ -69,8 +70,15 @@ const JournalList = () => {
   const [page, setPage] = useState(1)
   const navigate = useNavigate()
 
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearchQuery, selectedDog])
+
+  const swrKey = `/journals?page=${page}&limit=${PAGE_SIZE}${debouncedSearchQuery ? `&search=${encodeURIComponent(debouncedSearchQuery)}` : ''}${selectedDog ? `&dog_id=${selectedDog}` : ''}`
   const { data, isLoading } = useSWR<PaginatedResponse<Journal>>(
-    `/journals?page=${page}&limit=${PAGE_SIZE}`,
+    swrKey,
     fetcher,
     { revalidateOnFocus: false }
   )
@@ -81,46 +89,30 @@ const JournalList = () => {
     navigate(`/journals/${id}`)
   }, [navigate])
 
-  // 3つの計算を1回のループで統合処理（パフォーマンス最適化）
-  const { uniqueDogs, filteredJournals, groupedJournals } = useMemo(() => {
+  // ユニーク犬リスト（フィルタピル用）と日付グルーピング（検索・フィルタはサーバーサイドで完了済み）
+  const { uniqueDogs, groupedJournals } = useMemo(() => {
     const dogMap = new Map<number, { id: number; name: string }>()
-    const filtered: any[] = []
-    const groups: { [key: string]: any[] } = {}
-    const query = searchQuery.toLowerCase()
+    const groups: { [key: string]: Journal[] } = {}
 
     for (const journal of journals) {
-      // ユニークな犬の収集
       if (!dogMap.has(journal.dog_id)) {
         dogMap.set(journal.dog_id, { id: journal.dog_id, name: journal.dog_name })
       }
-
-      // フィルタリング
-      const matchesSearch = searchQuery === '' ||
-        journal.dog_name.toLowerCase().includes(query) ||
-        journal.owner_name.toLowerCase().includes(query) ||
-        (journal.comment && journal.comment.toLowerCase().includes(query))
-      const matchesDog = selectedDog === '' || journal.dog_id.toString() === selectedDog
-
-      if (matchesSearch && matchesDog) {
-        filtered.push(journal)
-        // グループ化も同時実行
-        const date = journal.journal_date
-        if (!groups[date]) groups[date] = []
-        groups[date].push(journal)
-      }
+      const date = journal.journal_date
+      if (!groups[date]) groups[date] = []
+      groups[date].push(journal)
     }
 
     return {
       uniqueDogs: Array.from(dogMap.values()),
-      filteredJournals: filtered,
       groupedJournals: groups
     }
-  }, [journals, searchQuery, selectedDog])
+  }, [journals])
 
   // CSVエクスポート機能
   const exportToCSV = () => {
     const headers = ['日付', '犬名', '飼い主', '担当スタッフ', 'コメント']
-    const rows = filteredJournals.map((journal) => [
+    const rows = journals.map((journal) => [
       journal.journal_date,
       journal.dog_name,
       journal.owner_name,
@@ -248,7 +240,7 @@ const JournalList = () => {
               予約カレンダーを開く
             </button>
           </div>
-        ) : filteredJournals.length === 0 ? (
+        ) : Object.keys(groupedJournals).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Icon icon="solar:magnifer-linear" width="48" height="48" className="text-muted-foreground mb-4" />
             <p className="text-base font-medium text-foreground mb-1">該当する日誌がありません</p>

@@ -60,8 +60,8 @@ router.use(authenticate);
 // 日誌一覧取得
 router.get('/', cacheControl(), async (req: AuthRequest, res) => {
   try {
-    const queryParams = req.query as { dog_id?: string | string[]; date?: string | string[]; page?: string | string[]; limit?: string | string[] };
-    const { dog_id, date } = queryParams;
+    const queryParams = req.query as { dog_id?: string | string[]; date?: string | string[]; search?: string | string[]; page?: string | string[]; limit?: string | string[] };
+    const { dog_id, date, search } = queryParams;
     const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
 
     let query = `
@@ -86,6 +86,12 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
     if (date) {
       query += ` AND j.journal_date = $${params.length + 1}`;
       params.push(Array.isArray(date) ? date[0] : date);
+    }
+
+    if (search) {
+      const searchValue = Array.isArray(search) ? search[0] : search;
+      query += ` AND (d.name ILIKE $${params.length + 1} OR o.name ILIKE $${params.length + 1} OR j.comment ILIKE $${params.length + 1})`;
+      params.push(`%${searchValue}%`);
     }
 
     query += ` ORDER BY j.journal_date DESC, j.created_at DESC`;

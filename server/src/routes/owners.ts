@@ -45,9 +45,12 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
     const params: Array<string | number> = [req.storeId ?? 0];
 
     if (search) {
-      query += ` AND (o.name ILIKE $${params.length + 1} OR o.phone ILIKE $${params.length + 1})`;
       const searchValue = Array.isArray(search) ? search[0] : search;
-      params.push(`%${searchValue}%`);
+      const searchParam = `%${searchValue}%`;
+      query += ` AND (o.name ILIKE $${params.length + 1} OR o.name_kana ILIKE $${params.length + 1} OR o.phone ILIKE $${params.length + 1}
+                 OR EXISTS (SELECT 1 FROM dogs d_s WHERE d_s.owner_id = o.id AND d_s.deleted_at IS NULL
+                            AND (d_s.name ILIKE $${params.length + 1} OR d_s.breed ILIKE $${params.length + 1})))`;
+      params.push(searchParam);
     }
 
     query += ` GROUP BY o.id, last_res.last_reservation_date ORDER BY o.created_at DESC`;

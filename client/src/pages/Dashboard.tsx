@@ -28,11 +28,40 @@ interface Reservation {
   notes?: string
 }
 
+interface IncompleteJournal {
+  reservation_id: number
+  reservation_date: string
+  journal_date: string
+  reservation_time: string
+  dog_id: number
+  dog_name: string
+  dog_photo?: string
+  owner_name: string
+  journal_id: number | null
+  comment: string | null
+}
+
+interface DashboardAlert {
+  dog_id: number
+  dog_name: string
+  dog_gender?: string
+  owner_name: string
+  alert_type: 'mixed_vaccine_expired' | 'rabies_vaccine_expiring'
+  mixed_vaccine_date?: string
+}
+
+interface InspectionRecord {
+  id: number
+  store_id: number
+  inspection_date: string
+  [key: string]: unknown
+}
+
 interface DashboardData {
   todayReservations: Reservation[]
-  incompleteJournals: any[]
-  alerts: any[]
-  todayInspectionRecord: any | null
+  incompleteJournals: IncompleteJournal[]
+  alerts: DashboardAlert[]
+  todayInspectionRecord: InspectionRecord | null
   capacity?: number
   announcementStats?: {
     published: number
@@ -420,14 +449,14 @@ function Dashboard(): JSX.Element {
 
   const alertSummary = useMemo(function(): string {
     if (!data?.alerts || data.alerts.length === 0) return ''
-    const alertTypes = new Set(data.alerts.map(function(a: any) { return a.alert_type }))
+    const alertTypes = new Set(data.alerts.map(function(a) { return a.alert_type }))
     const messages: string[] = []
     if (alertTypes.has('mixed_vaccine_expired')) {
-      const count = data.alerts.filter(function(a: any) { return a.alert_type === 'mixed_vaccine_expired' }).length
+      const count = data.alerts.filter(function(a) { return a.alert_type === 'mixed_vaccine_expired' }).length
       messages.push(`混合ワクチン期限切れ ${count}件`)
     }
     if (alertTypes.has('rabies_vaccine_expiring')) {
-      const count = data.alerts.filter(function(a: any) { return a.alert_type === 'rabies_vaccine_expiring' }).length
+      const count = data.alerts.filter(function(a) { return a.alert_type === 'rabies_vaccine_expiring' }).length
       messages.push(`狂犬病ワクチン期限切れ間近 ${count}件`)
     }
     return messages.join('、') || '確認が必要な項目があります'
@@ -550,7 +579,7 @@ function Dashboard(): JSX.Element {
               containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
               title="未入力の日誌"
               titleClassName="text-destructive"
-              description={`${data.incompleteJournals.slice(0, 2).map((j: any) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
+              description={`${data.incompleteJournals.slice(0, 2).map((j) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
               badge={(
                 <div className="flex items-center justify-center bg-destructive text-white text-xs font-bold size-7 rounded-full shrink-0">
                   {data.incompleteJournals.length}

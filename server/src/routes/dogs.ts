@@ -64,7 +64,8 @@ router.get('/:id', async (req: AuthRequest, res) => {
         `SELECT r.*, 
                 o.name as owner_name
          FROM reservations r
-         JOIN owners o ON (SELECT owner_id FROM dogs WHERE id = r.dog_id) = o.id
+         JOIN dogs rd ON r.dog_id = rd.id
+         JOIN owners o ON rd.owner_id = o.id
          WHERE r.dog_id = $1 AND r.store_id = $2
          ORDER BY r.reservation_date DESC, r.reservation_time DESC
          LIMIT 50`,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { SkeletonList } from '../components/Skeleton'
@@ -133,6 +133,11 @@ const Customers = () => {
   const [page, setPage] = useState(1)
 
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearchQuery])
+
   const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}`
   const { data, isLoading } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher, {
     revalidateOnFocus: false,
@@ -148,35 +153,16 @@ const Customers = () => {
     navigate(`/dogs/${id}`)
   }, [navigate])
 
-  // フィルタリング処理を1回のループで統合（パフォーマンス最適化）
-  const { filteredOwners, allDogs, filteredDogs } = useMemo(() => {
-    const query = debouncedSearchQuery.toLowerCase()
-    const all: DogWithOwner[] = []
-    const filteredO: Owner[] = []
-    const filteredD: DogWithOwner[] = []
-
+  // 犬ビュー用のデータ変換（検索はサーバーサイドで完了済み）
+  const allDogs = useMemo(() => {
+    const dogs: DogWithOwner[] = []
     for (const owner of owners) {
-      const dogs = owner.dogs || []
-      const matchOwner = owner.name.toLowerCase().includes(query) ||
-                         owner.name_kana?.toLowerCase().includes(query) ||
-                         owner.phone.includes(query)
-      const matchDog = dogs.some(dog =>
-        dog.name.toLowerCase().includes(query) || dog.breed.toLowerCase().includes(query))
-
-      if (matchOwner || matchDog) filteredO.push(owner)
-
-      for (const dog of dogs) {
-        const dogWithOwner: DogWithOwner = { ...dog, owner_id: owner.id, owner_name: owner.name }
-        all.push(dogWithOwner)
-        if (dog.name.toLowerCase().includes(query) ||
-            dog.breed.toLowerCase().includes(query) ||
-            owner.name.toLowerCase().includes(query)) {
-          filteredD.push(dogWithOwner)
-        }
+      for (const dog of (owner.dogs || [])) {
+        dogs.push({ ...dog, owner_id: owner.id, owner_name: owner.name })
       }
     }
-    return { filteredOwners: filteredO, allDogs: all, filteredDogs: filteredD }
-  }, [owners, debouncedSearchQuery])
+    return dogs
+  }, [owners])
 
   if (isLoading) {
     return (
@@ -266,7 +252,7 @@ const Customers = () => {
         {/* リスト表示 */}
         {viewMode === 'owners' ? (
           // 飼い主一覧
-          filteredOwners.length === 0 ? (
+          owners.length === 0 ? (
             <EmptyState
               icon="solar:users-group-rounded-linear"
               title={searchQuery ? '検索結果がありません' : '飼い主が登録されていません'}
@@ -283,14 +269,14 @@ const Customers = () => {
             />
           ) : (
             <div className="space-y-3">
-              {filteredOwners.map((owner) => (
+              {owners.map((owner) => (
                 <OwnerCard key={owner.id} owner={owner} onNavigate={handleNavigateOwner} />
               ))}
             </div>
           )
         ) : (
           // 犬一覧
-          filteredDogs.length === 0 ? (
+          allDogs.length === 0 ? (
             <EmptyState
               icon="solar:paw-print-linear"
               title={searchQuery ? '検索結果がありません' : 'ワンちゃんが登録されていません'}
@@ -298,7 +284,7 @@ const Customers = () => {
             />
           ) : (
             <div className="space-y-3">
-              {filteredDogs.map((dog) => (
+              {allDogs.map((dog) => (
                 <DogCard key={dog.id} dog={dog} onNavigate={handleNavigateDog} />
               ))}
             </div>
