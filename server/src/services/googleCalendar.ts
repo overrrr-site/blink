@@ -214,6 +214,15 @@ function formatDateToYMD(date: Date | string): string {
 }
 
 /**
+ * 時刻文字列を HH:mm 形式に正規化
+ * PostgreSQLのTIME型は "09:00:00" のように秒付きで返る場合がある
+ */
+function formatTimeToHM(time: string): string {
+  const parts = String(time).split(':');
+  return `${parts[0].padStart(2, '0')}:${(parts[1] || '00').padStart(2, '0')}`;
+}
+
+/**
  * 予約をGoogleカレンダーに作成
  */
 export async function createCalendarEvent(storeId: number, reservation: any, dogName: string, ownerName: string) {
@@ -223,9 +232,8 @@ export async function createCalendarEvent(storeId: number, reservation: any, dog
     console.log('📅 カレンダー取得成功:', calendarId);
 
     // 日付を文字列形式に変換（Date型の場合に対応）
-    console.log('📅 reservation_date raw:', reservation.reservation_date, typeof reservation.reservation_date);
     const dateStr = formatDateToYMD(reservation.reservation_date);
-    const timeStr = reservation.reservation_time || '09:00';
+    const timeStr = formatTimeToHM(reservation.reservation_time || '09:00');
 
     // 日付と時間を結合してISO形式に変換
     const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
@@ -294,7 +302,7 @@ export async function updateCalendarEvent(storeId: number, reservation: any, dog
 
     // 日付と時間を結合してISO形式に変換
     const dateStr = formatDateToYMD(reservation.reservation_date);
-    const timeStr = reservation.reservation_time || '09:00';
+    const timeStr = formatTimeToHM(reservation.reservation_time || '09:00');
     const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
     const endDateTime = new Date(startDateTime);
     endDateTime.setHours(endDateTime.getHours() + 8);
