@@ -36,7 +36,13 @@ function verifyTokenLocally(token: string): SupabaseJwtPayload | null {
     }) as SupabaseJwtPayload;
     return payload;
   } catch (err: any) {
-    console.warn('[AUTH] JWT local verify error:', err?.message);
+    // トークンヘッダーのアルゴリズムを確認
+    try {
+      const header = JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString());
+      console.warn('[AUTH] JWT local verify error:', err?.message, '| token alg:', header.alg);
+    } catch {
+      console.warn('[AUTH] JWT local verify error:', err?.message);
+    }
     return null;
   }
 }
