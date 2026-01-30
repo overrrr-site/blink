@@ -45,127 +45,127 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Dashboard Feature */}
-      <section className="lp-snap split-section">
-        <div className="feature-visual-inner">
-          <div className="feature-visual-content">
-            <p className="feature-visual-eyebrow">Dashboard</p>
-            <h2 className="feature-visual-title">今日の予定を<br />ひと目で把握</h2>
-            <p className="feature-visual-desc">時間帯ごとの登園予定、未入力の日誌、確認事項。その日にやるべきことがダッシュボードに集約されます。</p>
-            <ul className="feature-list">
-              <li><Icon icon="solar:clock-circle-bold" width={22} height={22} className="feature-icon" />時間帯別の登園スケジュール</li>
-              <li><Icon icon="solar:bell-bing-bold" width={22} height={22} className="feature-icon" />未完了タスクのリマインド</li>
-              <li><Icon icon="solar:shield-check-bold" width={22} height={22} className="feature-icon" />ワクチン期限切れアラート</li>
-            </ul>
-          </div>
-          <div className="feature-visual-image light">
-            <div className="screen-mockup">
-              <img src="/lp/screenshots/01_dashboard.png" alt="ダッシュボード画面" />
+      {/* Dashboard Feature - Text */}
+      <section className="lp-snap feature-text" data-pair="dashboard">
+        <div className="feature-text-inner">
+          <p className="feature-visual-eyebrow">Dashboard</p>
+          <h2 className="feature-visual-title">今日の予定を<br />ひと目で把握</h2>
+          <p className="feature-visual-desc">時間帯ごとの登園予定、未入力の日誌、確認事項。その日にやるべきことがダッシュボードに集約されます。</p>
+          <ul className="feature-list">
+            <li><Icon icon="solar:clock-circle-bold" width={22} height={22} className="feature-icon" />時間帯別の登園スケジュール</li>
+            <li><Icon icon="solar:bell-bing-bold" width={22} height={22} className="feature-icon" />未完了タスクのリマインド</li>
+            <li><Icon icon="solar:shield-check-bold" width={22} height={22} className="feature-icon" />ワクチン期限切れアラート</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Dashboard Feature - Image */}
+      <section className="lp-snap feature-img light" data-pair="dashboard">
+        <div className="screen-mockup">
+          <img src="/lp/screenshots/01_dashboard.png" alt="ダッシュボード画面" />
+        </div>
+      </section>
+
+      {/* Calendar Feature - Text */}
+      <section className="lp-snap feature-text" data-pair="reservation">
+        <div className="feature-text-inner">
+          <p className="feature-visual-eyebrow">Reservation</p>
+          <h2 className="feature-visual-title">予約管理を<br />カレンダーで</h2>
+          <p className="feature-visual-desc">月間の予約状況をカレンダー表示。日付をタップすれば、その日の予約一覧がすぐに確認できます。</p>
+          <ul className="feature-list">
+            <li><Icon icon="solar:calendar-bold" width={22} height={22} className="feature-icon" />月間カレンダー表示</li>
+            <li><Icon icon="solar:users-group-rounded-bold" width={22} height={22} className="feature-icon" />日別の予約件数を可視化</li>
+            <li><Icon icon="solar:calendar-mark-bold" width={22} height={22} className="feature-icon" />ダブルブッキング防止</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Calendar Feature - Image */}
+      <section className="lp-snap feature-img light" data-pair="reservation">
+        <div className="screen-mockup">
+          <img src="/lp/screenshots/04_reservation_calendar.png" alt="予約カレンダー画面" />
+        </div>
+      </section>
+
+      {/* LINE Feature - Text */}
+      <section className="lp-snap line-text">
+        <div className="line-text-inner">
+          <p className="headline-eyebrow" style={{ color: 'rgba(255,255,255,0.7)' }}>LINE Integration</p>
+          <h2 className="headline-title" style={{ color: '#fff' }}>お客様の操作は<br />LINEで完結</h2>
+          <p className="headline-desc" style={{ color: 'rgba(255,255,255,0.85)' }}>予約から日報の受け取りまで、すべてLINEで。新しいアプリのインストールは不要です。</p>
+          <div className="line-features">
+            <div className="line-feature-card">
+              <Icon icon="solar:calendar-check-bold" width={28} height={28} />
+              <h4>24時間予約</h4>
+              <p>営業時間外も自動受付</p>
+            </div>
+            <div className="line-feature-card">
+              <Icon icon="solar:qr-code-bold" width={28} height={28} />
+              <h4>QRチェックイン</h4>
+              <p>読み込むだけで登園完了</p>
+            </div>
+            <div className="line-feature-card">
+              <Icon icon="solar:clipboard-text-bold" width={28} height={28} />
+              <h4>事前連絡</h4>
+              <p>体調・食事を入力</p>
+            </div>
+            <div className="line-feature-card">
+              <Icon icon="solar:gallery-bold" width={28} height={28} />
+              <h4>日報配信</h4>
+              <p>写真付きで自動送信</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Calendar Feature */}
-      <section className="lp-snap split-section reverse">
-        <div className="feature-visual-inner">
-          <div className="feature-visual-content">
-            <p className="feature-visual-eyebrow">Reservation</p>
-            <h2 className="feature-visual-title">予約管理を<br />カレンダーで</h2>
-            <p className="feature-visual-desc">月間の予約状況をカレンダー表示。日付をタップすれば、その日の予約一覧がすぐに確認できます。</p>
-            <ul className="feature-list">
-              <li><Icon icon="solar:calendar-bold" width={22} height={22} className="feature-icon" />月間カレンダー表示</li>
-              <li><Icon icon="solar:users-group-rounded-bold" width={22} height={22} className="feature-icon" />日別の予約件数を可視化</li>
-              <li><Icon icon="solar:calendar-mark-bold" width={22} height={22} className="feature-icon" />ダブルブッキング防止</li>
-            </ul>
-          </div>
-          <div className="feature-visual-image light">
-            <div className="screen-mockup">
-              <img src="/lp/screenshots/04_reservation_calendar.png" alt="予約カレンダー画面" />
-            </div>
+      {/* LINE Feature - Phone */}
+      <section className="lp-snap line-phone">
+        <div className="phone-mockup">
+          <div className="phone-screen">
+            <img src="/lp/screenshots/07_liff_home.png" alt="LINEミニアプリ ホーム画面" />
           </div>
         </div>
       </section>
 
-      {/* LINE Feature */}
-      <section className="lp-snap line-section">
-        <div className="line-grid">
-          <div className="line-content">
-            <p className="headline-eyebrow" style={{ color: 'rgba(255,255,255,0.7)' }}>LINE Integration</p>
-            <h2 className="headline-title" style={{ color: '#fff' }}>お客様の操作は<br />LINEで完結</h2>
-            <p className="headline-desc" style={{ color: 'rgba(255,255,255,0.85)', marginBottom: 48 }}>予約から日報の受け取りまで、すべてLINEで。新しいアプリのインストールは不要です。</p>
-            <div className="line-features">
-              <div className="line-feature-card">
-                <Icon icon="solar:calendar-check-bold" width={28} height={28} />
-                <h4>24時間予約</h4>
-                <p>営業時間外も自動受付</p>
-              </div>
-              <div className="line-feature-card">
-                <Icon icon="solar:qr-code-bold" width={28} height={28} />
-                <h4>QRチェックイン</h4>
-                <p>読み込むだけで登園完了</p>
-              </div>
-              <div className="line-feature-card">
-                <Icon icon="solar:clipboard-text-bold" width={28} height={28} />
-                <h4>事前連絡</h4>
-                <p>体調・食事を入力</p>
-              </div>
-              <div className="line-feature-card">
-                <Icon icon="solar:gallery-bold" width={28} height={28} />
-                <h4>日報配信</h4>
-                <p>写真付きで自動送信</p>
-              </div>
-            </div>
-          </div>
-          <div className="line-phone-area">
-            <div className="phone-mockup">
-              <div className="phone-screen">
-                <img src="/lp/screenshots/07_liff_home.png" alt="LINEミニアプリ ホーム画面" />
-              </div>
-            </div>
-          </div>
+      {/* AI Feature - Text */}
+      <section className="lp-snap feature-text" data-pair="ai">
+        <div className="feature-text-inner">
+          <p className="feature-visual-eyebrow">AI-Powered</p>
+          <h2 className="feature-visual-title">日報作成、<br />30分から5分へ</h2>
+          <p className="feature-visual-desc">写真をアップロードすると、AIがコメントを提案。第一種動物取扱業の5年保管義務にも対応しています。</p>
+          <ul className="feature-list">
+            <li><Icon icon="solar:magic-stick-3-bold" width={22} height={22} className="feature-icon" />AIコメント自動生成</li>
+            <li><Icon icon="solar:camera-bold" width={22} height={22} className="feature-icon" />写真から活動を解析</li>
+            <li><Icon icon="solar:cloud-check-bold" width={22} height={22} className="feature-icon" />5年間の自動保管</li>
+          </ul>
         </div>
       </section>
 
-      {/* AI Feature */}
-      <section className="lp-snap split-section">
-        <div className="feature-visual-inner">
-          <div className="feature-visual-content">
-            <p className="feature-visual-eyebrow">AI-Powered</p>
-            <h2 className="feature-visual-title">日報作成、<br />30分から5分へ</h2>
-            <p className="feature-visual-desc">写真をアップロードすると、AIがコメントを提案。第一種動物取扱業の5年保管義務にも対応しています。</p>
-            <ul className="feature-list">
-              <li><Icon icon="solar:magic-stick-3-bold" width={22} height={22} className="feature-icon" />AIコメント自動生成</li>
-              <li><Icon icon="solar:camera-bold" width={22} height={22} className="feature-icon" />写真から活動を解析</li>
-              <li><Icon icon="solar:cloud-check-bold" width={22} height={22} className="feature-icon" />5年間の自動保管</li>
-            </ul>
-          </div>
-          <div className="feature-visual-image light">
-            <div className="screen-mockup">
-              <img src="/lp/screenshots/06_journal_ai_comment.png" alt="AI日報作成画面" />
-            </div>
-          </div>
+      {/* AI Feature - Image */}
+      <section className="lp-snap feature-img light" data-pair="ai">
+        <div className="screen-mockup">
+          <img src="/lp/screenshots/06_journal_ai_comment.png" alt="AI日報作成画面" />
         </div>
       </section>
 
-      {/* Ticket Feature */}
-      <section className="lp-snap split-section reverse">
-        <div className="feature-visual-inner">
-          <div className="feature-visual-content">
-            <p className="feature-visual-eyebrow">Auto Management</p>
-            <h2 className="feature-visual-title">回数券の残数、<br />もう数えない</h2>
-            <p className="feature-visual-desc">QRチェックインと連動して自動消費。お客様もLINEで残数を確認できます。</p>
-            <ul className="feature-list">
-              <li><Icon icon="solar:calculator-bold" width={22} height={22} className="feature-icon" />チェックインで自動消費</li>
-              <li><Icon icon="solar:smartphone-bold" width={22} height={22} className="feature-icon" />LINEで残数確認</li>
-              <li><Icon icon="solar:bell-bold" width={22} height={22} className="feature-icon" />有効期限アラート</li>
-            </ul>
-          </div>
-          <div className="feature-visual-image light">
-            <div className="screen-mockup">
-              <img src="/lp/screenshots/10_ticket_management.png" alt="チケット管理画面" />
-            </div>
-          </div>
+      {/* Ticket Feature - Text */}
+      <section className="lp-snap feature-text" data-pair="ticket">
+        <div className="feature-text-inner">
+          <p className="feature-visual-eyebrow">Auto Management</p>
+          <h2 className="feature-visual-title">回数券の残数、<br />もう数えない</h2>
+          <p className="feature-visual-desc">QRチェックインと連動して自動消費。お客様もLINEで残数を確認できます。</p>
+          <ul className="feature-list">
+            <li><Icon icon="solar:calculator-bold" width={22} height={22} className="feature-icon" />チェックインで自動消費</li>
+            <li><Icon icon="solar:smartphone-bold" width={22} height={22} className="feature-icon" />LINEで残数確認</li>
+            <li><Icon icon="solar:bell-bold" width={22} height={22} className="feature-icon" />有効期限アラート</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Ticket Feature - Image */}
+      <section className="lp-snap feature-img light" data-pair="ticket">
+        <div className="screen-mockup">
+          <img src="/lp/screenshots/10_ticket_management.png" alt="チケット管理画面" />
         </div>
       </section>
 
@@ -254,10 +254,10 @@ const lpStyles = `
     right: 0;
     z-index: 100;
     padding: 16px 24px;
-    background: rgba(255, 251, 247, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    background: rgba(255, 251, 247, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   }
   .lp-header-inner {
     max-width: 1200px;
@@ -273,7 +273,9 @@ const lpStyles = `
     display: inline-flex;
     align-items: center;
     padding: 8px 24px;
-    background: var(--color-text-dark);
+    background: rgba(28, 25, 23, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: #fff;
     text-decoration: none;
     border-radius: 100px;
@@ -283,7 +285,7 @@ const lpStyles = `
     min-height: 40px;
   }
   .lp-header-login:hover {
-    background: #44403C;
+    background: rgba(68, 64, 60, 0.85);
     transform: scale(1.05);
   }
 
@@ -363,14 +365,13 @@ const lpStyles = `
     line-height: 1.7; max-width: 600px; margin: 0 auto;
   }
 
-  /* ===== FEATURE SPLIT ===== */
-  .feature-visual-inner {
-    display: grid; grid-template-columns: 1fr 1fr;
-    min-height: 100vh; min-height: 100dvh; width: 100%;
+  /* ===== FEATURE SECTIONS (flat structure) ===== */
+  .feature-text {
+    background: var(--color-bg-warm);
+    padding: 80px 64px;
   }
-  .feature-visual-content {
-    display: flex; flex-direction: column; justify-content: center;
-    padding: 80px 64px; background: var(--color-bg-warm);
+  .feature-text-inner {
+    max-width: 560px;
   }
   .feature-visual-eyebrow {
     font-size: 13px; font-weight: 600; color: var(--color-primary);
@@ -394,16 +395,12 @@ const lpStyles = `
     font-size: 16px; color: var(--color-text-dark);
   }
   .feature-icon { color: var(--color-primary); flex-shrink: 0; }
-  .feature-visual-image {
-    display: flex; align-items: center; justify-content: center;
-    position: relative; padding: 48px;
+
+  .feature-img {
+    padding: 48px;
   }
-  .feature-visual-image.light {
+  .feature-img.light {
     background: linear-gradient(135deg, #FEF3E8 0%, #FFEDD5 100%);
-  }
-  .feature-visual-image.light::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse at center, rgba(249, 115, 22, 0.08) 0%, transparent 70%);
   }
   .screen-mockup {
     width: 100%; max-width: 480px; border-radius: 20px; overflow: hidden;
@@ -412,19 +409,15 @@ const lpStyles = `
   }
   .screen-mockup img { width: 100%; height: auto; display: block; }
 
-  /* Reverse layout */
-  .split-section.reverse .feature-visual-inner { direction: rtl; }
-  .split-section.reverse .feature-visual-inner > * { direction: ltr; }
-
   /* ===== LINE ===== */
-  .line-section {
+  .line-text {
     background: var(--color-primary); color: #fff;
     padding: 80px 24px; flex-direction: column;
   }
-  .line-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
-    align-items: center; max-width: 1200px; margin: 0 auto; width: 100%;
+  .line-text-inner {
+    max-width: 600px; text-align: center;
   }
+  .line-text-inner .headline-desc { margin-bottom: 48px; }
   .line-features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .line-feature-card {
     background: rgba(255,255,255,0.18); backdrop-filter: blur(20px);
@@ -434,7 +427,11 @@ const lpStyles = `
   .line-feature-card:hover { background: rgba(255,255,255,0.28); transform: translateY(-4px); }
   .line-feature-card h4 { font-size: 16px; font-weight: 700; margin: 12px 0 4px; }
   .line-feature-card p { font-size: 13px; opacity: 0.85; margin: 0; }
-  .line-phone-area { display: flex; justify-content: center; }
+
+  .line-phone {
+    background: var(--color-primary);
+    padding: 40px 24px;
+  }
   .phone-mockup {
     width: 300px; height: 620px; background: #44403C;
     border-radius: 48px; padding: 12px;
@@ -507,17 +504,45 @@ const lpStyles = `
   }
   .trust-badge svg, .trust-badge .iconify { color: var(--color-primary); }
 
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 1024px) {
-    .feature-visual-inner, .line-grid { grid-template-columns: 1fr; }
-    .feature-visual-content { padding: 80px 40px; order: 1; }
-    .feature-visual-image { min-height: 50vh; order: 2; }
-    .split-section.reverse .feature-visual-inner { direction: ltr; }
-  }
-  @media (max-width: 768px) {
-    /* スナップをスマホ向けに調整 */
-    .lp { scroll-snap-type: y proximity; }
+  /* ===== DESKTOP ===== */
+  @media (min-width: 769px) {
+    /* デスクトップではスクロールスナップを無効化（ペア横並びと相性が悪い） */
+    .lp {
+      scroll-snap-type: none;
+    }
 
+    /* テキスト+画像ペアを横並び（各50%、inline-flex で並べる） */
+    .feature-text[data-pair] {
+      width: 50%;
+      float: left;
+      clear: left;
+      min-height: 100vh; min-height: 100dvh;
+    }
+    .feature-img[data-pair] {
+      width: 50%;
+      float: right;
+      min-height: 100vh; min-height: 100dvh;
+    }
+
+    /* LINE: テキスト+電話を横並び */
+    .line-text {
+      width: 50%;
+      float: left;
+      clear: both;
+      min-height: 100vh; min-height: 100dvh;
+    }
+    .line-phone {
+      width: 50%;
+      float: right;
+      min-height: 100vh; min-height: 100dvh;
+    }
+
+    /* float解除 */
+    .company-section { clear: both; }
+  }
+
+  /* ===== MOBILE ===== */
+  @media (max-width: 768px) {
     /* ヒーロー */
     .hero { padding: 80px 20px 60px; }
     .hero-logo-img { height: 80px; margin-bottom: 24px; }
@@ -525,63 +550,31 @@ const lpStyles = `
     .hero-subtitle { margin: 0 auto 32px; font-size: 15px; }
     .hero-cta { padding: 14px 32px; font-size: 15px; }
 
-    /* split-section: テキストとスクショを別ページに分離 */
-    .lp-snap.split-section { min-height: auto; scroll-snap-align: none; }
-    .feature-visual-inner {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto;
-      min-height: auto;
-    }
-    .feature-visual-content {
-      min-height: 100vh; min-height: 100dvh;
+    /* feature: テキストとスクショが別セクション（直接の子）なのでスナップが効く */
+    .feature-text {
       padding: 80px 24px 40px;
-      order: 1;
-      scroll-snap-align: start;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
     }
     .feature-visual-eyebrow { margin: 0 0 12px; }
     .feature-visual-title { font-size: 28px; margin: 0 0 16px; }
     .feature-visual-desc { font-size: 15px; margin: 0 0 24px; line-height: 1.7; }
     .feature-list { gap: 12px; }
     .feature-list li { font-size: 14px; gap: 10px; }
-    .feature-visual-image {
-      order: 2;
-      min-height: 100vh; min-height: 100dvh;
-      padding: 40px 24px;
-      scroll-snap-align: start;
-    }
-    .screen-mockup { max-width: 320px; border-radius: 16px; }
-    .split-section.reverse .feature-visual-inner { direction: ltr; }
 
-    /* LINE section: テキストとフォンを別ページに */
-    .lp-snap.line-section { min-height: auto; scroll-snap-align: none; padding: 0; }
-    .line-grid { gap: 0; }
-    .line-content {
-      min-height: 100vh; min-height: 100dvh;
-      scroll-snap-align: start;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 80px 24px 40px;
-    }
-    .line-section .headline-title { font-size: 28px; }
-    .line-section .headline-desc { font-size: 15px; margin-bottom: 24px !important; }
+    .feature-img { padding: 40px 24px; }
+    .screen-mockup { max-width: 320px; border-radius: 16px; }
+
+    /* LINE */
+    .line-text { padding: 80px 24px 40px; }
+    .line-text .headline-title { font-size: 28px; }
+    .line-text .headline-desc { font-size: 15px; }
+    .line-text-inner .headline-desc { margin-bottom: 24px; }
     .line-features { grid-template-columns: 1fr 1fr; gap: 10px; }
     .line-feature-card { padding: 16px; border-radius: 12px; }
     .line-feature-card h4 { font-size: 14px; margin: 8px 0 2px; }
     .line-feature-card p { font-size: 12px; }
     .line-feature-card svg { width: 22px; height: 22px; }
-    .line-phone-area {
-      min-height: 100vh; min-height: 100dvh;
-      scroll-snap-align: start;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 24px;
-      background: var(--color-primary);
-    }
+
+    .line-phone { padding: 40px 24px; }
     .phone-mockup { width: 240px; height: 500px; border-radius: 40px; padding: 10px; }
     .phone-screen { border-radius: 32px; }
 
