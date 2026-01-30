@@ -42,6 +42,14 @@ function App() {
   const { initialize } = useLiffAuthStore();
 
   useEffect(() => {
+    // ディープリンクのパスをsessionStorageに保存（LIFFリダイレクトでURLが消える前に）
+    // basename="/liff" なので、window.location.pathname から /liff を除いたパスを保存
+    const fullPath = window.location.pathname;
+    const liffPath = fullPath.startsWith('/liff') ? fullPath.slice(5) : fullPath;
+    if (liffPath && liffPath !== '/' && !sessionStorage.getItem('liff_redirect')) {
+      sessionStorage.setItem('liff_redirect', liffPath);
+    }
+
     // LIFF初期化
     initLiff().catch(() => {});
 
