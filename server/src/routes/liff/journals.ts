@@ -1,6 +1,6 @@
 import express from 'express';
 import pool from '../../db/connection.js';
-import { sendServerError } from '../../utils/response.js';
+import { sendNotFound, sendServerError } from '../../utils/response.js';
 import { buildPaginatedResponse, parsePaginationParams } from '../../utils/pagination.js';
 import { requireOwnerToken } from './common.js';
 
@@ -45,6 +45,34 @@ router.get('/journals', async function(req, res) {
     res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error: any) {
     sendServerError(res, '日誌情報の取得に失敗しました', error);
+  }
+});
+
+// 日誌個別取得
+router.get('/journals/:id', async function(req, res) {
+  try {
+    const decoded = requireOwnerToken(req, res);
+    if (!decoded) return;
+
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT j.*, d.name as dog_name, d.photo_url as dog_photo, s.name as staff_name
+       FROM journals j
+       JOIN dogs d ON j.dog_id = d.id
+       JOIN owners o ON d.owner_id = o.id
+       LEFT JOIN staff s ON j.staff_id = s.id
+       WHERE j.id = $1 AND d.owner_id = $2 AND o.store_id = $3`,
+      [id, decoded.ownerId, decoded.storeId]
+    );
+
+    if (result.rows.length === 0) {
+      return sendNotFound(res, '日誌が見つかりません');
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    sendServerError(res, '日誌の取得に失敗しました', error);
   }
 });
 

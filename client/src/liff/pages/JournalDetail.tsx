@@ -61,18 +61,15 @@ export default function JournalDetail() {
   useEffect(() => {
     const fetchJournal = async () => {
       try {
-        const response = await liffClient.get('/journals');
-        const journal = response.data.find((j: any) => j.id === parseInt(id || '0'));
-        if (journal) {
-          setJournal(journal);
-        }
+        const response = await liffClient.get(`/journals/${id}`);
+        setJournal(response.data);
       } catch {
       } finally {
         setLoading(false);
       }
     };
 
-    fetchJournal();
+    if (id) fetchJournal();
   }, [id]);
 
   if (loading) {
