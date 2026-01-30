@@ -42,11 +42,9 @@ const LandingPage = () => {
           <h2 className="headline-title">ワンちゃんと<br />向き合う時間、<br />足りていますか</h2>
           <p className="headline-desc">電話対応、日報作成、チケットの残数確認。<br />本来の仕事以外に、時間を取られていませんか。</p>
           <div className="solution-block">
-            <div className="solution-content">
-              <p className="solution-arrow">\</p>
-              <img src="/lp/Blink.png" alt="Blink" className="solution-logo" />
-              <p className="solution-arrow">/</p>
-            </div>
+            <p className="solution-arrow">\</p>
+            <img src="/lp/Blink.png" alt="Blink" className="solution-logo" />
+            <p className="solution-arrow">/</p>
             <p className="solution-label">なら、ぜんぶ解決</p>
           </div>
         </div>
@@ -515,13 +513,8 @@ const lpStyles = `
   .solution-block {
     margin-top: 48px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 12px;
-  }
-  .solution-content {
-    display: flex;
-    align-items: center;
+    justify-content: center;
     gap: 16px;
   }
   .solution-arrow {
