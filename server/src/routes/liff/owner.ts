@@ -12,6 +12,7 @@ router.get('/me', async function(req, res) {
     if (!decoded) return;
 
     const queryStart = Date.now();
+    const today = new Date().toISOString().split('T')[0];
     const timedQuery = async (label: string, queryFn: () => Promise<any>) => {
       const s = Date.now();
       const result = await queryFn();
@@ -29,13 +30,19 @@ router.get('/me', async function(req, res) {
          WHERE o.id = $1 AND o.store_id = $2`,
         [decoded.ownerId, decoded.storeId]
       )),
-      // 登録犬を取得
+      // 登録犬を取得（reservation_countはJOINで取得）
       timedQuery('dogs', () => pool.query(
         `SELECT d.*,
                 dh.mixed_vaccine_date, dh.rabies_vaccine_date,
-                (SELECT COUNT(*) FROM reservations r WHERE r.dog_id = d.id AND r.status != 'キャンセル') as reservation_count
+                COALESCE(rc.cnt, 0) as reservation_count
          FROM dogs d
          LEFT JOIN dog_health dh ON d.id = dh.dog_id
+         LEFT JOIN (
+           SELECT dog_id, COUNT(*) as cnt
+           FROM reservations
+           WHERE status != 'キャンセル'
+           GROUP BY dog_id
+         ) rc ON rc.dog_id = d.id
          WHERE d.owner_id = $1
          ORDER BY d.created_at DESC`,
         [decoded.ownerId]
@@ -48,11 +55,11 @@ router.get('/me', async function(req, res) {
          JOIN dogs d ON r.dog_id = d.id
          LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
          WHERE d.owner_id = $1
-           AND r.reservation_date >= CURRENT_DATE
+           AND r.reservation_date >= $2
            AND r.status != 'キャンセル'
          ORDER BY r.reservation_date ASC, r.reservation_time ASC
          LIMIT 1`,
-        [decoded.ownerId]
+        [decoded.ownerId, today]
       )),
       // 契約情報を取得（犬情報への依存を排除）
       timedQuery('contracts', () => pool.query(
@@ -69,10 +76,10 @@ router.get('/me', async function(req, res) {
            WHERE r.dog_id = c.dog_id
              AND r.status IN ('登園済', '降園済', '予定')
              AND r.reservation_date >= c.created_at
-             AND r.reservation_date <= COALESCE(c.valid_until, CURRENT_DATE + INTERVAL '1 year')
+             AND r.reservation_date <= COALESCE(c.valid_until, $2::date + INTERVAL '1 year')
          ) usage ON true
          WHERE d.owner_id = $1`,
-        [decoded.ownerId]
+        [decoded.ownerId, today]
       ))
     ]);
     console.log(`[LIFF /me] total queries: ${Date.now() - queryStart}ms`);

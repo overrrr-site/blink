@@ -47,8 +47,8 @@ const pool = new Pool({
     : false,
   // サーバーレス環境では接続数を最小限に、通常環境では常時接続を維持
   max: isVercel ? 3 : 20,
-  min: isVercel ? 0 : 2,
-  idleTimeoutMillis: isVercel ? 5000 : 60000,
+  min: isVercel ? 1 : 2,
+  idleTimeoutMillis: isVercel ? 30000 : 60000,
   connectionTimeoutMillis: 5000,
   allowExitOnIdle: isVercel,
 });
