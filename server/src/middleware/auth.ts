@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { supabase } from '../db/supabase.js';
 import pool from '../db/connection.js';
 
@@ -19,8 +19,16 @@ export interface AuthRequest extends Request {
   staffData?: StaffData;
 }
 
-// JWT secretによるローカル検証（Supabase APIコール不要で高速）
-const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || '';
+// JWKS（公開鍵セット）によるローカル検証（ES256対応）
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+
+// JWKS clientは起動時に1回だけ作成（公開鍵は自動キャッシュ・ローテーション対応）
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+if (SUPABASE_URL) {
+  const jwksUrl = new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`);
+  jwks = createRemoteJWKSet(jwksUrl);
+  console.log('[AUTH] JWKS endpoint configured:', jwksUrl.toString());
+}
 
 interface SupabaseJwtPayload {
   sub: string; // auth user id
@@ -28,21 +36,15 @@ interface SupabaseJwtPayload {
   exp?: number;
 }
 
-function verifyTokenLocally(token: string): SupabaseJwtPayload | null {
-  if (!SUPABASE_JWT_SECRET) return null;
+async function verifyTokenLocally(token: string): Promise<SupabaseJwtPayload | null> {
+  if (!jwks) return null;
   try {
-    const payload = jwt.verify(token, SUPABASE_JWT_SECRET, {
-      algorithms: ['HS256', 'HS384', 'HS512'],
-    }) as SupabaseJwtPayload;
-    return payload;
+    const { payload } = await jwtVerify(token, jwks, {
+      issuer: `${SUPABASE_URL}/auth/v1`,
+    });
+    return payload as unknown as SupabaseJwtPayload;
   } catch (err: any) {
-    // トークンヘッダーのアルゴリズムを確認
-    try {
-      const header = JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString());
-      console.warn('[AUTH] JWT local verify error:', err?.message, '| token alg:', header.alg);
-    } catch {
-      console.warn('[AUTH] JWT local verify error:', err?.message);
-    }
+    console.warn('[AUTH] JWKS verify error:', err?.message);
     return null;
   }
 }
@@ -94,15 +96,13 @@ export const authenticate = async (
       return res.status(401).json({ error: '認証トークンが提供されていません' });
     }
 
-    // 1. JWTをローカル検証（SUPABASE_JWT_SECRETがある場合、API不要で高速）
+    // 1. JWKS公開鍵でローカル検証（Supabase APIコール不要で高速）
     let authUserId: string | null = null;
 
-    const localPayload = verifyTokenLocally(token);
+    const localPayload = await verifyTokenLocally(token);
     if (localPayload) {
       authUserId = localPayload.sub;
-      console.log('[AUTH] JWT local verify OK');
     } else {
-      console.log('[AUTH] JWT local verify failed, falling back to Supabase API', SUPABASE_JWT_SECRET ? '(secret set)' : '(no secret)');
       // 2. フォールバック: Supabase Auth APIで検証
       if (!supabase) {
         console.error('認証エラー: Supabaseクライアントが初期化されていません');
@@ -133,7 +133,6 @@ export const authenticate = async (
     // 3. キャッシュからスタッフ情報を取得（ヒットすればDB不要）
     const cachedStaff = getStaffFromCache(authUserId);
     if (cachedStaff) {
-      console.log('[AUTH] Staff cache HIT');
       req.userId = cachedStaff.id;
       req.storeId = cachedStaff.store_id;
       req.supabaseUserId = authUserId;
@@ -176,11 +175,6 @@ export const authenticate = async (
     next();
   } catch (error: any) {
     console.error('認証エラー:', error);
-    console.error('エラー詳細:', {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name
-    });
     return res.status(500).json({
       error: '認証に失敗しました',
       details: error?.message || '不明なエラーが発生しました'
