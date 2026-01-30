@@ -32,7 +32,7 @@ function verifyTokenLocally(token: string): SupabaseJwtPayload | null {
   if (!SUPABASE_JWT_SECRET) return null;
   try {
     const payload = jwt.verify(token, SUPABASE_JWT_SECRET, {
-      algorithms: ['HS256'],
+      algorithms: ['HS256', 'HS384', 'HS512'],
     }) as SupabaseJwtPayload;
     return payload;
   } catch (err: any) {

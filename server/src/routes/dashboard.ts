@@ -77,29 +77,34 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
         [req.storeId, thirtyDaysAgo, today]
       )),
 
-      timedQuery('alerts', () => pool.query(
-        `SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
-                CASE
-                  WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN 'mixed_vaccine_expired'
-                  WHEN dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days' THEN 'rabies_vaccine_expiring'
-                END as alert_type,
-                CASE
-                  WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN dh.mixed_vaccine_date
-                  ELSE dh.rabies_vaccine_date
-                END as mixed_vaccine_date
-         FROM dogs d
-         JOIN owners o ON d.owner_id = o.id
-         JOIN dog_health dh ON d.id = dh.dog_id
-         WHERE o.store_id = $1
-           AND d.deleted_at IS NULL
-           AND (
-             dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days'
-             OR dh.rabies_vaccine_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
-           )
-         ORDER BY mixed_vaccine_date ASC
-         LIMIT 20`,
-        [req.storeId]
-      )),
+      timedQuery('alerts', () => {
+        const mixedExpiry = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const rabiesStart = today;
+        const rabiesEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        return pool.query(
+          `SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
+                  CASE
+                    WHEN dh.mixed_vaccine_date < $2 THEN 'mixed_vaccine_expired'
+                    WHEN dh.rabies_vaccine_date BETWEEN $3 AND $4 THEN 'rabies_vaccine_expiring'
+                  END as alert_type,
+                  CASE
+                    WHEN dh.mixed_vaccine_date < $2 THEN dh.mixed_vaccine_date
+                    ELSE dh.rabies_vaccine_date
+                  END as mixed_vaccine_date
+           FROM dogs d
+           JOIN owners o ON d.owner_id = o.id
+           JOIN dog_health dh ON d.id = dh.dog_id
+           WHERE o.store_id = $1
+             AND d.deleted_at IS NULL
+             AND (
+               dh.mixed_vaccine_date < $2
+               OR dh.rabies_vaccine_date BETWEEN $3 AND $4
+             )
+           ORDER BY mixed_vaccine_date ASC
+           LIMIT 20`,
+          [req.storeId, mixedExpiry, rabiesStart, rabiesEnd]
+        );
+      }),
 
       timedQuery('inspectionRecord', () => pool.query(
         `SELECT * FROM inspection_records
