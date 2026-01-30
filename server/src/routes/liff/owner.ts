@@ -11,18 +11,26 @@ router.get('/me', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
+    const queryStart = Date.now();
+    const timedQuery = async (label: string, queryFn: () => Promise<any>) => {
+      const s = Date.now();
+      const result = await queryFn();
+      console.log(`[LIFF /me] ${label}: ${Date.now() - s}ms`);
+      return result;
+    };
+
     // パフォーマンス改善: 飼い主情報と犬情報を並列取得
     const [ownerResult, dogsResult, nextReservationResult, contractsResult] = await Promise.all([
       // 飼い主情報と店舗情報を取得
-      pool.query(
+      timedQuery('owner', () => pool.query(
         `SELECT o.*, s.name as store_name, s.address as store_address
          FROM owners o
          JOIN stores s ON o.store_id = s.id
          WHERE o.id = $1 AND o.store_id = $2`,
         [decoded.ownerId, decoded.storeId]
-      ),
+      )),
       // 登録犬を取得
-      pool.query(
+      timedQuery('dogs', () => pool.query(
         `SELECT d.*,
                 dh.mixed_vaccine_date, dh.rabies_vaccine_date,
                 (SELECT COUNT(*) FROM reservations r WHERE r.dog_id = d.id AND r.status != 'キャンセル') as reservation_count
@@ -31,9 +39,9 @@ router.get('/me', async function(req, res) {
          WHERE d.owner_id = $1
          ORDER BY d.created_at DESC`,
         [decoded.ownerId]
-      ),
+      )),
       // 次回予約を取得（登園前入力の有無も含める）
-      pool.query(
+      timedQuery('nextReservation', () => pool.query(
         `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
                 CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
          FROM reservations r
@@ -45,9 +53,9 @@ router.get('/me', async function(req, res) {
          ORDER BY r.reservation_date ASC, r.reservation_time ASC
          LIMIT 1`,
         [decoded.ownerId]
-      ),
+      )),
       // 契約情報を取得（犬情報への依存を排除）
-      pool.query(
+      timedQuery('contracts', () => pool.query(
         `SELECT c.*,
                 CASE
                   WHEN c.contract_type = '月謝制' THEN NULL
@@ -65,8 +73,9 @@ router.get('/me', async function(req, res) {
          ) usage ON true
          WHERE d.owner_id = $1`,
         [decoded.ownerId]
-      )
+      ))
     ]);
+    console.log(`[LIFF /me] total queries: ${Date.now() - queryStart}ms`);
 
     if (ownerResult.rows.length === 0) {
       sendNotFound(res, '飼い主が見つかりません');
