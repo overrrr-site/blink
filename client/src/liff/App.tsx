@@ -1,6 +1,6 @@
 import { useEffect, Suspense, lazy } from 'react';
 import { Icon } from '../components/Icon'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from './store/authStore';
 import { initLiff } from './utils/liff';
 import Layout from './components/Layout';
@@ -33,8 +33,9 @@ function PageLoader() {
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useLiffAuthStore();
-  // LIFFアプリ内では basename="/liff" なので、相対パスで指定
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
+  const location = useLocation();
+  // 未認証時はログインページへリダイレクトし、元のURLをstateで渡す
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace state={{ from: location.pathname }} />;
 }
 
 function App() {

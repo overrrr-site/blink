@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon'
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getLiffProfile, initLiff, isLiffLoggedIn } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
@@ -8,14 +8,27 @@ import logoImage from '../../assets/logo.png';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setAuth, isAuthenticated } = useLiffAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // PrivateRouteから渡された元のURL、sessionStorage、デフォルト /home の順で決定
+  const stateFrom = (location.state as { from?: string })?.from;
+  const redirectTo = stateFrom || sessionStorage.getItem('liff_redirect') || '/home';
+
+  // リダイレクト先をsessionStorageに保存（LIFFリダイレクトで state が消える場合の保険）
   useEffect(() => {
-    
+    if (stateFrom) {
+      sessionStorage.setItem('liff_redirect', stateFrom);
+    }
+  }, [stateFrom]);
+
+  useEffect(() => {
+
     if (isAuthenticated) {
-      navigate('/home');
+      sessionStorage.removeItem('liff_redirect');
+      navigate(redirectTo, { replace: true });
       return;
     }
 
@@ -40,7 +53,8 @@ export default function Login() {
 
             if (response.data.token && response.data.owner) {
               setAuth(response.data.token, response.data.owner);
-              navigate('/home');
+              sessionStorage.removeItem('liff_redirect');
+              navigate(redirectTo, { replace: true });
               return;
             }
           } catch (authError: any) {
@@ -79,7 +93,8 @@ export default function Login() {
 
         if (response.data.token && response.data.owner) {
           setAuth(response.data.token, response.data.owner);
-          navigate('/home');
+          sessionStorage.removeItem('liff_redirect');
+          navigate(redirectTo, { replace: true });
         } else {
           setError('認証に失敗しました');
         }
@@ -115,7 +130,7 @@ export default function Login() {
     };
 
     handleLogin();
-  }, [navigate, setAuth, isAuthenticated]);
+  }, [navigate, setAuth, isAuthenticated, redirectTo]);
 
   if (loading) {
     return (
