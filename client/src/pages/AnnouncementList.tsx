@@ -95,6 +95,14 @@ const AnnouncementList = () => {
     expired: announcements.filter((a) => getStatus(a) === 'expired').length,
   }
 
+  // UTC ISO文字列をdatetime-local用のローカル時間文字列に変換
+  const toLocalDatetime = (iso: string | null) => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+    return d.toISOString().slice(0, 16)
+  }
+
   const openModal = (announcement?: Announcement) => {
     if (announcement) {
       setEditingAnnouncement(announcement)
@@ -103,8 +111,8 @@ const AnnouncementList = () => {
         content: announcement.content,
         image_url: announcement.image_url || '',
         is_important: announcement.is_important,
-        published_at: announcement.published_at ? announcement.published_at.slice(0, 16) : '',
-        expires_at: announcement.expires_at ? announcement.expires_at.slice(0, 16) : '',
+        published_at: toLocalDatetime(announcement.published_at),
+        expires_at: toLocalDatetime(announcement.expires_at),
       })
     } else {
       setEditingAnnouncement(null)
@@ -154,13 +162,16 @@ const AnnouncementList = () => {
 
     setSaving(true)
     try {
+      // datetime-local の値はローカル時間文字列（例: "2026-01-30T14:34"）
+      // そのまま送るとサーバー側でUTCとして解釈されるため、ISO 8601形式に変換
+      const toISO = (v: string) => v ? new Date(v).toISOString() : null
       const payload = {
         title: formData.title,
         content: formData.content,
         image_url: formData.image_url || null,
         is_important: formData.is_important,
-        published_at: formData.published_at || null,
-        expires_at: formData.expires_at || null,
+        published_at: toISO(formData.published_at),
+        expires_at: toISO(formData.expires_at),
       }
 
       if (editingAnnouncement) {
