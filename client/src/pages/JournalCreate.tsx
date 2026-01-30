@@ -8,6 +8,7 @@ import JournalDetailsStep from '../components/journals/JournalDetailsStep'
 import type {
   AchievementOption,
   JournalFormData,
+  MealEntry,
   PhotoAnalysisResult,
   ReservationSummary,
   Staff,
@@ -69,7 +70,9 @@ const JournalCreate = () => {
     memo: '', // スタッフのメモ書き（AIが清書する素材）
     comment: '',
     next_visit_date: '',
+    meal_data: [],
   })
+  const [loadingLastRecord, setLoadingLastRecord] = useState(false)
 
   useEffect(() => {
     if (reservationId) {
@@ -137,6 +140,51 @@ const JournalCreate = () => {
         [itemId]: value,
       },
     }))
+  }
+
+  const handleAddMeal = () => {
+    setFormData((prev) => ({
+      ...prev,
+      meal_data: [...prev.meal_data, { time: '', food_name: '', amount: '' }],
+    }))
+  }
+
+  const handleUpdateMeal = (index: number, field: keyof MealEntry, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      meal_data: prev.meal_data.map((entry, i) =>
+        i === index ? { ...entry, [field]: value } : entry
+      ),
+    }))
+  }
+
+  const handleRemoveMeal = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      meal_data: prev.meal_data.filter((_, i) => i !== index),
+    }))
+  }
+
+  const handleFillFromLastRecord = async () => {
+    if (!reservation?.dog_id) return
+    setLoadingLastRecord(true)
+    try {
+      const response = await api.get(`/journals/latest/${reservation.dog_id}`)
+      const last = response.data
+      setFormData((prev) => ({
+        ...prev,
+        morning_toilet_status: last.morning_toilet_status || '',
+        morning_toilet_location: last.morning_toilet_location || '',
+        afternoon_toilet_status: last.afternoon_toilet_status || '',
+        afternoon_toilet_location: last.afternoon_toilet_location || '',
+        training_data: last.training_data || {},
+        meal_data: last.meal_data || [],
+      }))
+    } catch {
+      // 過去の日誌がない場合は何もしない
+    } finally {
+      setLoadingLastRecord(false)
+    }
   }
 
   const analyzePhoto = async (photo: File, index: number) => {
@@ -258,6 +306,7 @@ const JournalCreate = () => {
         comment: formData.comment,
         next_visit_date: formData.next_visit_date || null,
         photos: photoBase64List.length > 0 ? photoBase64List : null,
+        meal_data: formData.meal_data.length > 0 ? formData.meal_data : null,
       })
       navigate('/journals')
     } catch {
@@ -430,6 +479,11 @@ const JournalCreate = () => {
           trainingCategories={trainingCategories}
           staffList={staffList}
           achievementOptions={ACHIEVEMENT_OPTIONS}
+          onAddMeal={handleAddMeal}
+          onUpdateMeal={handleUpdateMeal}
+          onRemoveMeal={handleRemoveMeal}
+          onFillFromLastRecord={handleFillFromLastRecord}
+          loadingLastRecord={loadingLastRecord}
         />
       )}
 

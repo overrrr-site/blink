@@ -165,6 +165,46 @@ router.get('/photos/:dog_id', async (req: AuthRequest, res) => {
   }
 });
 
+// 特定の犬の最新日誌を取得（前回と同じ用）
+router.get('/latest/:dog_id', async (req: AuthRequest, res) => {
+  try {
+    const { dog_id } = req.params;
+
+    const dogCheck = await pool.query(
+      `SELECT o.store_id FROM dogs d
+       JOIN owners o ON d.owner_id = o.id
+       WHERE d.id = $1 AND o.store_id = $2`,
+      [dog_id, req.storeId]
+    );
+
+    if (dogCheck.rows.length === 0) {
+      sendForbidden(res);
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT j.morning_toilet_status, j.morning_toilet_location,
+              j.afternoon_toilet_status, j.afternoon_toilet_location,
+              j.training_data, j.meal_data, j.staff_id
+       FROM journals j
+       WHERE j.dog_id = $1
+       ORDER BY j.journal_date DESC, j.created_at DESC
+       LIMIT 1`,
+      [dog_id]
+    );
+
+    if (result.rows.length === 0) {
+      sendNotFound(res, '過去の日誌がありません');
+      return;
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching latest journal:', error);
+    sendServerError(res, '最新日誌の取得に失敗しました', error);
+  }
+});
+
 // 日誌詳細取得
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
@@ -211,6 +251,7 @@ router.post('/', async (req: AuthRequest, res) => {
       comment,
       next_visit_date,
       photos,
+      meal_data,
     } = req.body;
 
     if (!dog_id || !journal_date) {
@@ -239,8 +280,8 @@ router.post('/', async (req: AuthRequest, res) => {
         reservation_id, dog_id, staff_id, journal_date, visit_count,
         morning_toilet_status, morning_toilet_location,
         afternoon_toilet_status, afternoon_toilet_location,
-        training_data, comment, next_visit_date, photos
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        training_data, comment, next_visit_date, photos, meal_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *`,
       [
         reservation_id,
@@ -256,6 +297,7 @@ router.post('/', async (req: AuthRequest, res) => {
         comment,
         next_visit_date || null,
         processedPhotos ? JSON.stringify(processedPhotos) : null,
+        meal_data ? JSON.stringify(meal_data) : null,
       ]
     );
 
@@ -309,6 +351,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
       comment,
       next_visit_date,
       photos,
+      meal_data,
     } = req.body;
 
     // 日誌のstore_idを確認
@@ -338,8 +381,9 @@ router.put('/:id', async (req: AuthRequest, res) => {
         comment = COALESCE($6, comment),
         next_visit_date = COALESCE($7, next_visit_date),
         photos = COALESCE($8::jsonb, photos),
+        meal_data = COALESCE($9::jsonb, meal_data),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $9
+      WHERE id = $10
       RETURNING *`,
       [
         morning_toilet_status,
@@ -350,6 +394,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
         comment,
         next_visit_date || null,
         processedPhotos ? JSON.stringify(processedPhotos) : null,
+        meal_data ? JSON.stringify(meal_data) : null,
         id,
       ]
     );

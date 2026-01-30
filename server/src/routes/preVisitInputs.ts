@@ -53,6 +53,7 @@ router.post('/', async (req: AuthRequest, res) => {
       breakfast_status,
       health_status,
       notes,
+      meal_data,
     } = req.body;
 
     if (!requireStoreId(req, res)) {
@@ -88,8 +89,9 @@ router.post('/', async (req: AuthRequest, res) => {
         `UPDATE pre_visit_inputs SET
           morning_urination = $1, morning_defecation = $2,
           afternoon_urination = $3, afternoon_defecation = $4,
-          breakfast_status = $5, health_status = $6, notes = $7
-        WHERE reservation_id = $8
+          breakfast_status = $5, health_status = $6, notes = $7,
+          meal_data = $8
+        WHERE reservation_id = $9
         RETURNING *`,
         [
           morning_urination,
@@ -99,6 +101,7 @@ router.post('/', async (req: AuthRequest, res) => {
           breakfast_status,
           health_status,
           notes,
+          meal_data ? JSON.stringify(meal_data) : null,
           reservation_id,
         ]
       );
@@ -108,8 +111,8 @@ router.post('/', async (req: AuthRequest, res) => {
         `INSERT INTO pre_visit_inputs (
           reservation_id, morning_urination, morning_defecation,
           afternoon_urination, afternoon_defecation,
-          breakfast_status, health_status, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          breakfast_status, health_status, notes, meal_data
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *`,
         [
           reservation_id,
@@ -120,6 +123,7 @@ router.post('/', async (req: AuthRequest, res) => {
           breakfast_status,
           health_status,
           notes,
+          meal_data ? JSON.stringify(meal_data) : null,
         ]
       );
     }

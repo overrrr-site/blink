@@ -221,6 +221,7 @@ router.get('/reservations', async function(req, res) {
              pvi.morning_urination, pvi.morning_defecation,
              pvi.afternoon_urination, pvi.afternoon_defecation,
              pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
+             pvi.meal_data,
              CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input,
              COUNT(*) OVER() as total_count
       FROM reservations r
@@ -663,6 +664,49 @@ router.put('/reservations/:id/cancel', async function(req, res) {
   }
 });
 
+// 飼い主の犬の最新登園前入力を取得（前回と同じ用）
+router.get('/pre-visit-inputs/latest/:dogId', async function(req, res) {
+  try {
+    const decoded = requireOwnerToken(req, res);
+    if (!decoded) return;
+
+    const { dogId } = req.params;
+
+    const dogCheck = await pool.query(
+      `SELECT id FROM dogs WHERE id = $1 AND owner_id = $2`,
+      [dogId, decoded.ownerId]
+    );
+
+    if (dogCheck.rows.length === 0) {
+      sendForbidden(res, '権限がありません');
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT pvi.morning_urination, pvi.morning_defecation,
+              pvi.afternoon_urination, pvi.afternoon_defecation,
+              pvi.breakfast_status, pvi.health_status, pvi.notes,
+              pvi.meal_data
+       FROM pre_visit_inputs pvi
+       JOIN reservations r ON pvi.reservation_id = r.id
+       WHERE r.dog_id = $1
+       ORDER BY pvi.submitted_at DESC
+       LIMIT 1`,
+      [dogId]
+    );
+
+    if (result.rows.length === 0) {
+      sendNotFound(res, '過去の登園前入力がありません');
+      return;
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Error fetching latest pre-visit input:', error);
+    sendServerError(res, '最新登園前入力の取得に失敗しました', error);
+  }
+});
+
 // 登園前入力（飼い主が入力）
 router.post('/pre-visit-inputs', async function(req, res) {
   try {
@@ -678,6 +722,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
       breakfast_status,
       health_status,
       notes,
+      meal_data,
     } = req.body;
 
     if (!reservation_id) {
@@ -712,8 +757,8 @@ router.post('/pre-visit-inputs', async function(req, res) {
           morning_urination = $1, morning_defecation = $2,
           afternoon_urination = $3, afternoon_defecation = $4,
           breakfast_status = $5, health_status = $6, notes = $7,
-          submitted_at = CURRENT_TIMESTAMP
-        WHERE reservation_id = $8
+          meal_data = $8, submitted_at = CURRENT_TIMESTAMP
+        WHERE reservation_id = $9
         RETURNING *`,
         [
           morning_urination,
@@ -723,6 +768,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
           breakfast_status,
           health_status,
           notes,
+          meal_data ? JSON.stringify(meal_data) : null,
           reservation_id,
         ]
       );
@@ -732,8 +778,8 @@ router.post('/pre-visit-inputs', async function(req, res) {
         `INSERT INTO pre_visit_inputs (
           reservation_id, morning_urination, morning_defecation,
           afternoon_urination, afternoon_defecation,
-          breakfast_status, health_status, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          breakfast_status, health_status, notes, meal_data
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *`,
         [
           reservation_id,
@@ -744,6 +790,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
           breakfast_status,
           health_status,
           notes,
+          meal_data ? JSON.stringify(meal_data) : null,
         ]
       );
     }

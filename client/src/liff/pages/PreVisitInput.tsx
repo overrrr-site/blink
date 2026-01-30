@@ -5,6 +5,12 @@ import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
+interface MealEntry {
+  time: string;
+  food_name: string;
+  amount: string;
+}
+
 // チェックボックスコンポーネント
 function CheckboxItem({
   id,
@@ -18,12 +24,12 @@ function CheckboxItem({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label 
+    <label
       htmlFor={id}
       className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all min-h-[56px]
                   active:scale-[0.99] ${
-                    checked 
-                      ? 'border-primary bg-primary/5' 
+                    checked
+                      ? 'border-primary bg-primary/5'
                       : 'border-border bg-card hover:border-primary/30'
                   }`}
     >
@@ -51,6 +57,7 @@ export default function PreVisitInput() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadingLastRecord, setLoadingLastRecord] = useState(false);
   const [reservation, setReservation] = useState<any>(null);
   const [formData, setFormData] = useState({
     morning_urination: false,
@@ -60,6 +67,7 @@ export default function PreVisitInput() {
     breakfast_status: '',
     health_status: '',
     notes: '',
+    meal_data: [] as MealEntry[],
   });
 
   useEffect(() => {
@@ -79,6 +87,7 @@ export default function PreVisitInput() {
               breakfast_status: res.breakfast_status ?? '',
               health_status: res.health_status ?? '',
               notes: res.pre_visit_notes ?? '',
+              meal_data: res.meal_data ?? [],
             });
           }
         }
@@ -100,12 +109,59 @@ export default function PreVisitInput() {
       await liffClient.post('/pre-visit-inputs', {
         reservation_id: parseInt(reservationId),
         ...formData,
+        meal_data: formData.meal_data.length > 0 ? formData.meal_data : null,
       });
       navigate('/home');
     } catch (error: any) {
       alert(error.response?.data?.error || '登園前入力の保存に失敗しました');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const addMealEntry = () => {
+    setFormData(prev => ({
+      ...prev,
+      meal_data: [...prev.meal_data, { time: '', food_name: '', amount: '' }],
+    }));
+  };
+
+  const updateMealEntry = (index: number, field: keyof MealEntry, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      meal_data: prev.meal_data.map((entry, i) =>
+        i === index ? { ...entry, [field]: value } : entry
+      ),
+    }));
+  };
+
+  const removeMealEntry = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      meal_data: prev.meal_data.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleFillFromLastRecord = async () => {
+    if (!reservation?.dog_id) return;
+    setLoadingLastRecord(true);
+    try {
+      const response = await liffClient.get(`/pre-visit-inputs/latest/${reservation.dog_id}`);
+      const lastRecord = response.data;
+      setFormData({
+        morning_urination: lastRecord.morning_urination ?? false,
+        morning_defecation: lastRecord.morning_defecation ?? false,
+        afternoon_urination: lastRecord.afternoon_urination ?? false,
+        afternoon_defecation: lastRecord.afternoon_defecation ?? false,
+        breakfast_status: lastRecord.breakfast_status ?? '',
+        health_status: lastRecord.health_status ?? '',
+        notes: lastRecord.notes ?? '',
+        meal_data: lastRecord.meal_data ?? [],
+      });
+    } catch {
+      // 過去の登園前入力がない場合は何もしない
+    } finally {
+      setLoadingLastRecord(false);
     }
   };
 
@@ -155,7 +211,7 @@ export default function PreVisitInput() {
       </div>
 
       {/* 予約情報カード */}
-      <div className="bg-gradient-to-r from-primary/10 to-accent/30 rounded-2xl p-4 mb-6 flex items-center gap-3">
+      <div className="bg-gradient-to-r from-primary/10 to-accent/30 rounded-2xl p-4 mb-4 flex items-center gap-3">
         <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
           <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
         </div>
@@ -166,6 +222,28 @@ export default function PreVisitInput() {
           </p>
         </div>
       </div>
+
+      {/* 前回と同じボタン */}
+      <button
+        type="button"
+        onClick={handleFillFromLastRecord}
+        disabled={loadingLastRecord}
+        className="w-full py-3 rounded-xl border-2 border-primary/30 text-primary text-sm font-bold
+                   flex items-center justify-center gap-2 active:bg-primary/5 transition-colors
+                   disabled:opacity-50 mb-6"
+      >
+        {loadingLastRecord ? (
+          <>
+            <Icon icon="solar:spinner-bold" width="18" height="18" className="animate-spin" />
+            読み込み中...
+          </>
+        ) : (
+          <>
+            <Icon icon="solar:copy-bold" width="18" height="18" />
+            前回と同じ
+          </>
+        )}
+      </button>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 排泄 */}
@@ -211,7 +289,7 @@ export default function PreVisitInput() {
             <Icon icon="solar:bowl-bold" width="20" height="20" className="text-chart-2" />
             食事
           </h2>
-          <div>
+          <div className="mb-4">
             <label htmlFor="breakfast_status" className="block text-sm font-medium mb-2">
               朝ごはんの食べ具合
             </label>
@@ -232,6 +310,62 @@ export default function PreVisitInput() {
             <p id="breakfast-hint" className="text-xs text-muted-foreground mt-1.5">
               いつもと比べた食欲をお選びください
             </p>
+          </div>
+
+          {/* ごはん記録 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              ごはん記録 <span className="text-muted-foreground font-normal">(任意)</span>
+            </label>
+
+            {formData.meal_data.map((entry, index) => (
+              <div key={index} className="bg-muted/50 rounded-xl p-3 mb-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-muted-foreground">ごはん {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeMealEntry(index)}
+                    className="text-destructive text-xs font-medium min-h-[32px] px-2"
+                  >
+                    削除
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="いつ（例: 朝8時）"
+                  value={entry.time}
+                  onChange={(e) => updateMealEntry(index, 'time', e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
+                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="フード名（例: ロイカナ）"
+                  value={entry.food_name}
+                  onChange={(e) => updateMealEntry(index, 'food_name', e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
+                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="量（例: 50g）"
+                  value={entry.amount}
+                  onChange={(e) => updateMealEntry(index, 'amount', e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
+                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={addMealEntry}
+              className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground font-medium
+                         flex items-center justify-center gap-1.5 active:bg-muted transition-colors"
+            >
+              <Icon icon="solar:add-circle-linear" width="18" height="18" />
+              ごはんを追加
+            </button>
           </div>
         </section>
 
@@ -286,9 +420,9 @@ export default function PreVisitInput() {
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-sm font-bold 
-                     hover:bg-primary/90 active:bg-primary/80 active:scale-[0.99] transition-all 
-                     flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed 
+          className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-sm font-bold
+                     hover:bg-primary/90 active:bg-primary/80 active:scale-[0.99] transition-all
+                     flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed
                      min-h-[56px] shadow-lg"
           aria-busy={saving}
         >

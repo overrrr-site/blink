@@ -21,6 +21,7 @@ interface ReservationDetailData {
   breakfast_status?: string | null
   health_status?: string | null
   pre_visit_notes?: string | null
+  meal_data?: Array<{ time: string; food_name: string; amount: string }> | null
 }
 
 function getErrorMessage(error: unknown): string {
@@ -206,6 +207,20 @@ const ReservationDetail = () => {
                 <div>
                   <label className="text-xs text-muted-foreground">朝ごはんの食べ具合</label>
                   <p className="text-base font-medium">{reservation.breakfast_status}</p>
+                </div>
+              )}
+              {reservation.meal_data && reservation.meal_data.length > 0 && (
+                <div>
+                  <label className="text-xs text-muted-foreground">ごはん記録</label>
+                  <div className="mt-1 space-y-1">
+                    {reservation.meal_data.map((meal, index) => (
+                      <div key={index} className="flex items-center gap-2 text-sm">
+                        {meal.time && <span className="text-muted-foreground">{meal.time}</span>}
+                        <span className="font-medium">{meal.food_name}</span>
+                        {meal.amount && <span className="text-muted-foreground">{meal.amount}</span>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {reservation.health_status && (

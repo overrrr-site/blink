@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Icon } from '../Icon'
-import type { AchievementOption, JournalFormData, Staff, TrainingCategory } from './types'
+import type { AchievementOption, JournalFormData, MealEntry, Staff, TrainingCategory } from './types'
 
 interface JournalDetailsStepProps {
   formData: JournalFormData
@@ -11,6 +11,11 @@ interface JournalDetailsStepProps {
   trainingCategories: Record<string, TrainingCategory>
   staffList: Staff[]
   achievementOptions: AchievementOption[]
+  onAddMeal: () => void
+  onUpdateMeal: (index: number, field: keyof MealEntry, value: string) => void
+  onRemoveMeal: (index: number) => void
+  onFillFromLastRecord?: () => void
+  loadingLastRecord?: boolean
 }
 
 const JournalDetailsStep = memo(function JournalDetailsStep({
@@ -22,6 +27,11 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
   trainingCategories,
   staffList,
   achievementOptions,
+  onAddMeal,
+  onUpdateMeal,
+  onRemoveMeal,
+  onFillFromLastRecord,
+  loadingLastRecord,
 }: JournalDetailsStepProps) {
   return (
     <div className="px-5 py-6 space-y-4">
@@ -30,6 +40,30 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
         <h2 className="text-lg font-bold">詳細記録（任意）</h2>
         <p className="text-sm text-muted-foreground">時間があれば記録しましょう</p>
       </div>
+
+      {/* 前回と同じボタン */}
+      {onFillFromLastRecord && (
+        <button
+          type="button"
+          onClick={onFillFromLastRecord}
+          disabled={loadingLastRecord}
+          className="w-full py-3 rounded-xl border-2 border-primary/30 text-primary text-sm font-bold
+                     flex items-center justify-center gap-2 active:bg-primary/5 transition-colors
+                     disabled:opacity-50"
+        >
+          {loadingLastRecord ? (
+            <>
+              <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
+              読み込み中...
+            </>
+          ) : (
+            <>
+              <Icon icon="solar:copy-bold" className="size-5" />
+              前回と同じ
+            </>
+          )}
+        </button>
+      )}
 
       {/* トイレ記録（シンプル版） */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -105,6 +139,61 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
             </div>
           </div>
         )}
+      </div>
+
+      {/* ごはん記録 */}
+      <div className="bg-card rounded-xl border border-border p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Icon icon="solar:bowl-bold" className="size-5 text-chart-2" />
+          <span className="font-bold text-sm">ごはん記録</span>
+        </div>
+
+        {formData.meal_data.map((entry, index) => (
+          <div key={index} className="bg-muted/50 rounded-lg p-3 mb-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-muted-foreground">ごはん {index + 1}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveMeal(index)}
+                className="text-destructive text-xs font-medium min-h-[32px] px-2"
+              >
+                削除
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                type="text"
+                placeholder="いつ"
+                value={entry.time}
+                onChange={(e) => onUpdateMeal(index, 'time', e.target.value)}
+                className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+              />
+              <input
+                type="text"
+                placeholder="フード名"
+                value={entry.food_name}
+                onChange={(e) => onUpdateMeal(index, 'food_name', e.target.value)}
+                className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+              />
+              <input
+                type="text"
+                placeholder="量"
+                value={entry.amount}
+                onChange={(e) => onUpdateMeal(index, 'amount', e.target.value)}
+                className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+              />
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={onAddMeal}
+          className="w-full py-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground font-medium flex items-center justify-center gap-1"
+        >
+          <Icon icon="solar:add-circle-linear" className="size-4" />
+          追加
+        </button>
       </div>
 
       {/* トレーニング記録（設定から取得） */}

@@ -20,6 +20,12 @@ export interface AchievementOption {
   color: string
 }
 
+export interface MealEntry {
+  time: string
+  food_name: string
+  amount: string
+}
+
 export interface JournalFormData {
   staff_id: string
   morning_toilet_status: string
@@ -30,6 +36,7 @@ export interface JournalFormData {
   memo: string
   comment: string
   next_visit_date: string
+  meal_data: MealEntry[]
 }
 
 export interface PhotoAnalysisResult {
