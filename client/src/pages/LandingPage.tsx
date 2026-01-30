@@ -36,22 +36,20 @@ const LandingPage = () => {
         <Link to="/login" className="hero-cta">初月無料ではじめる</Link>
       </section>
 
-      {/* Problem */}
+      {/* Problem + Solution */}
       <section className="lp-snap headline-section">
         <div className="headline-content">
           <h2 className="headline-title">ワンちゃんと<br />向き合う時間、<br />足りていますか</h2>
           <p className="headline-desc">電話対応、日報作成、チケットの残数確認。<br />本来の仕事以外に、時間を取られていませんか。</p>
+          <div className="solution-block">
+            <div className="solution-content">
+              <p className="solution-arrow">\</p>
+              <img src="/lp/Blink.png" alt="Blink" className="solution-logo" />
+              <p className="solution-arrow">/</p>
+            </div>
+            <p className="solution-label">なら、ぜんぶ解決</p>
+          </div>
         </div>
-      </section>
-
-      {/* Solution intro */}
-      <section className="lp-snap solution-section">
-        <div className="solution-content">
-          <p className="solution-arrow">\</p>
-          <img src="/lp/Blink.png" alt="Blink" className="solution-logo" />
-          <p className="solution-arrow">/</p>
-        </div>
-        <p className="solution-label">なら、ぜんぶ解決</p>
       </section>
 
       {/* Dashboard Feature */}
@@ -513,30 +511,31 @@ const lpStyles = `
   }
   .trust-badge svg, .trust-badge .iconify { color: var(--color-primary); }
 
-  /* ===== SOLUTION INTRO ===== */
-  .solution-section {
-    background: var(--color-bg-warm);
+  /* ===== SOLUTION BLOCK (inside headline) ===== */
+  .solution-block {
+    margin-top: 48px;
+    display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 80px 24px;
+    align-items: center;
+    gap: 12px;
   }
   .solution-content {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
   }
   .solution-arrow {
-    font-size: clamp(40px, 6vw, 64px);
+    font-size: clamp(32px, 5vw, 52px);
     font-weight: 800;
     color: var(--color-primary);
     margin: 0;
     line-height: 1;
   }
   .solution-logo {
-    height: clamp(80px, 14vw, 140px);
+    height: clamp(56px, 10vw, 100px);
   }
   .solution-label {
-    font-size: clamp(20px, 3vw, 28px);
+    font-size: clamp(18px, 2.5vw, 24px);
     font-weight: 700;
     color: var(--color-text-dark);
     margin: 0;
