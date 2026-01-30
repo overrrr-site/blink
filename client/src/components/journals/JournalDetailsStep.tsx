@@ -101,7 +101,6 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
                   value={formData.morning_toilet_location}
                   onChange={(e) => onUpdateForm({ morning_toilet_location: e.target.value })}
                   className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
-                  disabled={!formData.morning_toilet_status}
                 >
                   <option value="">場所を選択</option>
                   <option value="散歩中">散歩中</option>
@@ -128,7 +127,6 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
                   value={formData.afternoon_toilet_location}
                   onChange={(e) => onUpdateForm({ afternoon_toilet_location: e.target.value })}
                   className="bg-muted border-0 rounded-lg px-3 py-2 text-sm min-h-[44px]"
-                  disabled={!formData.afternoon_toilet_status}
                 >
                   <option value="">場所を選択</option>
                   <option value="散歩中">散歩中</option>

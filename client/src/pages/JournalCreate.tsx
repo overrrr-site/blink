@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
@@ -132,7 +132,7 @@ const JournalCreate = () => {
     return labels[category] || category
   }
 
-  const handleTrainingChange = (itemId: string, value: string) => {
+  const handleTrainingChange = useCallback((itemId: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       training_data: {
@@ -140,30 +140,30 @@ const JournalCreate = () => {
         [itemId]: value,
       },
     }))
-  }
+  }, [])
 
-  const handleAddMeal = () => {
+  const handleAddMeal = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
       meal_data: [...prev.meal_data, { time: '', food_name: '', amount: '' }],
     }))
-  }
+  }, [])
 
-  const handleUpdateMeal = (index: number, field: keyof MealEntry, value: string) => {
+  const handleUpdateMeal = useCallback((index: number, field: keyof MealEntry, value: string) => {
     setFormData((prev) => ({
       ...prev,
       meal_data: prev.meal_data.map((entry, i) =>
         i === index ? { ...entry, [field]: value } : entry
       ),
     }))
-  }
+  }, [])
 
-  const handleRemoveMeal = (index: number) => {
+  const handleRemoveMeal = useCallback((index: number) => {
     setFormData((prev) => ({
       ...prev,
       meal_data: prev.meal_data.filter((_, i) => i !== index),
     }))
-  }
+  }, [])
 
   const handleFillFromLastRecord = async () => {
     if (!reservation?.dog_id) return
@@ -278,9 +278,9 @@ const JournalCreate = () => {
     setCurrentStep('details')
   }
 
-  const updateFormData = (patch: Partial<JournalFormData>) => {
+  const updateFormData = useCallback((patch: Partial<JournalFormData>) => {
     setFormData((prev) => ({ ...prev, ...patch }))
-  }
+  }, [])
 
   const handleSubmit = async () => {
     setSubmitting(true)

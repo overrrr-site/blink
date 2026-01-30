@@ -42,13 +42,13 @@ const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefi
 
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: process.env.NODE_ENV === 'production' && process.env.SUPABASE_URL 
-    ? { rejectUnauthorized: false } 
+  ssl: process.env.NODE_ENV === 'production' && process.env.SUPABASE_URL
+    ? { rejectUnauthorized: false }
     : false,
-  // サーバーレス環境では接続数を最小限に
-  max: isVercel ? 3 : 10,
-  min: 0,
-  idleTimeoutMillis: isVercel ? 5000 : 30000,
+  // サーバーレス環境では接続数を最小限に、通常環境では常時接続を維持
+  max: isVercel ? 3 : 20,
+  min: isVercel ? 0 : 2,
+  idleTimeoutMillis: isVercel ? 5000 : 60000,
   connectionTimeoutMillis: 5000,
   allowExitOnIdle: isVercel,
 });
