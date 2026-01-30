@@ -35,7 +35,8 @@ function verifyTokenLocally(token: string): SupabaseJwtPayload | null {
       algorithms: ['HS256'],
     }) as SupabaseJwtPayload;
     return payload;
-  } catch {
+  } catch (err: any) {
+    console.warn('[AUTH] JWT local verify error:', err?.message);
     return null;
   }
 }

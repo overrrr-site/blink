@@ -20,6 +20,14 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // 5つのクエリを並列実行（パフォーマンス改善）
+    const queryStart = Date.now();
+    const timedQuery = async (label: string, queryFn: () => Promise<any>) => {
+      const s = Date.now();
+      const result = await queryFn();
+      console.log(`[DASHBOARD] ${label}: ${Date.now() - s}ms`);
+      return result;
+    };
+
     const [
       reservationsResult,
       incompleteJournalsResult,
@@ -27,8 +35,7 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
       inspectionRecordResult,
       announcementStatsResult
     ] = await Promise.all([
-      // 今日の予約（日誌記入済みかどうかも取得）
-      pool.query(
+      timedQuery('reservations', () => pool.query(
         `SELECT r.*,
                 d.name as dog_name, d.photo_url as dog_photo,
                 o.name as owner_name,
@@ -44,10 +51,9 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
          WHERE r.store_id = $1 AND r.reservation_date = $2
          ORDER BY r.reservation_time`,
         [req.storeId, today]
-      ),
+      )),
 
-      // 未入力の日誌（過去30日に制限）
-      pool.query(
+      timedQuery('incompleteJournals', () => pool.query(
         `SELECT r.id as reservation_id,
                 r.reservation_date,
                 r.reservation_date as journal_date,
@@ -69,10 +75,9 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
          ORDER BY r.reservation_date DESC
          LIMIT 10`,
         [req.storeId, thirtyDaysAgo, today]
-      ),
+      )),
 
-      // アラート（ワクチン期限切れ等）
-      pool.query(
+      timedQuery('alerts', () => pool.query(
         `SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
                 CASE
                   WHEN dh.mixed_vaccine_date < CURRENT_DATE - INTERVAL '365 days' THEN 'mixed_vaccine_expired'
@@ -94,17 +99,15 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
          ORDER BY mixed_vaccine_date ASC
          LIMIT 20`,
         [req.storeId]
-      ),
+      )),
 
-      // 今日の点検記録
-      pool.query(
+      timedQuery('inspectionRecord', () => pool.query(
         `SELECT * FROM inspection_records
          WHERE store_id = $1 AND inspection_date = $2`,
         [req.storeId, today]
-      ),
+      )),
 
-      // お知らせ件数（公開中/下書き）
-      pool.query(
+      timedQuery('announcements', () => pool.query(
         `SELECT
           COUNT(*) FILTER (
             WHERE published_at IS NOT NULL
@@ -117,8 +120,9 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
          FROM store_announcements
          WHERE store_id = $1`,
         [req.storeId, now]
-      )
+      ))
     ]);
+    console.log(`[DASHBOARD] total queries: ${Date.now() - queryStart}ms`);
 
     res.json({
       todayReservations: reservationsResult.rows,
