@@ -1,0 +1,91 @@
+import express from 'express';
+import pool from '../../db/connection.js';
+import { sendNotFound, sendServerError } from '../../utils/response.js';
+import { requireOwnerToken } from './common.js';
+
+const router = express.Router();
+
+// 飼い主情報取得（認証済み）
+router.get('/me', async function(req, res) {
+  try {
+    const decoded = requireOwnerToken(req, res);
+    if (!decoded) return;
+
+    // パフォーマンス改善: 飼い主情報と犬情報を並列取得
+    const [ownerResult, dogsResult, nextReservationResult, contractsResult] = await Promise.all([
+      // 飼い主情報と店舗情報を取得
+      pool.query(
+        `SELECT o.*, s.name as store_name, s.address as store_address
+         FROM owners o
+         JOIN stores s ON o.store_id = s.id
+         WHERE o.id = $1 AND o.store_id = $2`,
+        [decoded.ownerId, decoded.storeId]
+      ),
+      // 登録犬を取得
+      pool.query(
+        `SELECT d.*,
+                dh.mixed_vaccine_date, dh.rabies_vaccine_date,
+                (SELECT COUNT(*) FROM reservations r WHERE r.dog_id = d.id AND r.status != 'キャンセル') as reservation_count
+         FROM dogs d
+         LEFT JOIN dog_health dh ON d.id = dh.dog_id
+         WHERE d.owner_id = $1
+         ORDER BY d.created_at DESC`,
+        [decoded.ownerId]
+      ),
+      // 次回予約を取得（登園前入力の有無も含める）
+      pool.query(
+        `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
+                CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input
+         FROM reservations r
+         JOIN dogs d ON r.dog_id = d.id
+         LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
+         WHERE d.owner_id = $1
+           AND r.reservation_date >= CURRENT_DATE
+           AND r.status != 'キャンセル'
+         ORDER BY r.reservation_date ASC, r.reservation_time ASC
+         LIMIT 1`,
+        [decoded.ownerId]
+      ),
+      // 契約情報を取得（犬情報への依存を排除）
+      pool.query(
+        `SELECT c.*,
+                CASE
+                  WHEN c.contract_type = '月謝制' THEN NULL
+                  ELSE GREATEST(0, COALESCE(c.total_sessions, 0) - COALESCE(usage.used_count, 0))
+                END as calculated_remaining
+         FROM contracts c
+         JOIN dogs d ON c.dog_id = d.id
+         LEFT JOIN LATERAL (
+           SELECT COUNT(*) as used_count
+           FROM reservations r
+           WHERE r.dog_id = c.dog_id
+             AND r.status IN ('登園済', '降園済', '予定')
+             AND r.reservation_date >= c.created_at
+             AND r.reservation_date <= COALESCE(c.valid_until, CURRENT_DATE + INTERVAL '1 year')
+         ) usage ON true
+         WHERE d.owner_id = $1`,
+        [decoded.ownerId]
+      )
+    ]);
+
+    if (ownerResult.rows.length === 0) {
+      sendNotFound(res, '飼い主が見つかりません');
+      return;
+    }
+
+    const owner = ownerResult.rows[0];
+
+    const contracts = contractsResult.rows;
+
+    res.json({
+      ...owner,
+      dogs: dogsResult.rows,
+      contracts,
+      nextReservation: nextReservationResult.rows[0] || null,
+    });
+  } catch (error: any) {
+    sendServerError(res, '飼い主情報の取得に失敗しました', error);
+  }
+});
+
+export default router;

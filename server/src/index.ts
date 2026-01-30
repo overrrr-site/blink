@@ -22,7 +22,7 @@ import staffRoutes from './routes/staff.js';
 import courseMastersRoutes from './routes/courseMasters.js';
 import trainingMastersRoutes from './routes/trainingMasters.js';
 import storesRoutes from './routes/stores.js';
-import liffRoutes from './routes/liff.js';
+import liffRoutes from './routes/liff/index.js';
 import uploadsRoutes from './routes/uploads.js';
 import notificationsRoutes from './routes/notifications.js';
 import billingRoutes from './routes/billing.js';
