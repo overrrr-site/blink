@@ -4,6 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { format, isFuture, isToday, parseISO } from 'date-fns';
 import liffClient from '../api/client';
 import { getAvatarUrl } from '../../utils/image';
+import { getAxiosErrorMessage } from '../../utils/error';
+import type { LiffReservationForm } from '../../types/reservation';
+import type { LiffDog } from '../types/dog';
 
 interface Reservation {
   id: number;
@@ -17,20 +20,7 @@ interface Reservation {
   has_pre_visit_input: boolean;
 }
 
-interface Dog {
-  id: number;
-  name: string;
-  photo_url: string;
-}
-
-interface ReservationForm {
-  reservation_date: string;
-  reservation_time: string;
-  pickup_time: string;
-  notes: string;
-}
-
-const INITIAL_FORM: ReservationForm = {
+const INITIAL_FORM: LiffReservationForm = {
   reservation_date: '',
   reservation_time: '',
   pickup_time: '',
@@ -51,8 +41,8 @@ export default function ReservationEdit(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reservation, setReservation] = useState<Reservation | null>(null);
-  const [dogs, setDogs] = useState<Dog[]>([]);
-  const [form, setForm] = useState<ReservationForm>(INITIAL_FORM);
+  const [dogs, setDogs] = useState<LiffDog[]>([]);
+  const [form, setForm] = useState<LiffReservationForm>(INITIAL_FORM);
 
   async function fetchData(): Promise<void> {
     try {
@@ -91,8 +81,8 @@ export default function ReservationEdit(): JSX.Element {
     try {
       await liffClient.put(`/reservations/${id}`, form);
       navigate('/home/reservations');
-    } catch (error: any) {
-      alert(error.response?.data?.error || '予約の更新に失敗しました');
+    } catch (error) {
+      alert(getAxiosErrorMessage(error, '予約の更新に失敗しました'));
     } finally {
       setSaving(false);
     }

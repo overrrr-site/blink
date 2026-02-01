@@ -36,7 +36,6 @@ router.get('/reservation/:reservationId', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching pre-visit input:', error);
     sendServerError(res, '登園前入力の取得に失敗しました', error);
   }
 });
@@ -130,7 +129,6 @@ router.post('/', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating/updating pre-visit input:', error);
     sendServerError(res, '登園前入力の保存に失敗しました', error);
   }
 });

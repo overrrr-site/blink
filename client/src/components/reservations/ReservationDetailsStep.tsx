@@ -1,16 +1,53 @@
 import { Icon } from '../Icon'
 import { formatDateFullWithWeekday } from '../../utils/date'
+import { INPUT_CLASS } from '../../utils/styles'
+import type { StaffReservationForm } from '../../types/reservation'
 
-type ReservationForm = {
-  reservation_date: string
-  reservation_time: string
-  pickup_time: string
-  reservation_type: 'regular' | 'single'
-  notes: string
+interface RadioOptionProps {
+  name: string
+  value: string
+  checked: boolean
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  title: string
+  description: string
+  trailing?: React.ReactNode
+}
+
+function RadioOption({ name, value, checked, onChange, title, description, trailing }: RadioOptionProps): JSX.Element {
+  return (
+    <label
+      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all min-h-[44px] ${
+        checked
+          ? 'border-2 border-primary bg-primary/10 shadow-sm'
+          : 'border border-border hover:bg-muted/50 hover:border-primary/30'
+      }`}
+    >
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        onChange={onChange}
+        className="hidden"
+      />
+      <div
+        className={`size-5 rounded-full border-2 flex items-center justify-center ${
+          checked ? 'border-primary' : 'border-border'
+        }`}
+      >
+        {checked && <div className="size-2.5 rounded-full bg-primary" />}
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-bold">{title}</p>
+        <p className="text-[10px] text-muted-foreground">{description}</p>
+      </div>
+      {trailing}
+    </label>
+  )
 }
 
 type ReservationDetailsStepProps = {
-  form: ReservationForm
+  form: StaffReservationForm
   selectedDogName: string
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   onBack: () => void
@@ -21,7 +58,7 @@ export default function ReservationDetailsStep({
   selectedDogName,
   onChange,
   onBack,
-}: ReservationDetailsStepProps) {
+}: ReservationDetailsStepProps): JSX.Element {
   return (
     <>
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
@@ -40,62 +77,23 @@ export default function ReservationDetailsStep({
         </div>
 
         <div className="space-y-2">
-          <label
-            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all min-h-[44px] ${
-              form.reservation_type === 'regular'
-                ? 'border-2 border-primary bg-primary/10 shadow-sm'
-                : 'border border-border hover:bg-muted/50 hover:border-primary/30'
-            }`}
-          >
-            <input
-              type="radio"
-              name="reservation_type"
-              value="regular"
-              checked={form.reservation_type === 'regular'}
-              onChange={onChange}
-              className="hidden"
-            />
-            <div
-              className={`size-5 rounded-full border-2 flex items-center justify-center ${
-                form.reservation_type === 'regular' ? 'border-primary' : 'border-border'
-              }`}
-            >
-              {form.reservation_type === 'regular' && <div className="size-2.5 rounded-full bg-primary"></div>}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold">通常予約</p>
-              <p className="text-[10px] text-muted-foreground">月謝・回数券から自動消化</p>
-            </div>
-          </label>
-
-          <label
-            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all min-h-[44px] ${
-              form.reservation_type === 'single'
-                ? 'border-2 border-primary bg-primary/10 shadow-sm'
-                : 'border border-border hover:bg-muted/50 hover:border-primary/30'
-            }`}
-          >
-            <input
-              type="radio"
-              name="reservation_type"
-              value="single"
-              checked={form.reservation_type === 'single'}
-              onChange={onChange}
-              className="hidden"
-            />
-            <div
-              className={`size-5 rounded-full border-2 flex items-center justify-center ${
-                form.reservation_type === 'single' ? 'border-primary' : 'border-border'
-              }`}
-            >
-              {form.reservation_type === 'single' && <div className="size-2.5 rounded-full bg-primary"></div>}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold">単発予約</p>
-              <p className="text-[10px] text-muted-foreground">都度払い（当日または後日決済）</p>
-            </div>
-            <span className="text-xs font-bold text-primary">¥6,600</span>
-          </label>
+          <RadioOption
+            name="reservation_type"
+            value="regular"
+            checked={form.reservation_type === 'regular'}
+            onChange={onChange}
+            title="通常予約"
+            description="月謝・回数券から自動消化"
+          />
+          <RadioOption
+            name="reservation_type"
+            value="single"
+            checked={form.reservation_type === 'single'}
+            onChange={onChange}
+            title="単発予約"
+            description="都度払い（当日または後日決済）"
+            trailing={<span className="text-xs font-bold text-primary">¥6,600</span>}
+          />
         </div>
         <div className="mt-4 flex justify-between">
           <button
@@ -119,7 +117,7 @@ export default function ReservationDetailsStep({
           onChange={onChange}
           placeholder="スタッフへの連絡事項があれば入力"
           rows={3}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+          className={`${INPUT_CLASS} resize-none`}
         />
       </section>
 

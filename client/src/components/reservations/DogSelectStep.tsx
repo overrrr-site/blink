@@ -28,11 +28,11 @@ export default function DogSelectStep({
   onSearchChange,
   onBack,
   onNext,
-}: DogSelectStepProps) {
+}: DogSelectStepProps): JSX.Element {
   const [error, setError] = useState('')
   const list = showRecentOnly && !searchQuery ? recentDogs : filteredDogs
 
-  const handleNext = () => {
+  function handleNext(): void {
     if (!selectedDogId) {
       setError('ワンちゃんを選択してください')
       return
@@ -71,13 +71,14 @@ export default function DogSelectStep({
         <input
           type="text"
           placeholder="ワンちゃん名・飼い主名で検索"
+          aria-label="ワンちゃん名・飼い主名で検索"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 bg-muted border-none rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
-      <div className="space-y-2 max-h-60 overflow-y-auto">
+      <div role="radiogroup" aria-label="ワンちゃんを選択" className="space-y-2 max-h-60 overflow-y-auto">
         {list.map((dog) => {
           const recentReservation = recentReservations.find((r) => r.dog_id === dog.id)
           return (

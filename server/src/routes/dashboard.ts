@@ -140,7 +140,6 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
       },
     });
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
     sendServerError(res, 'ダッシュボードデータの取得に失敗しました', error);
   }
 });

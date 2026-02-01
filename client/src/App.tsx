@@ -6,7 +6,6 @@ import { ToastProvider } from './components/Toast'
 import Layout from './components/Layout'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
-// ページコンポーネントを遅延ロード
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const Login = lazy(() => import('./pages/Login'))
 const AuthCallback = lazy(() => import('./pages/AuthCallback'))
@@ -37,7 +36,6 @@ const AnnouncementList = lazy(() => import('./pages/AnnouncementList'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Terms = lazy(() => import('./pages/Terms'))
 
-// ページ遷移時のローディング表示
 function PageLoader() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -51,15 +49,17 @@ function PageLoader() {
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore()
 
-  // 認証状態を確認中はローディング表示
   if (isLoading) {
     return <PageLoader />
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
+  }
+
+  return children
 }
 
-// 管理者専用ルート
 function OwnerRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore()
 
@@ -67,12 +67,11 @@ function OwnerRoute({ children }: { children: React.ReactNode }) {
     return <PageLoader />
   }
 
-  // 管理者でない場合は設定ページにリダイレクト
   if (!user?.isOwner) {
     return <Navigate to="/settings" replace />
   }
 
-  return <>{children}</>
+  return children
 }
 
 function App() {
@@ -82,48 +81,48 @@ function App() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route
-              element={
-                <PrivateRoute>
-                  <Layout />
-                </PrivateRoute>
-              }
-            >
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/owners" element={<Navigate to="/customers" replace />} />
-              <Route path="/owners/new" element={<OwnerCreate />} />
-              <Route path="/owners/:id" element={<OwnerDetail />} />
-              <Route path="/owners/:id/edit" element={<OwnerEdit />} />
-              <Route path="/owners/:ownerId/dogs/new" element={<DogCreate />} />
-              <Route path="/dogs" element={<Navigate to="/customers" replace />} />
-              <Route path="/dogs/:id" element={<DogDetail />} />
-              <Route path="/dogs/:id/edit" element={<DogEdit />} />
-              <Route path="/dogs/:dogId/contracts/new" element={<ContractEdit />} />
-              <Route path="/dogs/:dogId/contracts/:id" element={<ContractEdit />} />
-              <Route path="/settings/staff/:id" element={<OwnerRoute><StaffEdit /></OwnerRoute>} />
-              <Route path="/settings/courses/new" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
-              <Route path="/settings/courses/:id" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
-              <Route path="/settings/training/new" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
-              <Route path="/settings/training/:id" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
-              <Route path="/reservations" element={<ReservationsCalendar />} />
-              <Route path="/reservations/new" element={<ReservationCreate />} />
-              <Route path="/reservations/:id" element={<ReservationDetail />} />
-              <Route path="/journals" element={<JournalList />} />
-              <Route path="/journals/new" element={<JournalNew />} />
-              <Route path="/journals/:id" element={<JournalDetail />} />
-              <Route path="/journals/create/:reservationId" element={<JournalCreate />} />
-              <Route path="/inspection-records" element={<InspectionRecordList />} />
-              <Route path="/announcements" element={<AnnouncementList />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/billing" element={<OwnerRoute><Billing /></OwnerRoute>} />
-              <Route path="/help" element={<Help />} />
-            </Route>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route
+                element={
+                  <PrivateRoute>
+                    <Layout />
+                  </PrivateRoute>
+                }
+              >
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/owners" element={<Navigate to="/customers" replace />} />
+                <Route path="/owners/new" element={<OwnerCreate />} />
+                <Route path="/owners/:id" element={<OwnerDetail />} />
+                <Route path="/owners/:id/edit" element={<OwnerEdit />} />
+                <Route path="/owners/:ownerId/dogs/new" element={<DogCreate />} />
+                <Route path="/dogs" element={<Navigate to="/customers" replace />} />
+                <Route path="/dogs/:id" element={<DogDetail />} />
+                <Route path="/dogs/:id/edit" element={<DogEdit />} />
+                <Route path="/dogs/:dogId/contracts/new" element={<ContractEdit />} />
+                <Route path="/dogs/:dogId/contracts/:id" element={<ContractEdit />} />
+                <Route path="/settings/staff/:id" element={<OwnerRoute><StaffEdit /></OwnerRoute>} />
+                <Route path="/settings/courses/new" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
+                <Route path="/settings/courses/:id" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
+                <Route path="/settings/training/new" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
+                <Route path="/settings/training/:id" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
+                <Route path="/reservations" element={<ReservationsCalendar />} />
+                <Route path="/reservations/new" element={<ReservationCreate />} />
+                <Route path="/reservations/:id" element={<ReservationDetail />} />
+                <Route path="/journals" element={<JournalList />} />
+                <Route path="/journals/new" element={<JournalNew />} />
+                <Route path="/journals/:id" element={<JournalDetail />} />
+                <Route path="/journals/create/:reservationId" element={<JournalCreate />} />
+                <Route path="/inspection-records" element={<InspectionRecordList />} />
+                <Route path="/announcements" element={<AnnouncementList />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/billing" element={<OwnerRoute><Billing /></OwnerRoute>} />
+                <Route path="/help" element={<Help />} />
+              </Route>
             </Routes>
           </Suspense>
         </ErrorBoundary>

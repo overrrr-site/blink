@@ -1,158 +1,179 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react'
 import { Icon } from './Icon'
+import { INPUT_CLASS } from '../utils/styles'
 
 interface PayjpFormProps {
-  publicKey: string;
-  onTokenCreated: (token: string) => void;
-  onError: (error: Error) => void;
-  onSubmit?: () => void;
+  publicKey: string
+  onTokenCreated: (token: string) => void
+  onError: (error: Error) => void
+  onSubmit?: () => void
+}
+
+interface PayjpTokenResult {
+  id: string
+  error?: { message?: string }
+}
+
+interface PayjpInstance {
+  createToken: (card: {
+    number: string
+    cvc: string
+    exp_month: string
+    exp_year: string
+    name: string
+  }) => Promise<PayjpTokenResult>
 }
 
 declare global {
   interface Window {
-    Payjp: any;
+    Payjp: ((publicKey: string) => PayjpInstance) | undefined
   }
 }
 
-export default function PayjpForm({ publicKey, onTokenCreated, onError, onSubmit }: PayjpFormProps) {
-  const [loading, setLoading] = useState(false);
-  const [payjpLoaded, setPayjpLoaded] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+export default function PayjpForm({ publicKey, onTokenCreated, onError, onSubmit }: PayjpFormProps): JSX.Element {
+  const [loading, setLoading] = useState(false)
+  const [payjpLoaded, setPayjpLoaded] = useState(false)
 
   useEffect(() => {
-    // PAY.JPのJavaScript SDKを読み込む
     if (!window.Payjp) {
-      const script = document.createElement('script');
-      script.src = 'https://js.pay.jp/v1';
-      script.async = true;
+      const script = document.createElement('script')
+      script.src = 'https://js.pay.jp/v1'
+      script.async = true
       script.onload = () => {
         if (window.Payjp) {
-          setPayjpLoaded(true);
+          setPayjpLoaded(true)
         } else {
-          onError(new Error('PAY.JP SDKの初期化に失敗しました'));
+          onError(new Error('PAY.JP SDKの初期化に失敗しました'))
         }
-      };
+      }
       script.onerror = () => {
-        onError(new Error('PAY.JP SDKの読み込みに失敗しました'));
-      };
-      document.head.appendChild(script);
+        onError(new Error('PAY.JP SDKの読み込みに失敗しました'))
+      }
+      document.head.appendChild(script)
     } else {
-      setPayjpLoaded(true);
+      setPayjpLoaded(true)
     }
-  }, [onError]);
+  }, [onError])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(e: React.FormEvent): Promise<void> {
+    e.preventDefault()
     if (!payjpLoaded || !window.Payjp) {
-      onError(new Error('PAY.JP SDKが読み込まれていません'));
-      return;
+      onError(new Error('PAY.JP SDKが読み込まれていません'))
+      return
     }
 
-    setLoading(true);
-    onSubmit?.();
+    setLoading(true)
+    onSubmit?.()
 
     try {
-      const payjp = window.Payjp(publicKey);
-      
-      // カード情報を取得
-      const cardNumber = (document.getElementById('card-number') as HTMLInputElement)?.value.replace(/\s/g, '');
-      const cardCvc = (document.getElementById('card-cvc') as HTMLInputElement)?.value;
-      const cardExpMonth = (document.getElementById('card-exp-month') as HTMLInputElement)?.value;
-      const cardExpYear = (document.getElementById('card-exp-year') as HTMLInputElement)?.value;
-      const cardName = (document.getElementById('card-name') as HTMLInputElement)?.value || '';
+      const payjp = window.Payjp(publicKey)
+
+      const cardNumber = (document.getElementById('card-number') as HTMLInputElement)?.value.replace(/\s/g, '')
+      const cardCvc = (document.getElementById('card-cvc') as HTMLInputElement)?.value
+      const cardExpMonth = (document.getElementById('card-exp-month') as HTMLInputElement)?.value
+      const cardExpYear = (document.getElementById('card-exp-year') as HTMLInputElement)?.value
+      const cardName = (document.getElementById('card-name') as HTMLInputElement)?.value || ''
 
       if (!cardNumber || !cardCvc || !cardExpMonth || !cardExpYear) {
-        throw new Error('すべての必須項目を入力してください');
+        throw new Error('すべての必須項目を入力してください')
       }
 
-      // カード情報からトークンを作成
       const result = await payjp.createToken({
         number: cardNumber,
         cvc: cardCvc,
         exp_month: cardExpMonth,
-        exp_year: `20${cardExpYear}`, // 2桁の年を4桁に変換
+        exp_year: `20${cardExpYear}`,
         name: cardName,
-      });
+      })
 
       if (result.error) {
-        throw new Error(result.error.message || 'カード情報の処理に失敗しました');
+        throw new Error(result.error.message || 'カード情報の処理に失敗しました')
       }
 
-      onTokenCreated(result.id);
-    } catch (error: any) {
-      onError(error instanceof Error ? error : new Error(error.message || 'トークン作成に失敗しました'));
+      onTokenCreated(result.id)
+    } catch (error) {
+      onError(error instanceof Error ? error : new Error('トークン作成に失敗しました'))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-xs text-muted-foreground mb-1">
+        <label htmlFor="card-number" className="block text-xs text-muted-foreground mb-1">
           カード番号 <span className="text-destructive">*</span>
         </label>
         <input
           id="card-number"
           type="text"
+          inputMode="numeric"
           placeholder="4242 4242 4242 4242"
           maxLength={19}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          autoComplete="cc-number"
+          className={INPUT_CLASS}
           required
         />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">
+          <label htmlFor="card-exp-month" className="block text-xs text-muted-foreground mb-1">
             有効期限（月） <span className="text-destructive">*</span>
           </label>
           <input
             id="card-exp-month"
             type="text"
+            inputMode="numeric"
             placeholder="12"
             maxLength={2}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            autoComplete="cc-exp-month"
+            className={INPUT_CLASS}
             required
           />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">
+          <label htmlFor="card-exp-year" className="block text-xs text-muted-foreground mb-1">
             有効期限（年） <span className="text-destructive">*</span>
           </label>
           <input
             id="card-exp-year"
             type="text"
+            inputMode="numeric"
             placeholder="25"
             maxLength={2}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            autoComplete="cc-exp-year"
+            className={INPUT_CLASS}
             required
           />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">
+          <label htmlFor="card-cvc" className="block text-xs text-muted-foreground mb-1">
             CVC <span className="text-destructive">*</span>
           </label>
           <input
             id="card-cvc"
             type="text"
+            inputMode="numeric"
             placeholder="123"
             maxLength={4}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            autoComplete="cc-csc"
+            className={INPUT_CLASS}
             required
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs text-muted-foreground mb-1">
+        <label htmlFor="card-name" className="block text-xs text-muted-foreground mb-1">
           カード名義人
         </label>
         <input
           id="card-name"
           type="text"
           placeholder="TARO YAMADA"
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          autoComplete="cc-name"
+          className={INPUT_CLASS}
         />
       </div>
 
@@ -174,5 +195,5 @@ export default function PayjpForm({ publicKey, onTokenCreated, onError, onSubmit
         )}
       </button>
     </form>
-  );
+  )
 }

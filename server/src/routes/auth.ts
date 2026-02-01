@@ -22,7 +22,6 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       isOwner: req.staffData.is_owner,
     });
   } catch (error: any) {
-    console.error('Error fetching staff info:', error);
     sendServerError(res, 'スタッフ情報の取得に失敗しました', error);
   }
 });
@@ -45,7 +44,6 @@ router.get('/staff', authenticate, async (req: AuthRequest, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching staff:', error);
     sendServerError(res, 'スタッフ一覧の取得に失敗しました', error);
   }
 });
@@ -112,7 +110,6 @@ router.post('/invite', authenticate, requireOwner, async (req: AuthRequest, res)
       staffId,
     });
   } catch (error) {
-    console.error('Error inviting staff:', error);
     sendServerError(res, 'スタッフの招待に失敗しました', error);
   }
 });
@@ -156,7 +153,6 @@ router.post('/resend-invite', authenticate, requireOwner, async (req: AuthReques
       message: `${email} に招待メールを再送信しました`,
     });
   } catch (error) {
-    console.error('Error resending invite:', error);
     sendServerError(res, '招待メールの再送信に失敗しました', error);
   }
 });

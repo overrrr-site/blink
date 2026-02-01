@@ -5,7 +5,6 @@ import { useAuthStore } from '../store/authStore'
 import { getRandomGreeting } from '../utils/greetings'
 import OnboardingGuide from './OnboardingGuide'
 
-// 定数をコンポーネント外部に定義（毎レンダリングでの再生成を防止）
 const NAV_ITEMS = [
   { path: '/dashboard', label: '今日', icon: 'solar:calendar-mark-bold' },
   { path: '/reservations', label: '予定', icon: 'solar:calendar-bold' },
@@ -19,27 +18,70 @@ const FAB_ACTIONS = [
   { label: '日誌を作成', icon: 'solar:document-add-bold', path: '/journals/new', color: 'bg-chart-3' },
 ] as const
 
-const Layout = () => {
+const GUIDE_KEYS: Record<string, string> = {
+  '/dashboard': 'nav-today',
+  '/reservations': 'nav-reservations',
+  '/customers': 'nav-customers',
+  '/settings': 'nav-settings',
+}
+
+function getIsActive(pathname: string, itemPath: string): boolean {
+  if (itemPath === '/dashboard') {
+    return pathname === '/dashboard'
+  }
+  if (itemPath === '/customers') {
+    return pathname.startsWith('/owners') || pathname.startsWith('/dogs') || pathname.startsWith('/customers')
+  }
+  return pathname.startsWith(itemPath)
+}
+
+interface NavButtonProps {
+  path: string
+  label: string
+  icon: string
+  active: boolean
+  onClick: () => void
+}
+
+function NavButton({ path, label, icon, active, onClick }: NavButtonProps): JSX.Element {
+  const guideKey = GUIDE_KEYS[path]
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label={`${label}へ移動`}
+      aria-current={active ? 'page' : undefined}
+      data-guide={guideKey}
+      className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[56px] py-2 px-3 gap-1 transition-all rounded-lg active:scale-95 ${
+        active
+          ? 'text-primary'
+          : 'text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {active && (
+        <span className="absolute inset-x-2 top-1 h-8 bg-primary/10 rounded-lg" aria-hidden="true" />
+      )}
+      <Icon icon={icon} width="24" height="24" aria-hidden="true" className="relative z-10" />
+      <span className={`text-xs relative z-10 ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
+    </button>
+  )
+}
+
+function Layout(): JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())
 
-  // isActive関数をuseCallbackでメモ化
-  const isActive = useCallback((path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname === '/dashboard'
-    }
-    if (path === '/customers') {
-      return location.pathname.startsWith('/owners') || location.pathname.startsWith('/dogs') || location.pathname.startsWith('/customers')
-    }
-    return location.pathname.startsWith(path)
-  }, [location.pathname])
+  const isActive = useCallback(
+    (path: string) => getIsActive(location.pathname, path),
+    [location.pathname],
+  )
 
   const isHomePage = location.pathname === '/dashboard'
 
-  const handleFabAction = (path: string) => {
+  function handleFabAction(path: string): void {
     setFabOpen(false)
     navigate(path)
   }
@@ -74,7 +116,6 @@ const Layout = () => {
         <Outlet />
       </main>
 
-      {/* FABオーバーレイ */}
       {fabOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 transition-opacity"
@@ -83,7 +124,6 @@ const Layout = () => {
         />
       )}
 
-      {/* FABメニュー */}
       <div
         className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3 transition-all duration-300 ${
           fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
@@ -108,32 +148,19 @@ const Layout = () => {
         ))}
       </div>
 
-      {/* ナビゲーションバー */}
       <nav role="navigation" aria-label="メインナビゲーション" className="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 safe-area-pb">
         <div className="flex items-center justify-around px-1 relative">
-          {/* 左側2つのタブ */}
           {NAV_ITEMS.slice(0, 2).map((item) => (
-            <button
+            <NavButton
               key={item.path}
+              path={item.path}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.path)}
               onClick={() => navigate(item.path)}
-              aria-label={`${item.label}へ移動`}
-              aria-current={isActive(item.path) ? 'page' : undefined}
-              data-guide={item.path === '/dashboard' ? 'nav-today' : item.path === '/reservations' ? 'nav-reservations' : undefined}
-              className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[56px] py-2 px-3 gap-1 transition-all rounded-lg active:scale-95 ${
-                isActive(item.path)
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {isActive(item.path) && (
-                <span className="absolute inset-x-2 top-1 h-8 bg-primary/10 rounded-lg" aria-hidden="true"></span>
-              )}
-              <Icon icon={item.icon} width="24" height="24" aria-hidden="true" className="relative z-10" />
-              <span className={`text-xs relative z-10 ${isActive(item.path) ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
-            </button>
+            />
           ))}
 
-          {/* 中央のFABボタン */}
           <div className="relative flex items-center justify-center min-w-[72px]">
             <button
               onClick={(e) => {
@@ -153,31 +180,19 @@ const Layout = () => {
             </button>
           </div>
 
-          {/* 右側2つのタブ */}
           {NAV_ITEMS.slice(2, 4).map((item) => (
-            <button
+            <NavButton
               key={item.path}
+              path={item.path}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.path)}
               onClick={() => navigate(item.path)}
-              aria-label={`${item.label}へ移動`}
-              aria-current={isActive(item.path) ? 'page' : undefined}
-              data-guide={item.path === '/customers' ? 'nav-customers' : item.path === '/settings' ? 'nav-settings' : undefined}
-              className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[56px] py-2 px-3 gap-1 transition-all rounded-lg active:scale-95 ${
-                isActive(item.path)
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {isActive(item.path) && (
-                <span className="absolute inset-x-2 top-1 h-8 bg-primary/10 rounded-lg" aria-hidden="true"></span>
-              )}
-              <Icon icon={item.icon} width="24" height="24" aria-hidden="true" className="relative z-10" />
-              <span className={`text-xs relative z-10 ${isActive(item.path) ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
-            </button>
+            />
           ))}
         </div>
       </nav>
 
-      {/* オンボーディングガイド */}
       <OnboardingGuide />
     </div>
   )

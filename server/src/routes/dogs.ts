@@ -21,7 +21,7 @@ router.get('/', async (req: AuthRequest, res) => {
       JOIN owners o ON d.owner_id = o.id
       WHERE o.store_id = $1 AND d.deleted_at IS NULL AND o.deleted_at IS NULL
     `;
-    const params: any[] = [req.storeId];
+    const params: (string | number)[] = [req.storeId];
 
     if (search) {
       query += ` AND (d.name ILIKE $2 OR o.name ILIKE $2)`;
@@ -33,7 +33,6 @@ router.get('/', async (req: AuthRequest, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching dogs:', error);
     sendServerError(res, '犬一覧の取得に失敗しました', error);
   }
 });
@@ -95,7 +94,6 @@ router.get('/:id', async (req: AuthRequest, res) => {
       journals: journalsResult.rows || [],
     });
   } catch (error) {
-    console.error('Error fetching dog:', error);
     sendServerError(res, '犬情報の取得に失敗しました', error);
   }
 });
@@ -197,7 +195,6 @@ router.post('/', async (req: AuthRequest, res) => {
 
     res.status(201).json(dogResult.rows[0]);
   } catch (error) {
-    console.error('Error creating dog:', error);
     sendServerError(res, '犬の登録に失敗しました', error);
   }
 });
@@ -350,7 +347,6 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating dog:', error);
     sendServerError(res, '犬情報の更新に失敗しました', error);
   }
 });
@@ -394,7 +390,6 @@ router.delete('/:id', async (req: AuthRequest, res) => {
       res.json({ message: '犬情報を完全に削除しました' });
     }
   } catch (error) {
-    console.error('Error deleting dog:', error);
     sendServerError(res, '犬の削除に失敗しました', error);
   }
 });

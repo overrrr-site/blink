@@ -2,13 +2,26 @@ import { useState, useEffect } from 'react';
 import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
+import { getAxiosErrorMessage } from '../../utils/error';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import type { MealEntry } from '../../types/meal';
 
-interface MealEntry {
-  time: string;
-  food_name: string;
-  amount: string;
+interface PreVisitReservation {
+  id: number;
+  dog_id: number;
+  dog_name: string;
+  reservation_date: string;
+  reservation_time: string;
+  has_pre_visit_input: boolean;
+  morning_urination?: boolean;
+  morning_defecation?: boolean;
+  afternoon_urination?: boolean;
+  afternoon_defecation?: boolean;
+  breakfast_status?: string;
+  health_status?: string;
+  pre_visit_notes?: string;
+  meal_data?: MealEntry[];
 }
 
 // チェックボックスコンポーネント
@@ -58,7 +71,7 @@ export default function PreVisitInput() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadingLastRecord, setLoadingLastRecord] = useState(false);
-  const [reservation, setReservation] = useState<any>(null);
+  const [reservation, setReservation] = useState<PreVisitReservation | null>(null);
   const [formData, setFormData] = useState({
     morning_urination: false,
     morning_defecation: false,
@@ -74,7 +87,7 @@ export default function PreVisitInput() {
     const fetchReservation = async () => {
       try {
         const response = await liffClient.get('/reservations');
-        const res = response.data.find((r: any) => r.id === parseInt(reservationId || '0'));
+        const res = (response.data as PreVisitReservation[]).find((r) => r.id === parseInt(reservationId || '0'));
         if (res) {
           setReservation(res);
           // 既存の登園前入力データがあればフォームに読み込む
@@ -112,8 +125,8 @@ export default function PreVisitInput() {
         meal_data: formData.meal_data.length > 0 ? formData.meal_data : null,
       });
       navigate('/home');
-    } catch (error: any) {
-      alert(error.response?.data?.error || '登園前入力の保存に失敗しました');
+    } catch (error) {
+      alert(getAxiosErrorMessage(error, '登園前入力の保存に失敗しました'));
     } finally {
       setSaving(false);
     }

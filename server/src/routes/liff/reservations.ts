@@ -6,7 +6,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../../utils/response.js';
-import { buildPaginatedResponse, parsePaginationParams } from '../../utils/pagination.js';
+import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../../utils/pagination.js';
 import { requireOwnerToken } from './common.js';
 
 const router = express.Router();
@@ -47,11 +47,7 @@ router.get('/reservations', async function(req, res) {
     params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
-    const data = result.rows.map((row) => {
-      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
-      return rest;
-    });
+    const { data, total } = extractTotalCount(result.rows as Record<string, unknown>[]);
     res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error: any) {
     sendServerError(res, '予約情報の取得に失敗しました', error);
@@ -79,11 +75,11 @@ router.get('/reservations/export.ics', async function(req, res) {
       JOIN dogs d ON r.dog_id = d.id
       WHERE d.owner_id = $1 AND r.store_id = $2 AND r.status != 'キャンセル'
     `;
-    const params: any[] = [decoded.ownerId, decoded.storeId];
+    const params: (string | number)[] = [decoded.ownerId, decoded.storeId];
 
     if (reservation_id) {
       query += ` AND r.id = $3`;
-      params.push(reservation_id);
+      params.push(String(reservation_id));
     } else if (month) {
       query += ` AND r.reservation_date >= $3::date AND r.reservation_date < ($3::date + INTERVAL '1 month')`;
       params.push(`${month}-01`);
@@ -134,7 +130,6 @@ router.get('/reservations/export.ics', async function(req, res) {
     res.setHeader('Content-Disposition', 'attachment; filename="reservations.ics"');
     res.send(icsContent);
   } catch (error: any) {
-    console.error('ICS export error:', error);
     sendServerError(res, 'カレンダーエクスポートに失敗しました', error);
   }
 });
@@ -259,7 +254,6 @@ router.get('/availability', async function(req, res) {
       closedDays,
     });
   } catch (error: any) {
-    console.error('Availability error:', error);
     sendServerError(res, '空き状況の取得に失敗しました', error);
   }
 });

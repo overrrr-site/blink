@@ -56,11 +56,11 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
       JOIN owners o ON d.owner_id = o.id
       WHERE r.store_id = $1
     `;
-    const params: any[] = [req.storeId];
+    const params: (string | number)[] =[req.storeId];
 
     if (date) {
       query += ` AND r.reservation_date = $2`;
-      params.push(date);
+      params.push(String(date));
     } else if (month) {
       // month は 'yyyy-MM' 形式（例: '2024-01'）
       const range = getMonthDateRange(String(month));
@@ -92,7 +92,6 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
     
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching reservations:', error);
     sendServerError(res, '予約一覧の取得に失敗しました', error);
   }
 });
@@ -148,7 +147,6 @@ router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
 
     res.json(reservation);
   } catch (error) {
-    console.error('Error fetching reservation:', error);
     sendServerError(res, '予約情報の取得に失敗しました', error);
   }
 });
@@ -191,7 +189,6 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
 
     res.status(201).json(reservation);
   } catch (error) {
-    console.error('Error creating reservation:', error);
     sendServerError(res, '予約の作成に失敗しました', error);
   }
 });
@@ -268,7 +265,6 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
 
     res.json(reservation);
   } catch (error) {
-    console.error('Error updating reservation:', error);
     sendServerError(res, '予約の更新に失敗しました', error);
   }
 });
@@ -296,11 +292,11 @@ router.get('/export.ics', async function(req: AuthRequest, res): Promise<void> {
       JOIN owners o ON d.owner_id = o.id
       WHERE r.store_id = $1 AND r.status != 'キャンセル'
     `;
-    const params: any[] = [req.storeId];
+    const params: (string | number)[] =[req.storeId];
 
     if (date) {
       query += ` AND r.reservation_date = $2`;
-      params.push(date);
+      params.push(String(date));
     } else if (month) {
       const range = getMonthDateRange(String(month));
       if (range) {
@@ -358,7 +354,6 @@ router.get('/export.ics', async function(req: AuthRequest, res): Promise<void> {
     res.setHeader('Content-Disposition', 'attachment; filename="reservations.ics"');
     res.send(icsContent);
   } catch (error) {
-    console.error('ICS export error:', error);
     sendServerError(res, 'カレンダーエクスポートに失敗しました', error);
   }
 });
@@ -387,7 +382,6 @@ router.delete('/:id', async function(req: AuthRequest, res): Promise<void> {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting reservation:', error);
     sendServerError(res, '予約の削除に失敗しました', error);
   }
 });

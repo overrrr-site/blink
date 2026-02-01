@@ -30,7 +30,6 @@ router.get('/settings', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching notification settings:', error);
     sendServerError(res, '通知設定の取得に失敗しました', error);
   }
 });
@@ -112,7 +111,6 @@ router.put('/settings', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating notification settings:', error);
     sendServerError(res, '通知設定の更新に失敗しました', error);
   }
 });
@@ -136,18 +134,18 @@ router.get('/logs', async (req: AuthRequest, res) => {
       JOIN owners o ON nl.owner_id = o.id
       WHERE nl.store_id = $1
     `;
-    const params: any[] = [req.storeId];
+    const params: (string | number)[] = [req.storeId];
     let paramIndex = 2;
 
     if (notification_type) {
       query += ` AND nl.notification_type = $${paramIndex}`;
-      params.push(notification_type);
+      params.push(String(notification_type));
       paramIndex++;
     }
 
     if (status) {
       query += ` AND nl.status = $${paramIndex}`;
-      params.push(status);
+      params.push(String(status));
       paramIndex++;
     }
 
@@ -174,7 +172,6 @@ router.get('/logs', async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching notification logs:', error);
     sendServerError(res, '通知ログの取得に失敗しました', error);
   }
 });
@@ -288,7 +285,6 @@ router.post('/test-line', async (req: AuthRequest, res) => {
       });
     }
   } catch (error) {
-    console.error('Error sending test LINE message:', error);
     sendServerError(res, 'テストメッセージの送信に失敗しました', error);
   }
 });
@@ -337,7 +333,6 @@ router.get('/line-status', async (req: AuthRequest, res) => {
       linkedOwnersCount: parseInt(linkedOwnersResult.rows[0]?.count || '0'),
     });
   } catch (error) {
-    console.error('Error checking LINE status:', error);
     sendServerError(res, 'LINE設定状態の確認に失敗しました', error);
   }
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Icon } from './Icon'
 import api from '../api/client'
 
@@ -13,22 +13,23 @@ interface Alert {
   rabies_vaccine_date?: string
 }
 
-// alert_typeに基づいてメッセージを生成
-const getAlertMessage = (alert: Alert): string => {
+function getAlertMessage(alert: Alert): string {
+  const formatDate = (date: string): string =>
+    new Date(date).toLocaleDateString('ja-JP')
+
   switch (alert.alert_type) {
     case 'mixed_vaccine_expired':
-      return `混合ワクチンの期限が切れています${alert.mixed_vaccine_date ? `（期限: ${new Date(alert.mixed_vaccine_date).toLocaleDateString('ja-JP')}）` : ''}`
+      return `混合ワクチンの期限が切れています${alert.mixed_vaccine_date ? `（期限: ${formatDate(alert.mixed_vaccine_date)}）` : ''}`
     case 'rabies_vaccine_expiring':
-      return `狂犬病ワクチンの期限が近づいています${alert.rabies_vaccine_date ? `（期限: ${new Date(alert.rabies_vaccine_date).toLocaleDateString('ja-JP')}）` : ''}`
+      return `狂犬病ワクチンの期限が近づいています${alert.rabies_vaccine_date ? `（期限: ${formatDate(alert.rabies_vaccine_date)}）` : ''}`
     case 'rabies_vaccine_expired':
-      return `狂犬病ワクチンの期限が切れています${alert.rabies_vaccine_date ? `（期限: ${new Date(alert.rabies_vaccine_date).toLocaleDateString('ja-JP')}）` : ''}`
+      return `狂犬病ワクチンの期限が切れています${alert.rabies_vaccine_date ? `（期限: ${formatDate(alert.rabies_vaccine_date)}）` : ''}`
     default:
       return '確認が必要です'
   }
 }
 
-// alert_typeに基づいてアイコンを取得
-const getAlertIcon = (alertType: string): string => {
+function getAlertIcon(alertType: string): string {
   switch (alertType) {
     case 'mixed_vaccine_expired':
     case 'rabies_vaccine_expired':
@@ -40,8 +41,7 @@ const getAlertIcon = (alertType: string): string => {
   }
 }
 
-// alert_typeに基づいてラベルを取得
-const getAlertLabel = (alertType: string): string => {
+function getAlertLabel(alertType: string): string {
   switch (alertType) {
     case 'mixed_vaccine_expired':
       return '混合ワクチン期限切れ'
@@ -59,40 +59,56 @@ interface AlertsModalProps {
   onClose: () => void
 }
 
-const AlertsModal = ({ isOpen, onClose }: AlertsModalProps) => {
+function AlertsModal({ isOpen, onClose }: AlertsModalProps): JSX.Element | null {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
+
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const response = await api.get('/dashboard')
+      setAlerts(response.data.alerts || [])
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (isOpen) {
       fetchAlerts()
     }
-  }, [isOpen])
+  }, [isOpen, fetchAlerts])
 
-  const fetchAlerts = async () => {
-    try {
-      const response = await api.get('/dashboard')
-      setAlerts(response.data.alerts || [])
-    } catch {
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (!isOpen) return
+
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (e.key === 'Escape') {
+        onClose()
+      }
     }
-  }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
   return (
     <>
-      {/* オーバーレイ */}
       <div
         className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
-      
-      {/* モーダル */}
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-card rounded-2xl border border-border shadow-xl z-50 max-h-[80vh] overflow-hidden flex flex-col">
-        {/* ヘッダー */}
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="確認事項"
+        className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-card rounded-2xl border border-border shadow-xl z-50 max-h-[80vh] overflow-hidden flex flex-col"
+      >
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-bold font-heading flex items-center gap-2">
             <Icon icon="solar:bell-bold" className="text-chart-4 size-5" />
@@ -107,7 +123,6 @@ const AlertsModal = ({ isOpen, onClose }: AlertsModalProps) => {
           </button>
         </div>
 
-        {/* コンテンツ */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading ? (
             <div className="text-center py-8">

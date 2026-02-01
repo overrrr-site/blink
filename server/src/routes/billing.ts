@@ -24,7 +24,6 @@ router.get('/plans', async (req: AuthRequest, res) => {
     );
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching plans:', error);
     sendServerError(res, 'プラン一覧の取得に失敗しました', error);
   }
 });
@@ -62,7 +61,6 @@ router.get('/current', async (req: AuthRequest, res) => {
       is_plan_limit_exceeded: store.max_dogs ? dogsCount >= store.max_dogs : false,
     });
   } catch (error) {
-    console.error('Error fetching current plan:', error);
     sendServerError(res, 'プラン情報の取得に失敗しました', error);
   }
 });
@@ -230,7 +228,6 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
       });
     }
   } catch (error) {
-    console.error('Error subscribing to plan:', error);
     sendServerError(res, 'プラン変更に失敗しました', error);
   }
 });
@@ -270,7 +267,6 @@ router.post('/cancel', async (req: AuthRequest, res) => {
       });
     }
   } catch (error) {
-    console.error('Error canceling subscription:', error);
     sendServerError(res, 'キャンセル処理に失敗しました', error);
   }
 });
@@ -312,7 +308,6 @@ router.get('/history', async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching billing history:', error);
     sendServerError(res, '請求履歴の取得に失敗しました', error);
   }
 });

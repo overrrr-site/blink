@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
+import type { Staff } from '../types/staff'
 
 // カテゴリのアイコンマッピング
 const CATEGORY_ICONS: Record<string, string> = {
@@ -42,11 +43,6 @@ const TRAINING_LABEL_FALLBACKS: Record<string, string> = {
   biting: '噛み対策',
   pulling: '引っ張り対策',
   jumping: '飛びつき対策',
-}
-
-interface Staff {
-  id: number
-  name: string
 }
 
 interface TrainingCategory {

@@ -32,11 +32,11 @@ router.get('/', async (req: AuthRequest, res) => {
       JOIN owners o ON d.owner_id = o.id
       WHERE o.store_id = $1
     `;
-    const params: any[] = [req.storeId];
+    const params: (string | number)[] = [req.storeId];
 
     if (dog_id) {
       query += ` AND c.dog_id = $2`;
-      params.push(dog_id);
+      params.push(String(dog_id));
     }
 
     query += ` ORDER BY c.created_at DESC`;
@@ -83,7 +83,6 @@ router.get('/', async (req: AuthRequest, res) => {
 
     res.json(contractsWithStats);
   } catch (error) {
-    console.error('Error fetching contracts:', error);
     sendServerError(res, '契約一覧の取得に失敗しました', error);
   }
 });
@@ -146,7 +145,6 @@ router.get('/:id', async (req: AuthRequest, res) => {
       makeup_tickets: ticketsResult.rows,
     });
   } catch (error) {
-    console.error('Error fetching contract:', error);
     sendServerError(res, '契約情報の取得に失敗しました', error);
   }
 });
@@ -211,7 +209,6 @@ router.post('/', async (req: AuthRequest, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating contract:', error);
     sendServerError(res, '契約の作成に失敗しました', error);
   }
 });
@@ -274,7 +271,6 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating contract:', error);
     sendServerError(res, '契約の更新に失敗しました', error);
   }
 });
@@ -306,7 +302,6 @@ router.delete('/:id', async (req: AuthRequest, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting contract:', error);
     sendServerError(res, '契約の削除に失敗しました', error);
   }
 });

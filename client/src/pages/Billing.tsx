@@ -1,145 +1,156 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
 import { Icon } from '../components/Icon'
-import { useNavigate } from 'react-router-dom';
-import api from '../api/client';
-import PayjpForm from '../components/PayjpForm';
+import PageHeader from '../components/PageHeader'
+import api from '../api/client'
+import PayjpForm from '../components/PayjpForm'
+import { getAxiosErrorMessage } from '../utils/error'
 
 interface Plan {
-  id: number;
-  name: string;
-  display_name: string;
-  price_monthly: number;
-  max_dogs: number | null;
-  features: any;
+  id: number
+  name: string
+  display_name: string
+  price_monthly: number
+  max_dogs: number | null
+  features: Record<string, unknown>
 }
 
 interface CurrentPlan {
-  plan_name: string;
-  display_name: string;
-  price_monthly: number;
-  max_dogs: number | null;
-  current_dogs_count: number;
-  is_plan_limit_exceeded: boolean;
-  subscription_status: string;
+  plan_name: string
+  display_name: string
+  price_monthly: number
+  max_dogs: number | null
+  current_dogs_count: number
+  is_plan_limit_exceeded: boolean
+  subscription_status: string
 }
 
 interface BillingHistory {
-  id: number;
-  plan_name: string;
-  amount: number;
-  status: string;
-  billing_period_start: string;
-  billing_period_end: string;
-  paid_at: string;
-  created_at: string;
+  id: number
+  plan_name: string
+  amount: number
+  status: string
+  billing_period_start: string
+  billing_period_end: string
+  paid_at: string
+  created_at: string
+}
+
+type BillingTab = 'plan' | 'payment' | 'history'
+
+const BILLING_TABS: { id: BillingTab; label: string }[] = [
+  { id: 'plan', label: 'プラン' },
+  { id: 'payment', label: 'お支払い方法' },
+  { id: 'history', label: '請求履歴' },
+]
+
+function getStatusBadge(status: string): { label: string; className: string } {
+  switch (status) {
+    case 'paid':
+      return { label: '支払済み', className: 'bg-chart-2/10 text-chart-2' }
+    case 'failed':
+      return { label: '失敗', className: 'bg-destructive/10 text-destructive' }
+    default:
+      return { label: '保留中', className: 'bg-muted text-muted-foreground' }
+  }
 }
 
 export default function Billing() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'plan' | 'payment' | 'history'>('plan');
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [currentPlan, setCurrentPlan] = useState<CurrentPlan | null>(null);
-  const [billingHistory, setBillingHistory] = useState<BillingHistory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [payjpPublicKey, setPayjpPublicKey] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [showCardForm, setShowCardForm] = useState(false);
+  const [activeTab, setActiveTab] = useState<BillingTab>('plan')
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [currentPlan, setCurrentPlan] = useState<CurrentPlan | null>(null)
+  const [billingHistory, setBillingHistory] = useState<BillingHistory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [payjpPublicKey, setPayjpPublicKey] = useState('')
+  const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
+  const [processing, setProcessing] = useState(false)
+  const [showCardForm, setShowCardForm] = useState(false)
 
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+    fetchData()
+  }, [activeTab])
 
   const fetchData = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
       const [plansRes, currentRes, keyRes] = await Promise.all([
         api.get('/billing/plans'),
         api.get('/billing/current'),
         api.get('/billing/payjp-key'),
-      ]);
+      ])
 
-      setPlans(plansRes.data || []);
-      setCurrentPlan(currentRes.data);
-      setPayjpPublicKey(keyRes.data.publicKey || '');
+      setPlans(plansRes.data || [])
+      setCurrentPlan(currentRes.data)
+      setPayjpPublicKey(keyRes.data.publicKey || '')
 
       if (activeTab === 'history') {
-        const historyRes = await api.get('/billing/history');
-        setBillingHistory(historyRes.data.history || []);
+        const historyRes = await api.get('/billing/history')
+        setBillingHistory(historyRes.data.history || [])
       }
-    } catch (error: any) {
-      setError(error.response?.data?.error || 'プラン情報の取得に失敗しました');
+    } catch (err) {
+      setError(getAxiosErrorMessage(err, 'プラン情報の取得に失敗しました'))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handlePlanChange = (planId: number) => {
-    if (!confirm('プランを変更しますか？')) return;
-    setSelectedPlan(planId);
-    setShowCardForm(true);
-  };
+    if (!confirm('プランを変更しますか？')) return
+    setSelectedPlan(planId)
+    setShowCardForm(true)
+  }
 
   const handleTokenCreated = async (token: string) => {
-    if (!selectedPlan) return;
+    if (!selectedPlan) return
 
-    setProcessing(true);
+    setProcessing(true)
     try {
       await api.post('/billing/subscribe', {
         plan_id: selectedPlan,
         payjp_token: token,
-      });
+      })
 
-      alert('プランを変更しました');
-      setShowCardForm(false);
-      setSelectedPlan(null);
-      fetchData();
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'プラン変更に失敗しました');
+      alert('プランを変更しました')
+      setShowCardForm(false)
+      setSelectedPlan(null)
+      fetchData()
+    } catch (err) {
+      alert(getAxiosErrorMessage(err, 'プラン変更に失敗しました'))
     } finally {
-      setProcessing(false);
+      setProcessing(false)
     }
-  };
+  }
 
-  const handleTokenError = (error: Error) => {
-    alert(error.message || 'カード情報の処理に失敗しました');
-    setProcessing(false);
-  };
+  const handleTokenError = (err: Error) => {
+    alert(err.message || 'カード情報の処理に失敗しました')
+    setProcessing(false)
+  }
 
   const handleCancelSubscription = async () => {
-    if (!confirm('サブスクリプションをキャンセルしますか？')) return;
+    if (!confirm('サブスクリプションをキャンセルしますか？')) return
 
     try {
-      await api.post('/billing/cancel');
-      alert('サブスクリプションをキャンセルしました');
-      fetchData();
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'キャンセルに失敗しました');
+      await api.post('/billing/cancel')
+      alert('サブスクリプションをキャンセルしました')
+      fetchData()
+    } catch (err) {
+      alert(getAxiosErrorMessage(err, 'キャンセルに失敗しました'))
     }
-  };
+  }
 
   if (loading && !currentPlan) {
     return (
       <div className="flex items-center justify-center h-full">
         <Icon icon="solar:spinner-bold" width="48" height="48" className="text-primary animate-spin" />
       </div>
-    );
+    )
   }
 
   if (error) {
     return (
       <div className="pb-6">
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2">
-          <button
-            onClick={() => navigate('/settings')}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
-          >
-            <Icon icon="solar:arrow-left-linear" width="24" height="24" />
-          </button>
-          <h1 className="text-lg font-bold font-heading flex-1">プラン・お支払い</h1>
-        </header>
+        <PageHeader title="プラン・お支払い" backPath="/settings" />
         <div className="px-5 pt-8 text-center">
           <Icon icon="solar:danger-triangle-bold" width="48" height="48" className="text-destructive mx-auto mb-4" />
           <p className="text-destructive font-bold mb-2">エラーが発生しました</p>
@@ -152,58 +163,30 @@ export default function Billing() {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="pb-6">
-      {/* ヘッダー */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2">
-        <button
-          onClick={() => navigate('/settings')}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
-        >
-          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
-        </button>
-        <h1 className="text-lg font-bold font-heading flex-1">プラン・お支払い</h1>
-      </header>
+      <PageHeader title="プラン・お支払い" backPath="/settings" />
 
       {/* タブ */}
       <div className="px-5 pt-4">
         <div className="flex gap-2 bg-muted/30 rounded-xl p-1">
-          <button
-            onClick={() => setActiveTab('plan')}
-            className={`flex-1 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px] ${
-              activeTab === 'plan'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground font-normal'
-            }`}
-            aria-pressed={activeTab === 'plan'}
-          >
-            プラン
-          </button>
-          <button
-            onClick={() => setActiveTab('payment')}
-            className={`flex-1 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px] ${
-              activeTab === 'payment'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground font-normal'
-            }`}
-            aria-pressed={activeTab === 'payment'}
-          >
-            お支払い方法
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex-1 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px] ${
-              activeTab === 'history'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground font-normal'
-            }`}
-            aria-pressed={activeTab === 'history'}
-          >
-            請求履歴
-          </button>
+          {BILLING_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px] ${
+                activeTab === tab.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground font-normal'
+              }`}
+              aria-pressed={activeTab === tab.id}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -211,7 +194,6 @@ export default function Billing() {
       <div className="px-5 pt-4 space-y-4">
         {activeTab === 'plan' && (
           <>
-            {/* 現在のプラン */}
             {currentPlan && (
               <section className="bg-card rounded-2xl border border-border shadow-sm p-5">
                 <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
@@ -255,7 +237,6 @@ export default function Billing() {
               </section>
             )}
 
-            {/* プラン一覧 */}
             <section className="bg-card rounded-2xl border border-border shadow-sm p-5">
               <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
                 <Icon icon="solar:tag-price-bold" width="16" height="16" className="text-primary" />
@@ -270,50 +251,44 @@ export default function Billing() {
                   </p>
                 </div>
               ) : (
-              <div className="space-y-3">
-                {plans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={`border-2 rounded-xl p-4 ${
-                      currentPlan?.plan_name === plan.name
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-bold text-base">{plan.display_name}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          ¥{Math.floor(plan.price_monthly ?? 0).toLocaleString()}/月（税込）
-                        </p>
+                <div className="space-y-3">
+                  {plans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className={`border-2 rounded-xl p-4 ${
+                        currentPlan?.plan_name === plan.name
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-bold text-base">{plan.display_name}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            ¥{Math.floor(plan.price_monthly ?? 0).toLocaleString()}/月（税込）
+                          </p>
+                        </div>
+                        {currentPlan?.plan_name === plan.name && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">
+                            現在のプラン
+                          </span>
+                        )}
                       </div>
-                      {currentPlan?.plan_name === plan.name && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">
-                          現在のプラン
-                        </span>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {plan.max_dogs ? `最大 ${plan.max_dogs}頭まで登録可能` : '無制限'}
+                      </p>
+                      {currentPlan?.plan_name !== plan.name && (
+                        <button
+                          onClick={() => handlePlanChange(plan.id)}
+                          disabled={processing}
+                          className="w-full mt-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-50 min-h-[48px]"
+                        >
+                          このプランに変更
+                        </button>
                       )}
                     </div>
-                    {plan.max_dogs ? (
-                      <p className="text-xs text-muted-foreground mb-3">
-                        最大 {plan.max_dogs}頭まで登録可能
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground mb-3">
-                        無制限
-                      </p>
-                    )}
-                    {currentPlan?.plan_name !== plan.name && (
-                      <button
-                        onClick={() => handlePlanChange(plan.id)}
-                        disabled={processing}
-                        className="w-full mt-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-50 min-h-[48px]"
-                      >
-                        このプランに変更
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
               )}
             </section>
           </>
@@ -335,8 +310,8 @@ export default function Billing() {
                 />
                 <button
                   onClick={() => {
-                    setShowCardForm(false);
-                    setSelectedPlan(null);
+                    setShowCardForm(false)
+                    setSelectedPlan(null)
                   }}
                   className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm font-medium hover:bg-muted transition-colors"
                 >
@@ -372,43 +347,37 @@ export default function Billing() {
               </div>
             ) : (
               <div className="space-y-3">
-                {billingHistory.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border border-border rounded-xl p-4"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-bold text-sm">{item.plan_name}</p>
+                {billingHistory.map((item) => {
+                  const badge = getStatusBadge(item.status)
+                  return (
+                    <div key={item.id} className="border border-border rounded-xl p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-bold text-sm">{item.plan_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.billing_period_start ? new Date(item.billing_period_start).toLocaleDateString('ja-JP') : '-'} 〜 {item.billing_period_end ? new Date(item.billing_period_end).toLocaleDateString('ja-JP') : '-'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-base">¥{Math.floor(item.amount ?? 0).toLocaleString()}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        </div>
+                      </div>
+                      {item.paid_at && (
                         <p className="text-xs text-muted-foreground">
-                          {item.billing_period_start ? new Date(item.billing_period_start).toLocaleDateString('ja-JP') : '-'} 〜 {item.billing_period_end ? new Date(item.billing_period_end).toLocaleDateString('ja-JP') : '-'}
+                          支払日: {new Date(item.paid_at).toLocaleDateString('ja-JP')}
                         </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-base">¥{Math.floor(item.amount ?? 0).toLocaleString()}</p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                          item.status === 'paid'
-                            ? 'bg-chart-2/10 text-chart-2'
-                            : item.status === 'failed'
-                            ? 'bg-destructive/10 text-destructive'
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {item.status === 'paid' ? '支払済み' : item.status === 'failed' ? '失敗' : '保留中'}
-                        </span>
-                      </div>
+                      )}
                     </div>
-                    {item.paid_at && (
-                      <p className="text-xs text-muted-foreground">
-                        支払日: {new Date(item.paid_at).toLocaleDateString('ja-JP')}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </section>
         )}
       </div>
     </div>
-  );
+  )
 }

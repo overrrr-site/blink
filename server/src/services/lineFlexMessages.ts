@@ -1,10 +1,165 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
-import type { FlexComponent, FlexMessage, QuickReply } from '@line/bot-sdk';
+import type { FlexBox, FlexBubble, FlexComponent, FlexMessage, FlexText, QuickReply } from '@line/bot-sdk';
+
+// ---------------------------------------------------------------------------
+// Data interfaces
+// ---------------------------------------------------------------------------
+
+interface ReservationData {
+  id: number;
+  reservation_date: string;
+  reservation_time: string;
+  dog_name: string;
+  status: string;
+  memo?: string | null;
+}
+
+interface JournalData {
+  id: number;
+  journal_date: string;
+  dog_name: string;
+  staff_name?: string | null;
+  morning_toilet_status?: string | null;
+  afternoon_toilet_status?: string | null;
+  comment?: string | null;
+}
+
+interface ContractData {
+  id: number;
+  dog_name: string;
+  course_name?: string | null;
+  contract_type: string;
+  price?: number | null;
+  total_sessions?: number | null;
+  monthly_sessions?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  valid_until?: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
 
 function compactFlexItems(items: Array<FlexComponent | null>): FlexComponent[] {
   return items.filter((item): item is FlexComponent => item !== null);
 }
+
+/**
+ * 「ラベル: 値」の横並び行を生成する共通ビルダー
+ */
+function createLabelValueRow(
+  label: string,
+  value: string,
+  options?: { valueColor?: string; valueBold?: boolean }
+): FlexBox {
+  return {
+    type: 'box',
+    layout: 'horizontal',
+    contents: [
+      { type: 'text', text: label, size: 'sm', color: '#666666', flex: 1 },
+      {
+        type: 'text',
+        text: value,
+        size: 'sm',
+        color: options?.valueColor ?? '#000000',
+        align: 'end',
+        flex: 2,
+        ...(options?.valueBold ? { weight: 'bold' } : {}),
+      } as FlexText,
+    ],
+  };
+}
+
+/**
+ * 色付きヘッダー付き Bubble を生成する共通ビルダー
+ */
+function createHeaderBubble(params: {
+  headerText: string;
+  headerColor: string;
+  bodyContents: FlexComponent[];
+  footerContents?: FlexComponent[];
+}): FlexBubble {
+  const bubble: FlexBubble = {
+    type: 'bubble',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        { type: 'text', text: params.headerText, weight: 'bold', size: 'lg', color: '#FFFFFF' },
+      ],
+      backgroundColor: params.headerColor,
+      paddingAll: 'md',
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: params.bodyContents,
+      paddingAll: 'md',
+    },
+  };
+
+  if (params.footerContents) {
+    bubble.footer = {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'sm',
+      contents: params.footerContents,
+    };
+  }
+
+  return bubble;
+}
+
+/**
+ * LIFF URLを生成する
+ */
+function buildLiffUrl(path: string): string {
+  const liffId = process.env.LIFF_ID;
+  if (!liffId) return '#';
+  return `https://liff.line.me/${liffId}${path}`;
+}
+
+/**
+ * 日付を安全にフォーマット（nullや無効な値に対応）
+ */
+function formatSafeDate(dateValue: string | null | undefined, defaultText: string = '未設定'): string {
+  if (!dateValue) return defaultText;
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return defaultText;
+    return format(date, 'yyyy年M月d日', { locale: ja });
+  } catch {
+    return defaultText;
+  }
+}
+
+/**
+ * テキストを指定文字数で切り詰める
+ */
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+/**
+ * ステータスに対応する絵文字と色を返す
+ */
+function getStatusStyle(status: string): { emoji: string; color: string } {
+  switch (status) {
+    case '登園済':
+      return { emoji: '✅', color: '#10B981' };
+    case '降園済':
+      return { emoji: '🏠', color: '#6B7280' };
+    default:
+      return { emoji: '📅', color: '#3B82F6' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Exported message creators
+// ---------------------------------------------------------------------------
 
 /**
  * クイックリプライボタンを作成
@@ -12,38 +167,10 @@ function compactFlexItems(items: Array<FlexComponent | null>): FlexComponent[] {
 export function createQuickReply(): QuickReply {
   return {
     items: [
-      {
-        type: 'action',
-        action: {
-          type: 'postback',
-          label: '予約確認',
-          data: 'action=view_reservations',
-        },
-      },
-      {
-        type: 'action',
-        action: {
-          type: 'postback',
-          label: '日誌を見る',
-          data: 'action=view_journals',
-        },
-      },
-      {
-        type: 'action',
-        action: {
-          type: 'postback',
-          label: '契約情報',
-          data: 'action=view_contracts',
-        },
-      },
-      {
-        type: 'action',
-        action: {
-          type: 'postback',
-          label: 'ヘルプ',
-          data: 'action=help',
-        },
-      },
+      { type: 'action', action: { type: 'postback', label: '予約確認', data: 'action=view_reservations' } },
+      { type: 'action', action: { type: 'postback', label: '日誌を見る', data: 'action=view_journals' } },
+      { type: 'action', action: { type: 'postback', label: '契約情報', data: 'action=view_contracts' } },
+      { type: 'action', action: { type: 'postback', label: 'ヘルプ', data: 'action=help' } },
     ],
   };
 }
@@ -51,417 +178,132 @@ export function createQuickReply(): QuickReply {
 /**
  * 予約カードのFlexメッセージを作成
  */
-export function createReservationFlexMessage(reservation: any): FlexMessage {
+export function createReservationFlexMessage(reservation: ReservationData): FlexMessage {
   const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
   const reservationTime = reservation.reservation_time.substring(0, 5);
-  const statusEmoji = reservation.status === '登園済' ? '✅' : reservation.status === '降園済' ? '🏠' : '📅';
-  const statusColor = reservation.status === '登園済' ? '#10B981' : reservation.status === '降園済' ? '#6B7280' : '#3B82F6';
+  const { emoji: statusEmoji, color: statusColor } = getStatusStyle(reservation.status);
+
+  const bubble: FlexBubble = {
+    type: 'bubble',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        { type: 'text', text: `${statusEmoji} 予約`, weight: 'bold', size: 'lg', color: statusColor },
+        { type: 'separator', margin: 'md' },
+        {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'sm',
+          margin: 'md',
+          contents: [
+            createLabelValueRow('日時', `${reservationDate} ${reservationTime}`),
+            createLabelValueRow('ワンちゃん', reservation.dog_name),
+            createLabelValueRow('ステータス', reservation.status, { valueColor: statusColor, valueBold: true }),
+          ],
+        },
+      ],
+    },
+  };
+
+  if (reservation.status === '予定') {
+    bubble.footer = {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          height: 'sm',
+          action: { type: 'postback', label: 'キャンセル', data: `action=cancel_reservation&reservation_id=${reservation.id}` },
+          color: '#EF4444',
+        },
+      ],
+    };
+  }
 
   return {
     type: 'flex',
     altText: `${reservationDate} ${reservationTime} - ${reservation.dog_name}`,
-    contents: {
-      type: 'bubble',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: `${statusEmoji} 予約`,
-            weight: 'bold',
-            size: 'lg',
-            color: statusColor,
-          },
-          {
-            type: 'separator',
-            margin: 'md',
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
-            margin: 'md',
-            contents: compactFlexItems([
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '日時',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: `${reservationDate} ${reservationTime}`,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: 'ワンちゃん',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: reservation.dog_name,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: 'ステータス',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: reservation.status,
-                    size: 'sm',
-                    color: statusColor,
-                    align: 'end',
-                    flex: 2,
-                    weight: 'bold',
-                  },
-                ],
-              },
-            ]),
-          },
-        ],
-      },
-      footer: reservation.status === '予定' ? {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
-            action: {
-              type: 'postback',
-              label: 'キャンセル',
-              data: `action=cancel_reservation&reservation_id=${reservation.id}`,
-            },
-            color: '#EF4444',
-          },
-        ],
-      } : undefined,
-    },
+    contents: bubble,
   };
 }
 
 /**
  * 日誌カードのFlexメッセージを作成
  */
-export function createJournalFlexMessage(journal: any): FlexMessage {
+export function createJournalFlexMessage(journal: JournalData): FlexMessage {
   const journalDate = format(new Date(journal.journal_date), 'yyyy年M月d日(E)', { locale: ja });
-  const commentPreview = journal.comment
-    ? (journal.comment.length > 50 ? journal.comment.substring(0, 50) + '...' : journal.comment)
-    : 'コメントなし';
+  const commentPreview = journal.comment ? truncateText(journal.comment, 50) : 'コメントなし';
 
-  return {
-    type: 'flex',
-    altText: `${journalDate} - ${journal.dog_name}の日誌`,
-    contents: {
-      type: 'bubble',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '📝 日誌',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FFFFFF',
-          },
-        ],
-        backgroundColor: '#3B82F6',
-        paddingAll: 'md',
+  const bodyItems: Array<FlexComponent | null> = [
+    { type: 'text', text: journalDate, weight: 'bold', size: 'md' },
+    { type: 'text', text: `🐕 ${journal.dog_name}`, size: 'sm', color: '#666666' },
+    journal.staff_name ? { type: 'text', text: `👤 ${journal.staff_name}`, size: 'sm', color: '#666666' } : null,
+    { type: 'separator', margin: 'md' },
+    journal.morning_toilet_status ? { type: 'text', text: `午前のトイレ: ${journal.morning_toilet_status}`, size: 'sm', margin: 'sm' } : null,
+    journal.afternoon_toilet_status ? { type: 'text', text: `午後のトイレ: ${journal.afternoon_toilet_status}`, size: 'sm', margin: 'sm' } : null,
+    { type: 'text', text: commentPreview, size: 'sm', color: '#666666', wrap: true, margin: 'md' },
+  ];
+
+  const bubble = createHeaderBubble({
+    headerText: '📝 日誌',
+    headerColor: '#3B82F6',
+    bodyContents: [
+      { type: 'box', layout: 'vertical', spacing: 'sm', contents: compactFlexItems(bodyItems) },
+    ],
+    footerContents: [
+      {
+        type: 'button',
+        style: 'primary',
+        height: 'sm',
+        action: { type: 'uri', label: '詳細を見る', uri: buildLiffUrl(`/home/journals/${journal.id}`) },
       },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
-            contents: compactFlexItems([
-              {
-                type: 'text',
-                text: journalDate,
-                weight: 'bold',
-                size: 'md',
-              },
-              {
-                type: 'text',
-                text: `🐕 ${journal.dog_name}`,
-                size: 'sm',
-                color: '#666666',
-              },
-              journal.staff_name ? {
-                type: 'text',
-                text: `👤 ${journal.staff_name}`,
-                size: 'sm',
-                color: '#666666',
-              } : null,
-              {
-                type: 'separator',
-                margin: 'md',
-              },
-              journal.morning_toilet_status ? {
-                type: 'text',
-                text: `午前のトイレ: ${journal.morning_toilet_status}`,
-                size: 'sm',
-                margin: 'sm',
-              } : null,
-              journal.afternoon_toilet_status ? {
-                type: 'text',
-                text: `午後のトイレ: ${journal.afternoon_toilet_status}`,
-                size: 'sm',
-                margin: 'sm',
-              } : null,
-              {
-                type: 'text',
-                text: commentPreview,
-                size: 'sm',
-                color: '#666666',
-                wrap: true,
-                margin: 'md',
-              },
-            ]),
-          },
-        ],
-        paddingAll: 'md',
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: '詳細を見る',
-              uri: process.env.LIFF_ID
-                ? `https://liff.line.me/${process.env.LIFF_ID}/home/journals/${journal.id}`
-                : '#',
-            },
-          },
-        ],
-      },
-    },
-  };
+    ],
+  });
+
+  return { type: 'flex', altText: `${journalDate} - ${journal.dog_name}の日誌`, contents: bubble };
 }
 
 /**
  * 契約情報カードのFlexメッセージを作成
  */
-export function createContractFlexMessage(contract: any, calculatedRemaining: number | null): FlexMessage {
-  // 日付を安全にフォーマット（nullや無効な値に対応）
-  const formatSafeDate = (dateValue: any, defaultText: string = '未設定'): string => {
-    if (!dateValue) return defaultText;
-    try {
-      const date = new Date(dateValue);
-      if (isNaN(date.getTime())) return defaultText;
-      return format(date, 'yyyy年M月d日', { locale: ja });
-    } catch {
-      return defaultText;
-    }
-  };
-
-  const startDate = formatSafeDate(contract.start_date, '未設定');
-  const endDate = formatSafeDate(contract.end_date, '無期限');
+export function createContractFlexMessage(contract: ContractData, calculatedRemaining: number | null): FlexMessage {
   const validUntil = formatSafeDate(contract.valid_until, '無期限');
-
   const priceLabel = contract.contract_type === '月謝制' ? '月額料金' : '料金';
   const price = contract.price ? Math.floor(contract.price).toLocaleString() : '-';
+
+  const detailRows: Array<FlexComponent | null> = [
+    { type: 'text', text: contract.course_name || contract.contract_type, weight: 'bold', size: 'md' },
+    { type: 'text', text: `🐕 ${contract.dog_name}`, size: 'sm', color: '#666666' },
+    { type: 'separator', margin: 'md' },
+    createLabelValueRow('契約タイプ', contract.contract_type),
+    createLabelValueRow(priceLabel, `¥${price}`, { valueBold: true }),
+    contract.contract_type !== '月謝制' && calculatedRemaining !== null
+      ? createLabelValueRow('残回数', `${calculatedRemaining}回`, {
+          valueColor: calculatedRemaining > 0 ? '#10B981' : '#EF4444',
+          valueBold: true,
+        })
+      : null,
+    contract.contract_type === '月謝制' && contract.monthly_sessions
+      ? createLabelValueRow('月間回数', `${contract.monthly_sessions}回`)
+      : null,
+    createLabelValueRow('有効期限', validUntil),
+  ];
+
+  const bubble = createHeaderBubble({
+    headerText: '📋 契約情報',
+    headerColor: '#8B5CF6',
+    bodyContents: [
+      { type: 'box', layout: 'vertical', spacing: 'sm', contents: compactFlexItems(detailRows) },
+    ],
+  });
 
   return {
     type: 'flex',
     altText: `${contract.dog_name} - ${contract.course_name || contract.contract_type}`,
-    contents: {
-      type: 'bubble',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '📋 契約情報',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FFFFFF',
-          },
-        ],
-        backgroundColor: '#8B5CF6',
-        paddingAll: 'md',
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
-            contents: compactFlexItems([
-              {
-                type: 'text',
-                text: contract.course_name || contract.contract_type,
-                weight: 'bold',
-                size: 'md',
-              },
-              {
-                type: 'text',
-                text: `🐕 ${contract.dog_name}`,
-                size: 'sm',
-                color: '#666666',
-              },
-              {
-                type: 'separator',
-                margin: 'md',
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '契約タイプ',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: contract.contract_type,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: priceLabel,
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: `¥${price}`,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                    weight: 'bold',
-                  },
-                ],
-              },
-              contract.contract_type !== '月謝制' && calculatedRemaining !== null ? {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '残回数',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: `${calculatedRemaining}回`,
-                    size: 'sm',
-                    color: calculatedRemaining > 0 ? '#10B981' : '#EF4444',
-                    align: 'end',
-                    flex: 2,
-                    weight: 'bold',
-                  },
-                ],
-              } : null,
-              contract.contract_type === '月謝制' && contract.monthly_sessions ? {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '月間回数',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: `${contract.monthly_sessions}回`,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              } : null,
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '有効期限',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: validUntil,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              },
-            ]),
-          },
-        ],
-        paddingAll: 'md',
-      },
-    },
+    contents: bubble,
   };
 }
 
@@ -476,119 +318,35 @@ export function createReservationReminderFlexMessage(reservation: {
 }): FlexMessage {
   const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
   const reservationTime = reservation.reservation_time.substring(0, 5);
-  const liffId = process.env.LIFF_ID;
-  const preVisitUrl = liffId
-    ? `https://liff.line.me/${liffId}/home/pre-visit/${reservation.id}`
-    : '#';
+
+  const bodyItems: FlexComponent[] = [
+    createLabelValueRow('日時', `${reservationDate} ${reservationTime}`, { valueBold: true }),
+    createLabelValueRow('ワンちゃん', reservation.dog_name),
+    { type: 'separator', margin: 'md' },
+    { type: 'text', text: '登園前に、体調や食事の情報をご入力ください。', size: 'xs', color: '#666666', wrap: true, margin: 'md' },
+  ];
+
+  const bubble = createHeaderBubble({
+    headerText: '🔔 明日の登園予定',
+    headerColor: '#F59E0B',
+    bodyContents: [
+      { type: 'box', layout: 'vertical', spacing: 'sm', contents: bodyItems },
+    ],
+    footerContents: [
+      {
+        type: 'button',
+        style: 'primary',
+        height: 'sm',
+        action: { type: 'uri', label: '登園前情報を入力する', uri: buildLiffUrl(`/home/pre-visit/${reservation.id}`) },
+        color: '#10B981',
+      },
+    ],
+  });
 
   return {
     type: 'flex',
     altText: `【リマインド】${reservationDate} ${reservationTime} - ${reservation.dog_name}`,
-    contents: {
-      type: 'bubble',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '🔔 明日の登園予定',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FFFFFF',
-          },
-        ],
-        backgroundColor: '#F59E0B',
-        paddingAll: 'md',
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
-            contents: compactFlexItems([
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '日時',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: `${reservationDate} ${reservationTime}`,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                    weight: 'bold',
-                  },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: 'ワンちゃん',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: reservation.dog_name,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              },
-              {
-                type: 'separator',
-                margin: 'md',
-              },
-              {
-                type: 'text',
-                text: '登園前に、体調や食事の情報をご入力ください。',
-                size: 'xs',
-                color: '#666666',
-                wrap: true,
-                margin: 'md',
-              },
-            ]),
-          },
-        ],
-        paddingAll: 'md',
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: '登園前情報を入力する',
-              uri: preVisitUrl,
-            },
-            color: '#10B981',
-          },
-        ],
-      },
-    },
+    contents: bubble,
     quickReply: createQuickReply(),
   };
 }
@@ -604,150 +362,39 @@ export function createJournalNotificationFlexMessage(journal: {
   photos?: string[] | null;
 }): FlexMessage {
   const journalDate = format(new Date(journal.journal_date), 'M月d日(E)', { locale: ja });
-  const commentPreview = journal.comment
-    ? (journal.comment.length > 80 ? journal.comment.substring(0, 80) + '...' : journal.comment)
-    : null;
-  const liffId = process.env.LIFF_ID;
-  const journalUrl = liffId
-    ? `https://liff.line.me/${liffId}/home/journals/${journal.id}`
-    : '#';
+  const commentPreview = journal.comment ? truncateText(journal.comment, 80) : null;
   const hasPhotos = journal.photos && journal.photos.length > 0;
+
+  const bodyItems: Array<FlexComponent | null> = [
+    createLabelValueRow('日付', journalDate, { valueBold: true }),
+    createLabelValueRow('ワンちゃん', journal.dog_name),
+    hasPhotos ? createLabelValueRow('写真', `📷 ${journal.photos!.length}枚`, { valueColor: '#10B981' }) : null,
+    { type: 'separator', margin: 'md' },
+    commentPreview
+      ? { type: 'text', text: commentPreview, size: 'sm', color: '#333333', wrap: true, margin: 'md' }
+      : { type: 'text', text: '今日の様子をアプリでご確認ください 🐾', size: 'sm', color: '#666666', wrap: true, margin: 'md' },
+  ];
+
+  const bubble = createHeaderBubble({
+    headerText: '📝 今日の日誌が届きました',
+    headerColor: '#3B82F6',
+    bodyContents: [
+      { type: 'box', layout: 'vertical', spacing: 'sm', contents: compactFlexItems(bodyItems) },
+    ],
+    footerContents: [
+      {
+        type: 'button',
+        style: 'primary',
+        height: 'sm',
+        action: { type: 'uri', label: '日誌を見る', uri: buildLiffUrl(`/home/journals/${journal.id}`) },
+      },
+    ],
+  });
 
   return {
     type: 'flex',
     altText: `📝 ${journal.dog_name}ちゃんの日誌が届きました`,
-    contents: {
-      type: 'bubble',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '📝 今日の日誌が届きました',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FFFFFF',
-          },
-        ],
-        backgroundColor: '#3B82F6',
-        paddingAll: 'md',
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
-            contents: compactFlexItems([
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '日付',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: journalDate,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                    weight: 'bold',
-                  },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: 'ワンちゃん',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: journal.dog_name,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              },
-              hasPhotos ? {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '写真',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: `📷 ${journal.photos!.length}枚`,
-                    size: 'sm',
-                    color: '#10B981',
-                    align: 'end',
-                    flex: 2,
-                  },
-                ],
-              } : null,
-              {
-                type: 'separator',
-                margin: 'md',
-              },
-              commentPreview ? {
-                type: 'text',
-                text: commentPreview,
-                size: 'sm',
-                color: '#333333',
-                wrap: true,
-                margin: 'md',
-              } : {
-                type: 'text',
-                text: '今日の様子をアプリでご確認ください 🐾',
-                size: 'sm',
-                color: '#666666',
-                wrap: true,
-                margin: 'md',
-              },
-            ]),
-          },
-        ],
-        paddingAll: 'md',
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: '日誌を見る',
-              uri: journalUrl,
-            },
-          },
-        ],
-      },
-    },
+    contents: bubble,
     quickReply: createQuickReply(),
   };
 }
@@ -761,118 +408,42 @@ export function createVaccineAlertFlexMessage(alert: {
   alert_days: number;
 }): FlexMessage {
   const alertText = alert.alerts.join('・');
-  const liffId = process.env.LIFF_ID;
-  const appUrl = liffId ? `https://liff.line.me/${liffId}/home` : '#';
+
+  const bodyItems: FlexComponent[] = [
+    createLabelValueRow('ワンちゃん', alert.dog_name, { valueBold: true }),
+    createLabelValueRow('対象', alertText, { valueColor: '#EF4444', valueBold: true }),
+    { type: 'separator', margin: 'md' },
+    {
+      type: 'text',
+      text: `${alert.alert_days}日以内に期限が切れます。\n早めの接種をお願いいたします。`,
+      size: 'sm',
+      color: '#666666',
+      wrap: true,
+      margin: 'md',
+    },
+  ];
+
+  const bubble = createHeaderBubble({
+    headerText: '⚠️ ワクチン期限のお知らせ',
+    headerColor: '#EF4444',
+    bodyContents: [
+      { type: 'box', layout: 'vertical', spacing: 'sm', contents: bodyItems },
+    ],
+    footerContents: [
+      {
+        type: 'button',
+        style: 'primary',
+        height: 'sm',
+        action: { type: 'uri', label: 'アプリで確認する', uri: buildLiffUrl('/home') },
+        color: '#6B7280',
+      },
+    ],
+  });
 
   return {
     type: 'flex',
     altText: `⚠️ ${alert.dog_name}ちゃんのワクチン期限が近づいています`,
-    contents: {
-      type: 'bubble',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '⚠️ ワクチン期限のお知らせ',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FFFFFF',
-          },
-        ],
-        backgroundColor: '#EF4444',
-        paddingAll: 'md',
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
-            contents: [
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: 'ワンちゃん',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: alert.dog_name,
-                    size: 'sm',
-                    color: '#000000',
-                    align: 'end',
-                    flex: 2,
-                    weight: 'bold',
-                  },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '対象',
-                    size: 'sm',
-                    color: '#666666',
-                    flex: 1,
-                  },
-                  {
-                    type: 'text',
-                    text: alertText,
-                    size: 'sm',
-                    color: '#EF4444',
-                    align: 'end',
-                    flex: 2,
-                    weight: 'bold',
-                  },
-                ],
-              },
-              {
-                type: 'separator',
-                margin: 'md',
-              },
-              {
-                type: 'text',
-                text: `${alert.alert_days}日以内に期限が切れます。\n早めの接種をお願いいたします。`,
-                size: 'sm',
-                color: '#666666',
-                wrap: true,
-                margin: 'md',
-              },
-            ],
-          },
-        ],
-        paddingAll: 'md',
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: 'アプリで確認する',
-              uri: appUrl,
-            },
-            color: '#6B7280',
-          },
-        ],
-      },
-    },
+    contents: bubble,
     quickReply: createQuickReply(),
   };
 }
@@ -881,139 +452,41 @@ export function createVaccineAlertFlexMessage(alert: {
  * ヘルプメッセージを作成
  */
 export function createHelpMessage(): FlexMessage {
+  const helpCommands: Array<{ emoji: string; command: string; description: string }> = [
+    { emoji: '📅', command: '「予約確認」', description: '今後の予約一覧を表示' },
+    { emoji: '📝', command: '「予約する」', description: '新規予約を作成' },
+    { emoji: '❌', command: '「キャンセル」', description: '予約をキャンセル' },
+    { emoji: '📖', command: '「日誌」「日報」', description: '日誌一覧を表示' },
+    { emoji: '📋', command: '「契約」「残回数」', description: '契約情報と残回数を表示' },
+  ];
+
+  const commandItems: FlexComponent[] = helpCommands.flatMap((cmd) => [
+    { type: 'text' as const, text: `${cmd.emoji} ${cmd.command}`, size: 'sm' as const, weight: 'bold' as const, margin: 'md' as const },
+    { type: 'text' as const, text: cmd.description, size: 'xs' as const, color: '#666666', margin: 'xs' as const },
+  ]);
+
+  const bubble = createHeaderBubble({
+    headerText: '❓ 使い方ガイド',
+    headerColor: '#6366F1',
+    bodyContents: [
+      { type: 'text', text: '以下のコマンドで操作できます：', weight: 'bold', size: 'sm', margin: 'md' },
+      { type: 'separator', margin: 'md' },
+      { type: 'box', layout: 'vertical', spacing: 'sm', margin: 'md', contents: commandItems },
+    ],
+    footerContents: [
+      {
+        type: 'button',
+        style: 'primary',
+        height: 'sm',
+        action: { type: 'uri', label: 'LIFFアプリを開く', uri: buildLiffUrl('/home') },
+      },
+    ],
+  });
+
   return {
     type: 'flex',
     altText: '使い方ガイド',
-    contents: {
-      type: 'bubble',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '❓ 使い方ガイド',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FFFFFF',
-          },
-        ],
-        backgroundColor: '#6366F1',
-        paddingAll: 'md',
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '以下のコマンドで操作できます：',
-            weight: 'bold',
-            size: 'sm',
-            margin: 'md',
-          },
-          {
-            type: 'separator',
-            margin: 'md',
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
-            margin: 'md',
-            contents: [
-              {
-                type: 'text',
-                text: '📅 「予約確認」',
-                size: 'sm',
-                weight: 'bold',
-              },
-              {
-                type: 'text',
-                text: '今後の予約一覧を表示',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-              },
-              {
-                type: 'text',
-                text: '📝 「予約する」',
-                size: 'sm',
-                weight: 'bold',
-                margin: 'md',
-              },
-              {
-                type: 'text',
-                text: '新規予約を作成',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-              },
-              {
-                type: 'text',
-                text: '❌ 「キャンセル」',
-                size: 'sm',
-                weight: 'bold',
-                margin: 'md',
-              },
-              {
-                type: 'text',
-                text: '予約をキャンセル',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-              },
-              {
-                type: 'text',
-                text: '📖 「日誌」「日報」',
-                size: 'sm',
-                weight: 'bold',
-                margin: 'md',
-              },
-              {
-                type: 'text',
-                text: '日誌一覧を表示',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-              },
-              {
-                type: 'text',
-                text: '📋 「契約」「残回数」',
-                size: 'sm',
-                weight: 'bold',
-                margin: 'md',
-              },
-              {
-                type: 'text',
-                text: '契約情報と残回数を表示',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-              },
-            ],
-          },
-        ],
-        paddingAll: 'md',
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: 'LIFFアプリを開く',
-              uri: process.env.LIFF_ID ? `https://liff.line.me/${process.env.LIFF_ID}/home` : '#',
-            },
-          },
-        ],
-      },
-    },
+    contents: bubble,
     quickReply: createQuickReply(),
   };
 }

@@ -1,4 +1,5 @@
 import { Icon } from '../Icon'
+
 type DogPersonality = {
   personality_description?: string
   dog_compatibility?: string
@@ -13,7 +14,6 @@ type PersonalitySectionProps = {
   personality: DogPersonality
 }
 
-// ポジティブな表示用ラベルに変換
 function getDogCompatibilityLabel(value: string): string {
   switch (value) {
     case '良好': return '仲良くできる'
@@ -50,7 +50,69 @@ function getCrateTrainingLabel(value: string): string {
   }
 }
 
-export default function PersonalitySection({ personality }: PersonalitySectionProps) {
+type TraitLevel = 'positive' | 'neutral' | 'negative'
+
+function getTraitBadgeClass(level: TraitLevel): string {
+  switch (level) {
+    case 'positive':
+      return 'bg-chart-2/10 text-chart-2'
+    case 'neutral':
+      return 'bg-chart-4/10 text-chart-4'
+    case 'negative':
+      return 'bg-muted text-muted-foreground'
+  }
+}
+
+interface TraitBadgeProps {
+  label: string
+  displayLabel: string
+  level: TraitLevel
+}
+
+function TraitBadge({ label, displayLabel, level }: TraitBadgeProps): JSX.Element {
+  return (
+    <div className="bg-muted/30 rounded-xl p-3">
+      <label className="text-xs text-muted-foreground block mb-1">{label}</label>
+      <span className={`text-sm font-medium px-2.5 py-1 rounded-full inline-block ${getTraitBadgeClass(level)}`}>
+        {displayLabel}
+      </span>
+    </div>
+  )
+}
+
+function getCompatibilityLevel(value: string): TraitLevel {
+  switch (value) {
+    case '良好': return 'positive'
+    case '普通': return 'neutral'
+    default: return 'negative'
+  }
+}
+
+function getHumanReactionLevel(value: string): TraitLevel {
+  switch (value) {
+    case 'フレンドリー': return 'positive'
+    case '普通': return 'neutral'
+    default: return 'negative'
+  }
+}
+
+function getToiletLevel(value: string): TraitLevel {
+  switch (value) {
+    case '完璧': return 'positive'
+    case 'ほぼOK': return 'neutral'
+    default: return 'negative'
+  }
+}
+
+function getCrateLevel(value: string): TraitLevel {
+  switch (value) {
+    case '慣れている': return 'positive'
+    case '練習中': return 'neutral'
+    default: return 'negative'
+  }
+}
+
+export default function PersonalitySection({ personality }: PersonalitySectionProps): JSX.Element | null {
   const hasAnyData = personality.personality_description ||
     personality.dog_compatibility ||
     personality.human_reaction ||
@@ -76,60 +138,32 @@ export default function PersonalitySection({ personality }: PersonalitySectionPr
 
         <div className="grid grid-cols-2 gap-3">
           {personality.dog_compatibility && (
-            <div className="bg-muted/30 rounded-xl p-3">
-              <label className="text-xs text-muted-foreground block mb-1">お友達ワンちゃんとの相性</label>
-              <span className={`text-sm font-medium px-2.5 py-1 rounded-full inline-block ${
-                personality.dog_compatibility === '良好'
-                  ? 'bg-chart-2/10 text-chart-2'
-                  : personality.dog_compatibility === '普通'
-                  ? 'bg-chart-4/10 text-chart-4'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {getDogCompatibilityLabel(personality.dog_compatibility)}
-              </span>
-            </div>
+            <TraitBadge
+              label="お友達ワンちゃんとの相性"
+              displayLabel={getDogCompatibilityLabel(personality.dog_compatibility)}
+              level={getCompatibilityLevel(personality.dog_compatibility)}
+            />
           )}
           {personality.human_reaction && (
-            <div className="bg-muted/30 rounded-xl p-3">
-              <label className="text-xs text-muted-foreground block mb-1">人への反応</label>
-              <span className={`text-sm font-medium px-2.5 py-1 rounded-full inline-block ${
-                personality.human_reaction === 'フレンドリー'
-                  ? 'bg-chart-2/10 text-chart-2'
-                  : personality.human_reaction === '普通'
-                  ? 'bg-chart-4/10 text-chart-4'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {getHumanReactionLabel(personality.human_reaction)}
-              </span>
-            </div>
+            <TraitBadge
+              label="人への反応"
+              displayLabel={getHumanReactionLabel(personality.human_reaction)}
+              level={getHumanReactionLevel(personality.human_reaction)}
+            />
           )}
           {personality.toilet_status && (
-            <div className="bg-muted/30 rounded-xl p-3">
-              <label className="text-xs text-muted-foreground block mb-1">トイレトレーニング</label>
-              <span className={`text-sm font-medium px-2.5 py-1 rounded-full inline-block ${
-                personality.toilet_status === '完璧'
-                  ? 'bg-chart-2/10 text-chart-2'
-                  : personality.toilet_status === 'ほぼOK'
-                  ? 'bg-chart-4/10 text-chart-4'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {getToiletStatusLabel(personality.toilet_status)}
-              </span>
-            </div>
+            <TraitBadge
+              label="トイレトレーニング"
+              displayLabel={getToiletStatusLabel(personality.toilet_status)}
+              level={getToiletLevel(personality.toilet_status)}
+            />
           )}
           {personality.crate_training && (
-            <div className="bg-muted/30 rounded-xl p-3">
-              <label className="text-xs text-muted-foreground block mb-1">クレート</label>
-              <span className={`text-sm font-medium px-2.5 py-1 rounded-full inline-block ${
-                personality.crate_training === '慣れている'
-                  ? 'bg-chart-2/10 text-chart-2'
-                  : personality.crate_training === '練習中'
-                  ? 'bg-chart-4/10 text-chart-4'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {getCrateTrainingLabel(personality.crate_training)}
-              </span>
-            </div>
+            <TraitBadge
+              label="クレート"
+              displayLabel={getCrateTrainingLabel(personality.crate_training)}
+              level={getCrateLevel(personality.crate_training)}
+            />
           )}
         </div>
 

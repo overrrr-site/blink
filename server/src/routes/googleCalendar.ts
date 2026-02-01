@@ -19,7 +19,6 @@ router.get('/auth', authenticate, async (req: AuthRequest, res) => {
     const authUrl = getAuthUrl(req.storeId);
     res.json({ authUrl });
   } catch (error) {
-    console.error('Error generating auth URL:', error);
     sendServerError(res, '認証URLの生成に失敗しました', error);
   }
 });
@@ -67,7 +66,6 @@ router.get('/status', authenticate, async (req: AuthRequest, res) => {
       enabled: integration?.enabled || false,
     });
   } catch (error) {
-    console.error('Error getting status:', error);
     sendServerError(res, '連携状態の取得に失敗しました', error);
   }
 });
@@ -79,7 +77,6 @@ router.post('/disconnect', authenticate, async (req: AuthRequest, res) => {
       return;
     }
 
-    const { Pool } = await import('pg');
     const pool = (await import('../db/connection.js')).default;
 
     await pool.query(
@@ -89,7 +86,6 @@ router.post('/disconnect', authenticate, async (req: AuthRequest, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error disconnecting:', error);
     sendServerError(res, '連携の無効化に失敗しました', error);
   }
 });

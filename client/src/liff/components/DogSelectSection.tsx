@@ -1,14 +1,9 @@
 import { Icon } from '../../components/Icon'
 import { getAvatarUrl } from '../../utils/image'
-
-type Dog = {
-  id: number
-  name: string
-  photo_url: string
-}
+import type { LiffDog } from '../types/dog'
 
 type DogSelectSectionProps = {
-  dogs: Dog[]
+  dogs: LiffDog[]
   selectedDogId: string
   onChange: (id: string) => void
 }

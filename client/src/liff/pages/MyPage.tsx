@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
-import liffClient from '../api/client';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { getAvatarUrl } from '../../utils/image';
+import useSWR from 'swr';
+import { liffFetcher } from '../lib/swr';
 
 interface OwnerData {
   id: number;
@@ -41,25 +41,67 @@ interface OwnerData {
   }>;
 }
 
+type VaccineBadgeProps = {
+  label: string;
+  expiryDate: string;
+};
+
+function VaccineBadge({ label, expiryDate }: VaccineBadgeProps) {
+  const isExpired = new Date(expiryDate) < new Date();
+  const badgeClass = isExpired
+    ? 'bg-destructive/10 text-destructive'
+    : 'bg-chart-2/10 text-chart-2';
+
+  return (
+    <span className={`text-[10px] px-2 py-1 rounded-lg font-medium ${badgeClass}`}>
+      {isExpired && <Icon icon="solar:danger-triangle-bold" width="12" height="12" className="mr-1 inline-block align-middle" />}
+      {label} {format(new Date(expiryDate), 'yyyy/M/d', { locale: ja })}まで
+      {isExpired && ' (期限切れ)'}
+    </span>
+  );
+}
+
+type MenuButtonProps = {
+  onClick: () => void;
+  icon: string;
+  label: string;
+  badge?: string;
+  destructive?: boolean;
+  isLast?: boolean;
+};
+
+function MenuButton({ onClick, icon, label, badge, destructive, isLast }: MenuButtonProps) {
+  const baseClass = destructive
+    ? 'hover:bg-destructive/5 active:bg-destructive/10'
+    : 'hover:bg-muted/50 active:bg-muted';
+  const borderClass = isLast ? '' : 'border-b border-border';
+  const textClass = destructive ? 'text-destructive' : '';
+  const iconClass = destructive ? 'text-destructive' : 'text-muted-foreground';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between p-4 ${baseClass} transition-colors ${borderClass} min-h-[56px]`}
+      aria-label={label}
+    >
+      <div className="flex items-center gap-3">
+        <Icon icon={icon} width="20" height="20" className={iconClass} />
+        <span className={`text-sm font-medium ${textClass}`}>{label}</span>
+        {badge && (
+          <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{badge}</span>
+        )}
+      </div>
+      <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
+    </button>
+  );
+}
+
 export default function MyPage() {
   const navigate = useNavigate();
   const { clearAuth } = useLiffAuthStore();
-  const [data, setData] = useState<OwnerData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await liffClient.get('/me');
-        setData(response.data);
-      } catch {
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const { data, isLoading: loading } = useSWR<OwnerData>('/me', liffFetcher, {
+    revalidateOnFocus: false,
+  });
 
   const handleLogout = () => {
     if (confirm('ログアウトしますか？')) {
@@ -209,34 +251,12 @@ export default function MyPage() {
                       <span className="text-[10px] font-semibold text-muted-foreground">ワクチン接種状況</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {dog.rabies_vaccine_date && (() => {
-                        const isExpired = new Date(dog.rabies_vaccine_date) < new Date();
-                        return (
-                          <span className={`text-[10px] px-2 py-1 rounded-lg font-medium ${
-                            isExpired 
-                              ? 'bg-destructive/10 text-destructive' 
-                              : 'bg-chart-2/10 text-chart-2'
-                          }`}>
-                            {isExpired && <Icon icon="solar:danger-triangle-bold" width="12" height="12" className="mr-1 inline-block align-middle" />}
-                            狂犬病 {format(new Date(dog.rabies_vaccine_date), 'yyyy/M/d', { locale: ja })}まで
-                            {isExpired && ' (期限切れ)'}
-                          </span>
-                        );
-                      })()}
-                      {dog.mixed_vaccine_date && (() => {
-                        const isExpired = new Date(dog.mixed_vaccine_date) < new Date();
-                        return (
-                          <span className={`text-[10px] px-2 py-1 rounded-lg font-medium ${
-                            isExpired 
-                              ? 'bg-destructive/10 text-destructive' 
-                              : 'bg-chart-2/10 text-chart-2'
-                          }`}>
-                            {isExpired && <Icon icon="solar:danger-triangle-bold" width="12" height="12" className="mr-1 inline-block align-middle" />}
-                            混合 {format(new Date(dog.mixed_vaccine_date), 'yyyy/M/d', { locale: ja })}まで
-                            {isExpired && ' (期限切れ)'}
-                          </span>
-                        );
-                      })()}
+                      {dog.rabies_vaccine_date && (
+                        <VaccineBadge label="狂犬病" expiryDate={dog.rabies_vaccine_date} />
+                      )}
+                      {dog.mixed_vaccine_date && (
+                        <VaccineBadge label="混合" expiryDate={dog.mixed_vaccine_date} />
+                      )}
                     </div>
                   </div>
                 )}
@@ -331,75 +351,12 @@ export default function MyPage() {
       {/* メニュー */}
       <section className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
         <h3 className="sr-only">メニュー</h3>
-        <button 
-          onClick={() => alert('通知設定機能は準備中です')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border min-h-[56px]"
-          aria-label="通知設定"
-        >
-          <div className="flex items-center gap-3">
-            <Icon icon="solar:bell-bold" width="20" height="20" className="text-muted-foreground" />
-            <span className="text-sm font-medium">通知設定</span>
-            <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">準備中</span>
-          </div>
-          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-        </button>
-        <button 
-          onClick={() => alert('よくある質問ページは準備中です')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border min-h-[56px]"
-          aria-label="よくある質問"
-        >
-          <div className="flex items-center gap-3">
-            <Icon icon="solar:question-circle-bold" width="20" height="20" className="text-muted-foreground" />
-            <span className="text-sm font-medium">よくある質問</span>
-            <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">準備中</span>
-          </div>
-          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-        </button>
-        <button 
-          onClick={() => alert('お問い合わせ機能は準備中です')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border min-h-[56px]"
-          aria-label="お問い合わせ"
-        >
-          <div className="flex items-center gap-3">
-            <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-muted-foreground" />
-            <span className="text-sm font-medium">お問い合わせ</span>
-            <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">準備中</span>
-          </div>
-          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-        </button>
-        <button 
-          onClick={() => navigate('/privacy')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border min-h-[56px]"
-          aria-label="プライバシーポリシー"
-        >
-          <div className="flex items-center gap-3">
-            <Icon icon="solar:shield-check-bold" width="20" height="20" className="text-muted-foreground" />
-            <span className="text-sm font-medium">プライバシーポリシー</span>
-          </div>
-          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-        </button>
-        <button 
-          onClick={() => navigate('/terms')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border min-h-[56px]"
-          aria-label="利用規約"
-        >
-          <div className="flex items-center gap-3">
-            <Icon icon="solar:document-text-bold" width="20" height="20" className="text-muted-foreground" />
-            <span className="text-sm font-medium">利用規約</span>
-          </div>
-          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-        </button>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center justify-between p-4 hover:bg-destructive/5 active:bg-destructive/10 transition-colors min-h-[56px]"
-          aria-label="ログアウト"
-        >
-          <div className="flex items-center gap-3">
-            <Icon icon="solar:logout-2-bold" width="20" height="20" className="text-destructive" />
-            <span className="text-sm font-medium text-destructive">ログアウト</span>
-          </div>
-          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-        </button>
+        <MenuButton onClick={() => alert('通知設定機能は準備中です')} icon="solar:bell-bold" label="通知設定" badge="準備中" />
+        <MenuButton onClick={() => alert('よくある質問ページは準備中です')} icon="solar:question-circle-bold" label="よくある質問" badge="準備中" />
+        <MenuButton onClick={() => alert('お問い合わせ機能は準備中です')} icon="solar:chat-round-dots-bold" label="お問い合わせ" badge="準備中" />
+        <MenuButton onClick={() => navigate('/privacy')} icon="solar:shield-check-bold" label="プライバシーポリシー" />
+        <MenuButton onClick={() => navigate('/terms')} icon="solar:document-text-bold" label="利用規約" />
+        <MenuButton onClick={handleLogout} icon="solar:logout-2-bold" label="ログアウト" destructive isLast />
       </section>
 
       {/* バージョン情報 */}

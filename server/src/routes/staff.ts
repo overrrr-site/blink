@@ -34,7 +34,6 @@ router.get('/', async (req: AuthRequest, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching staff:', error);
     sendServerError(res, 'スタッフ一覧の取得に失敗しました', error);
   }
 });
@@ -58,7 +57,6 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching staff:', error);
     sendServerError(res, 'スタッフ情報の取得に失敗しました', error);
   }
 });
@@ -127,7 +125,6 @@ router.post('/', async (req: AuthRequest, res) => {
       password_hash: undefined, // パスワードハッシュは返さない
     });
   } catch (error) {
-    console.error('Error creating staff:', error);
     sendServerError(res, 'スタッフの作成に失敗しました', error);
   }
 });
@@ -170,7 +167,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     // 更新データを構築
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number)[] = [];
     let paramIndex = 1;
 
     if (name) {
@@ -206,7 +203,6 @@ router.put('/:id', async (req: AuthRequest, res) => {
       password_hash: undefined,
     });
   } catch (error) {
-    console.error('Error updating staff:', error);
     sendServerError(res, 'スタッフ情報の更新に失敗しました', error);
   }
 });
@@ -257,7 +253,6 @@ router.delete('/:id', async (req: AuthRequest, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting staff:', error);
     sendServerError(res, 'スタッフの削除に失敗しました', error);
   }
 });

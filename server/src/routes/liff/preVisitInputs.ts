@@ -48,7 +48,6 @@ router.get('/pre-visit-inputs/latest/:dogId', async function(req, res) {
 
     res.json(result.rows[0]);
   } catch (error: any) {
-    console.error('Error fetching latest pre-visit input:', error);
     sendServerError(res, '最新登園前入力の取得に失敗しました', error);
   }
 });
@@ -89,61 +88,40 @@ router.post('/pre-visit-inputs', async function(req, res) {
       return;
     }
 
-    // 既存の入力があるか確認
-    const existing = await pool.query(
-      `SELECT id FROM pre_visit_inputs WHERE reservation_id = $1`,
-      [reservation_id]
-    );
+    const mealDataJson = meal_data ? JSON.stringify(meal_data) : null;
 
-    let result;
-    if (existing.rows.length > 0) {
-      // 更新
-      result = await pool.query(
-        `UPDATE pre_visit_inputs SET
-          morning_urination = $1, morning_defecation = $2,
-          afternoon_urination = $3, afternoon_defecation = $4,
-          breakfast_status = $5, health_status = $6, notes = $7,
-          meal_data = $8, submitted_at = CURRENT_TIMESTAMP
-        WHERE reservation_id = $9
-        RETURNING *`,
-        [
-          morning_urination,
-          morning_defecation,
-          afternoon_urination,
-          afternoon_defecation,
-          breakfast_status,
-          health_status,
-          notes,
-          meal_data ? JSON.stringify(meal_data) : null,
-          reservation_id,
-        ]
-      );
-    } else {
-      // 新規作成
-      result = await pool.query(
-        `INSERT INTO pre_visit_inputs (
-          reservation_id, morning_urination, morning_defecation,
-          afternoon_urination, afternoon_defecation,
-          breakfast_status, health_status, notes, meal_data
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        RETURNING *`,
-        [
-          reservation_id,
-          morning_urination,
-          morning_defecation,
-          afternoon_urination,
-          afternoon_defecation,
-          breakfast_status,
-          health_status,
-          notes,
-          meal_data ? JSON.stringify(meal_data) : null,
-        ]
-      );
-    }
+    const result = await pool.query(
+      `INSERT INTO pre_visit_inputs (
+        reservation_id, morning_urination, morning_defecation,
+        afternoon_urination, afternoon_defecation,
+        breakfast_status, health_status, notes, meal_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (reservation_id) DO UPDATE SET
+        morning_urination = EXCLUDED.morning_urination,
+        morning_defecation = EXCLUDED.morning_defecation,
+        afternoon_urination = EXCLUDED.afternoon_urination,
+        afternoon_defecation = EXCLUDED.afternoon_defecation,
+        breakfast_status = EXCLUDED.breakfast_status,
+        health_status = EXCLUDED.health_status,
+        notes = EXCLUDED.notes,
+        meal_data = EXCLUDED.meal_data,
+        submitted_at = CURRENT_TIMESTAMP
+      RETURNING *`,
+      [
+        reservation_id,
+        morning_urination,
+        morning_defecation,
+        afternoon_urination,
+        afternoon_defecation,
+        breakfast_status,
+        health_status,
+        notes,
+        mealDataJson,
+      ]
+    );
 
     res.json(result.rows[0]);
   } catch (error: any) {
-    console.error('Pre-visit input save error:', error);
     sendServerError(res, '登園前入力の保存に失敗しました', error);
   }
 });

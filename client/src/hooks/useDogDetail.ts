@@ -1,6 +1,21 @@
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 
+interface DogReservationItem {
+  id: number
+  reservation_date: string
+  reservation_time: string
+  status: string
+  owner_name?: string | null
+}
+
+interface DogJournalItem {
+  id: number
+  journal_date: string
+  comment?: string | null
+  staff_name?: string | null
+}
+
 interface DogDetailData {
   id: number
   name: string
@@ -17,32 +32,17 @@ interface DogDetailData {
   journals?: DogJournalItem[]
 }
 
-interface DogReservationItem {
-  id: number
-  reservation_date: string
-  reservation_time: string
-  status: string
-  owner_name?: string | null
-}
-
-interface DogJournalItem {
-  id: number
-  journal_date: string
-  comment?: string | null
-  staff_name?: string | null
-}
-
 interface ContractData {
   id: number
   dog_id: number
   contract_type: string
-  course_name?: string | null
-  price?: number | null
-  total_sessions?: number | null
-  remaining_sessions?: number | null
-  valid_until?: string | null
-  calculated_remaining?: number | null
-  monthly_sessions?: number | null
+  course_name?: string
+  price?: number
+  total_sessions?: number
+  remaining_sessions?: number
+  valid_until?: string
+  calculated_remaining?: number
+  monthly_sessions?: number
 }
 
 export function useDogDetail(id?: string) {
@@ -75,15 +75,7 @@ export function useDogDetail(id?: string) {
   return {
     dog: normalizedDog,
     loading: isLoading,
-    contracts: (contracts ?? []).map((contract) => ({
-      ...contract,
-      course_name: contract.course_name ?? undefined,
-      valid_until: contract.valid_until ?? undefined,
-      price: contract.price ?? undefined,
-      remaining_sessions: contract.remaining_sessions ?? undefined,
-      calculated_remaining: contract.calculated_remaining ?? undefined,
-      monthly_sessions: contract.monthly_sessions ?? undefined,
-    })),
+    contracts: contracts ?? [],
     loadingContracts: contractsLoading,
   }
 }

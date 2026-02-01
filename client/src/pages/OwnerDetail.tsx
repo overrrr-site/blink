@@ -1,18 +1,34 @@
-import { useMemo } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
+import PageHeader from '../components/PageHeader'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 
-const OwnerDetail = () => {
+interface OwnerDog {
+  id: number
+  name: string
+  breed: string
+  photo_url?: string
+}
+
+interface OwnerDetailData {
+  id: number
+  name: string
+  name_kana?: string
+  phone: string
+  email?: string
+  address?: string
+  dogs: OwnerDog[]
+}
+
+function OwnerDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { data, isLoading } = useSWR<any>(
+  const { data: owner, isLoading } = useSWR<OwnerDetailData>(
     id ? `/owners/${id}` : null,
     fetcher,
     { revalidateOnFocus: true }
   )
-  const owner = useMemo(() => data ?? null, [data])
 
   if (isLoading) {
     return (
@@ -32,25 +48,19 @@ const OwnerDetail = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="飼い主詳細"
+        backPath="/customers"
+        rightContent={
           <button
-            onClick={() => navigate('/customers')}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
-            aria-label="顧客一覧に戻る"
+            onClick={() => navigate(`/owners/${id}/edit`)}
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center -mr-3 text-primary rounded-full active:bg-primary/10 transition-colors"
+            aria-label="編集"
           >
-            <Icon icon="solar:arrow-left-linear" width="24" height="24" />
+            <Icon icon="solar:pen-bold" width="22" height="22" />
           </button>
-          <h1 className="text-lg font-bold font-heading">飼い主詳細</h1>
-        </div>
-        <button
-          onClick={() => navigate(`/owners/${id}/edit`)}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -mr-3 text-primary rounded-full active:bg-primary/10 transition-colors"
-          aria-label="編集"
-        >
-          <Icon icon="solar:pen-bold" width="22" height="22" />
-        </button>
-      </header>
+        }
+      />
 
       <main className="px-5 space-y-4">
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
@@ -136,7 +146,7 @@ const OwnerDetail = () => {
             ) : (
               <div className="overflow-x-auto pb-2 -mx-2 px-2">
                 <div className="flex gap-3">
-                  {owner.dogs.map((dog: any) => (
+                  {owner.dogs.map((dog) => (
                     <div
                       key={dog.id}
                       onClick={() => navigate(`/dogs/${dog.id}`)}

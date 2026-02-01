@@ -55,8 +55,8 @@ const AuthCallback = () => {
 
         // ダッシュボードにリダイレクト
         navigate('/dashboard', { replace: true })
-      } catch (err: any) {
-        setError(err.message || '認証に失敗しました')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '認証に失敗しました')
         // 3秒後にログインページにリダイレクト
         setTimeout(() => {
           navigate('/login', { replace: true })

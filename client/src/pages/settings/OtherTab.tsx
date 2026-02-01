@@ -4,11 +4,19 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import api from '../../api/client'
 
+type ExportType = 'owners' | 'dogs' | 'journals'
+
+const EXPORT_ITEMS: { type: ExportType; icon: string; label: string }[] = [
+  { type: 'owners', icon: 'solar:users-group-rounded-bold', label: '飼い主データ' },
+  { type: 'dogs', icon: 'mdi:dog', label: 'ワンちゃんデータ' },
+  { type: 'journals', icon: 'solar:notebook-bold', label: '日誌データ' },
+]
+
 function OtherTab() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const isOwner = user?.isOwner || false
-  const [exporting, setExporting] = useState<string | null>(null)
+  const [exporting, setExporting] = useState<ExportType | null>(null)
 
   function handleLogout() {
     if (!confirm('ログアウトしますか？')) {
@@ -18,57 +26,58 @@ function OtherTab() {
     navigate('/login')
   }
 
-  async function exportData(type: 'owners' | 'dogs' | 'journals') {
+  async function exportData(type: ExportType) {
     setExporting(type)
     try {
-      let data: any[] = []
+      type CsvRow = Record<string, string | number>
+      let data: CsvRow[] = []
       let filename = ''
       let headers: string[] = []
 
       switch (type) {
         case 'owners': {
-          const res = await api.get('/owners')
-          data = res.data.map((o: any) => ({
-            ID: o.id,
-            氏名: o.name,
-            電話番号: o.phone || '',
-            メール: o.email || '',
-            住所: o.address || '',
-            登録日: o.created_at?.split('T')[0] || '',
+          const res = await api.get<Array<Record<string, unknown>>>('/owners')
+          data = res.data.map((o) => ({
+            ID: Number(o.id),
+            氏名: String(o.name || ''),
+            電話番号: String(o.phone || ''),
+            メール: String(o.email || ''),
+            住所: String(o.address || ''),
+            登録日: String(o.created_at || '').split('T')[0] || '',
           }))
           headers = ['ID', '氏名', '電話番号', 'メール', '住所', '登録日']
           filename = '飼い主一覧'
           break
         }
         case 'dogs': {
-          const res = await api.get('/dogs')
-          const genderLabel = (gender: string) => {
+          const res = await api.get<Array<Record<string, unknown>>>('/dogs')
+          const genderLabel = (gender: unknown): string => {
             if (gender === 'male') return 'オス'
             if (gender === 'female') return 'メス'
             return ''
           }
-          data = res.data.map((d: any) => ({
-            ID: d.id,
-            犬名: d.name,
-            犬種: d.breed || '',
-            生年月日: d.birthday || '',
+          data = res.data.map((d) => ({
+            ID: Number(d.id),
+            犬名: String(d.name || ''),
+            犬種: String(d.breed || ''),
+            生年月日: String(d.birthday || ''),
             性別: genderLabel(d.gender),
-            飼い主: d.owner_name || '',
-            登録日: d.created_at?.split('T')[0] || '',
+            飼い主: String(d.owner_name || ''),
+            登録日: String(d.created_at || '').split('T')[0] || '',
           }))
           headers = ['ID', '犬名', '犬種', '生年月日', '性別', '飼い主', '登録日']
           filename = '犬一覧'
           break
         }
         case 'journals': {
-          const res = await api.get('/journals')
-          data = res.data.map((j: any) => ({
-            ID: j.id,
-            日付: j.journal_date,
-            犬名: j.dog_name,
-            飼い主: j.owner_name,
-            担当: j.staff_name || '',
-            コメント: j.comment?.replace(/"/g, '""') || '',
+          const res = await api.get<Array<Record<string, unknown>>>('/journals')
+          data = res.data.map((j) => ({
+            ID: Number(j.id),
+            日付: String(j.journal_date || ''),
+            犬名: String(j.dog_name || ''),
+            飼い主: String(j.owner_name || ''),
+            担当: String(j.staff_name || ''),
+            コメント: String(j.comment || '').replace(/"/g, '""'),
           }))
           headers = ['ID', '日付', '犬名', '飼い主', '担当', 'コメント']
           filename = '日誌一覧'
@@ -80,7 +89,7 @@ function OtherTab() {
       const csvContent =
         '\uFEFF' +
         [headers, ...data.map((row) => headers.map((h) => row[h]))].map((row) =>
-          row.map((cell) => `"${cell || ''}"`).join(',')
+          row.map((cell) => `"${cell ?? ''}"`).join(',')
         ).join('\n')
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -110,51 +119,24 @@ function OtherTab() {
           </h2>
         </div>
         <div className="p-4 space-y-3">
-          <button
-            onClick={() => exportData('owners')}
-            disabled={exporting !== null}
-            className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
-          >
-            <div className="flex items-center gap-3">
-              <Icon icon="solar:users-group-rounded-bold" width="20" height="20" className="text-muted-foreground" />
-              <span className="text-sm font-medium">飼い主データ</span>
-            </div>
-            {exporting === 'owners' ? (
-              <span className="text-xs text-muted-foreground">エクスポート中...</span>
-            ) : (
-              <Icon icon="solar:download-bold" width="20" height="20" className="text-primary" />
-            )}
-          </button>
-          <button
-            onClick={() => exportData('dogs')}
-            disabled={exporting !== null}
-            className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
-          >
-            <div className="flex items-center gap-3">
-              <Icon icon="mdi:dog" width="20" height="20" className="text-muted-foreground" />
-              <span className="text-sm font-medium">ワンちゃんデータ</span>
-            </div>
-            {exporting === 'dogs' ? (
-              <span className="text-xs text-muted-foreground">エクスポート中...</span>
-            ) : (
-              <Icon icon="solar:download-bold" width="20" height="20" className="text-primary" />
-            )}
-          </button>
-          <button
-            onClick={() => exportData('journals')}
-            disabled={exporting !== null}
-            className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
-          >
-            <div className="flex items-center gap-3">
-              <Icon icon="solar:notebook-bold" width="20" height="20" className="text-muted-foreground" />
-              <span className="text-sm font-medium">日誌データ</span>
-            </div>
-            {exporting === 'journals' ? (
-              <span className="text-xs text-muted-foreground">エクスポート中...</span>
-            ) : (
-              <Icon icon="solar:download-bold" width="20" height="20" className="text-primary" />
-            )}
-          </button>
+          {EXPORT_ITEMS.map(({ type, icon, label }) => (
+            <button
+              key={type}
+              onClick={() => exportData(type)}
+              disabled={exporting !== null}
+              className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
+            >
+              <div className="flex items-center gap-3">
+                <Icon icon={icon} width="20" height="20" className="text-muted-foreground" />
+                <span className="text-sm font-medium">{label}</span>
+              </div>
+              {exporting === type ? (
+                <span className="text-xs text-muted-foreground">エクスポート中...</span>
+              ) : (
+                <Icon icon="solar:download-bold" width="20" height="20" className="text-primary" />
+              )}
+            </button>
+          ))}
           <p className="text-[10px] text-muted-foreground text-center pt-2">
             CSV形式でダウンロードできます
           </p>

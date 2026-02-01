@@ -1,7 +1,7 @@
-export interface Staff {
-  id: number
-  name: string
-}
+import type { MealEntry } from '../../types/meal'
+
+export type { Staff } from '../../types/staff'
+export type { MealEntry }
 
 export interface TrainingItem {
   id: string
@@ -18,12 +18,6 @@ export interface AchievementOption {
   value: string
   label: string
   color: string
-}
-
-export interface MealEntry {
-  time: string
-  food_name: string
-  amount: string
 }
 
 export interface JournalFormData {

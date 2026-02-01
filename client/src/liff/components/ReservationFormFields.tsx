@@ -1,17 +1,11 @@
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useAvailability } from '../hooks/useAvailability'
-
-type FormData = {
-  reservation_date: string
-  reservation_time: string
-  pickup_time: string
-  notes: string
-}
+import type { LiffReservationForm } from '../../types/reservation'
 
 type ReservationFormFieldsProps = {
-  formData: FormData
-  onChange: (fields: Partial<FormData>) => void
+  formData: LiffReservationForm
+  onChange: (fields: Partial<LiffReservationForm>) => void
 }
 
 export default function ReservationFormFields({ formData, onChange }: ReservationFormFieldsProps) {

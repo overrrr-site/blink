@@ -17,30 +17,29 @@ export interface PaginatedResponse<T> {
   };
 }
 
-function parsePositiveInt(value: string | undefined): number | null {
-  if (!value) return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  const intValue = Math.floor(parsed);
-  return intValue > 0 ? intValue : null;
-}
-
-function firstQueryValue(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
+function parsePositiveInt(value: string | string[] | undefined): number | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return null;
+  const n = Math.floor(Number(raw));
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export function parsePaginationParams(query: { page?: string | string[]; limit?: string | string[] }): PaginationParams {
-  const pageValue = parsePositiveInt(firstQueryValue(query.page));
-  const limitValue = parsePositiveInt(firstQueryValue(query.limit));
-
-  const page = pageValue && pageValue > 0 ? pageValue : 1;
-  const limit = Math.min(limitValue ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+  const page = parsePositiveInt(query.page) ?? 1;
+  const limit = Math.min(parsePositiveInt(query.limit) ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
   const offset = (page - 1) * limit;
 
   return { page, limit, offset };
+}
+
+/**
+ * Extracts total count and strips the `total_count` column from rows
+ * returned by queries using `COUNT(*) OVER() as total_count`.
+ */
+export function extractTotalCount(rows: Record<string, unknown>[]): { data: Record<string, unknown>[]; total: number } {
+  const total = rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0;
+  const data = rows.map(({ total_count, ...rest }) => rest);
+  return { data, total };
 }
 
 export function buildPaginatedResponse<T>(data: T[], total: number, params: PaginationParams): PaginatedResponse<T> {

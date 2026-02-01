@@ -57,11 +57,12 @@ export default function Login() {
               navigate(redirectTo, { replace: true });
               return;
             }
-          } catch (authError: any) {
-            if (authError.response?.data?.requiresRegistration) {
+          } catch (authError) {
+            const axiosErr = authError as { response?: { data?: { requiresRegistration?: boolean; error?: string } }; message?: string };
+            if (axiosErr.response?.data?.requiresRegistration) {
               setError('開発用LINE ID (dev-user-12345) がデータベースに登録されていません。\nターミナルで以下を実行:\npsql -d pet_carte -c "UPDATE owners SET line_id = \'dev-user-12345\' WHERE id = 1;"');
             } else {
-              setError('開発環境での認証に失敗しました: ' + (authError.response?.data?.error || authError.message));
+              setError('開発環境での認証に失敗しました: ' + (axiosErr.response?.data?.error || axiosErr.message));
             }
             setLoading(false);
             return;
@@ -98,14 +99,15 @@ export default function Login() {
         } else {
           setError('認証に失敗しました');
         }
-      } catch (err: any) {
-        
+      } catch (err) {
+        const axiosErr = err as { response?: { data?: { requiresRegistration?: boolean } }; message?: string };
+
         // リダイレクト中のエラーは無視
-        if (err.message === 'Redirecting to LINE login...') {
+        if (axiosErr.message === 'Redirecting to LINE login...') {
           return;
         }
-        
-        if (err.response?.data?.requiresRegistration) {
+
+        if (axiosErr.response?.data?.requiresRegistration) {
           // LINE User IDを取得して紐付け画面へ遷移
           try {
             if (!isLiffLoggedIn()) {
@@ -122,7 +124,7 @@ export default function Login() {
             setError('LINEアカウント情報の取得に失敗しました');
           }
         } else {
-          setError('ログインに失敗しました: ' + (err.message || '不明なエラー'));
+          setError('ログインに失敗しました: ' + (axiosErr.message || '不明なエラー'));
         }
       } finally {
         setLoading(false);

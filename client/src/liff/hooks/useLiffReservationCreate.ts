@@ -1,26 +1,19 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import liffClient from '../api/client'
+import { getAxiosErrorMessage } from '../../utils/error'
+import type { LiffDog } from '../types/dog'
+import type { LiffReservationForm } from '../../types/reservation'
 
-type Dog = {
-  id: number
-  name: string
-  photo_url: string
-}
-
-type FormData = {
+type LiffReservationCreateForm = LiffReservationForm & {
   dog_id: string
-  reservation_date: string
-  reservation_time: string
-  pickup_time: string
-  notes: string
 }
 
 export function useLiffReservationCreate() {
-  const [dogs, setDogs] = useState<Dog[]>([])
+  const [dogs, setDogs] = useState<LiffDog[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<LiffReservationCreateForm>({
     dog_id: '',
     reservation_date: format(new Date(), 'yyyy-MM-dd'),
     reservation_time: '09:00',
@@ -64,9 +57,9 @@ export function useLiffReservationCreate() {
         notes: formData.notes || null,
       })
       return true
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating reservation:', error)
-      alert(error.response?.data?.error || '予約の作成に失敗しました')
+      alert(getAxiosErrorMessage(error, '予約の作成に失敗しました'))
       return false
     } finally {
       setSaving(false)

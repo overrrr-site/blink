@@ -5,9 +5,31 @@ import api from '../api/client'
 
 type TabType = 'owners' | 'dogs'
 
+interface OwnerDogSummary {
+  id: number
+  name: string
+  photo_url?: string
+}
+
+interface OwnerListItem {
+  id: number
+  name: string
+  created_at: string
+  last_reservation_date?: string
+  dogs: OwnerDogSummary[]
+}
+
+interface DogListItem {
+  id: number
+  name: string
+  breed: string
+  photo_url?: string
+  owner_name: string
+}
+
 const OwnersList = () => {
-  const [owners, setOwners] = useState<any[]>([])
-  const [dogs, setDogs] = useState<any[]>([])
+  const [owners, setOwners] = useState<OwnerListItem[]>([])
+  const [dogs, setDogs] = useState<DogListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<TabType>('owners')
@@ -182,7 +204,7 @@ const OwnersList = () => {
                   </div>
                   {owner.dogs && owner.dogs.length > 0 && (
                     <div className="flex gap-2 flex-wrap">
-                      {owner.dogs.map((dog: any) => (
+                      {owner.dogs.map((dog) => (
                         <div
                           key={dog.id}
                           className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2 py-1"

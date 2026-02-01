@@ -1,14 +1,7 @@
 import { useState } from 'react'
 import api from '../api/client'
+import type { StaffReservationForm } from '../types/reservation'
 import { formatDateISO } from '../utils/date'
-
-type ReservationForm = {
-  reservation_date: string
-  reservation_time: string
-  pickup_time: string
-  reservation_type: 'regular' | 'single'
-  notes: string
-}
 
 type UseReservationCreateOptions = {
   dateParam: string | null
@@ -19,7 +12,7 @@ export function useReservationCreate({ dateParam, onSuccess }: UseReservationCre
   const [saving, setSaving] = useState(false)
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
-  const [form, setForm] = useState<ReservationForm>({
+  const [form, setForm] = useState<StaffReservationForm>({
     reservation_date: dateParam || formatDateISO(new Date()),
     reservation_time: '09:00',
     pickup_time: '17:00',

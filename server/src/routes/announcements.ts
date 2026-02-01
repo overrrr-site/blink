@@ -22,7 +22,6 @@ router.get('/', async (req: AuthRequest, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching announcements:', error);
     sendServerError(res, 'お知らせの取得に失敗しました', error);
   }
 });
@@ -47,7 +46,6 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching announcement:', error);
     sendServerError(res, 'お知らせの取得に失敗しました', error);
   }
 });
@@ -82,7 +80,6 @@ router.post('/', async (req: AuthRequest, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating announcement:', error);
     sendServerError(res, 'お知らせの作成に失敗しました', error);
   }
 });
@@ -120,7 +117,6 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating announcement:', error);
     sendServerError(res, 'お知らせの更新に失敗しました', error);
   }
 });
@@ -143,7 +139,6 @@ router.delete('/:id', async (req: AuthRequest, res) => {
 
     res.json({ message: 'お知らせを削除しました' });
   } catch (error) {
-    console.error('Error deleting announcement:', error);
     sendServerError(res, 'お知らせの削除に失敗しました', error);
   }
 });
@@ -178,7 +173,6 @@ router.get('/stats/count', async (req: AuthRequest, res) => {
       draft: parseInt(draftResult.rows[0].count),
     });
   } catch (error) {
-    console.error('Error fetching announcement stats:', error);
     sendServerError(res, 'お知らせ件数の取得に失敗しました', error);
   }
 });

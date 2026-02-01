@@ -1,12 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 
-// 秒数を指定してキャッシュヘッダーを付与するミドルウェア
-export function cacheControl(maxAge: number = 0, staleWhileRevalidate: number = 0) {
-  return (req: Request, res: Response, next: NextFunction) => {
+type ExpressMiddleware = (req: Request, res: Response, next: NextFunction) => void;
+
+export function cacheControl(maxAge: number = 0, staleWhileRevalidate: number = 0): ExpressMiddleware {
+  return function (req: Request, res: Response, next: NextFunction): void {
     if (req.method === 'GET') {
       if (maxAge > 0) {
-        const swr = staleWhileRevalidate > 0 ? `, stale-while-revalidate=${staleWhileRevalidate}` : '';
-        res.setHeader('Cache-Control', `private, max-age=${maxAge}${swr}`);
+        const directives = ['private', `max-age=${maxAge}`];
+        if (staleWhileRevalidate > 0) {
+          directives.push(`stale-while-revalidate=${staleWhileRevalidate}`);
+        }
+        res.setHeader('Cache-Control', directives.join(', '));
       } else {
         res.setHeader('Cache-Control', 'no-cache');
       }

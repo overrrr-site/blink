@@ -11,11 +11,11 @@
       "destination": "/api"
     },
     {
-      "source": "/liff",
+      "source": "/liff/(.*)",
       "destination": "/liff.html"
     },
     {
-      "source": "/liff/(.*)",
+      "source": "/liff",
       "destination": "/liff.html"
     },
     {

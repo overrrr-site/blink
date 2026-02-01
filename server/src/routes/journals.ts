@@ -2,7 +2,7 @@ import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { cacheControl } from '../middleware/cache.js';
-import { buildPaginatedResponse, parsePaginationParams } from '../utils/pagination.js';
+import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../utils/pagination.js';
 import { sendJournalNotification } from '../services/notificationService.js';
 import {
   isSupabaseStorageAvailable,
@@ -99,14 +99,9 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
     params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
-    const data = result.rows.map((row) => {
-      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
-      return rest;
-    });
+    const { data, total } = extractTotalCount(result.rows as Record<string, unknown>[]);
     res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error) {
-    console.error('Error fetching journals:', error);
     sendServerError(res, '日誌一覧の取得に失敗しました', error);
   }
 });
@@ -160,7 +155,6 @@ router.get('/photos/:dog_id', async (req: AuthRequest, res) => {
 
     res.json(photos);
   } catch (error) {
-    console.error('Error fetching journal photos:', error);
     sendServerError(res, '日誌写真の取得に失敗しました', error);
   }
 });
@@ -200,7 +194,6 @@ router.get('/latest/:dog_id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching latest journal:', error);
     sendServerError(res, '最新日誌の取得に失敗しました', error);
   }
 });
@@ -230,7 +223,6 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching journal:', error);
     sendServerError(res, '日誌情報の取得に失敗しました', error);
   }
 });
@@ -333,7 +325,6 @@ router.post('/', async (req: AuthRequest, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating journal:', error);
     sendServerError(res, '日誌の作成に失敗しました', error);
   }
 });
@@ -401,7 +392,6 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating journal:', error);
     sendServerError(res, '日誌の更新に失敗しました', error);
   }
 });

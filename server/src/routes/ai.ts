@@ -30,12 +30,6 @@ const TRAINING_LABELS: Record<string, string> = {
   jumping: '飛びつき対策',
 };
 
-const ACHIEVEMENT_LABELS: Record<string, string> = {
-  done: 'できた',
-  almost: 'もう少し',
-  not_done: '未実施',
-};
-
 function extractGeminiText(data: unknown): string {
   if (!data || typeof data !== 'object') {
     return '';
@@ -319,14 +313,14 @@ router.post('/analyze-photo', async (req: AuthRequest, res) => {
       : photo_base64;
     
     // メディアタイプを検出
-    let mimeType = 'image/jpeg' // デフォルト
+    let mimeType = 'image/jpeg';
     if (photo_base64.includes('data:image/')) {
-      const match = photo_base64.match(/data:image\/([^;]+)/)
+      const match = photo_base64.match(/data:image\/([^;]+)/);
       if (match) {
-        const ext = match[1]
-        if (ext === 'png') mimeType = 'image/png'
-        else if (ext === 'gif') mimeType = 'image/gif'
-        else if (ext === 'webp') mimeType = 'image/webp'
+        const ext = match[1];
+        if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'gif') mimeType = 'image/gif';
+        else if (ext === 'webp') mimeType = 'image/webp';
       }
     }
 

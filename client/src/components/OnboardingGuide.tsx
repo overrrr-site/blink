@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import GuideTooltip from './GuideTooltip'
 
@@ -7,7 +7,7 @@ interface GuideStep {
   title: string
   content: string
   position?: 'top' | 'bottom' | 'left' | 'right'
-  path?: string // 特定のパスでのみ表示
+  path?: string
 }
 
 const GUIDE_STEPS: GuideStep[] = [
@@ -48,23 +48,29 @@ const GUIDE_STEPS: GuideStep[] = [
   },
 ]
 
-const OnboardingGuide = () => {
+function getStepsForPath(pathname: string): GuideStep[] {
+  return GUIDE_STEPS.filter((step) => !step.path || step.path === pathname)
+}
+
+function completeOnboarding(): void {
+  localStorage.setItem('hasCompletedOnboarding', 'true')
+}
+
+function OnboardingGuide(): JSX.Element | null {
   const location = useLocation()
   const [currentStep, setCurrentStep] = useState<number | null>(null)
   const [isActive, setIsActive] = useState(false)
 
+  const stepsForPath = useMemo(
+    () => getStepsForPath(location.pathname),
+    [location.pathname],
+  )
+
   useEffect(() => {
-    // 初回表示フラグをチェック
     const hasCompleted = localStorage.getItem('hasCompletedOnboarding') === 'true'
     if (hasCompleted) return
 
-    // 現在のパスに該当するステップを探す
-    const stepsForPath = GUIDE_STEPS.filter(
-      (step) => !step.path || step.path === location.pathname
-    )
-
     if (stepsForPath.length > 0) {
-      // 少し遅延させてから表示（ページ読み込み完了後）
       const timer = setTimeout(() => {
         setIsActive(true)
         setCurrentStep(0)
@@ -72,13 +78,15 @@ const OnboardingGuide = () => {
 
       return () => clearTimeout(timer)
     }
-  }, [location.pathname])
+  }, [stepsForPath])
 
-  const handleNext = () => {
-    const stepsForPath = GUIDE_STEPS.filter(
-      (step) => !step.path || step.path === location.pathname
-    )
+  function handleComplete(): void {
+    completeOnboarding()
+    setIsActive(false)
+    setCurrentStep(null)
+  }
 
+  function handleNext(): void {
     if (currentStep !== null && currentStep < stepsForPath.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
@@ -86,30 +94,13 @@ const OnboardingGuide = () => {
     }
   }
 
-  const handleSkip = () => {
-    handleComplete()
-  }
-
-  const handleComplete = () => {
-    localStorage.setItem('hasCompletedOnboarding', 'true')
-    setIsActive(false)
-    setCurrentStep(null)
-  }
-
   if (!isActive || currentStep === null) return null
-
-  const stepsForPath = GUIDE_STEPS.filter(
-    (step) => !step.path || step.path === location.pathname
-  )
-
   if (stepsForPath.length === 0 || currentStep >= stepsForPath.length) return null
 
   const step = stepsForPath[currentStep]
 
-  // ターゲット要素が存在するか確認
   const targetElement = document.querySelector(step.target)
   if (!targetElement) {
-    // 要素が見つからない場合は次のステップへ
     if (currentStep < stepsForPath.length - 1) {
       setTimeout(() => setCurrentStep(currentStep + 1), 100)
     } else {
@@ -125,7 +116,7 @@ const OnboardingGuide = () => {
       content={step.content}
       position={step.position}
       onNext={handleNext}
-      onSkip={handleSkip}
+      onSkip={handleComplete}
       onComplete={handleComplete}
       isLast={currentStep === stepsForPath.length - 1}
       stepNumber={currentStep + 1}

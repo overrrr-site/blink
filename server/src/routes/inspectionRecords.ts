@@ -20,7 +20,7 @@ router.get('/', async (req: AuthRequest, res) => {
       FROM inspection_records
       WHERE store_id = $1
     `;
-    const params: any[] = [req.storeId];
+    const params: (string | number)[] = [req.storeId];
 
     if (year && month) {
       query += ` AND EXTRACT(YEAR FROM inspection_date) = $2 AND EXTRACT(MONTH FROM inspection_date) = $3`;
@@ -32,7 +32,6 @@ router.get('/', async (req: AuthRequest, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching inspection records:', error);
     sendServerError(res, '点検記録一覧の取得に失敗しました', error);
   }
 });
@@ -56,7 +55,6 @@ router.get('/:date', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching inspection record:', error);
     sendServerError(res, '点検記録の取得に失敗しました', error);
   }
 });
@@ -117,7 +115,6 @@ router.post('/', async (req: AuthRequest, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating inspection record:', error);
     sendServerError(res, '点検記録の作成に失敗しました', error);
   }
 });
@@ -178,7 +175,6 @@ router.put('/:date', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating inspection record:', error);
     sendServerError(res, '点検記録の更新に失敗しました', error);
   }
 });
@@ -217,7 +213,6 @@ router.get('/export/:year/:month', async (req: AuthRequest, res) => {
       month: parseInt(month),
     });
   } catch (error) {
-    console.error('Error exporting inspection records:', error);
     sendServerError(res, 'エクスポートデータの取得に失敗しました', error);
   }
 });

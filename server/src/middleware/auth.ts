@@ -19,6 +19,14 @@ export interface AuthRequest extends Request {
   staffData?: StaffData;
 }
 
+function attachStaffToRequest(req: AuthRequest, authUserId: string, staff: StaffData): void {
+  req.userId = staff.id;
+  req.storeId = staff.store_id;
+  req.supabaseUserId = authUserId;
+  req.isOwner = staff.is_owner;
+  req.staffData = staff;
+}
+
 // JWKS（公開鍵セット）によるローカル検証（ES256対応）
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 
@@ -43,8 +51,8 @@ async function verifyTokenLocally(token: string): Promise<SupabaseJwtPayload | n
       issuer: `${SUPABASE_URL}/auth/v1`,
     });
     return payload as unknown as SupabaseJwtPayload;
-  } catch (err: any) {
-    console.warn('[AUTH] JWKS verify error:', err?.message);
+  } catch (err) {
+    console.warn('[AUTH] JWKS verify error:', err instanceof Error ? err.message : String(err));
     return null;
   }
 }
@@ -56,27 +64,23 @@ const STAFF_CACHE_MAX_SIZE = 500;
 
 function getStaffFromCache(authUserId: string): StaffData | null {
   const entry = staffCache.get(authUserId);
-  if (entry && entry.expiry > Date.now()) {
-    return entry.data;
-  }
-  if (entry) {
-    staffCache.delete(authUserId); // 期限切れを削除
-  }
+  if (!entry) return null;
+
+  if (entry.expiry > Date.now()) return entry.data;
+
+  staffCache.delete(authUserId);
   return null;
 }
 
-function setStaffCache(authUserId: string, data: StaffData) {
-  // キャッシュサイズ制限
+function setStaffCache(authUserId: string, data: StaffData): void {
   if (staffCache.size >= STAFF_CACHE_MAX_SIZE) {
-    const firstKey = staffCache.keys().next().value as string | undefined;
-    if (firstKey) {
-      staffCache.delete(firstKey);
-    }
+    const oldestKey = staffCache.keys().next().value;
+    if (oldestKey) staffCache.delete(oldestKey);
   }
   staffCache.set(authUserId, { data, expiry: Date.now() + STAFF_CACHE_TTL });
 }
 
-export function invalidateStaffCache(authUserId?: string) {
+export function invalidateStaffCache(authUserId?: string): void {
   if (authUserId) {
     staffCache.delete(authUserId);
   } else {
@@ -84,64 +88,32 @@ export function invalidateStaffCache(authUserId?: string) {
   }
 }
 
-export const authenticate = async (
+export async function authenticate(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
-      return res.status(401).json({ error: '認証トークンが提供されていません' });
+      res.status(401).json({ error: '認証トークンが提供されていません' });
+      return;
     }
 
     // 1. JWKS公開鍵でローカル検証（Supabase APIコール不要で高速）
-    let authUserId: string | null = null;
+    const authUserId = await resolveAuthUserId(token, res);
+    if (!authUserId) return;
 
-    const localPayload = await verifyTokenLocally(token);
-    if (localPayload) {
-      authUserId = localPayload.sub;
-    } else {
-      // 2. フォールバック: Supabase Auth APIで検証
-      if (!supabase) {
-        console.error('認証エラー: Supabaseクライアントが初期化されていません');
-        return res.status(500).json({
-          error: '認証システムが設定されていません',
-          details: 'SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を確認してください'
-        });
-      }
-
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-      if (authError) {
-        console.error('Supabase認証エラー:', authError);
-        return res.status(401).json({
-          error: '無効な認証トークンです',
-          details: authError.message
-        });
-      }
-
-      if (!user) {
-        console.error('認証エラー: ユーザーが見つかりません');
-        return res.status(401).json({ error: 'ユーザーが見つかりません' });
-      }
-
-      authUserId = user.id;
-    }
-
-    // 3. キャッシュからスタッフ情報を取得（ヒットすればDB不要）
+    // 2. キャッシュからスタッフ情報を取得（ヒットすればDB不要）
     const cachedStaff = getStaffFromCache(authUserId);
     if (cachedStaff) {
-      req.userId = cachedStaff.id;
-      req.storeId = cachedStaff.store_id;
-      req.supabaseUserId = authUserId;
-      req.isOwner = cachedStaff.is_owner;
-      req.staffData = cachedStaff;
-      return next();
+      attachStaffToRequest(req, authUserId, cachedStaff);
+      next();
+      return;
     }
 
-    // 4. スタッフ情報をデータベースから取得
+    // 3. スタッフ情報をデータベースから取得
     const result = await pool.query(
       `SELECT s.*, ss.store_id
        FROM staff s
@@ -152,44 +124,83 @@ export const authenticate = async (
 
     if (result.rows.length === 0) {
       console.error(`認証エラー: スタッフが見つかりません (auth_user_id: ${authUserId})`);
-      return res.status(403).json({
+      res.status(403).json({
         error: 'スタッフとして登録されていません。管理者に連絡してください。',
         details: `auth_user_id: ${authUserId} に対応するスタッフが見つかりません`
       });
+      return;
     }
 
-    const staff = result.rows[0] as StaffData;
-    req.userId = staff.id;
-    req.storeId = staff.store_id;
-    req.supabaseUserId = authUserId;
-    req.isOwner = staff.is_owner || false;
+    const row = result.rows[0];
     const staffData: StaffData = {
-      id: staff.id,
-      email: staff.email,
-      name: staff.name,
-      is_owner: staff.is_owner || false,
-      store_id: staff.store_id
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      is_owner: row.is_owner ?? false,
+      store_id: row.store_id
     };
-    req.staffData = staffData;
+    attachStaffToRequest(req, authUserId, staffData);
     setStaffCache(authUserId, staffData);
     next();
-  } catch (error: any) {
+  } catch (error) {
     console.error('認証エラー:', error);
-    return res.status(500).json({
+    res.status(500).json({
       error: '認証に失敗しました',
-      details: error?.message || '不明なエラーが発生しました'
+      details: error instanceof Error ? error.message : '不明なエラーが発生しました',
     });
   }
-};
+}
+
+/**
+ * トークンからauth user IDを解決する。
+ * JWKS検証を試み、失敗時はSupabase Auth APIにフォールバックする。
+ * 認証失敗時はレスポンスを送信してnullを返す。
+ */
+async function resolveAuthUserId(token: string, res: Response): Promise<string | null> {
+  const localPayload = await verifyTokenLocally(token);
+  if (localPayload) {
+    return localPayload.sub;
+  }
+
+  // フォールバック: Supabase Auth APIで検証
+  if (!supabase) {
+    console.error('認証エラー: Supabaseクライアントが初期化されていません');
+    res.status(500).json({
+      error: '認証システムが設定されていません',
+      details: 'SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を確認してください'
+    });
+    return null;
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+  if (authError) {
+    console.error('Supabase認証エラー:', authError);
+    res.status(401).json({
+      error: '無効な認証トークンです',
+      details: authError.message
+    });
+    return null;
+  }
+
+  if (!user) {
+    console.error('認証エラー: ユーザーが見つかりません');
+    res.status(401).json({ error: 'ユーザーが見つかりません' });
+    return null;
+  }
+
+  return user.id;
+}
 
 // 管理者専用ミドルウェア（authenticateの後に使用）
-export const requireOwner = (
+export function requireOwner(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): void {
   if (!req.isOwner) {
-    return res.status(403).json({ error: 'この操作は管理者のみ実行できます' });
+    res.status(403).json({ error: 'この操作は管理者のみ実行できます' });
+    return;
   }
   next();
-};
+}

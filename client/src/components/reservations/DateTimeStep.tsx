@@ -1,22 +1,18 @@
 import { useState } from 'react'
 import { Icon } from '../Icon'
-
-type ReservationForm = {
-  reservation_date: string
-  reservation_time: string
-  pickup_time: string
-}
+import { INPUT_CLASS } from '../../utils/styles'
+import type { ReservationFormBase } from '../../types/reservation'
 
 type DateTimeStepProps = {
-  form: ReservationForm
+  form: ReservationFormBase
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void
   onNext: () => void
 }
 
-export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepProps) {
+export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepProps): JSX.Element {
   const [error, setError] = useState('')
 
-  const handleNext = () => {
+  function handleNext(): void {
     if (!form.reservation_date || !form.reservation_time) {
       setError('日付と時間を選択してください')
       return
@@ -49,7 +45,7 @@ export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepPro
             name="reservation_date"
             value={form.reservation_date}
             onChange={onChange}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className={INPUT_CLASS}
           />
         </div>
 
@@ -60,7 +56,7 @@ export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepPro
               name="reservation_time"
               value={form.reservation_time}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className={INPUT_CLASS}
             >
               <option value="08:00">08:00</option>
               <option value="08:30">08:30</option>
@@ -77,7 +73,7 @@ export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepPro
               name="pickup_time"
               value={form.pickup_time}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className={INPUT_CLASS}
             >
               <option value="15:00">15:00</option>
               <option value="15:30">15:30</option>

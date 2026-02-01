@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getLiffProfile, isLiffLoggedIn, initLiff } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
+import { getAxiosErrorMessage } from '../../utils/error';
 import logoImage from '../../assets/logo.png';
 
 type Step = 'phone' | 'code';
@@ -43,9 +44,9 @@ export default function LinkAccount() {
           
           const profile = await getLiffProfile();
           setLineUserId(profile.userId);
-        } catch (err: any) {
+        } catch (err) {
           // リダイレクト中のエラーは無視
-          if (err.message === 'Redirecting to LINE login...') {
+          if (err instanceof Error && err.message === 'Redirecting to LINE login...') {
             return;
           }
           setError('LINEアカウント情報の取得に失敗しました');
@@ -77,8 +78,8 @@ export default function LinkAccount() {
 
       setMaskedEmail(response.data.maskedEmail);
       setStep('code');
-    } catch (err: any) {
-      setError(err.response?.data?.error || '確認コードの送信に失敗しました');
+    } catch (err) {
+      setError(getAxiosErrorMessage(err, '確認コードの送信に失敗しました'));
     } finally {
       setLoading(false);
     }
@@ -111,8 +112,8 @@ export default function LinkAccount() {
       } else {
         setError('認証に失敗しました');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || '確認コードの検証に失敗しました');
+    } catch (err) {
+      setError(getAxiosErrorMessage(err, '確認コードの検証に失敗しました'));
     } finally {
       setLoading(false);
     }

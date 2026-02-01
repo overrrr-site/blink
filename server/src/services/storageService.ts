@@ -2,58 +2,57 @@ import { supabase } from '../db/supabase.js';
 import path from 'path';
 import { randomUUID } from 'crypto';
 
-// Supabase Storageのバケット名
 const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 
-/**
- * Supabase Storageが利用可能かどうかを確認
- */
-export function isSupabaseStorageAvailable(): boolean {
-  return supabase !== null && 
-    !!process.env.SUPABASE_URL && 
-    !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-}
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+};
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
 
 /**
- * ファイルをSupabase Storageにアップロード
+ * Supabaseクライアントが初期化されているか確認し、未初期化ならnullを返す
  */
-export async function uploadToSupabaseStorage(
-  file: Express.Multer.File,
-  category: string = 'general'
-): Promise<{ url: string; path: string } | null> {
+function requireSupabase(): NonNullable<typeof supabase> | null {
   if (!supabase) {
     console.error('Supabaseクライアントが初期化されていません');
     return null;
   }
+  return supabase;
+}
+
+/**
+ * バッファをStorageにアップロードし、公開URLとパスを返す共通処理
+ */
+async function uploadBuffer(
+  buffer: Buffer,
+  filePath: string,
+  contentType: string
+): Promise<{ url: string; path: string } | null> {
+  const client = requireSupabase();
+  if (!client) return null;
 
   try {
-    // ユニークなファイル名を生成
-    const ext = path.extname(file.originalname);
-    const uniqueFilename = `${randomUUID()}${ext}`;
-    const filePath = `${category}/${uniqueFilename}`;
-
-    // Supabase Storageにアップロード
-    const { data, error } = await supabase.storage
+    const { error } = await client.storage
       .from(STORAGE_BUCKET)
-      .upload(filePath, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      });
+      .upload(filePath, buffer, { contentType, upsert: false });
 
     if (error) {
       console.error('Supabase Storage upload error:', error);
       return null;
     }
 
-    // 公開URLを取得
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = client.storage
       .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
-    return {
-      url: urlData.publicUrl,
-      path: filePath,
-    };
+    return { url: urlData.publicUrl, path: filePath };
   } catch (error) {
     console.error('Error uploading to Supabase Storage:', error);
     return null;
@@ -61,23 +60,50 @@ export async function uploadToSupabaseStorage(
 }
 
 /**
- * 複数ファイルをSupabase Storageにアップロード
+ * カテゴリとファイル拡張子からユニークなファイルパスを生成する
+ */
+function buildFilePath(category: string, ext: string): string {
+  return `${category}/${randomUUID()}${ext}`;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Supabase Storageが利用可能かどうかを確認
+ */
+export function isSupabaseStorageAvailable(): boolean {
+  return supabase !== null
+    && !!process.env.SUPABASE_URL
+    && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+}
+
+/**
+ * Multerファイルを Supabase Storageにアップロード
+ */
+export async function uploadToSupabaseStorage(
+  file: Express.Multer.File,
+  category: string = 'general'
+): Promise<{ url: string; path: string } | null> {
+  const ext = path.extname(file.originalname);
+  const filePath = buildFilePath(category, ext);
+  return uploadBuffer(file.buffer, filePath, file.mimetype);
+}
+
+/**
+ * 複数のMulterファイルをSupabase Storageにアップロード
  */
 export async function uploadMultipleToSupabaseStorage(
   files: Express.Multer.File[],
   category: string = 'general'
 ): Promise<Array<{ url: string; path: string; originalname: string; mimetype: string; size: number }>> {
-  const results: Array<{ url: string; path: string; originalname: string; mimetype: string; size: number }> = [];
+  const results = [];
 
   for (const file of files) {
     const result = await uploadToSupabaseStorage(file, category);
     if (result) {
-      results.push({
-        ...result,
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-      });
+      results.push({ ...result, originalname: file.originalname, mimetype: file.mimetype, size: file.size });
     }
   }
 
@@ -86,80 +112,27 @@ export async function uploadMultipleToSupabaseStorage(
 
 /**
  * Base64データをSupabase Storageにアップロード
- * @param base64Data Base64エンコードされた画像データ（data:image/jpeg;base64,...形式）
- * @param category 保存先カテゴリ
- * @returns アップロード結果（URLとパス）
  */
 export async function uploadBase64ToSupabaseStorage(
   base64Data: string,
   category: string = 'journals'
 ): Promise<{ url: string; path: string } | null> {
-  if (!supabase) {
-    console.error('Supabaseクライアントが初期化されていません');
+  const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+  if (!matches) {
+    console.error('無効なBase64データ形式です');
     return null;
   }
 
-  try {
-    // Base64データからMIMEタイプとデータ部分を抽出
-    const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
-    if (!matches) {
-      console.error('無効なBase64データ形式です');
-      return null;
-    }
+  const mimeType = matches[1];
+  const ext = MIME_TO_EXT[mimeType] || '.jpg';
+  const buffer = Buffer.from(matches[2], 'base64');
+  const filePath = buildFilePath(category, ext);
 
-    const mimeType = matches[1];
-    const base64Content = matches[2];
-
-    // MIMEタイプから拡張子を決定
-    const extMap: Record<string, string> = {
-      'image/jpeg': '.jpg',
-      'image/jpg': '.jpg',
-      'image/png': '.png',
-      'image/gif': '.gif',
-      'image/webp': '.webp',
-    };
-    const ext = extMap[mimeType] || '.jpg';
-
-    // Base64をBufferに変換
-    const buffer = Buffer.from(base64Content, 'base64');
-
-    // ユニークなファイル名を生成
-    const uniqueFilename = `${randomUUID()}${ext}`;
-    const filePath = `${category}/${uniqueFilename}`;
-
-    // Supabase Storageにアップロード
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, buffer, {
-        contentType: mimeType,
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Supabase Storage upload error:', error);
-      return null;
-    }
-
-    // 公開URLを取得
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(filePath);
-
-    return {
-      url: urlData.publicUrl,
-      path: filePath,
-    };
-  } catch (error) {
-    console.error('Error uploading Base64 to Supabase Storage:', error);
-    return null;
-  }
+  return uploadBuffer(buffer, filePath, mimeType);
 }
 
 /**
  * 複数のBase64画像をSupabase Storageにアップロード
- * @param base64DataArray Base64データの配列
- * @param category 保存先カテゴリ
- * @returns アップロードされた画像のURL配列
  */
 export async function uploadMultipleBase64ToSupabaseStorage(
   base64DataArray: string[],
@@ -181,28 +154,21 @@ export async function uploadMultipleBase64ToSupabaseStorage(
  * Supabase Storageからファイルを削除
  */
 export async function deleteFromSupabaseStorage(fileUrl: string): Promise<boolean> {
-  if (!supabase) {
-    console.error('Supabaseクライアントが初期化されていません');
-    return false;
-  }
+  const client = requireSupabase();
+  if (!client) return false;
 
   try {
-    // URLからファイルパスを抽出
-    // 形式: https://xxx.supabase.co/storage/v1/object/public/uploads/category/filename.ext
     const url = new URL(fileUrl);
     const pathParts = url.pathname.split('/');
     const bucketIndex = pathParts.indexOf(STORAGE_BUCKET);
-    
+
     if (bucketIndex === -1) {
       console.error('無効なファイルURL:', fileUrl);
       return false;
     }
 
     const filePath = pathParts.slice(bucketIndex + 1).join('/');
-
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .remove([filePath]);
+    const { error } = await client.storage.from(STORAGE_BUCKET).remove([filePath]);
 
     if (error) {
       console.error('Supabase Storage delete error:', error);
@@ -220,49 +186,39 @@ export async function deleteFromSupabaseStorage(fileUrl: string): Promise<boolea
  * Supabase Storageバケットの初期化（存在しない場合は作成）
  */
 export async function initializeStorageBucket(): Promise<boolean> {
-  if (!supabase) {
-    console.log('ℹ️  Supabase Storage: ローカルファイルシステムを使用します');
+  const client = requireSupabase();
+  if (!client) {
+    console.log('Supabase Storage: ローカルファイルシステムを使用します');
     return false;
   }
 
   try {
-    // バケットが存在するか確認
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
+    const { data: buckets, error: listError } = await client.storage.listBuckets();
+
     if (listError) {
       console.error('バケット一覧の取得に失敗:', listError);
       return false;
     }
 
-    const bucketExists = buckets?.some(b => b.name === STORAGE_BUCKET);
+    const bucketExists = buckets?.some((b) => b.name === STORAGE_BUCKET);
 
     if (!bucketExists) {
-      // バケットを作成
-      const { error: createError } = await supabase.storage.createBucket(STORAGE_BUCKET, {
+      const { error: createError } = await client.storage.createBucket(STORAGE_BUCKET, {
         public: true,
-        fileSizeLimit: 10 * 1024 * 1024, // 10MB
-        allowedMimeTypes: [
-          'image/jpeg',
-          'image/jpg', 
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'application/pdf',
-        ],
+        fileSizeLimit: 10 * 1024 * 1024,
+        allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'],
       });
 
-      if (createError) {
-        // バケットが既に存在する場合は無視
-        if (!createError.message?.includes('already exists')) {
-          console.error('バケット作成に失敗:', createError);
-          return false;
-        }
-      } else {
-        console.log(`✅ Supabase Storageバケット '${STORAGE_BUCKET}' を作成しました`);
+      if (createError && !createError.message?.includes('already exists')) {
+        console.error('バケット作成に失敗:', createError);
+        return false;
+      }
+      if (!createError) {
+        console.log(`Supabase Storageバケット '${STORAGE_BUCKET}' を作成しました`);
       }
     }
 
-    console.log(`✅ Supabase Storage: バケット '${STORAGE_BUCKET}' を使用します`);
+    console.log(`Supabase Storage: バケット '${STORAGE_BUCKET}' を使用します`);
     return true;
   } catch (error) {
     console.error('Supabase Storage初期化エラー:', error);

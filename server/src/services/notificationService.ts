@@ -1,41 +1,14 @@
 import pool from '../db/connection.js';
 import { sendLineMessage, sendLineFlexMessage } from './lineMessagingService.js';
 import { sendEmail } from './emailService.js';
-import { createReservationReminderFlexMessage, createJournalNotificationFlexMessage, createVaccineAlertFlexMessage } from './lineFlexMessages.js';
+import {
+  createReservationReminderFlexMessage,
+  createJournalNotificationFlexMessage,
+  createVaccineAlertFlexMessage,
+} from './lineFlexMessages.js';
+import type { FlexMessage } from '@line/bot-sdk';
 
 export type OwnerContact = { lineId: string | null; email: string | null };
-
-/**
- * 飼い主のLINE ID・メールを一括取得（ループ内I/O削減用）
- */
-export async function getOwnerContactBatch(
-  ownerIds: number[]
-): Promise<Map<number, OwnerContact>> {
-  const map = new Map<number, OwnerContact>();
-  if (ownerIds.length === 0) return map;
-
-  try {
-    const uniq = [...new Set(ownerIds)];
-    const result = await pool.query<{ id: number; line_id: string | null; email: string | null }>(
-      `SELECT id, line_id, email FROM owners WHERE id = ANY($1::int[])`,
-      [uniq]
-    );
-
-    for (const row of result.rows) {
-      map.set(row.id, {
-        lineId: row.line_id && row.line_id.trim() !== '' ? row.line_id : null,
-        email: row.email && row.email.trim() !== '' ? row.email : null,
-      });
-    }
-    for (const id of uniq) {
-      if (!map.has(id)) map.set(id, { lineId: null, email: null });
-    }
-    return map;
-  } catch (error) {
-    console.error('Error fetching owner contacts batch:', error);
-    return map;
-  }
-}
 
 export interface NotificationData {
   storeId: number;
@@ -52,6 +25,45 @@ type NotificationSettingsRow = {
   line_notification_enabled?: boolean;
   email_notification_enabled?: boolean;
 };
+
+/**
+ * 空文字をnullに正規化する
+ */
+function emptyToNull(value: string | null): string | null {
+  return value?.trim() || null;
+}
+
+/**
+ * 飼い主のLINE ID・メールを一括取得（ループ内I/O削減用）
+ */
+export async function getOwnerContactBatch(
+  ownerIds: number[]
+): Promise<Map<number, OwnerContact>> {
+  const map = new Map<number, OwnerContact>();
+  if (ownerIds.length === 0) return map;
+
+  const uniqueIds = [...new Set(ownerIds)];
+
+  try {
+    const result = await pool.query<{ id: number; line_id: string | null; email: string | null }>(
+      `SELECT id, line_id, email FROM owners WHERE id = ANY($1::int[])`,
+      [uniqueIds]
+    );
+
+    for (const row of result.rows) {
+      map.set(row.id, { lineId: emptyToNull(row.line_id), email: emptyToNull(row.email) });
+    }
+  } catch (error) {
+    console.error('Error fetching owner contacts batch:', error);
+  }
+
+  // 見つからなかったIDにはデフォルト値を設定
+  for (const id of uniqueIds) {
+    if (!map.has(id)) map.set(id, { lineId: null, email: null });
+  }
+
+  return map;
+}
 
 function shouldSendByType(
   settings: NotificationSettingsRow,
@@ -76,28 +88,20 @@ async function insertNotificationLog(params: {
   errorMessage?: string;
 }): Promise<void> {
   const { data, sentVia, sent, errorMessage } = params;
+
+  let status: string;
   if (errorMessage) {
-    await pool.query(
-      `INSERT INTO notification_logs (
-        store_id, owner_id, notification_type, title, message,
-        status, error_message
-      ) VALUES ($1, $2, $3, $4, $5, 'failed', $6)`,
-      [
-        data.storeId,
-        data.ownerId,
-        data.notificationType,
-        data.title,
-        data.message,
-        errorMessage,
-      ]
-    );
-    return;
+    status = 'failed';
+  } else if (sent) {
+    status = 'sent';
+  } else {
+    status = 'pending';
   }
   await pool.query(
     `INSERT INTO notification_logs (
       store_id, owner_id, notification_type, title, message,
-      sent_via, status, sent_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      sent_via, status, sent_at, error_message
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       data.storeId,
       data.ownerId,
@@ -105,10 +109,55 @@ async function insertNotificationLog(params: {
       data.title,
       data.message,
       sentVia,
-      sent ? 'sent' : 'pending',
+      status,
       sent ? new Date() : null,
+      errorMessage ?? null,
     ]
   );
+}
+
+/**
+ * LINE/メール/アプリ内通知のフォールバック送信を共通化。
+ * flexMessage が渡されればLINEはFlex送信、なければテキスト送信。
+ */
+async function deliverNotification(params: {
+  storeId: number;
+  settings: NotificationSettingsRow;
+  contact: OwnerContact | null;
+  title: string;
+  message: string;
+  flexMessage?: FlexMessage;
+}): Promise<{ sent: boolean; sentVia: string }> {
+  const { storeId, settings, contact, title, message, flexMessage } = params;
+  const lineId = contact?.lineId ?? null;
+  const email = contact?.email ?? null;
+
+  // 1. LINE通知を試行
+  if (settings.line_notification_enabled && lineId) {
+    const lineSent = flexMessage
+      ? await sendLineFlexMessage(storeId, lineId, flexMessage)
+      : await sendLineMessage(storeId, lineId, `${title}\n\n${message}`);
+    if (lineSent) {
+      return { sent: true, sentVia: 'line' };
+    }
+  }
+
+  // 2. LINEで送信できなかった場合はメール通知
+  if (settings.email_notification_enabled && email) {
+    const emailSent = await sendEmail(
+      email,
+      title,
+      message,
+      `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
+    );
+    if (emailSent) {
+      return { sent: true, sentVia: 'email' };
+    }
+  }
+
+  // 3. いずれも送信できなかった場合はアプリ内通知
+  console.log(`[アプリ内通知] ${title}: ${message}`);
+  return { sent: false, sentVia: 'app' };
 }
 
 /**
@@ -124,40 +173,13 @@ export async function sendNotificationWithSettings(
     return;
   }
 
-  let sent = false;
-  let sentVia: string | null = null;
-  const lineId = contact?.lineId ?? null;
-  const email = contact?.email ?? null;
-
-  if (settings.line_notification_enabled && lineId) {
-    const lineSent = await sendLineMessage(
-      data.storeId,
-      lineId,
-      `${data.title}\n\n${data.message}`
-    );
-    if (lineSent) {
-      sentVia = 'line';
-      sent = true;
-    }
-  }
-
-  if (!sent && settings.email_notification_enabled && email) {
-    const emailSent = await sendEmail(
-      email,
-      data.title,
-      data.message,
-      `<h2>${data.title}</h2><p>${data.message.replace(/\n/g, '<br>')}</p>`
-    );
-    if (emailSent) {
-      sentVia = 'email';
-      sent = true;
-    }
-  }
-
-  if (!sent) {
-    sentVia = 'app';
-    console.log(`[アプリ内通知] ${data.title}: ${data.message}`);
-  }
+  const { sent, sentVia } = await deliverNotification({
+    storeId: data.storeId,
+    settings,
+    contact: contact ?? null,
+    title: data.title,
+    message: data.message,
+  });
 
   await insertNotificationLog({ data, sentVia, sent });
 }
@@ -244,71 +266,32 @@ export async function sendReservationReminders(): Promise<void> {
       const ownerIds = [...new Set(rows.map((r) => r.owner_id))];
       const contactMap = await getOwnerContactBatch(ownerIds);
 
-      for (const r of rows) {
-        const contact = contactMap.get(r.owner_id) ?? null;
-        const lineId = contact?.lineId ?? null;
-        const email = contact?.email ?? null;
+      for (const reservation of rows) {
+        const contact = contactMap.get(reservation.owner_id) ?? null;
+        const title = '予約リマインド';
+        const message = `${reservation.dog_name}ちゃんの予約が${daysBefore}日後（${targetDateStr}）です。`;
 
-        let sent = false;
-        let sentVia: string | null = null;
+        const flexMessage = createReservationReminderFlexMessage({
+          id: reservation.id,
+          reservation_date: reservation.reservation_date,
+          reservation_time: reservation.reservation_time,
+          dog_name: reservation.dog_name,
+        });
 
-        // LINE通知が有効な場合はFlexメッセージを送信
-        if (settings.line_notification_enabled && lineId) {
-          const flexMessage = createReservationReminderFlexMessage({
-            id: r.id,
-            reservation_date: r.reservation_date,
-            reservation_time: r.reservation_time,
-            dog_name: r.dog_name,
-          });
-
-          const lineSent = await sendLineFlexMessage(settings.store_id, lineId, flexMessage);
-          if (lineSent) {
-            sentVia = 'line';
-            sent = true;
-          }
-        }
-
-        // LINEで送信できなかった場合はメール通知
-        if (!sent && settings.email_notification_enabled && email) {
-          const title = '予約リマインド';
-          const message = `${r.dog_name}ちゃんの予約が${daysBefore}日後（${targetDateStr}）です。\n\n登園前に体調や食事の情報をアプリからご入力ください。`;
-          const emailSent = await sendEmail(
-            email,
-            title,
-            message,
-            `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
-          );
-          if (emailSent) {
-            sentVia = 'email';
-            sent = true;
-          }
-        }
-
-        // ログ記録
-        const notificationData = {
+        const { sent, sentVia } = await deliverNotification({
           storeId: settings.store_id,
-          ownerId: r.owner_id,
-          notificationType: 'reminder' as const,
-          title: '予約リマインド',
-          message: `${r.dog_name}ちゃんの予約が${daysBefore}日後（${targetDateStr}）です。`,
-        };
+          settings,
+          contact,
+          title,
+          message: `${message}\n\n登園前に体調や食事の情報をアプリからご入力ください。`,
+          flexMessage,
+        });
 
-        await pool.query(
-          `INSERT INTO notification_logs (
-            store_id, owner_id, notification_type, title, message,
-            sent_via, status, sent_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [
-            notificationData.storeId,
-            notificationData.ownerId,
-            notificationData.notificationType,
-            notificationData.title,
-            notificationData.message,
-            sentVia ?? 'app',
-            sent ? 'sent' : 'pending',
-            sent ? new Date() : null,
-          ]
-        );
+        await insertNotificationLog({
+          data: { storeId: settings.store_id, ownerId: reservation.owner_id, notificationType: 'reminder', title, message },
+          sentVia,
+          sent,
+        });
       }
     }
   } catch (error) {
@@ -329,7 +312,6 @@ export async function sendJournalNotification(
   photos?: string[] | null
 ): Promise<void> {
   try {
-    // 通知設定を取得
     const settingsResult = await pool.query<NotificationSettingsRow>(
       `SELECT journal_notification, line_notification_enabled, email_notification_enabled
        FROM notification_settings WHERE store_id = $1`,
@@ -342,64 +324,35 @@ export async function sendJournalNotification(
     }
 
     const settings = settingsResult.rows[0];
-
     if (!settings.journal_notification) {
       console.log(`日誌通知が無効です: store_id=${storeId}`);
       return;
     }
 
-    // 飼い主の連絡先を取得
     const contactMap = await getOwnerContactBatch([ownerId]);
     const contact = contactMap.get(ownerId) ?? null;
-    const lineId = contact?.lineId ?? null;
-    const email = contact?.email ?? null;
 
-    let sent = false;
-    let sentVia: string | null = null;
+    const title = '日誌が更新されました';
+    const message = `${dogName}ちゃんの${journalDate}の日誌が更新されました。`;
 
-    // LINE通知（Flexメッセージ）
-    if (settings.line_notification_enabled && lineId && journalId) {
-      const flexMessage = createJournalNotificationFlexMessage({
-        id: journalId,
-        journal_date: journalDate,
-        dog_name: dogName,
-        comment,
-        photos,
-      });
+    const flexMessage = journalId
+      ? createJournalNotificationFlexMessage({ id: journalId, journal_date: journalDate, dog_name: dogName, comment, photos })
+      : undefined;
 
-      const lineSent = await sendLineFlexMessage(storeId, lineId, flexMessage);
-      if (lineSent) {
-        sentVia = 'line';
-        sent = true;
-      }
-    }
-
-    // LINEで送信できなかった場合はメール通知
-    if (!sent && settings.email_notification_enabled && email) {
-      const title = '日誌が更新されました';
-      const message = `${dogName}ちゃんの${journalDate}の日誌が更新されました。\n\nアプリから詳細をご確認ください。`;
-      const emailSent = await sendEmail(
-        email,
-        title,
-        message,
-        `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
-      );
-      if (emailSent) {
-        sentVia = 'email';
-        sent = true;
-      }
-    }
-
-    // ログ記録
-    const notificationData: NotificationData = {
+    const { sent, sentVia } = await deliverNotification({
       storeId,
-      ownerId,
-      notificationType: 'journal',
-      title: '日誌が更新されました',
-      message: `${dogName}ちゃんの${journalDate}の日誌が更新されました。`,
-    };
+      settings,
+      contact,
+      title,
+      message: `${message}\n\nアプリから詳細をご確認ください。`,
+      flexMessage,
+    });
 
-    await insertNotificationLog({ data: notificationData, sentVia: sentVia ?? 'app', sent });
+    await insertNotificationLog({
+      data: { storeId, ownerId, notificationType: 'journal', title, message },
+      sentVia,
+      sent,
+    });
   } catch (error) {
     console.error('Error sending journal notification:', error);
   }
@@ -461,72 +414,32 @@ export async function sendVaccineAlerts(): Promise<void> {
         if (dog.rabies_vaccine_date && dog.rabies_vaccine_date <= alertDateStr) {
           alerts.push('狂犬病ワクチン');
         }
+        if (alerts.length === 0) continue;
 
-        if (alerts.length > 0) {
-          const contact = contactMap.get(dog.owner_id) ?? null;
-          const lineId = contact?.lineId ?? null;
-          const email = contact?.email ?? null;
+        const contact = contactMap.get(dog.owner_id) ?? null;
+        const title = 'ワクチン期限切れ間近';
+        const message = `${dog.name}ちゃんの${alerts.join('・')}の期限が${alertDays}日以内に切れます。`;
 
-          let sent = false;
-          let sentVia: string | null = null;
+        const flexMessage = createVaccineAlertFlexMessage({
+          dog_name: dog.name,
+          alerts,
+          alert_days: alertDays,
+        });
 
-          // LINE通知（Flexメッセージ）
-          if (settings.line_notification_enabled && lineId) {
-            const flexMessage = createVaccineAlertFlexMessage({
-              dog_name: dog.name,
-              alerts,
-              alert_days: alertDays,
-            });
+        const { sent, sentVia } = await deliverNotification({
+          storeId: settings.store_id,
+          settings,
+          contact,
+          title,
+          message: `${message}\n\n早めの接種をお願いいたします。`,
+          flexMessage,
+        });
 
-            const lineSent = await sendLineFlexMessage(settings.store_id, lineId, flexMessage);
-            if (lineSent) {
-              sentVia = 'line';
-              sent = true;
-            }
-          }
-
-          // LINEで送信できなかった場合はメール通知
-          if (!sent && settings.email_notification_enabled && email) {
-            const title = 'ワクチン期限切れ間近';
-            const message = `${dog.name}ちゃんの${alerts.join('・')}の期限が${alertDays}日以内に切れます。\n\n早めの接種をお願いいたします。`;
-            const emailSent = await sendEmail(
-              email,
-              title,
-              message,
-              `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
-            );
-            if (emailSent) {
-              sentVia = 'email';
-              sent = true;
-            }
-          }
-
-          // ログ記録
-          const notificationData: NotificationData = {
-            storeId: settings.store_id,
-            ownerId: dog.owner_id,
-            notificationType: 'vaccine_alert',
-            title: 'ワクチン期限切れ間近',
-            message: `${dog.name}ちゃんの${alerts.join('・')}の期限が${alertDays}日以内に切れます。`,
-          };
-
-          await pool.query(
-            `INSERT INTO notification_logs (
-              store_id, owner_id, notification_type, title, message,
-              sent_via, status, sent_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [
-              notificationData.storeId,
-              notificationData.ownerId,
-              notificationData.notificationType,
-              notificationData.title,
-              notificationData.message,
-              sentVia ?? 'app',
-              sent ? 'sent' : 'pending',
-              sent ? new Date() : null,
-            ]
-          );
-        }
+        await insertNotificationLog({
+          data: { storeId: settings.store_id, ownerId: dog.owner_id, notificationType: 'vaccine_alert', title, message },
+          sentVia,
+          sent,
+        });
       }
     }
   } catch (error) {

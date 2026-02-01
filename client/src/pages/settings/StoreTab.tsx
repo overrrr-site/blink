@@ -59,7 +59,7 @@ interface QrCodeResponse {
   qrCode: string
 }
 
-const StoreTab = ({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps) => {
+function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): JSX.Element {
   const navigate = useNavigate()
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({ max_capacity: 15 })
   const [showStoreInfoModal, setShowStoreInfoModal] = useState(false)

@@ -26,7 +26,6 @@ router.get('/announcements', async function(req, res) {
 
     res.json(result.rows);
   } catch (error: any) {
-    console.error('Announcements fetch error:', error);
     sendServerError(res, 'お知らせの取得に失敗しました', error);
   }
 });
@@ -58,7 +57,6 @@ router.get('/announcements/:id', async function(req, res) {
 
     res.json(result.rows[0]);
   } catch (error: any) {
-    console.error('Announcement detail fetch error:', error);
     sendServerError(res, 'お知らせの取得に失敗しました', error);
   }
 });

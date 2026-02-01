@@ -47,7 +47,6 @@ router.get('/', cacheControl(30, 60), async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error fetching store:', error);
     sendServerError(res, '店舗情報の取得に失敗しました', error);
   }
 });
@@ -63,56 +62,56 @@ router.put('/', async (req: AuthRequest, res) => {
             line_channel_id, line_channel_secret, line_channel_access_token } = req.body;
 
     // 更新するフィールドを動的に構築
-    const updates: string[] = []
-    const values: any[] = []
-    let paramIndex = 1
-    let lineSettingsUpdated = false
+    const updates: string[] = [];
+    const values: (string | number | null)[] = [];
+    let paramIndex = 1;
+    let lineSettingsUpdated = false;
 
     if (name !== undefined) {
-      updates.push(`name = $${paramIndex++}`)
-      values.push(name)
+      updates.push(`name = $${paramIndex++}`);
+      values.push(name);
     }
     if (address !== undefined) {
-      updates.push(`address = $${paramIndex++}`)
-      values.push(address)
+      updates.push(`address = $${paramIndex++}`);
+      values.push(address);
     }
     if (phone !== undefined) {
-      updates.push(`phone = $${paramIndex++}`)
-      values.push(phone)
+      updates.push(`phone = $${paramIndex++}`);
+      values.push(phone);
     }
     if (business_hours !== undefined) {
-      updates.push(`business_hours = $${paramIndex++}::jsonb`)
-      values.push(business_hours ? JSON.stringify(business_hours) : null)
+      updates.push(`business_hours = $${paramIndex++}::jsonb`);
+      values.push(business_hours ? JSON.stringify(business_hours) : null);
     }
     if (closed_days !== undefined) {
-      updates.push(`closed_days = $${paramIndex++}::jsonb`)
-      values.push(closed_days && Array.isArray(closed_days) ? JSON.stringify(closed_days) : null)
+      updates.push(`closed_days = $${paramIndex++}::jsonb`);
+      values.push(closed_days && Array.isArray(closed_days) ? JSON.stringify(closed_days) : null);
     }
     if (line_channel_id !== undefined) {
-      updates.push(`line_channel_id = $${paramIndex++}`)
-      values.push(line_channel_id || null)
-      lineSettingsUpdated = true
+      updates.push(`line_channel_id = $${paramIndex++}`);
+      values.push(line_channel_id || null);
+      lineSettingsUpdated = true;
     }
     if (line_channel_secret !== undefined) {
       // シークレットは暗号化して保存
-      updates.push(`line_channel_secret = $${paramIndex++}`)
-      values.push(line_channel_secret ? encrypt(line_channel_secret) : null)
-      lineSettingsUpdated = true
+      updates.push(`line_channel_secret = $${paramIndex++}`);
+      values.push(line_channel_secret ? encrypt(line_channel_secret) : null);
+      lineSettingsUpdated = true;
     }
     if (line_channel_access_token !== undefined) {
       // アクセストークンは暗号化して保存
-      updates.push(`line_channel_access_token = $${paramIndex++}`)
-      values.push(line_channel_access_token ? encrypt(line_channel_access_token) : null)
-      lineSettingsUpdated = true
+      updates.push(`line_channel_access_token = $${paramIndex++}`);
+      values.push(line_channel_access_token ? encrypt(line_channel_access_token) : null);
+      lineSettingsUpdated = true;
     }
 
     if (updates.length === 0) {
-      sendBadRequest(res, '更新する項目がありません')
-      return
+      sendBadRequest(res, '更新する項目がありません');
+      return;
     }
 
-    updates.push(`updated_at = CURRENT_TIMESTAMP`)
-    values.push(req.storeId)
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(req.storeId);
 
     const result = await pool.query(
       `UPDATE stores SET ${updates.join(', ')} WHERE id = $${paramIndex} 
@@ -145,7 +144,6 @@ router.put('/', async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error updating store:', error);
     sendServerError(res, '店舗情報の更新に失敗しました', error);
   }
 });

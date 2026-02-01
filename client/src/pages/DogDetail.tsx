@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import { calculateAge } from '../utils/dog'
+import PageHeader from '../components/PageHeader'
 import HealthInfoSection from '../components/dogs/HealthInfoSection'
 import PersonalitySection from '../components/dogs/PersonalitySection'
 import ContractsSection from '../components/dogs/ContractsSection'
 import HistoryTabs from '../components/dogs/HistoryTabs'
 import { useDogDetail } from '../hooks/useDogDetail'
 
-const DogDetail = () => {
+function DogDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [historyTab, setHistoryTab] = useState<'reservations' | 'journals'>('reservations')
@@ -32,26 +33,20 @@ const DogDetail = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="ワンちゃん詳細"
+        backPath="/customers"
+        rightContent={
           <button
-            onClick={() => navigate('/customers')}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
-            aria-label="戻る"
+            onClick={() => navigate(`/dogs/${id}/edit`)}
+            className="flex items-center gap-2 px-4 py-2 text-primary font-bold rounded-xl active:bg-primary/10 transition-colors min-h-[44px]"
+            aria-label="編集"
           >
-            <Icon icon="solar:arrow-left-linear" width="24" height="24" />
+            <Icon icon="solar:pen-bold" width="20" height="20" />
+            <span className="text-sm">編集</span>
           </button>
-          <h1 className="text-lg font-bold font-heading">ワンちゃん詳細</h1>
-        </div>
-        <button
-          onClick={() => navigate(`/dogs/${id}/edit`)}
-          className="flex items-center gap-2 px-4 py-2 text-primary font-bold rounded-xl active:bg-primary/10 transition-colors min-h-[44px]"
-          aria-label="編集"
-        >
-          <Icon icon="solar:pen-bold" width="20" height="20" />
-          <span className="text-sm">編集</span>
-        </button>
-      </header>
+        }
+      />
 
       <main className="px-5 space-y-4 pt-4">
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">

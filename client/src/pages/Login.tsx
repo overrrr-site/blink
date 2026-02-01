@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import logoImage from '../assets/logo.png'
 
-const Login = () => {
+function Login(): JSX.Element {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -21,8 +21,8 @@ const Login = () => {
     try {
       await login(email, password)
       navigate('/dashboard')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'エラーが発生しました')
     } finally {
       setLoading(false)
     }
@@ -35,8 +35,8 @@ const Login = () => {
     try {
       await loginWithGoogle()
       // Googleログインはリダイレクトするため、ここでは何もしない
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'エラーが発生しました')
       setLoading(false)
     }
   }

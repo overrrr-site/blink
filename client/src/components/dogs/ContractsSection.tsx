@@ -1,4 +1,5 @@
 import { Icon } from '../Icon'
+
 type Contract = {
   id: number
   contract_type: string
@@ -17,12 +18,48 @@ type ContractsSectionProps = {
   onSelect: (id: number) => void
 }
 
+function getContractTypeClass(contractType: string): string {
+  switch (contractType) {
+    case '月謝制':
+      return 'bg-chart-2/10 text-chart-2'
+    case 'チケット制':
+      return 'bg-chart-4/10 text-chart-4'
+    default:
+      return 'bg-muted text-muted-foreground'
+  }
+}
+
+function getRemainingColor(remaining: number): string {
+  if (remaining <= 0) return 'text-destructive'
+  if (remaining <= 3) return 'text-chart-4'
+  return 'text-chart-2'
+}
+
+function getContractBorderClass(isExpired: boolean, isExpiringSoon: boolean): string {
+  if (isExpired) return 'border-destructive/30 bg-destructive/5'
+  if (isExpiringSoon) return 'border-chart-4/30 bg-chart-4/5'
+  return 'border-border'
+}
+
+function isContractExpired(validUntil?: string): boolean {
+  if (!validUntil) return false
+  return new Date(validUntil) < new Date()
+}
+
+function isContractExpiringSoon(validUntil?: string): boolean {
+  if (!validUntil) return false
+  const daysUntil = Math.floor(
+    (new Date(validUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+  )
+  return daysUntil >= 0 && daysUntil <= 14
+}
+
 export default function ContractsSection({
   contracts,
   loading,
   onCreate,
   onSelect,
-}: ContractsSectionProps) {
+}: ContractsSectionProps): JSX.Element {
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex items-center justify-between">
@@ -43,41 +80,21 @@ export default function ContractsSection({
         ) : contracts.length > 0 ? (
           <div className="space-y-3">
             {contracts.map((contract) => {
-              const isExpired = contract.valid_until && new Date(contract.valid_until) < new Date()
-              const isExpiringSoon =
-                contract.valid_until &&
-                (() => {
-                  const daysUntil = Math.floor(
-                    (new Date(contract.valid_until).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-                  )
-                  return daysUntil >= 0 && daysUntil <= 14
-                })()
+              const expired = isContractExpired(contract.valid_until)
+              const expiringSoon = isContractExpiringSoon(contract.valid_until)
+              const remaining = contract.calculated_remaining || contract.remaining_sessions || 0
 
               return (
                 <div
                   key={contract.id}
                   onClick={() => onSelect(contract.id)}
-                  className={`p-4 rounded-xl border cursor-pointer hover:bg-muted/30 transition-colors ${
-                    isExpired
-                      ? 'border-destructive/30 bg-destructive/5'
-                      : isExpiringSoon
-                      ? 'border-chart-4/30 bg-chart-4/5'
-                      : 'border-border'
-                  }`}
+                  className={`p-4 rounded-xl border cursor-pointer hover:bg-muted/30 transition-colors ${getContractBorderClass(expired, expiringSoon)}`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-sm font-bold">{contract.course_name || contract.contract_type}</p>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            contract.contract_type === '月謝制'
-                              ? 'bg-chart-2/10 text-chart-2'
-                              : contract.contract_type === 'チケット制'
-                              ? 'bg-chart-4/10 text-chart-4'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getContractTypeClass(contract.contract_type)}`}>
                           {contract.contract_type}
                         </span>
                       </div>
@@ -85,12 +102,12 @@ export default function ContractsSection({
                         <p className="text-xs text-muted-foreground">料金: ¥{Math.floor(contract.price).toLocaleString()}</p>
                       )}
                     </div>
-                    {isExpired && (
+                    {expired && (
                       <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-bold">
                         期限切れ
                       </span>
                     )}
-                    {isExpiringSoon && !isExpired && (
+                    {expiringSoon && !expired && (
                       <span className="text-xs bg-chart-4/10 text-chart-4 px-2 py-0.5 rounded-full font-bold">
                         期限間近
                       </span>
@@ -100,22 +117,14 @@ export default function ContractsSection({
                     <div className="mt-2 pt-2 border-t border-border/50">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">残回数</span>
-                        <span
-                          className={`font-bold ${
-                            (contract.calculated_remaining || 0) <= 0
-                              ? 'text-destructive'
-                              : (contract.calculated_remaining || 0) <= 3
-                              ? 'text-chart-4'
-                              : 'text-chart-2'
-                          }`}
-                        >
-                          {contract.calculated_remaining || contract.remaining_sessions || 0}回
+                        <span className={`font-bold ${getRemainingColor(remaining)}`}>
+                          {remaining}回
                         </span>
                       </div>
                       {contract.valid_until && (
                         <div className="flex items-center justify-between text-xs mt-1">
                           <span className="text-muted-foreground">有効期限</span>
-                          <span className={isExpired ? 'text-destructive font-bold' : ''}>
+                          <span className={expired ? 'text-destructive font-bold' : ''}>
                             {new Date(contract.valid_until).toLocaleDateString('ja-JP')}
                           </span>
                         </div>

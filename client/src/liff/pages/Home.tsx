@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { scanQRCode, getLiffDebugInfo } from '../utils/liff';
+import { scanQRCode } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import { getAvatarUrl } from '../../utils/image';
+import { getAxiosErrorMessage } from '../../utils/error';
 import useSWR from 'swr';
 import { liffFetcher } from '../lib/swr';
 import { LazyImage } from '../../components/LazyImage';
@@ -96,7 +97,6 @@ export default function Home() {
   const [qrModalMode, setQrModalMode] = useState<'checkin' | 'checkout'>('checkin');
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   useEffect(() => {
     if (data && token) {
@@ -120,71 +120,109 @@ export default function Home() {
     }
   };
 
+  function enrichQrErrorMessage(message: string): string {
+    if (message.includes('カメラへのアクセスが許可されていません')) {
+      return 'カメラへのアクセスが許可されていません。\n\n【iPhoneの場合】\n設定アプリ → LINE → カメラをオンにしてください\n\n【Androidの場合】\n設定 → アプリ → LINE → 権限 → カメラを許可';
+    }
+    if (message.includes('LINEアプリ内でのみ')) {
+      return 'QRコードスキャンはLINEアプリ内でのみ利用可能です。\n\nLINEアプリのトーク画面からこのページを開いてください。';
+    }
+    return message;
+  }
+
+  function showQrFallbackModal(mode: 'checkin' | 'checkout', scanError: Error): void {
+    const errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
+    setQrModalMode(mode);
+    setQrError(enrichQrErrorMessage(errorMessage));
+    setQrInput('');
+    setShowQrModal(true);
+  }
+
+  function closeQrModal(): void {
+    setShowQrModal(false);
+    setQrError(null);
+    setQrInput('');
+  }
+
+  const processQrAction = async (
+    qrCode: string,
+    mode: 'checkin' | 'checkout',
+  ) => {
+    if (!data?.nextReservation) return;
+    const setLoading = mode === 'checkin' ? setCheckingIn : setCheckingOut;
+    const endpoint = mode === 'checkin' ? '/check-in' : '/check-out';
+    const successMsg = mode === 'checkin'
+      ? 'チェックインが完了しました！'
+      : 'チェックアウトが完了しました！お疲れさまでした。';
+    const errorMsg = mode === 'checkin'
+      ? 'チェックインに失敗しました'
+      : 'チェックアウトに失敗しました';
+
+    setLoading(true);
+    try {
+      await liffClient.post(endpoint, {
+        qrCode,
+        reservationId: data.nextReservation.id,
+      });
+      closeQrModal();
+      alert(successMsg);
+      mutate();
+    } catch (error) {
+      alert(getAxiosErrorMessage(error, errorMsg));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCheckIn = async () => {
     if (!data?.nextReservation) {
       alert('予約が見つかりません');
       return;
     }
 
-    // 予約日が過去でないことを確認
     const reservationDate = new Date(data.nextReservation.reservation_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     reservationDate.setHours(0, 0, 0, 0);
-    
+
     if (reservationDate < today) {
       alert('この予約は過去の予約です');
       return;
     }
 
     setCheckingIn(true);
-    setQrModalMode('checkin');
     try {
-      // まずQRコードスキャンを試みる
       const qrCode = await scanQRCode();
-      await processCheckIn(qrCode);
-    } catch (scanError: any) {
+      await processQrAction(qrCode, 'checkin');
+    } catch (scanError) {
       setCheckingIn(false);
-      
-      // デバッグ情報を取得
-      const debug = getLiffDebugInfo();
-      setDebugInfo(debug);
-      
-      // エラーメッセージを設定してモーダルを表示
-      let errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
-      
-      // カメラ権限エラーの場合、詳細な案内を追加
-      if (errorMessage.includes('カメラへのアクセスが許可されていません')) {
-        errorMessage = 'カメラへのアクセスが許可されていません。\n\n【iPhoneの場合】\n設定アプリ → LINE → カメラをオンにしてください\n\n【Androidの場合】\n設定 → アプリ → LINE → 権限 → カメラを許可';
-      } else if (errorMessage.includes('LINEアプリ内でのみ')) {
-        errorMessage = 'QRコードスキャンはLINEアプリ内でのみ利用可能です。\n\nLINEアプリのトーク画面からこのページを開いてください。';
-      }
-      
-      setQrError(errorMessage);
-      setQrInput('');
-      setShowQrModal(true);
+      showQrFallbackModal('checkin', scanError as Error);
     }
   };
 
-  const processCheckIn = async (qrCode: string) => {
-    if (!data?.nextReservation) return;
-    
-    setCheckingIn(true);
-    try {
-      await liffClient.post('/check-in', {
-        qrCode,
-        reservationId: data.nextReservation.id,
-      });
+  const handleCheckOut = async () => {
+    if (!data?.nextReservation) {
+      alert('予約が見つかりません');
+      return;
+    }
 
-      setShowQrModal(false);
-      setQrInput('');
-      setQrError(null);
-      alert('チェックインが完了しました！');
-      mutate();
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'チェックインに失敗しました');
-    } finally {
-      setCheckingIn(false);
+    if (data.nextReservation.status !== '登園済') {
+      alert('まだ登園していません');
+      return;
+    }
+
+    if (data.nextReservation.checked_out_at) {
+      alert('既に降園済みです');
+      return;
+    }
+
+    setCheckingOut(true);
+    try {
+      const qrCode = await scanQRCode();
+      await processQrAction(qrCode, 'checkout');
+    } catch (scanError) {
+      setCheckingOut(false);
+      showQrFallbackModal('checkout', scanError as Error);
     }
   };
 
@@ -193,80 +231,7 @@ export default function Home() {
       alert('QRコードの内容を入力してください');
       return;
     }
-    if (qrModalMode === 'checkout') {
-      processCheckOut(qrInput.trim());
-    } else {
-      processCheckIn(qrInput.trim());
-    }
-  };
-
-  // チェックアウト（降園）処理
-  const handleCheckOut = async () => {
-    if (!data?.nextReservation) {
-      alert('予約が見つかりません');
-      return;
-    }
-
-    // 登園済みか確認
-    if (data.nextReservation.status !== '登園済') {
-      alert('まだ登園していません');
-      return;
-    }
-
-    // 既に降園済みか確認
-    if (data.nextReservation.checked_out_at) {
-      alert('既に降園済みです');
-      return;
-    }
-
-    setCheckingOut(true);
-    setQrModalMode('checkout');
-    try {
-      // QRコードスキャンを試みる
-      const qrCode = await scanQRCode();
-      await processCheckOut(qrCode);
-    } catch (scanError: any) {
-      setCheckingOut(false);
-      
-      // デバッグ情報を取得
-      const debug = getLiffDebugInfo();
-      setDebugInfo(debug);
-      
-      // エラーメッセージを設定してモーダルを表示
-      let errorMessage = scanError.message || 'QRコードスキャンに失敗しました';
-      
-      if (errorMessage.includes('カメラへのアクセスが許可されていません')) {
-        errorMessage = 'カメラへのアクセスが許可されていません。\n\n【iPhoneの場合】\n設定アプリ → LINE → カメラをオンにしてください\n\n【Androidの場合】\n設定 → アプリ → LINE → 権限 → カメラを許可';
-      } else if (errorMessage.includes('LINEアプリ内でのみ')) {
-        errorMessage = 'QRコードスキャンはLINEアプリ内でのみ利用可能です。\n\nLINEアプリのトーク画面からこのページを開いてください。';
-      }
-      
-      setQrError(errorMessage);
-      setQrInput('');
-      setShowQrModal(true);
-    }
-  };
-
-  const processCheckOut = async (qrCode: string) => {
-    if (!data?.nextReservation) return;
-    
-    setCheckingOut(true);
-    try {
-      await liffClient.post('/check-out', {
-        qrCode,
-        reservationId: data.nextReservation.id,
-      });
-
-      setShowQrModal(false);
-      setQrInput('');
-      setQrError(null);
-      alert('チェックアウトが完了しました！お疲れさまでした。');
-      mutate();
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'チェックアウトに失敗しました');
-    } finally {
-      setCheckingOut(false);
-    }
+    processQrAction(qrInput.trim(), qrModalMode);
   };
 
   if (isLoading) {
@@ -589,11 +554,7 @@ export default function Home() {
                 {qrModalMode === 'checkout' ? '降園QRコード入力' : '登園QRコード入力'}
               </h2>
               <button
-                onClick={() => {
-                  setShowQrModal(false);
-                  setQrError(null);
-                  setQrInput('');
-                }}
+                onClick={closeQrModal}
                 className="size-10 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
                 aria-label="閉じる"
               >
@@ -611,14 +572,6 @@ export default function Home() {
                     <p className="text-xs text-destructive whitespace-pre-line leading-relaxed">{qrError}</p>
                   </div>
                 </div>
-              )}
-
-              {/* デバッグ情報（開発用） */}
-              {debugInfo && (
-                <details className="bg-muted/30 rounded-xl p-3">
-                  <summary className="text-[10px] text-muted-foreground cursor-pointer">デバッグ情報（タップで展開）</summary>
-                  <pre className="text-[9px] text-muted-foreground mt-2 whitespace-pre-wrap font-mono">{debugInfo}</pre>
-                </details>
               )}
 
               {/* 説明 */}

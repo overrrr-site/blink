@@ -2,7 +2,7 @@ interface SkeletonProps {
   className?: string
 }
 
-export const Skeleton = ({ className = '' }: SkeletonProps) => {
+export function Skeleton({ className = '' }: SkeletonProps): JSX.Element {
   return (
     <div
       className={`animate-pulse bg-muted rounded ${className}`}
@@ -11,7 +11,7 @@ export const Skeleton = ({ className = '' }: SkeletonProps) => {
   )
 }
 
-export const SkeletonCard = () => {
+export function SkeletonCard(): JSX.Element {
   return (
     <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
       <div className="flex items-center gap-3">
@@ -25,7 +25,7 @@ export const SkeletonCard = () => {
   )
 }
 
-export const SkeletonReservationCard = () => {
+export function SkeletonReservationCard(): JSX.Element {
   return (
     <div className="snap-start shrink-0 w-52 bg-card rounded-2xl p-3 shadow-sm border border-border">
       <div className="flex items-center gap-3 mb-3">
@@ -41,7 +41,7 @@ export const SkeletonReservationCard = () => {
   )
 }
 
-export const SkeletonJournalCard = () => {
+export function SkeletonJournalCard(): JSX.Element {
   return (
     <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
       <div className="flex items-center gap-3 mb-2">
@@ -57,12 +57,14 @@ export const SkeletonJournalCard = () => {
   )
 }
 
-export const SkeletonList = ({ count = 3, type = 'card' }: { count?: number; type?: 'card' | 'reservation' | 'journal' }) => {
-  const Component = type === 'reservation'
-    ? SkeletonReservationCard
-    : type === 'journal'
-    ? SkeletonJournalCard
-    : SkeletonCard
+const SKELETON_COMPONENTS = {
+  card: SkeletonCard,
+  reservation: SkeletonReservationCard,
+  journal: SkeletonJournalCard,
+} as const
+
+export function SkeletonList({ count = 3, type = 'card' }: { count?: number; type?: 'card' | 'reservation' | 'journal' }): JSX.Element {
+  const Component = SKELETON_COMPONENTS[type]
 
   return (
     <div className={type === 'reservation' ? 'flex gap-4' : 'space-y-3'}>
@@ -73,4 +75,3 @@ export const SkeletonList = ({ count = 3, type = 'card' }: { count?: number; typ
   )
 }
 
-export default Skeleton

@@ -25,11 +25,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return this.props.fallback ?? (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">エラーが発生しました</h2>
-          <p className="text-gray-600 mb-4">ページを再読み込みしてください</p>
+          <h2 className="text-lg font-semibold text-foreground mb-2">エラーが発生しました</h2>
+          <p className="text-muted-foreground mb-4">ページを再読み込みしてください</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-white rounded-lg"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
           >
             再読み込み
           </button>

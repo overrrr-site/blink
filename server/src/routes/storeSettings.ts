@@ -29,7 +29,6 @@ router.get('/', cacheControl(30, 60), async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching store settings:', error);
     sendServerError(res, '店舗設定の取得に失敗しました', error);
   }
 });
@@ -60,7 +59,6 @@ router.put('/', async (req: AuthRequest, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating store settings:', error);
     sendServerError(res, '店舗設定の更新に失敗しました', error);
   }
 });

@@ -1,23 +1,12 @@
 import { useCallback, useRef } from 'react'
 import useSWRInfinite from 'swr/infinite'
 import { liffFetcher } from '../lib/swr'
+import type { PaginatedResponse } from '../../types/api'
 
 interface UsePaginatedDataOptions {
   baseUrl: string
   limit?: number
   params?: Record<string, string>
-}
-
-interface PaginationInfo {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-}
-
-interface PaginatedResponse<T> {
-  data: T[]
-  pagination: PaginationInfo
 }
 
 interface UsePaginatedDataReturn<T> {

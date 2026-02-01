@@ -7,7 +7,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
-import { buildPaginatedResponse, parsePaginationParams } from '../utils/pagination.js';
+import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../utils/pagination.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -58,14 +58,9 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
     params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
-    const data = result.rows.map((row) => {
-      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
-      return rest;
-    });
+    const { data, total } = extractTotalCount(result.rows as Record<string, unknown>[]);
     res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error) {
-    console.error('Error fetching owners:', error);
     sendServerError(res, '飼い主一覧の取得に失敗しました', error);
   }
 });
@@ -95,7 +90,6 @@ router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
       dogs: dogsResult.rows,
     });
   } catch (error) {
-    console.error('Error fetching owner:', error);
     sendServerError(res, '飼い主情報の取得に失敗しました', error);
   }
 });
@@ -146,7 +140,6 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating owner:', error);
     sendServerError(res, '飼い主の登録に失敗しました', error);
   }
 });
@@ -196,7 +189,6 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating owner:', error);
     sendServerError(res, '飼い主情報の更新に失敗しました', error);
   }
 });
@@ -243,7 +235,6 @@ router.delete('/:id', async function(req: AuthRequest, res): Promise<void> {
       res.json({ message: '飼い主情報を完全に削除しました' });
     }
   } catch (error) {
-    console.error('Error deleting owner:', error);
     sendServerError(res, '飼い主の削除に失敗しました', error);
   }
 });

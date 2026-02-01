@@ -45,7 +45,7 @@ const storage = useSupabaseStorage
   : multer.diskStorage({
       destination: (req, file, cb) => {
         // カテゴリ別にディレクトリを作成
-        const category = (req as any).query.category || 'general';
+        const category = (req.query.category as string) || 'general';
         const categoryDir = path.join(uploadDir, category);
         try {
           if (!fs.existsSync(categoryDir)) {
@@ -125,7 +125,6 @@ router.post('/', upload.single('file'), async (req: AuthRequest, res) => {
       storage: 'local',
     });
   } catch (error: any) {
-    console.error('Error uploading file:', error);
     sendServerError(res, error.message || 'ファイルのアップロードに失敗しました', error);
   }
 });
@@ -170,7 +169,6 @@ router.post('/multiple', upload.array('files', 10), async (req: AuthRequest, res
       storage: 'local',
     });
   } catch (error: any) {
-    console.error('Error uploading files:', error);
     sendServerError(res, error.message || 'ファイルのアップロードに失敗しました', error);
   }
 });
@@ -215,7 +213,6 @@ router.delete('/', async (req: AuthRequest, res) => {
       sendNotFound(res, 'ファイルが見つかりません');
     }
   } catch (error: any) {
-    console.error('Error deleting file:', error);
     sendServerError(res, error.message || 'ファイルの削除に失敗しました', error);
   }
 });

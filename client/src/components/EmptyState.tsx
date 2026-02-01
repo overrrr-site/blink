@@ -1,4 +1,5 @@
 import { Icon } from './Icon'
+
 interface EmptyStateProps {
   icon: string
   title: string
@@ -10,7 +11,7 @@ interface EmptyStateProps {
   }
 }
 
-const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
+function EmptyState({ icon, title, description, action }: EmptyStateProps): JSX.Element {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div className="size-24 rounded-full bg-accent/30 flex items-center justify-center mb-6">

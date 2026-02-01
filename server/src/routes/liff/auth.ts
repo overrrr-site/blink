@@ -157,7 +157,6 @@ router.post('/link/request', async function(req, res) {
       maskedEmail: maskEmail(owner.email),
     });
   } catch (error: any) {
-    console.error('Link request error:', error);
     sendServerError(res, '紐付けリクエストの処理に失敗しました', error);
   }
 });
@@ -252,7 +251,6 @@ router.post('/link/verify', async function(req, res) {
       message: 'LINEアカウントの紐付けが完了しました',
     });
   } catch (error: any) {
-    console.error('Link verify error:', error);
     sendServerError(res, '紐付け確認の処理に失敗しました', error);
   }
 });

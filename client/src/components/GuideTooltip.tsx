@@ -13,7 +13,7 @@ interface GuideTooltipProps {
   totalSteps?: number
 }
 
-const GuideTooltip = ({
+function GuideTooltip({
   target,
   title,
   content,
@@ -24,17 +24,14 @@ const GuideTooltip = ({
   isLast = false,
   stepNumber = 1,
   totalSteps = 1,
-}: GuideTooltipProps) => {
+}: GuideTooltipProps): JSX.Element | null {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
-  const [targetElement, setTargetElement] = useState<HTMLElement | null>(null)
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const element = document.querySelector(target) as HTMLElement
     if (!element) return
-
-    setTargetElement(element)
 
     // 要素をスクロール表示
     element.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -98,7 +95,7 @@ const GuideTooltip = ({
     }
   }, [target, position])
 
-  if (!targetElement || !targetRect) return null
+  if (!targetRect) return null
 
   return (
     <>
@@ -158,6 +155,8 @@ const GuideTooltip = ({
       {/* ツールチップ */}
       <div
         ref={tooltipRef}
+        role="dialog"
+        aria-label={title}
         className="fixed z-[102] bg-card border-2 border-primary rounded-2xl shadow-2xl p-5 max-w-sm"
         style={{
           top: tooltipPosition.top,

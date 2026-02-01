@@ -16,6 +16,23 @@ interface CalendarEvent {
   location?: string;
 }
 
+interface ReservationForCalendar {
+  id: number;
+  reservation_date: string | Date;
+  reservation_time?: string;
+  memo?: string | null;
+}
+
+interface CalendarIntegrationRow {
+  id: number;
+  store_id: number;
+  calendar_id: string;
+  access_token: string;
+  refresh_token: string | null;
+  token_expiry: string | null;
+  enabled: boolean;
+}
+
 /**
  * Googleカレンダー連携情報を取得
  */
@@ -43,19 +60,15 @@ export function createOAuth2Client() {
  */
 export function getAuthUrl(storeId: number): string {
   const oauth2Client = createOAuth2Client();
-  const scopes = [
-    'https://www.googleapis.com/auth/calendar',
-    'https://www.googleapis.com/auth/calendar.events',
-  ];
-
-  const url = oauth2Client.generateAuthUrl({
+  return oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: scopes,
-    state: storeId.toString(), // storeIdをstateに含める
-    prompt: 'consent', // refresh_tokenを取得するために必要
+    scope: [
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/calendar.events',
+    ],
+    state: storeId.toString(),
+    prompt: 'consent',
   });
-
-  return url;
 }
 
 /**
@@ -63,95 +76,73 @@ export function getAuthUrl(storeId: number): string {
  */
 export async function saveTokens(storeId: number, code: string) {
   const oauth2Client = createOAuth2Client();
+  const { tokens } = await oauth2Client.getToken(code);
 
-  try {
-    const { tokens } = await oauth2Client.getToken(code);
-    
-    if (!tokens.access_token) {
-      throw new Error('アクセストークンが取得できませんでした');
-    }
-
-    // カレンダーIDを取得（プライマリカレンダーを使用）
-    oauth2Client.setCredentials(tokens);
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    const calendarList = await calendar.calendarList.list();
-    const primaryCalendar = calendarList.data.items?.find(cal => cal.primary) || calendarList.data.items?.[0];
-
-    if (!primaryCalendar?.id) {
-      throw new Error('カレンダーIDが取得できませんでした');
-    }
-
-    // データベースに保存（トークンは暗号化）
-    await pool.query(
-      `INSERT INTO google_calendar_integrations 
-       (store_id, calendar_id, access_token, refresh_token, token_expiry, enabled)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (store_id) 
-       DO UPDATE SET 
-         calendar_id = EXCLUDED.calendar_id,
-         access_token = EXCLUDED.access_token,
-         refresh_token = EXCLUDED.refresh_token,
-         token_expiry = EXCLUDED.token_expiry,
-         enabled = EXCLUDED.enabled,
-         updated_at = CURRENT_TIMESTAMP`,
-      [
-        storeId,
-        primaryCalendar.id,
-        encrypt(tokens.access_token),
-        tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
-        tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-        true,
-      ]
-    );
-
-    return { success: true, calendarId: primaryCalendar.id };
-  } catch (error) {
-    console.error('Error saving tokens:', error);
-    throw error;
+  if (!tokens.access_token) {
+    throw new Error('アクセストークンが取得できませんでした');
   }
+
+  // カレンダーIDを取得（プライマリカレンダーを使用）
+  oauth2Client.setCredentials(tokens);
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+  const calendarList = await calendar.calendarList.list();
+  const primaryCalendar = calendarList.data.items?.find(cal => cal.primary) ?? calendarList.data.items?.[0];
+
+  if (!primaryCalendar?.id) {
+    throw new Error('カレンダーIDが取得できませんでした');
+  }
+
+  // データベースに保存（トークンは暗号化）
+  await pool.query(
+    `INSERT INTO google_calendar_integrations
+     (store_id, calendar_id, access_token, refresh_token, token_expiry, enabled)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (store_id)
+     DO UPDATE SET
+       calendar_id = EXCLUDED.calendar_id,
+       access_token = EXCLUDED.access_token,
+       refresh_token = EXCLUDED.refresh_token,
+       token_expiry = EXCLUDED.token_expiry,
+       enabled = EXCLUDED.enabled,
+       updated_at = CURRENT_TIMESTAMP`,
+    [
+      storeId,
+      primaryCalendar.id,
+      encrypt(tokens.access_token),
+      tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
+      tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+      true,
+    ]
+  );
+
+  return { success: true, calendarId: primaryCalendar.id };
 }
 
 /**
  * トークンをリフレッシュ
  */
-async function refreshAccessToken(integration: any) {
+async function refreshAccessToken(integration: CalendarIntegrationRow) {
   const oauth2Client = createOAuth2Client();
-  
-  // 暗号化されたリフレッシュトークンを復号化
-  let decryptedRefreshToken: string;
-  try {
-    decryptedRefreshToken = decrypt(integration.refresh_token);
-  } catch (error) {
-    console.error('Error decrypting refresh token:', error);
-    throw new Error('リフレッシュトークンの復号化に失敗しました');
-  }
-  
-  oauth2Client.setCredentials({
-    refresh_token: decryptedRefreshToken,
-  });
 
-  try {
-    const { credentials } = await oauth2Client.refreshAccessToken();
-    
-    // 新しいアクセストークンを暗号化して保存
-    await pool.query(
-      `UPDATE google_calendar_integrations 
-       SET access_token = $1, 
-           token_expiry = $2,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [
-        encrypt(credentials.access_token),
-        credentials.expiry_date ? new Date(credentials.expiry_date) : null,
-        integration.id,
-      ]
-    );
+  const decryptedRefreshToken = decrypt(integration.refresh_token);
+  oauth2Client.setCredentials({ refresh_token: decryptedRefreshToken });
 
-    return credentials.access_token;
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    throw error;
-  }
+  const { credentials } = await oauth2Client.refreshAccessToken();
+
+  await pool.query(
+    `UPDATE google_calendar_integrations
+     SET access_token = $1,
+         token_expiry = $2,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $3`,
+    [
+      encrypt(credentials.access_token),
+      credentials.expiry_date ? new Date(credentials.expiry_date) : null,
+      integration.id,
+    ]
+  );
+
+  return credentials.access_token;
 }
 
 /**
@@ -159,38 +150,26 @@ async function refreshAccessToken(integration: any) {
  */
 async function getAuthenticatedCalendar(storeId: number) {
   const integration = await getGoogleCalendarIntegration(storeId);
-  
   if (!integration) {
     throw new Error('Googleカレンダー連携が設定されていません');
   }
 
-  const oauth2Client = createOAuth2Client();
-  
-  // 暗号化されたトークンを復号化
-  let accessToken: string;
-  let refreshToken: string | null = null;
-  
-  try {
-    accessToken = decrypt(integration.access_token);
-    if (integration.refresh_token) {
-      refreshToken = decrypt(integration.refresh_token);
-    }
-  } catch (error) {
-    console.error('Error decrypting tokens:', error);
-    throw new Error('トークンの復号化に失敗しました');
-  }
-  
+  let accessToken = decrypt(integration.access_token);
+  const refreshToken = integration.refresh_token ? decrypt(integration.refresh_token) : null;
+
   // トークンの有効期限をチェック
-  if (integration.token_expiry && new Date(integration.token_expiry) <= new Date()) {
+  const isExpired = integration.token_expiry && new Date(integration.token_expiry) <= new Date();
+  if (isExpired) {
     if (!refreshToken) {
       throw new Error('リフレッシュトークンがありません。再認証が必要です。');
     }
     accessToken = await refreshAccessToken(integration);
   }
 
+  const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({
     access_token: accessToken,
-    refresh_token: refreshToken || undefined,
+    refresh_token: refreshToken ?? undefined,
   });
 
   return {
@@ -222,149 +201,97 @@ function formatTimeToHM(time: string): string {
   return `${parts[0].padStart(2, '0')}:${(parts[1] || '00').padStart(2, '0')}`;
 }
 
+const DEFAULT_EVENT_DURATION_HOURS = 8;
+
+/**
+ * 予約データからCalendarEventオブジェクトを構築する
+ */
+function buildCalendarEvent(
+  reservation: ReservationForCalendar,
+  dogName: string,
+  ownerName: string
+): CalendarEvent {
+  const dateStr = formatDateToYMD(reservation.reservation_date);
+  const timeStr = formatTimeToHM(reservation.reservation_time || '09:00');
+  const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
+  const endDateTime = new Date(startDateTime);
+  endDateTime.setHours(endDateTime.getHours() + DEFAULT_EVENT_DURATION_HOURS);
+
+  return {
+    summary: `🐾 ${dogName}（${ownerName}様）`,
+    description: `予約ID: ${reservation.id}\n${reservation.memo || ''}`,
+    start: { dateTime: startDateTime.toISOString(), timeZone: 'Asia/Tokyo' },
+    end: { dateTime: endDateTime.toISOString(), timeZone: 'Asia/Tokyo' },
+  };
+}
+
+/**
+ * 予約に紐づくカレンダーイベントIDを取得する
+ */
+async function getLinkedCalendarEventId(reservationId: number): Promise<string | null> {
+  const result = await pool.query(
+    `SELECT calendar_event_id FROM reservation_calendar_events WHERE reservation_id = $1`,
+    [reservationId]
+  );
+  return result.rows[0]?.calendar_event_id ?? null;
+}
+
 /**
  * 予約をGoogleカレンダーに作成
  */
-export async function createCalendarEvent(storeId: number, reservation: any, dogName: string, ownerName: string) {
-  try {
-    console.log('📅 getAuthenticatedCalendar開始:', storeId);
-    const { calendar, calendarId } = await getAuthenticatedCalendar(storeId);
-    console.log('📅 カレンダー取得成功:', calendarId);
+export async function createCalendarEvent(
+  storeId: number,
+  reservation: ReservationForCalendar,
+  dogName: string,
+  ownerName: string
+): Promise<any> {
+  const { calendar, calendarId } = await getAuthenticatedCalendar(storeId);
+  const event = buildCalendarEvent(reservation, dogName, ownerName);
 
-    // 日付を文字列形式に変換（Date型の場合に対応）
-    const dateStr = formatDateToYMD(reservation.reservation_date);
-    const timeStr = formatTimeToHM(reservation.reservation_time || '09:00');
+  const response = await calendar.events.insert({ calendarId, requestBody: event });
 
-    // 日付と時間を結合してISO形式に変換
-    const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setHours(endDateTime.getHours() + 8); // デフォルト8時間
+  await pool.query(
+    `INSERT INTO reservation_calendar_events (reservation_id, calendar_event_id, calendar_id)
+     VALUES ($1, $2, $3)`,
+    [reservation.id, response.data.id, calendarId]
+  );
 
-    console.log('📅 イベント時間:', { dateStr, timeStr, start: startDateTime.toISOString() });
-
-    const event: CalendarEvent = {
-      summary: `🐾 ${dogName}（${ownerName}様）`,
-      description: `予約ID: ${reservation.id}\n${reservation.memo || ''}`,
-      start: {
-        dateTime: startDateTime.toISOString(),
-        timeZone: 'Asia/Tokyo',
-      },
-      end: {
-        dateTime: endDateTime.toISOString(),
-        timeZone: 'Asia/Tokyo',
-      },
-    };
-
-    const response = await calendar.events.insert({
-      calendarId,
-      requestBody: event,
-    });
-
-    // イベントIDを保存
-    await pool.query(
-      `INSERT INTO reservation_calendar_events (reservation_id, calendar_event_id, calendar_id)
-       VALUES ($1, $2, $3)`,
-      [reservation.id, response.data.id, calendarId]
-    );
-
-    return response.data;
-  } catch (error) {
-    console.error('Error creating calendar event:', error);
-    throw error;
-  }
+  return response.data;
 }
 
 /**
  * Googleカレンダーのイベントを更新
  */
-export async function updateCalendarEvent(storeId: number, reservation: any, dogName: string, ownerName: string) {
-  try {
-    const { calendar, calendarId } = await getAuthenticatedCalendar(storeId);
-
-    // 既存のイベントIDを取得
-    const eventResult = await pool.query(
-      `SELECT calendar_event_id FROM reservation_calendar_events WHERE reservation_id = $1`,
-      [reservation.id]
-    );
-
-    if (eventResult.rows.length === 0) {
-      // イベントが存在しない場合は新規作成
-      return await createCalendarEvent(storeId, reservation, dogName, ownerName);
-    }
-
-    const eventId = eventResult.rows[0].calendar_event_id;
-
-    // 既存のイベントを取得
-    const existingEvent = await calendar.events.get({
-      calendarId,
-      eventId,
-    });
-
-    // 日付と時間を結合してISO形式に変換
-    const dateStr = formatDateToYMD(reservation.reservation_date);
-    const timeStr = formatTimeToHM(reservation.reservation_time || '09:00');
-    const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setHours(endDateTime.getHours() + 8);
-
-    const updatedEvent: CalendarEvent = {
-      summary: `🐾 ${dogName}（${ownerName}様）`,
-      description: `予約ID: ${reservation.id}\n${reservation.memo || ''}`,
-      start: {
-        dateTime: startDateTime.toISOString(),
-        timeZone: 'Asia/Tokyo',
-      },
-      end: {
-        dateTime: endDateTime.toISOString(),
-        timeZone: 'Asia/Tokyo',
-      },
-    };
-
-    const response = await calendar.events.update({
-      calendarId,
-      eventId,
-      requestBody: updatedEvent,
-    });
-
-    return response.data;
-  } catch (error) {
-    console.error('Error updating calendar event:', error);
-    throw error;
+export async function updateCalendarEvent(
+  storeId: number,
+  reservation: ReservationForCalendar,
+  dogName: string,
+  ownerName: string
+): Promise<any> {
+  const eventId = await getLinkedCalendarEventId(reservation.id);
+  if (!eventId) {
+    return createCalendarEvent(storeId, reservation, dogName, ownerName);
   }
+
+  const { calendar, calendarId } = await getAuthenticatedCalendar(storeId);
+  const event = buildCalendarEvent(reservation, dogName, ownerName);
+
+  const response = await calendar.events.update({ calendarId, eventId, requestBody: event });
+  return response.data;
 }
 
 /**
  * Googleカレンダーのイベントを削除
  */
-export async function deleteCalendarEvent(storeId: number, reservationId: number) {
-  try {
-    const { calendar, calendarId } = await getAuthenticatedCalendar(storeId);
+export async function deleteCalendarEvent(storeId: number, reservationId: number): Promise<void> {
+  const eventId = await getLinkedCalendarEventId(reservationId);
+  if (!eventId) return;
 
-    // イベントIDを取得
-    const eventResult = await pool.query(
-      `SELECT calendar_event_id FROM reservation_calendar_events WHERE reservation_id = $1`,
-      [reservationId]
-    );
-
-    if (eventResult.rows.length === 0) {
-      return; // イベントが存在しない場合は何もしない
-    }
-
-    const eventId = eventResult.rows[0].calendar_event_id;
-
-    await calendar.events.delete({
-      calendarId,
-      eventId,
-    });
-
-    // データベースからも削除
-    await pool.query(
-      `DELETE FROM reservation_calendar_events WHERE reservation_id = $1`,
-      [reservationId]
-    );
-  } catch (error) {
-    console.error('Error deleting calendar event:', error);
-    throw error;
-  }
+  const { calendar, calendarId } = await getAuthenticatedCalendar(storeId);
+  await calendar.events.delete({ calendarId, eventId });
+  await pool.query(
+    `DELETE FROM reservation_calendar_events WHERE reservation_id = $1`,
+    [reservationId]
+  );
 }
 

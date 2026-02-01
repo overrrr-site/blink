@@ -24,8 +24,8 @@ export function requireOwnerToken(req: express.Request, res: express.Response): 
       return null;
     }
     return decoded;
-  } catch (error: any) {
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+  } catch (error) {
+    if (error instanceof Error && (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError')) {
       sendUnauthorized(res, '無効な認証トークンです');
       return null;
     }

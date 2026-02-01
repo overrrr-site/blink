@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Icon } from '../components/Icon'
-import { useNavigate } from 'react-router-dom'
+import PageHeader from '../components/PageHeader'
 
 interface HelpSection {
   id: string
@@ -426,13 +426,23 @@ const HELP_SECTIONS: HelpSection[] = [
   },
 ]
 
-const Help = () => {
-  const navigate = useNavigate()
+function toggleSetItem(setter: React.Dispatch<React.SetStateAction<Set<string>>>, key: string): void {
+  setter((prev) => {
+    const newSet = new Set(prev)
+    if (newSet.has(key)) {
+      newSet.delete(key)
+    } else {
+      newSet.add(key)
+    }
+    return newSet
+  })
+}
+
+function Help(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['getting-started']))
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
-  // 検索でフィルタリング
   const filteredSections = HELP_SECTIONS.map((section) => {
     if (!searchQuery) return section
 
@@ -450,43 +460,17 @@ const Help = () => {
     }
   }).filter((section): section is HelpSection => section !== null)
 
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId)
-      } else {
-        newSet.add(sectionId)
-      }
-      return newSet
-    })
-  }
+  const toggleSection = useCallback((sectionId: string) => {
+    toggleSetItem(setExpandedSections, sectionId)
+  }, [])
 
-  const toggleItem = (itemId: string) => {
-    setExpandedItems((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId)
-      } else {
-        newSet.add(itemId)
-      }
-      return newSet
-    })
-  }
+  const toggleItem = useCallback((itemId: string) => {
+    toggleSetItem(setExpandedItems, itemId)
+  }, [])
 
   return (
     <div className="pb-6">
-      {/* ヘッダー */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2">
-        <button
-          onClick={() => navigate('/settings')}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
-          aria-label="戻る"
-        >
-          <Icon icon="solar:arrow-left-linear" width="24" height="24" />
-        </button>
-        <h1 className="text-lg font-bold font-heading flex-1">ヘルプ・サポート</h1>
-      </header>
+      <PageHeader title="ヘルプ・サポート" backPath="/settings" />
 
       <main className="px-5 pt-4 space-y-4">
         {/* 検索バー */}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import liffClient from '../api/client';
+import { getAxiosErrorMessage } from '../../utils/error';
 
 type AvailabilityData = {
   date: string;
@@ -11,7 +12,7 @@ type AvailabilityData = {
 type AvailabilityResponse = {
   month: string;
   availability: AvailabilityData[];
-  businessHours: Record<string, any>;
+  businessHours: Record<string, { open: string; close: string } | null>;
   closedDays: string[];
 };
 
@@ -29,9 +30,9 @@ export function useAvailability(month: string) {
       try {
         const response = await liffClient.get(`/availability?month=${month}`);
         setData(response.data);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to fetch availability:', err);
-        setError(err.response?.data?.error || '空き状況の取得に失敗しました');
+        setError(getAxiosErrorMessage(err, '空き状況の取得に失敗しました'));
       } finally {
         setLoading(false);
       }

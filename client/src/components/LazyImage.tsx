@@ -8,7 +8,7 @@ interface LazyImageProps {
   height?: number
 }
 
-export function LazyImage({ src, alt, className = '', width, height }: LazyImageProps) {
+export function LazyImage({ src, alt, className = '', width, height }: LazyImageProps): JSX.Element {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const aspectRatio = width && height ? `${width}/${height}` : undefined
@@ -16,10 +16,10 @@ export function LazyImage({ src, alt, className = '', width, height }: LazyImage
   if (error) {
     return (
       <div
-        className={`bg-gray-100 flex items-center justify-center ${className}`}
+        className={`bg-muted flex items-center justify-center ${className}`}
         style={{ aspectRatio }}
       >
-        <span className="text-gray-400 text-xs">画像なし</span>
+        <span className="text-muted-foreground text-xs">画像なし</span>
       </div>
     )
   }
@@ -27,7 +27,7 @@ export function LazyImage({ src, alt, className = '', width, height }: LazyImage
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio }}>
       {!loaded && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+        <div className="absolute inset-0 bg-muted animate-pulse" />
       )}
       <img
         src={src}

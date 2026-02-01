@@ -1,7 +1,7 @@
 import express from 'express';
 import pool from '../../db/connection.js';
 import { sendNotFound, sendServerError } from '../../utils/response.js';
-import { buildPaginatedResponse, parsePaginationParams } from '../../utils/pagination.js';
+import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../../utils/pagination.js';
 import { requireOwnerToken } from './common.js';
 
 const router = express.Router();
@@ -37,11 +37,7 @@ router.get('/journals', async function(req, res) {
     params.push(pagination.limit, pagination.offset);
 
     const result = await pool.query(query, params);
-    const total = result.rows.length > 0 ? Number((result.rows[0] as { total_count?: number }).total_count ?? 0) : 0;
-    const data = result.rows.map((row) => {
-      const { total_count, ...rest } = row as Record<string, unknown> & { total_count?: number };
-      return rest;
-    });
+    const { data, total } = extractTotalCount(result.rows as Record<string, unknown>[]);
     res.json(buildPaginatedResponse(data, total, pagination));
   } catch (error: any) {
     sendServerError(res, '日誌情報の取得に失敗しました', error);

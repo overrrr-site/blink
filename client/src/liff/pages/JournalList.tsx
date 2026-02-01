@@ -32,10 +32,13 @@ export default function JournalList() {
     limit: 20,
   });
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    mutate();
-    setRefreshing(false);
+    try {
+      await mutate();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   if (isLoading) {
