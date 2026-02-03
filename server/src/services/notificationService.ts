@@ -228,7 +228,9 @@ export async function sendNotification(data: NotificationData): Promise<void> {
  * 店舗ごとに設定1回・予約1回・owner連絡先1括取得でI/O削減
  * LINE通知の場合はFlexメッセージ（登園前入力ボタン付き）を使用
  */
-export async function sendReservationReminders(): Promise<void> {
+export async function sendReservationReminders(): Promise<{ sent: number; failed: number }> {
+  let sent = 0;
+  let failed = 0;
   try {
     const settingsResult = await pool.query<NotificationSettingsRow & { store_id: number; reminder_before_visit_days?: number }>(
       `SELECT store_id, reminder_before_visit, reminder_before_visit_days,
@@ -278,7 +280,7 @@ export async function sendReservationReminders(): Promise<void> {
           dog_name: reservation.dog_name,
         });
 
-        const { sent, sentVia } = await deliverNotification({
+        const result = await deliverNotification({
           storeId: settings.store_id,
           settings,
           contact,
@@ -287,16 +289,19 @@ export async function sendReservationReminders(): Promise<void> {
           flexMessage,
         });
 
+        if (result.sent) { sent++; } else { failed++; }
+
         await insertNotificationLog({
           data: { storeId: settings.store_id, ownerId: reservation.owner_id, notificationType: 'reminder', title, message },
-          sentVia,
-          sent,
+          sentVia: result.sentVia,
+          sent: result.sent,
         });
       }
     }
   } catch (error) {
     console.error('Error sending reservation reminders:', error);
   }
+  return { sent, failed };
 }
 
 /**
@@ -362,7 +367,9 @@ export async function sendJournalNotification(
  * ワクチンアラート通知を送信
  * 店舗ごとに設定1回・犬一覧1回・owner連絡先1括取得でI/O削減
  */
-export async function sendVaccineAlerts(): Promise<void> {
+export async function sendVaccineAlerts(): Promise<{ sent: number; failed: number }> {
+  let sent = 0;
+  let failed = 0;
   try {
     const settingsResult = await pool.query<
       NotificationSettingsRow & { store_id: number; vaccine_alert_days?: number }
@@ -426,7 +433,7 @@ export async function sendVaccineAlerts(): Promise<void> {
           alert_days: alertDays,
         });
 
-        const { sent, sentVia } = await deliverNotification({
+        const result = await deliverNotification({
           storeId: settings.store_id,
           settings,
           contact,
@@ -435,14 +442,17 @@ export async function sendVaccineAlerts(): Promise<void> {
           flexMessage,
         });
 
+        if (result.sent) { sent++; } else { failed++; }
+
         await insertNotificationLog({
           data: { storeId: settings.store_id, ownerId: dog.owner_id, notificationType: 'vaccine_alert', title, message },
-          sentVia,
-          sent,
+          sentVia: result.sentVia,
+          sent: result.sent,
         });
       }
     }
   } catch (error) {
     console.error('Error sending vaccine alerts:', error);
   }
+  return { sent, failed };
 }

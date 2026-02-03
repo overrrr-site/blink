@@ -48,6 +48,12 @@
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/daily-notifications",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   }

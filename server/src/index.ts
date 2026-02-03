@@ -41,6 +41,9 @@ import notificationsRoutes from './routes/notifications.js';
 import billingRoutes from './routes/billing.js';
 import announcementsRoutes from './routes/announcements.js';
 
+// Routes - Cron (Vercel Cron Jobs)
+import cronRoutes from './routes/cron.js';
+
 dotenv.config();
 
 const app = express();
@@ -131,6 +134,12 @@ app.use('/api/uploads', uploadsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/announcements', announcementsRoutes);
+
+// ---------------------------------------------------------------------------
+// API Routes - Cron (独自認証のためauthenticateミドルウェア不要)
+// ---------------------------------------------------------------------------
+
+app.use('/api/cron', cronRoutes);
 
 // ---------------------------------------------------------------------------
 // Error handling
