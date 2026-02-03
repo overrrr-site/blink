@@ -87,7 +87,9 @@ export default function PreVisitInput() {
     const fetchReservation = async () => {
       try {
         const response = await liffClient.get('/reservations');
-        const res = (response.data as PreVisitReservation[]).find((r) => r.id === parseInt(reservationId || '0'));
+        const responseData = response.data as { data: PreVisitReservation[] } | PreVisitReservation[];
+        const reservations = Array.isArray(responseData) ? responseData : responseData.data;
+        const res = reservations.find((r) => r.id === parseInt(reservationId || '0'));
         if (res) {
           setReservation(res);
           // 既存の登園前入力データがあればフォームに読み込む
