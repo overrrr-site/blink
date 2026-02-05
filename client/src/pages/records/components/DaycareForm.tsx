@@ -1,11 +1,12 @@
 import type { DaycareData } from '@/types/record'
+import { Icon } from '@/components/Icon'
 
 const ACTIVITIES = [
-  { value: 'freeplay', label: 'フリープレイ', emoji: '🎾' },
-  { value: 'training', label: 'トレーニング', emoji: '📚' },
-  { value: 'walk', label: 'お散歩', emoji: '🚶' },
-  { value: 'nap', label: 'お昼寝', emoji: '😴' },
-  { value: 'socialization', label: '社会化', emoji: '🐕' },
+  { value: 'freeplay', label: 'フリープレイ', icon: 'mdi:tennis-ball' },
+  { value: 'training', label: 'トレーニング', icon: 'mdi:book-open-page-variant' },
+  { value: 'walk', label: 'お散歩', icon: 'mdi:walk' },
+  { value: 'nap', label: 'お昼寝', icon: 'mdi:sleep' },
+  { value: 'socialization', label: '社会化', icon: 'mdi:dog-side' },
 ] as const
 
 const TIME_PERIODS = [
@@ -57,14 +58,14 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
       <div className="space-y-3">
         <p className="text-sm font-medium text-slate-700">今日の活動</p>
         <div className="flex flex-wrap gap-2">
-          {ACTIVITIES.map(({ value, label, emoji }) => {
+          {ACTIVITIES.map(({ value, label, icon }) => {
             const selected = (data.activities || []).includes(value)
             return (
               <button
                 key={value}
                 type="button"
                 onClick={() => toggleActivity(value)}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px]"
+                className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] flex items-center gap-2"
                 style={{
                   background: selected ? '#FFF7ED' : '#FFFFFF',
                   border: selected ? '1.5px solid #F97316' : '1px solid #E2E8F0',
@@ -72,7 +73,8 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                 }}
                 aria-pressed={selected}
               >
-                {emoji} {label}
+                <Icon icon={icon} width="18" height="18" />
+                {label}
               </button>
             )
           })}
@@ -82,7 +84,8 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
       {/* ごはん */}
       <div className="space-y-3">
         <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
-          🍽️ ごはん
+          <Icon icon="mdi:silverware-fork-knife" width="18" height="18" />
+          ごはん
         </p>
         <div className="grid grid-cols-2 gap-3">
           {TIME_PERIODS.map(({ key, label }) => (
@@ -103,7 +106,8 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
       {/* トイレ */}
       <div className="space-y-3">
         <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
-          🚽 トイレ
+          <Icon icon="mdi:toilet" width="18" height="18" />
+          トイレ
         </p>
         <div className="grid grid-cols-2 gap-4">
           {TIME_PERIODS.map(({ key, label }) => {
@@ -116,7 +120,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                   <button
                     type="button"
                     onClick={() => toggleToilet(periodKey, 'urination')}
-                    className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px]"
+                    className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
                     style={{
                       background: periodData.urination ? '#DBEAFE' : '#FFFFFF',
                       border: periodData.urination ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
@@ -124,12 +128,13 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                     }}
                     aria-pressed={periodData.urination}
                   >
-                    💧 おしっこ
+                    <Icon icon="mdi:water" width="16" height="16" />
+                    おしっこ
                   </button>
                   <button
                     type="button"
                     onClick={() => toggleToilet(periodKey, 'defecation')}
-                    className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px]"
+                    className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
                     style={{
                       background: periodData.defecation ? '#FEF3C7' : '#FFFFFF',
                       border: periodData.defecation ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
@@ -137,7 +142,8 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                     }}
                     aria-pressed={periodData.defecation}
                   >
-                    💩 うんち
+                    <Icon icon="mdi:emoticon-poop" width="16" height="16" />
+                    うんち
                   </button>
                 </div>
               </div>
