@@ -61,6 +61,12 @@ const RecordDetail = () => {
     'photo-concern': null,
     'health-history': null,
     'report-draft': null,
+    'weight-change': null,
+    'long-absence': null,
+    'birthday': null,
+    'follow-up': null,
+    'training-progress': null,
+    'long-stay': null,
   })
 
   // Fetch record
@@ -124,7 +130,17 @@ const RecordDetail = () => {
 
   useEffect(() => {
     if (!aiSettings.aiAssistantEnabled) {
-      setAiSuggestions({ 'photo-concern': null, 'health-history': null, 'report-draft': null })
+      setAiSuggestions({
+        'photo-concern': null,
+        'health-history': null,
+        'report-draft': null,
+        'weight-change': null,
+        'long-absence': null,
+        'birthday': null,
+        'follow-up': null,
+        'training-progress': null,
+        'long-stay': null,
+      })
     }
   }, [aiSettings.aiAssistantEnabled])
 

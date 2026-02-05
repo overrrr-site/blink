@@ -582,6 +582,47 @@ function generateReportFallback(recordType: string, dogName: string): string {
   return `${dogName}ちゃん、今日も元気いっぱいでした！お友達と仲良く遊んで、トレーニングも頑張りました。次回も楽しみにしています！`;
 }
 
+// 健康チェック項目のラベル
+const HEALTH_ITEM_LABELS: Record<string, string> = {
+  ears: '耳',
+  nails: '爪',
+  skin: '皮膚',
+  teeth: '歯',
+};
+
+// トレーニング項目で連続して「done」になっているものを検出
+function findConsistentTrainingItems(
+  historyRows: Array<{ daycare_data?: { training_data?: Record<string, string> } }>,
+  labels: Record<string, string>
+): string[] {
+  if (historyRows.length < 3) return [];
+
+  const itemCounts: Record<string, number> = {};
+
+  // 各記録のトレーニングデータを集計
+  for (const row of historyRows) {
+    const trainingData = row.daycare_data?.training_data;
+    if (!trainingData) continue;
+
+    for (const [key, value] of Object.entries(trainingData)) {
+      if (value === 'done') {
+        itemCounts[key] = (itemCounts[key] || 0) + 1;
+      }
+    }
+  }
+
+  // 3回以上連続でdoneの項目を抽出
+  const consistentItems: string[] = [];
+  for (const [key, count] of Object.entries(itemCounts)) {
+    if (count >= 3) {
+      const label = labels[key] || TRAINING_LABELS[key] || key;
+      consistentItems.push(label);
+    }
+  }
+
+  return consistentItems;
+}
+
 // AIサジェスション取得
 router.get('/suggestions/:recordId', async (req: AuthRequest, res) => {
   try {
@@ -592,8 +633,9 @@ router.get('/suggestions/:recordId', async (req: AuthRequest, res) => {
       return;
     }
 
+    // 現在のカルテを取得
     const recordResult = await pool.query(
-      `SELECT id, dog_id, record_type, notes, health_check
+      `SELECT id, dog_id, record_type, record_date, notes, health_check, photos, hotel_data, daycare_data
        FROM records
        WHERE id = $1 AND store_id = $2 AND deleted_at IS NULL`,
       [recordId, req.storeId]
@@ -607,6 +649,26 @@ router.get('/suggestions/:recordId', async (req: AuthRequest, res) => {
     const record = recordResult.rows[0];
     const suggestions: Array<{ type: string; message: string; actionLabel?: string; variant?: string; preview?: string; payload?: Record<string, unknown> }> = [];
 
+    // 犬の情報を取得（誕生日チェック用）
+    const dogResult = await pool.query(
+      `SELECT name, birth_date FROM dogs WHERE id = $1`,
+      [record.dog_id]
+    );
+    const dog = dogResult.rows[0];
+
+    // 前回の記録を取得
+    const prevRecordResult = await pool.query(
+      `SELECT id, record_date, notes, health_check, photos
+       FROM records
+       WHERE dog_id = $1 AND store_id = $2 AND id <> $3
+         AND deleted_at IS NULL
+       ORDER BY record_date DESC
+       LIMIT 1`,
+      [record.dog_id, req.storeId, recordId]
+    );
+    const prevRecord = prevRecordResult.rows[0];
+
+    // 1. レポート下書きサジェスション
     const reportText = record.notes?.report_text || '';
     if (!reportText || reportText.trim().length === 0) {
       suggestions.push({
@@ -618,7 +680,62 @@ router.get('/suggestions/:recordId', async (req: AuthRequest, res) => {
       });
     }
 
+    // 2. 誕生日チェック（全業種）
+    if (dog?.birth_date) {
+      const today = new Date();
+      const birthDate = new Date(dog.birth_date);
+      const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+      let daysUntil = Math.floor((thisYearBirthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // 過ぎていたら来年の誕生日までの日数
+      if (daysUntil < 0) {
+        const nextYearBirthday = new Date(today.getFullYear() + 1, birthDate.getMonth(), birthDate.getDate());
+        daysUntil = Math.floor((nextYearBirthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
+      if (daysUntil >= 0 && daysUntil <= 7) {
+        suggestions.push({
+          type: 'birthday',
+          message: daysUntil === 0
+            ? `今日は${dog.name}ちゃんのお誕生日です！🎂`
+            : `${dog.name}ちゃんのお誕生日まであと${daysUntil}日です`,
+          actionLabel: 'お祝いメッセージを追加',
+          variant: 'success',
+        });
+      }
+    }
+
+    // 3. 久しぶりの来店チェック（全業種）
+    if (prevRecord) {
+      const currentDate = new Date(record.record_date);
+      const prevDate = new Date(prevRecord.record_date);
+      const daysSince = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysSince > 30) {
+        suggestions.push({
+          type: 'long-absence',
+          message: `${daysSince}日ぶりのご来店です`,
+          actionLabel: '報告文で触れる',
+          variant: 'default',
+        });
+      }
+    }
+
+    // 4. 前回の気になる点フォローアップ（全業種）
+    if (prevRecord?.photos?.concerns && Array.isArray(prevRecord.photos.concerns) && prevRecord.photos.concerns.length > 0) {
+      const concernLabel = prevRecord.photos.concerns[0]?.label || '気になる点';
+      suggestions.push({
+        type: 'follow-up',
+        message: `前回「${concernLabel}」の記録がありました`,
+        actionLabel: '今回の様子を確認',
+        variant: 'warning',
+        payload: { prevConcerns: prevRecord.photos.concerns },
+      });
+    }
+
+    // 5. グルーミング固有のサジェスション
     if (record.record_type === 'grooming') {
+      // 健康チェック履歴を取得
       const historyResult = await pool.query(
         `SELECT health_check
          FROM records
@@ -629,14 +746,90 @@ router.get('/suggestions/:recordId', async (req: AuthRequest, res) => {
         [record.dog_id, req.storeId, recordId]
       );
 
-      const dirtyCount = historyResult.rows.filter((row: any) => row.health_check?.ears === '汚れ').length;
-      const currentDirty = record.health_check?.ears === '汚れ';
-      if (dirtyCount >= 2 || (currentDirty && dirtyCount >= 1)) {
+      // 体重変動チェック
+      const currentWeight = record.health_check?.weight;
+      const prevWeight = prevRecord?.health_check?.weight;
+      if (currentWeight && prevWeight && prevWeight > 0) {
+        const change = ((currentWeight - prevWeight) / prevWeight) * 100;
+        if (Math.abs(change) >= 10) {
+          suggestions.push({
+            type: 'weight-change',
+            message: `体重が前回より${change > 0 ? '+' : ''}${change.toFixed(1)}%変化しています`,
+            actionLabel: '報告文に追記',
+            variant: Math.abs(change) > 15 ? 'warning' : 'default',
+          });
+        }
+      }
+
+      // 健康チェック異常パターン（耳、爪、皮膚、歯）
+      const healthItems = ['ears', 'nails', 'skin', 'teeth'] as const;
+      const abnormalValues = ['汚れ', '伸びている', '異常あり', '要注意', '汚れあり'];
+
+      for (const item of healthItems) {
+        const currentValue = record.health_check?.[item];
+        if (currentValue && abnormalValues.includes(currentValue)) {
+          const count = historyResult.rows.filter((row: any) =>
+            row.health_check?.[item] && abnormalValues.includes(row.health_check[item])
+          ).length;
+
+          if (count >= 1) {
+            const itemLabel = HEALTH_ITEM_LABELS[item] || item;
+            suggestions.push({
+              type: 'health-history',
+              message: `${itemLabel}の状態が続いています（${currentValue}）`,
+              actionLabel: '報告文に追記',
+              variant: 'warning',
+            });
+            break; // 最初の1つだけ表示
+          }
+        }
+      }
+    }
+
+    // 6. 幼稚園固有のサジェスション
+    if (record.record_type === 'daycare') {
+      // トレーニング履歴を取得
+      const trainingHistoryResult = await pool.query(
+        `SELECT daycare_data
+         FROM records
+         WHERE dog_id = $1 AND store_id = $2 AND record_type = 'daycare'
+           AND deleted_at IS NULL
+         ORDER BY record_date DESC
+         LIMIT 5`,
+        [record.dog_id, req.storeId]
+      );
+
+      // カスタムラベルを取得
+      const labelResult = await pool.query(
+        `SELECT item_key, item_label FROM training_masters WHERE store_id = $1 AND enabled = true`,
+        [req.storeId]
+      );
+      const customLabels: Record<string, string> = {};
+      labelResult.rows.forEach((row: any) => {
+        customLabels[row.item_key] = row.item_label;
+      });
+
+      const consistentItems = findConsistentTrainingItems(trainingHistoryResult.rows, customLabels);
+      if (consistentItems.length > 0) {
+        const displayItems = consistentItems.slice(0, 2).join('、');
         suggestions.push({
-          type: 'health-history',
-          message: '耳の汚れが2回連続しています',
-          actionLabel: '報告文に追記',
-          variant: 'warning',
+          type: 'training-progress',
+          message: `${displayItems}${consistentItems.length > 2 ? 'など' : ''}が連続でできています！`,
+          actionLabel: '成長を報告文に追記',
+          variant: 'success',
+        });
+      }
+    }
+
+    // 7. ホテル固有のサジェスション
+    if (record.record_type === 'hotel') {
+      const nights = record.hotel_data?.nights;
+      if (nights && nights >= 2) {
+        suggestions.push({
+          type: 'long-stay',
+          message: `${nights}泊の長期滞在です`,
+          actionLabel: '滞在中の様子を詳しく記録',
+          variant: 'default',
         });
       }
     }

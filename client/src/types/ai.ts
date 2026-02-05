@@ -1,4 +1,13 @@
-export type AISuggestionType = 'photo-concern' | 'health-history' | 'report-draft'
+export type AISuggestionType =
+  | 'photo-concern'
+  | 'health-history'
+  | 'report-draft'
+  | 'weight-change'
+  | 'long-absence'
+  | 'birthday'
+  | 'follow-up'
+  | 'training-progress'
+  | 'long-stay'
 
 export interface AISuggestionData {
   type: AISuggestionType
