@@ -13,7 +13,14 @@ export default function BusinessTypeSwitcher(): JSX.Element {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const availableTypes = user?.businessTypes || []
+  // 店舗で利用可能な業種
+  const storeBusinessTypes = user?.businessTypes || []
+  // スタッフに割り当てられた業種（null=全業種、配列=指定業種のみ）
+  const staffAssignedTypes = user?.assignedBusinessTypes
+  // 実際に選択可能な業種を計算
+  const availableTypes = staffAssignedTypes === null || staffAssignedTypes === undefined
+    ? storeBusinessTypes // 管理者は店舗の全業種にアクセス可能
+    : storeBusinessTypes.filter(type => staffAssignedTypes.includes(type)) // 一般スタッフは割り当て業種のみ
   const hasMultipleTypes = availableTypes.length > 1
 
   // 選択中の業種の表示情報

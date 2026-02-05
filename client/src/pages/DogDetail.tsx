@@ -8,12 +8,14 @@ import PersonalitySection from '../components/dogs/PersonalitySection'
 import ContractsSection from '../components/dogs/ContractsSection'
 import HistoryTabs from '../components/dogs/HistoryTabs'
 import { useDogDetail } from '../hooks/useDogDetail'
+import { useBusinessTypeStore } from '../store/businessTypeStore'
 
 function DogDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [historyTab, setHistoryTab] = useState<'reservations' | 'journals'>('reservations')
   const { dog, loading, contracts, loadingContracts } = useDogDetail(id)
+  const { selectedBusinessType } = useBusinessTypeStore()
 
   if (loading) {
     return (
@@ -120,6 +122,7 @@ function DogDetail(): JSX.Element {
           activeTab={historyTab}
           reservations={dog.reservations || []}
           journals={dog.journals || []}
+          selectedBusinessType={selectedBusinessType}
           onTabChange={setHistoryTab}
           onOpenReservation={(reservationId) => navigate(`/reservations/${reservationId}`)}
           onOpenJournal={(journalId) => navigate(`/journals/${journalId}`)}

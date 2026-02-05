@@ -25,7 +25,7 @@ interface LiffRecord {
 }
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  grooming: { label: 'グルーミング', color: '#8B5CF6', icon: 'solar:scissors-bold' },
+  grooming: { label: 'トリミング', color: '#8B5CF6', icon: 'solar:scissors-bold' },
   daycare: { label: '幼稚園', color: '#F97316', icon: 'solar:sun-bold' },
   hotel: { label: 'ホテル', color: '#06B6D4', icon: 'solar:moon-bold' },
 }

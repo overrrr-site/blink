@@ -6,6 +6,7 @@ interface DogReservationItem {
   reservation_date: string
   reservation_time: string
   status: string
+  service_type?: string
   owner_name?: string | null
 }
 

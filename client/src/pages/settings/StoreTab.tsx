@@ -7,6 +7,10 @@ import axios from 'axios'
 import useSWR from 'swr'
 import api from '../../api/client'
 import { fetcher } from '../../lib/swr'
+import { useAuthStore } from '../../store/authStore'
+import { useBusinessTypeStore } from '../../store/businessTypeStore'
+import { getBusinessTypeLabel, getBusinessTypeIcon, getBusinessTypeColors } from '../../utils/businessTypeColors'
+import type { RecordType } from '../../types/record'
 
 interface StoreTabProps {
   storeInfo: StoreInfo | null
@@ -64,8 +68,12 @@ interface QrCodeResponse {
   qrCode: string
 }
 
+const ALL_BUSINESS_TYPES: RecordType[] = ['daycare', 'grooming', 'hotel']
+
 function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): JSX.Element {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+  const { selectedBusinessType } = useBusinessTypeStore()
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({ max_capacity: 15 })
   const [showStoreInfoModal, setShowStoreInfoModal] = useState(false)
   const [showBusinessHoursModal, setShowBusinessHoursModal] = useState(false)
@@ -73,10 +81,16 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
   const [inviteIsOwner, setInviteIsOwner] = useState(false)
+  const [inviteBusinessTypes, setInviteBusinessTypes] = useState<RecordType[]>([])
   const [inviting, setInviting] = useState(false)
   const [qrLoading, setQrLoading] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrExpanded, setQrExpanded] = useState(false)
+
+  // 店舗で利用可能な業種
+  const storeBusinessTypes = (user?.businessTypes || []) as RecordType[]
+  // 幼稚園業態が有効かどうか
+  const isDaycareEnabled = selectedBusinessType === 'daycare' || (selectedBusinessType === null && storeBusinessTypes.includes('daycare'))
 
   const {
     data: storeSettingsData,
@@ -139,12 +153,20 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
 
     setInviting(true)
     try {
-      await api.post('/auth/invite', { email: inviteEmail, name: inviteName, is_owner: inviteIsOwner })
+      // 管理者の場合はnull（全業種アクセス）、スタッフの場合は選択した業種
+      const assignedBusinessTypes = inviteIsOwner ? null : (inviteBusinessTypes.length > 0 ? inviteBusinessTypes : null)
+      await api.post('/auth/invite', {
+        email: inviteEmail,
+        name: inviteName,
+        is_owner: inviteIsOwner,
+        assigned_business_types: assignedBusinessTypes,
+      })
       alert(`${inviteEmail} に招待メールを送信しました`)
       setShowStaffInviteModal(false)
       setInviteEmail('')
       setInviteName('')
       setInviteIsOwner(false)
+      setInviteBusinessTypes([])
       mutateStaff()
     } catch (error: unknown) {
       const message = axios.isAxiosError(error)
@@ -335,7 +357,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
         </button>
         <button
           onClick={() => setShowBusinessHoursModal(true)}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
+          className={`w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors ${isDaycareEnabled ? 'border-b border-border' : ''}`}
         >
           <div className="flex items-center gap-3">
             <Icon icon="solar:calendar-bold" width="20" height="20" className="text-muted-foreground" />
@@ -346,105 +368,110 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
           </div>
           <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </button>
-        <div className="w-full flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Icon icon="solar:users-group-rounded-bold" width="20" height="20" className="text-muted-foreground" />
-            <div className="text-left flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium block">受入可能頭数</span>
-                <div className="relative group">
-                  <Icon icon="solar:question-circle-bold"
-                    width="14" height="14" className="text-muted-foreground cursor-help" />
-                  <div className="absolute left-0 top-5 w-56 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
-                    1日あたりの予約受入上限数です。この数を超える予約は登録できません。
+        {/* 受入可能頭数（幼稚園のみ） */}
+        {isDaycareEnabled && (
+          <div className="w-full flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <Icon icon="solar:users-group-rounded-bold" width="20" height="20" className="text-muted-foreground" />
+              <div className="text-left flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium block">受入可能頭数</span>
+                  <div className="relative group">
+                    <Icon icon="solar:question-circle-bold"
+                      width="14" height="14" className="text-muted-foreground cursor-help" />
+                    <div className="absolute left-0 top-5 w-56 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
+                      1日あたりの予約受入上限数です。この数を超える予約は登録できません。
+                    </div>
                   </div>
                 </div>
+                <span className="text-[10px] text-muted-foreground">1日あたりの受入上限</span>
               </div>
-              <span className="text-[10px] text-muted-foreground">1日あたりの受入上限</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {loadingStoreSettings ? (
-              <span className="text-sm text-muted-foreground">読み込み中...</span>
-            ) : (
-              <>
-                <input
-                  type="number"
-                  value={storeSettings.max_capacity}
-                  onChange={(e) => handleStoreSettingsChange('max_capacity', parseInt(e.target.value, 10))}
-                  min="1"
-                  className="w-24 px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
-                />
-                <span className="text-sm font-bold text-primary">頭</span>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 登園用QRコード */}
-      <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <button
-          onClick={() => setQrExpanded(!qrExpanded)}
-          className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
-        >
-          <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <Icon icon="solar:qr-code-bold" width="16" height="16" className="text-primary" />
-            登園用QRコード
-          </h2>
-          <Icon icon={qrExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
-            width="20"
-            height="20"
-            className="text-muted-foreground" />
-        </button>
-        {qrExpanded && (
-          <div className="p-4 border-t border-border">
-            {isQrLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Icon icon="solar:spinner-bold" width="24" height="24" className="text-primary animate-spin" />
-              </div>
-            ) : qrCode ? (
-              <div className="space-y-4">
-                <div className="bg-muted/30 rounded-xl p-4 flex flex-col items-center">
-                  <div id="qr-display" className="bg-white p-4 rounded-lg mb-3">
-                    <QRCodeSVG value={qrCode} size={200} />
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    このQRコードを印刷して店舗に設置してください
-                  </p>
-                </div>
-                <button
-                  onClick={handlePrintQrCode}
-                  className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
-                >
-                  <Icon icon="solar:printer-bold" width="16" height="16" />
-                  QRコードを印刷
-                </button>
-                <button
-                  onClick={() => setShowQrModal(true)}
-                  className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
-                >
-                  <Icon icon="solar:eye-bold" width="16" height="16" />
-                  大きく表示
-                </button>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground mb-2">
-                  QRコードの取得に失敗しました
-                </p>
-                <button
-                  onClick={fetchQrCode}
-                  disabled={isQrLoading}
-                  className="text-xs text-primary hover:underline disabled:opacity-50"
-                >
-                  再試行
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {loadingStoreSettings ? (
+                <span className="text-sm text-muted-foreground">読み込み中...</span>
+              ) : (
+                <>
+                  <input
+                    type="number"
+                    value={storeSettings.max_capacity}
+                    onChange={(e) => handleStoreSettingsChange('max_capacity', parseInt(e.target.value, 10))}
+                    min="1"
+                    className="w-24 px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                  />
+                  <span className="text-sm font-bold text-primary">頭</span>
+                </>
+              )}
+            </div>
           </div>
         )}
       </section>
+
+      {/* 登園用QRコード（幼稚園のみ） */}
+      {isDaycareEnabled && (
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <button
+            onClick={() => setQrExpanded(!qrExpanded)}
+            className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+          >
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <Icon icon="solar:qr-code-bold" width="16" height="16" className="text-primary" />
+              登園用QRコード
+            </h2>
+            <Icon icon={qrExpanded ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"}
+              width="20"
+              height="20"
+              className="text-muted-foreground" />
+          </button>
+          {qrExpanded && (
+            <div className="p-4 border-t border-border">
+              {isQrLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Icon icon="solar:spinner-bold" width="24" height="24" className="text-primary animate-spin" />
+                </div>
+              ) : qrCode ? (
+                <div className="space-y-4">
+                  <div className="bg-muted/30 rounded-xl p-4 flex flex-col items-center">
+                    <div id="qr-display" className="bg-white p-4 rounded-lg mb-3">
+                      <QRCodeSVG value={qrCode} size={200} />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      このQRコードを印刷して店舗に設置してください
+                    </p>
+                  </div>
+                  <button
+                    onClick={handlePrintQrCode}
+                    className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                  >
+                    <Icon icon="solar:printer-bold" width="16" height="16" />
+                    QRコードを印刷
+                  </button>
+                  <button
+                    onClick={() => setShowQrModal(true)}
+                    className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
+                  >
+                    <Icon icon="solar:eye-bold" width="16" height="16" />
+                    大きく表示
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    QRコードの取得に失敗しました
+                  </p>
+                  <button
+                    onClick={fetchQrCode}
+                    disabled={isQrLoading}
+                    className="text-xs text-primary hover:underline disabled:opacity-50"
+                  >
+                    再試行
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* スタッフ管理 */}
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -514,85 +541,87 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
         )}
       </section>
 
-      {/* トレーニング項目 */}
-      <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <Icon icon="solar:checklist-bold" width="16" height="16" className="text-chart-2" />
-            トレーニング項目
-          </h2>
-          <button
-            onClick={() => navigate('/settings/training/new')}
-            className="text-xs font-bold text-primary flex items-center gap-1"
-          >
-            <Icon icon="solar:add-circle-bold" width="14" height="14" />
-            追加
-          </button>
-        </div>
-        {loadingTraining ? (
-          <div className="text-center py-4">
-            <span className="text-xs text-muted-foreground">読み込み中...</span>
+      {/* トレーニング項目（幼稚園のみ） */}
+      {isDaycareEnabled && (
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <Icon icon="solar:checklist-bold" width="16" height="16" className="text-chart-2" />
+              トレーニング項目
+            </h2>
+            <button
+              onClick={() => navigate('/settings/training/new')}
+              className="text-xs font-bold text-primary flex items-center gap-1"
+            >
+              <Icon icon="solar:add-circle-bold" width="14" height="14" />
+              追加
+            </button>
           </div>
-        ) : Object.keys(resolvedTrainingMasters).length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Icon icon="solar:checklist-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
-            <p className="text-sm">トレーニング項目が登録されていません</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {Object.entries(resolvedTrainingMasters).map(([category, items]) => (
-              <div key={category} className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-bold">{category}</h3>
-                  <span className="text-[10px] text-muted-foreground">{items.length}項目</span>
-                </div>
-                <div className="space-y-1">
-                  {items.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-2 hover:bg-muted/30 rounded-lg group"
-                    >
-                      <span className="text-xs text-muted-foreground flex-1">{item.item_label}</span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => handleReorderTrainingItem(category, item.id, 'up', e)}
-                          disabled={index === 0}
-                          className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          aria-label={`${item.item_label}を上に移動`}
-                        >
-                          <Icon icon="solar:alt-arrow-up-linear" width="14" height="14" />
-                        </button>
-                        <button
-                          onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
-                          disabled={index === items.length - 1}
-                          className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          aria-label={`${item.item_label}を下に移動`}
-                        >
-                          <Icon icon="solar:alt-arrow-down-linear" width="14" height="14" />
-                        </button>
-                        <button
-                          onClick={() => navigate(`/settings/training/${item.id}`)}
-                          className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors"
-                          aria-label={`${item.item_label}を編集`}
-                        >
-                          <Icon icon="solar:pen-bold" width="14" height="14" />
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteTrainingItem(item.id, e)}
-                          className="p-1.5 text-destructive rounded hover:bg-destructive/10 transition-colors"
-                          aria-label={`${item.item_label}を削除`}
-                        >
-                          <Icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14" />
-                        </button>
+          {loadingTraining ? (
+            <div className="text-center py-4">
+              <span className="text-xs text-muted-foreground">読み込み中...</span>
+            </div>
+          ) : Object.keys(resolvedTrainingMasters).length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Icon icon="solar:checklist-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm">トレーニング項目が登録されていません</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {Object.entries(resolvedTrainingMasters).map(([category, items]) => (
+                <div key={category} className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold">{category}</h3>
+                    <span className="text-[10px] text-muted-foreground">{items.length}項目</span>
+                  </div>
+                  <div className="space-y-1">
+                    {items.map((item, index) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-2 hover:bg-muted/30 rounded-lg group"
+                      >
+                        <span className="text-xs text-muted-foreground flex-1">{item.item_label}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => handleReorderTrainingItem(category, item.id, 'up', e)}
+                            disabled={index === 0}
+                            className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label={`${item.item_label}を上に移動`}
+                          >
+                            <Icon icon="solar:alt-arrow-up-linear" width="14" height="14" />
+                          </button>
+                          <button
+                            onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
+                            disabled={index === items.length - 1}
+                            className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label={`${item.item_label}を下に移動`}
+                          >
+                            <Icon icon="solar:alt-arrow-down-linear" width="14" height="14" />
+                          </button>
+                          <button
+                            onClick={() => navigate(`/settings/training/${item.id}`)}
+                            className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors"
+                            aria-label={`${item.item_label}を編集`}
+                          >
+                            <Icon icon="solar:pen-bold" width="14" height="14" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteTrainingItem(item.id, e)}
+                            className="p-1.5 text-destructive rounded hover:bg-destructive/10 transition-colors"
+                            aria-label={`${item.item_label}を削除`}
+                          >
+                            <Icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </section>
+      )}
 
       {/* 店舗基本情報編集モーダル */}
       {showStoreInfoModal && (
@@ -760,6 +789,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                   setInviteEmail('')
                   setInviteName('')
                   setInviteIsOwner(false)
+                  setInviteBusinessTypes([])
                 }}
                 className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label="閉じる"
@@ -824,6 +854,47 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                   管理者は設定、料金管理、スタッフ管理ができます
                 </p>
               </div>
+              {/* 業種選択（スタッフの場合のみ表示） */}
+              {!inviteIsOwner && storeBusinessTypes.length > 1 && (
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-2">担当業種</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_BUSINESS_TYPES.filter(type => storeBusinessTypes.includes(type)).map((type) => {
+                      const colors = getBusinessTypeColors(type)
+                      const isSelected = inviteBusinessTypes.includes(type)
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setInviteBusinessTypes(prev =>
+                              isSelected ? prev.filter(t => t !== type) : [...prev, type]
+                            )
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors border ${
+                            isSelected
+                              ? 'border-2'
+                              : 'border-border hover:border-primary/30'
+                          }`}
+                          style={isSelected ? {
+                            backgroundColor: colors.pale,
+                            borderColor: colors.primary,
+                            color: colors.primary,
+                          } : undefined}
+                        >
+                          <Icon icon={getBusinessTypeIcon(type)} width="14" height="14" />
+                          {getBusinessTypeLabel(type)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {inviteBusinessTypes.length === 0
+                      ? '未選択の場合は全業種にアクセスできます'
+                      : `${inviteBusinessTypes.map(t => getBusinessTypeLabel(t)).join('、')}のみアクセス可能`}
+                  </p>
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => {
@@ -831,6 +902,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                     setInviteEmail('')
                     setInviteName('')
                     setInviteIsOwner(false)
+                    setInviteBusinessTypes([])
                   }}
                   className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
                 >

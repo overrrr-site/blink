@@ -68,7 +68,7 @@ export default function AISuggestion({
               boxShadow: `0 2px 4px ${style.lineColor}66`,
             }}
           >
-            <span className="text-sm">🔮</span>
+            <Icon icon="solar:magic-stick-3-bold" width="16" height="16" className="text-white" />
           </div>
           <p className="flex-1 text-sm font-semibold leading-snug" style={{ color: 'var(--foreground)' }}>
             {message}

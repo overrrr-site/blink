@@ -9,6 +9,7 @@ interface StaffData {
   name: string;
   is_owner: boolean;
   store_id: number;
+  assigned_business_types: string[] | null;
 }
 
 export interface AuthRequest extends Request {
@@ -137,7 +138,8 @@ export async function authenticate(
       email: row.email,
       name: row.name,
       is_owner: row.is_owner ?? false,
-      store_id: row.store_id
+      store_id: row.store_id,
+      assigned_business_types: row.assigned_business_types ?? null,
     };
     attachStaffToRequest(req, authUserId, staffData);
     setStaffCache(authUserId, staffData);

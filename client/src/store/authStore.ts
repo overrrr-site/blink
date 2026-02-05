@@ -14,6 +14,7 @@ interface StaffUser {
   businessTypes?: RecordType[]
   primaryBusinessType?: RecordType
   onboardingCompleted?: boolean
+  assignedBusinessTypes?: RecordType[] | null // nullの場合は全業種アクセス可（管理者）
 }
 
 interface AuthState {

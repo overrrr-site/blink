@@ -220,7 +220,10 @@ export default function Billing() {
                       <p className="text-xs text-muted-foreground">
                         登録可能頭数: {currentPlan.current_dogs_count} / {currentPlan.max_dogs}頭
                         {currentPlan.is_plan_limit_exceeded && (
-                          <span className="text-destructive ml-2">⚠️ 上限超過</span>
+                          <span className="text-destructive ml-2 inline-flex items-center gap-1">
+                            <Icon icon="solar:danger-triangle-bold" width="14" height="14" />
+                            上限超過
+                          </span>
                         )}
                       </p>
                     </div>

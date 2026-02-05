@@ -92,7 +92,7 @@ const RecordCard = React.memo(function RecordCard({
 
 const RECORD_TYPE_FILTERS: Array<{ value: string; label: string }> = [
   { value: '', label: 'すべて' },
-  { value: 'grooming', label: 'グルーミング' },
+  { value: 'grooming', label: 'トリミング' },
   { value: 'daycare', label: '幼稚園' },
   { value: 'hotel', label: 'ホテル' },
 ]

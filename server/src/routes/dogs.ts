@@ -184,7 +184,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       pool.query(`SELECT * FROM dog_personality WHERE dog_id = $1`, [id]),
       pool.query(`SELECT * FROM contracts WHERE dog_id = $1 ORDER BY created_at DESC LIMIT 1`, [id]),
       pool.query(
-        `SELECT r.*, 
+        `SELECT r.id, r.reservation_date, r.reservation_time, r.status, r.service_type,
                 o.name as owner_name
          FROM reservations r
          JOIN dogs rd ON r.dog_id = rd.id

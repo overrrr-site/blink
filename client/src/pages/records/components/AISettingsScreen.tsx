@@ -73,7 +73,7 @@ export default function AISettingsScreen({
                 boxShadow: `0 2px 8px ${AI_COLOR}40`,
               }}
             >
-              <span className="text-base">🔮</span>
+              <Icon icon="solar:magic-stick-3-bold" width="20" height="20" className="text-white" />
             </div>
             <div>
               <h2 className="text-base font-bold text-foreground">AI設定</h2>
@@ -152,8 +152,11 @@ export default function AISettingsScreen({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-5 pb-5 pt-2 border-t border-slate-100 flex gap-3">
+        {/* Footer - セーフエリア対応 */}
+        <div
+          className="px-5 pt-2 border-t border-slate-100 flex gap-3"
+          style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
+        >
           <button
             onClick={onClose}
             className="flex-1 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"

@@ -16,7 +16,7 @@ const BUSINESS_TYPES: { value: RecordType; label: string; icon: string; descript
     value: 'grooming',
     label: 'トリミングサロン',
     icon: 'solar:scissors-bold',
-    description: 'カット・シャンプーなどのグルーミング',
+    description: 'カット・シャンプーなどのトリミング',
   },
   {
     value: 'hotel',

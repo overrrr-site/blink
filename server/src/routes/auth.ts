@@ -36,6 +36,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       name: req.staffData.name,
       storeId: req.staffData.store_id,
       isOwner: req.staffData.is_owner,
+      assignedBusinessTypes: req.staffData.assigned_business_types,
       ...storeInfo,
     });
   } catch (error: any) {
@@ -72,7 +73,7 @@ router.post('/invite', authenticate, requireOwner, async (req: AuthRequest, res)
       return;
     }
 
-    const { email, name, is_owner } = req.body;
+    const { email, name, is_owner, assigned_business_types } = req.body;
 
     if (!email || !name) {
       sendBadRequest(res, 'メールアドレスと名前が必要です');
@@ -106,10 +107,10 @@ router.post('/invite', authenticate, requireOwner, async (req: AuthRequest, res)
 
     // スタッフレコードを作成（auth_user_idは招待受諾後に設定される）
     const result = await pool.query(
-      `INSERT INTO staff (email, name, auth_user_id, is_owner)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO staff (email, name, auth_user_id, is_owner, assigned_business_types)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [email, name, data.user?.id, is_owner || false]
+      [email, name, data.user?.id, is_owner || false, assigned_business_types || null]
     );
 
     const staffId = result.rows[0].id;
