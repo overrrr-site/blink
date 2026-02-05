@@ -7,19 +7,16 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
-import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../utils/pagination.js';
+import { buildPaginatedResponse, extractTotalCount, parsePaginationParams, PaginationParams } from '../utils/pagination.js';
+import { isNonEmptyString } from '../utils/validation.js';
 
-const router = express.Router();
-router.use(authenticate);
-
-// 飼い主一覧取得
-router.get('/', async function(req: AuthRequest, res): Promise<void> {
-  try {
-    const queryParams = req.query as { search?: string | string[]; filter?: string | string[]; page?: string | string[]; limit?: string | string[] };
-    const { search } = queryParams;
-    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
-    // N+1解消: LATERAL JOINで最終予約日を効率的に取得
-    let query = `
+function buildOwnersListQuery(params: {
+  storeId: number;
+  search?: string;
+  pagination: PaginationParams;
+}): { query: string; params: Array<string | number> } {
+  const { storeId, search, pagination } = params;
+  let query = `
       SELECT o.*,
              json_agg(json_build_object(
                'id', d.id,
@@ -42,21 +39,42 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
       ) last_res ON true
       WHERE o.store_id = $1 AND o.deleted_at IS NULL
     `;
-    const params: Array<string | number> = [req.storeId ?? 0];
+  const queryParams: Array<string | number> = [storeId];
 
-    if (search) {
-      const searchValue = Array.isArray(search) ? search[0] : search;
-      const searchParam = `%${searchValue}%`;
-      query += ` AND (o.name ILIKE $${params.length + 1} OR o.name_kana ILIKE $${params.length + 1} OR o.phone ILIKE $${params.length + 1}
-                 OR EXISTS (SELECT 1 FROM dogs d_s WHERE d_s.owner_id = o.id AND d_s.deleted_at IS NULL
-                            AND (d_s.name ILIKE $${params.length + 1} OR d_s.breed ILIKE $${params.length + 1})))`;
-      params.push(searchParam);
+  if (search) {
+    const searchParam = `%${search}%`;
+    query += ` AND (o.name ILIKE $${queryParams.length + 1} OR o.name_kana ILIKE $${queryParams.length + 1} OR o.phone ILIKE $${queryParams.length + 1}
+               OR EXISTS (SELECT 1 FROM dogs d_s WHERE d_s.owner_id = o.id AND d_s.deleted_at IS NULL
+                          AND (d_s.name ILIKE $${queryParams.length + 1} OR d_s.breed ILIKE $${queryParams.length + 1})))`;
+    queryParams.push(searchParam);
+  }
+
+  query += ` GROUP BY o.id, last_res.last_reservation_date ORDER BY o.created_at DESC`;
+  query += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+  queryParams.push(pagination.limit, pagination.offset);
+
+  return { query, params: queryParams };
+}
+
+const router = express.Router();
+router.use(authenticate);
+
+// 飼い主一覧取得
+router.get('/', async function(req: AuthRequest, res): Promise<void> {
+  try {
+    if (!requireStoreId(req, res)) {
+      return;
     }
 
-    query += ` GROUP BY o.id, last_res.last_reservation_date ORDER BY o.created_at DESC`;
-    query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(pagination.limit, pagination.offset);
-
+    const queryParams = req.query as { search?: string | string[]; filter?: string | string[]; page?: string | string[]; limit?: string | string[] };
+    const { search } = queryParams;
+    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
+    const searchValue = Array.isArray(search) ? search[0] : search;
+    const { query, params } = buildOwnersListQuery({
+      storeId: req.storeId,
+      search: searchValue,
+      pagination,
+    });
     const result = await pool.query(query, params);
     const { data, total } = extractTotalCount(result.rows as Record<string, unknown>[]);
     res.json(buildPaginatedResponse(data, total, pagination));
@@ -68,6 +86,10 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
 // 飼い主詳細取得
 router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { id } = req.params;
 
     const ownerResult = await pool.query(
@@ -113,7 +135,7 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       memo,
     } = req.body;
 
-    if (!name || !phone) {
+    if (!isNonEmptyString(name) || !isNonEmptyString(phone)) {
       sendBadRequest(res, '名前と電話番号は必須です');
       return;
     }
@@ -147,6 +169,10 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
 // 飼い主更新
 router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { id } = req.params;
     const {
       name,
@@ -196,6 +222,10 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
 // 飼い主削除（論理削除）
 router.delete('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { id } = req.params;
 
     // 5年以内のデータは削除不可

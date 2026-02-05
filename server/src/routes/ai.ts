@@ -412,4 +412,168 @@ ${dog_name ? `この犬の名前は「${dog_name}」です。` : ''}
   }
 });
 
+// 業種別レポート生成
+router.post('/generate-report', async (req: AuthRequest, res) => {
+  try {
+    const { record_type, dog_name, grooming_data, daycare_data, hotel_data, condition, health_check, photos, notes } = req.body;
+
+    if (!record_type || !dog_name) {
+      sendBadRequest(res, 'record_typeとdog_nameは必須です');
+      return;
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      sendServerError(res, 'AI機能が利用できません', new Error('Missing Gemini API key'));
+      return;
+    }
+
+    const prompt = buildReportPrompt(record_type, dog_name, {
+      grooming_data, daycare_data, hotel_data, condition, health_check, notes,
+    });
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: 600,
+            temperature: 0.7,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const reportText = extractGeminiText(data);
+        if (reportText) {
+          return res.json({ report: reportText });
+        }
+      }
+    } catch (apiError) {
+      console.error('Gemini API error for generate-report:', apiError);
+    }
+
+    // Fallback template
+    const fallback = generateReportFallback(record_type, dog_name);
+    res.json({ report: fallback });
+  } catch (error) {
+    sendServerError(res, 'レポート生成に失敗しました', error);
+  }
+});
+
+function buildReportPrompt(
+  recordType: string,
+  dogName: string,
+  data: {
+    grooming_data?: { selectedParts?: string[]; partNotes?: Record<string, string> };
+    daycare_data?: { activities?: string[] };
+    hotel_data?: { nights?: number; special_care?: string };
+    condition?: { overall?: string };
+    health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
+    notes?: { internal_notes?: string };
+  }
+): string {
+  const partLabels: Record<string, string> = {
+    head: '頭', face: '顔', ears: '耳', body: '体',
+    tail: 'しっぽ', front_legs: '前足', back_legs: '後足', hip: 'お尻',
+  };
+
+  if (recordType === 'grooming') {
+    const parts = (data.grooming_data?.selectedParts || [])
+      .map(p => {
+        const label = partLabels[p] || p;
+        const note = data.grooming_data?.partNotes?.[p];
+        return note ? `${label}（${note}）` : label;
+      });
+    const healthNotes: string[] = [];
+    if (data.health_check?.ears) healthNotes.push(`耳: ${data.health_check.ears}`);
+    if (data.health_check?.skin) healthNotes.push(`皮膚: ${data.health_check.skin}`);
+    if (data.health_check?.nails) healthNotes.push(`爪: ${data.health_check.nails}`);
+    if (data.health_check?.teeth) healthNotes.push(`歯: ${data.health_check.teeth}`);
+    const memo = data.notes?.internal_notes ? `\nスタッフメモ: ${data.notes.internal_notes}` : '';
+
+    return `あなたはグルーミングサロンのスタッフです。${dogName}ちゃんの施術結果を飼い主さんに伝えるレポートを書いてください。
+
+【施術部位】${parts.join('、') || '未選択'}
+${healthNotes.length > 0 ? '【健康チェック】' + healthNotes.join('、') : ''}
+${data.condition?.overall ? '【体調】' + data.condition.overall : ''}
+${memo}
+
+200〜300文字程度で、以下を含めてください：
+- カットの仕上がり
+- 健康面で気づいたこと
+- ご自宅でのケアアドバイス
+温かみのある丁寧な日本語でお願いします。`;
+  }
+
+  if (recordType === 'hotel') {
+    const nights = data.hotel_data?.nights || 1;
+    const specialCare = data.hotel_data?.special_care || '';
+    const memo = data.notes?.internal_notes ? `\nスタッフメモ: ${data.notes.internal_notes}` : '';
+
+    return `あなたはペットホテルのスタッフです。${dogName}ちゃんの${nights}泊の滞在レポートを飼い主さんに書いてください。
+
+${specialCare ? '【特別ケア】' + specialCare : ''}
+${data.condition?.overall ? '【体調】' + data.condition.overall : ''}
+${memo}
+
+200〜300文字程度で、以下を含めてください：
+- 滞在中の様子・リラックス度
+- お食事やお散歩の様子
+- 飼い主さんへの安心メッセージ
+温かみのある丁寧な日本語でお願いします。`;
+  }
+
+  // daycare (default)
+  const activities = data.daycare_data?.activities?.join('、') || '';
+  const memo = data.notes?.internal_notes ? `\nスタッフメモ: ${data.notes.internal_notes}` : '';
+
+  return `あなたは犬の幼稚園のスタッフです。${dogName}ちゃんの今日の活動レポートを飼い主さんに書いてください。
+
+【活動内容】${activities || '未記録'}
+${data.condition?.overall ? '【体調】' + data.condition.overall : ''}
+${memo}
+
+200〜300文字程度で、以下を含めてください：
+- 今日の活動と楽しんでいた様子
+- 成長が見られた点
+- 次回への期待
+温かみのある丁寧な日本語でお願いします。`;
+}
+
+function generateReportFallback(recordType: string, dogName: string): string {
+  if (recordType === 'grooming') {
+    return `${dogName}ちゃんのグルーミングが完了しました！今日もとてもお利口にしてくれました。仕上がりもバッチリです。お家でのブラッシングも続けていただけると、キレイな状態を保てます。次回のご予約もお待ちしております。`;
+  }
+  if (recordType === 'hotel') {
+    return `${dogName}ちゃんの滞在中、リラックスして過ごしてくれました。お食事もしっかり食べて、お散歩も楽しんでいました。とても穏やかに過ごしていましたのでご安心ください。またのご利用をお待ちしております。`;
+  }
+  return `${dogName}ちゃん、今日も元気いっぱいでした！お友達と仲良く遊んで、トレーニングも頑張りました。次回も楽しみにしています！`;
+}
+
+// AIサジェスション取得
+router.get('/suggestions/:recordId', async (req: AuthRequest, res) => {
+  try {
+    const store_id = (req as AuthRequest & { store_id?: number }).store_id;
+    const { recordId } = req.params;
+
+    if (!recordId) {
+      sendBadRequest(res, 'recordIdは必須です');
+      return;
+    }
+
+    // For now, return empty suggestions array
+    // In production, this would analyze health_check history and generate suggestions
+    // e.g. consecutive ear issues → "耳の汚れが2回連続しています。獣医への相談をお勧めします"
+    res.json({ suggestions: [] });
+  } catch (error) {
+    sendServerError(res, 'サジェスション取得に失敗しました', error);
+  }
+});
+
 export default router;

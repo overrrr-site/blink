@@ -98,16 +98,18 @@ export async function uploadMultipleToSupabaseStorage(
   files: Express.Multer.File[],
   category: string = 'general'
 ): Promise<Array<{ url: string; path: string; originalname: string; mimetype: string; size: number }>> {
-  const results = [];
+  const uploads = await Promise.all(
+    files.map(async (file) => {
+      const result = await uploadToSupabaseStorage(file, category);
+      if (!result) return null;
+      return { ...result, originalname: file.originalname, mimetype: file.mimetype, size: file.size };
+    })
+  );
 
-  for (const file of files) {
-    const result = await uploadToSupabaseStorage(file, category);
-    if (result) {
-      results.push({ ...result, originalname: file.originalname, mimetype: file.mimetype, size: file.size });
-    }
-  }
-
-  return results;
+  return uploads.filter(
+    (upload): upload is { url: string; path: string; originalname: string; mimetype: string; size: number } =>
+      upload !== null
+  );
 }
 
 /**
@@ -138,16 +140,14 @@ export async function uploadMultipleBase64ToSupabaseStorage(
   base64DataArray: string[],
   category: string = 'journals'
 ): Promise<string[]> {
-  const urls: string[] = [];
+  const uploads = await Promise.all(
+    base64DataArray.map(async (base64Data) => {
+      const result = await uploadBase64ToSupabaseStorage(base64Data, category);
+      return result?.url ?? null;
+    })
+  );
 
-  for (const base64Data of base64DataArray) {
-    const result = await uploadBase64ToSupabaseStorage(base64Data, category);
-    if (result) {
-      urls.push(result.url);
-    }
-  }
-
-  return urls;
+  return uploads.filter((url): url is string => url !== null);
 }
 
 /**

@@ -23,6 +23,8 @@ interface StoreInfo {
     close?: string | null
   } | null
   closed_days?: string[] | null
+  business_types?: string[] | null
+  primary_business_type?: string | null
 }
 
 const ALL_TABS: TabConfig[] = [

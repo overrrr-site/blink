@@ -69,10 +69,10 @@ export default function Layout() {
             isActive={isActive('/home/reservations')}
           />
           <NavButton
-            onClick={() => navigate('/home/journals')}
-            icon="solar:notebook-bold"
-            label="日誌"
-            isActive={isActive('/home/journals')}
+            onClick={() => navigate('/home/records')}
+            icon="solar:clipboard-text-bold"
+            label="カルテ"
+            isActive={isActive('/home/records')}
           />
           <NavButton
             onClick={() => navigate('/home/mypage')}

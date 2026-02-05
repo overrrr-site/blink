@@ -449,6 +449,65 @@ export function createVaccineAlertFlexMessage(alert: {
 }
 
 /**
+ * カルテ通知用Flexメッセージを作成（業種別カラー対応）
+ */
+export function createRecordNotificationFlexMessage(record: {
+  id: number;
+  record_date: string;
+  record_type: string;
+  dog_name: string;
+  report_text?: string | null;
+  photos?: string[] | null;
+}): FlexMessage {
+  const recordDate = format(new Date(record.record_date), 'M月d日(E)', { locale: ja });
+
+  // 業種別のカラーと絵文字・ラベル
+  const typeConfig: Record<string, { color: string; emoji: string; label: string }> = {
+    grooming: { color: '#8B5CF6', emoji: '✂️', label: 'グルーミングカルテ' },
+    daycare: { color: '#F97316', emoji: '🐾', label: 'デイケアカルテ' },
+    hotel: { color: '#06B6D4', emoji: '🏨', label: 'ホテルカルテ' },
+  };
+  const config = typeConfig[record.record_type] ?? { color: '#3B82F6', emoji: '📋', label: 'カルテ' };
+
+  const reportPreview = record.report_text ? truncateText(record.report_text, 80) : null;
+  const hasPhotos = record.photos && record.photos.length > 0;
+
+  const bodyItems: Array<FlexComponent | null> = [
+    createLabelValueRow('日付', recordDate, { valueBold: true }),
+    createLabelValueRow('ワンちゃん', record.dog_name),
+    hasPhotos ? createLabelValueRow('写真', `📷 ${record.photos!.length}枚`, { valueColor: '#10B981' }) : null,
+    { type: 'separator', margin: 'md' },
+    reportPreview
+      ? { type: 'text', text: reportPreview, size: 'sm', color: '#333333', wrap: true, margin: 'md' }
+      : { type: 'text', text: '今日の様子をアプリでご確認ください 🐾', size: 'sm', color: '#666666', wrap: true, margin: 'md' },
+  ];
+
+  const bubble = createHeaderBubble({
+    headerText: `${config.emoji} ${config.label}が届きました`,
+    headerColor: config.color,
+    bodyContents: [
+      { type: 'box', layout: 'vertical', spacing: 'sm', contents: compactFlexItems(bodyItems) },
+    ],
+    footerContents: [
+      {
+        type: 'button',
+        style: 'primary',
+        height: 'sm',
+        action: { type: 'uri', label: 'カルテを見る', uri: buildLiffUrl(`/home/records/${record.id}`) },
+        color: config.color,
+      },
+    ],
+  });
+
+  return {
+    type: 'flex',
+    altText: `${config.emoji} ${record.dog_name}ちゃんの${config.label}が届きました`,
+    contents: bubble,
+    quickReply: createQuickReply(),
+  };
+}
+
+/**
  * ヘルプメッセージを作成
  */
 export function createHelpMessage(): FlexMessage {

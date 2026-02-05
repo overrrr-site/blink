@@ -9,11 +9,13 @@ import {
   uploadBase64ToSupabaseStorage,
 } from '../services/storageService.js';
 import {
+  requireStoreId,
   sendBadRequest,
   sendForbidden,
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
 
 /**
  * 写真配列を処理し、Base64データをSupabase Storageにアップロード
@@ -25,33 +27,47 @@ async function processPhotos(photos: string[] | null): Promise<string[] | null> 
     return null;
   }
 
-  const processedUrls: string[] = [];
+  const storageAvailable = isSupabaseStorageAvailable();
 
-  for (const photo of photos) {
-    // 既にURLの場合はそのまま使用
-    if (photo.startsWith('http')) {
-      processedUrls.push(photo);
-      continue;
-    }
+  const processed = await Promise.all(
+    photos.map(async (photo) => {
+      // 既にURLの場合はそのまま使用
+      if (photo.startsWith('http')) {
+        return photo;
+      }
 
-    // Base64データの場合はSupabase Storageにアップロード
-    if (photo.startsWith('data:image/')) {
-      if (isSupabaseStorageAvailable()) {
-        const result = await uploadBase64ToSupabaseStorage(photo, 'journals');
-        if (result) {
-          processedUrls.push(result.url);
-        } else {
+      // Base64データの場合はSupabase Storageにアップロード
+      if (photo.startsWith('data:image/')) {
+        if (storageAvailable) {
+          const result = await uploadBase64ToSupabaseStorage(photo, 'journals');
+          if (result) {
+            return result.url;
+          }
           console.warn('Failed to upload photo to Supabase Storage');
+          return null;
         }
-      } else {
+
         // Supabase Storageが利用できない場合はBase64をそのまま保存（後方互換性）
         console.warn('Supabase Storage is not available, storing Base64 directly');
-        processedUrls.push(photo);
+        return photo;
       }
-    }
-  }
 
+      return null;
+    })
+  );
+
+  const processedUrls = processed.filter((url): url is string => url !== null);
   return processedUrls.length > 0 ? processedUrls : null;
+}
+
+function serializeJsonOrNull(value: unknown): string | null {
+  if (!value) return null;
+  return JSON.stringify(value);
+}
+
+function normalizeOptionalJson(value: unknown | undefined): string | null | undefined {
+  if (value === undefined) return undefined;
+  return serializeJsonOrNull(value);
 }
 
 const router = express.Router();
@@ -60,6 +76,10 @@ router.use(authenticate);
 // 日誌一覧取得
 router.get('/', cacheControl(), async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const queryParams = req.query as { dog_id?: string | string[]; date?: string | string[]; search?: string | string[]; page?: string | string[]; limit?: string | string[] };
     const { dog_id, date, search } = queryParams;
     const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
@@ -109,6 +129,10 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
 // 特定の犬の日誌写真一覧を取得（軽量API - DogEdit用）
 router.get('/photos/:dog_id', async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { dog_id } = req.params;
 
     // 犬のstore_idを確認
@@ -162,6 +186,10 @@ router.get('/photos/:dog_id', async (req: AuthRequest, res) => {
 // 特定の犬の最新日誌を取得（前回と同じ用）
 router.get('/latest/:dog_id', async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { dog_id } = req.params;
 
     const dogCheck = await pool.query(
@@ -201,6 +229,10 @@ router.get('/latest/:dog_id', async (req: AuthRequest, res) => {
 // 日誌詳細取得
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { id } = req.params;
 
     const result = await pool.query(
@@ -230,6 +262,10 @@ router.get('/:id', async (req: AuthRequest, res) => {
 // 日誌作成
 router.post('/', async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const {
       reservation_id,
       dog_id,
@@ -246,7 +282,7 @@ router.post('/', async (req: AuthRequest, res) => {
       meal_data,
     } = req.body;
 
-    if (!dog_id || !journal_date) {
+    if (!isNumberLike(dog_id) || !isNonEmptyString(journal_date)) {
       sendBadRequest(res, '必須項目が不足しています');
       return;
     }
@@ -266,6 +302,9 @@ router.post('/', async (req: AuthRequest, res) => {
 
     // 写真をSupabase Storageにアップロード
     const processedPhotos = await processPhotos(photos);
+    const serializedPhotos = serializeJsonOrNull(processedPhotos);
+    const serializedTraining = serializeJsonOrNull(training_data);
+    const serializedMeal = serializeJsonOrNull(meal_data);
 
     const result = await pool.query(
       `INSERT INTO journals (
@@ -285,11 +324,11 @@ router.post('/', async (req: AuthRequest, res) => {
         morning_toilet_location,
         afternoon_toilet_status,
         afternoon_toilet_location,
-        training_data ? JSON.stringify(training_data) : null,
+        serializedTraining,
         comment,
         next_visit_date || null,
-        processedPhotos ? JSON.stringify(processedPhotos) : null,
-        meal_data ? JSON.stringify(meal_data) : null,
+        serializedPhotos,
+        serializedMeal,
       ]
     );
 
@@ -332,6 +371,10 @@ router.post('/', async (req: AuthRequest, res) => {
 // 日誌更新
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { id } = req.params;
     const {
       morning_toilet_status,
@@ -361,6 +404,9 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     // 写真をSupabase Storageにアップロード
     const processedPhotos = photos ? await processPhotos(photos) : undefined;
+    const serializedPhotos = normalizeOptionalJson(processedPhotos);
+    const serializedTraining = normalizeOptionalJson(training_data);
+    const serializedMeal = normalizeOptionalJson(meal_data);
 
     const result = await pool.query(
       `UPDATE journals SET
@@ -381,11 +427,11 @@ router.put('/:id', async (req: AuthRequest, res) => {
         morning_toilet_location,
         afternoon_toilet_status,
         afternoon_toilet_location,
-        training_data ? JSON.stringify(training_data) : null,
+        serializedTraining ?? null,
         comment,
         next_visit_date || null,
-        processedPhotos ? JSON.stringify(processedPhotos) : null,
-        meal_data ? JSON.stringify(meal_data) : null,
+        serializedPhotos ?? null,
+        serializedMeal ?? null,
         id,
       ]
     );

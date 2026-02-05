@@ -9,6 +9,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
 import {
   syncCalendarOnCreate,
   syncCalendarOnUpdate,
@@ -22,12 +23,13 @@ function toIsoDateString(date: Date): string {
 function getMonthDateRange(month: string): { start: string; end: string } | null {
   const [yearPart, monthPart] = month.split('-');
   const year = Number(yearPart);
-  const monthIndex = Number(monthPart) - 1;
+  const monthNumber = Number(monthPart);
 
-  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
+  if (!Number.isFinite(year) || !Number.isFinite(monthNumber) || monthNumber < 1 || monthNumber > 12) {
     return null;
   }
 
+  const monthIndex = monthNumber - 1;
   const start = new Date(Date.UTC(year, monthIndex, 1));
   const end = new Date(Date.UTC(year, monthIndex + 1, 1));
 
@@ -74,8 +76,8 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
 
     const result = await pool.query(query, params);
     
-    // デバッグ用ログ（開発環境のみ）
-    if (process.env.NODE_ENV === 'development') {
+    // デバッグ用ログ（開発環境 + LOG_LEVEL=debug の場合のみ）
+    if (process.env.NODE_ENV === 'development' && process.env.LOG_LEVEL === 'debug') {
       console.log('📅 Reservations query:', { 
         month, 
         date,
@@ -99,6 +101,10 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
 // 予約詳細取得
 router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { id } = req.params;
 
     // 最適化: スカラーサブクエリをLATERAL JOINに変更
@@ -154,23 +160,27 @@ router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
 // 予約作成
 router.post('/', async function(req: AuthRequest, res): Promise<void> {
   try {
-    const { dog_id, reservation_date, reservation_time, memo, base_price } = req.body;
+    if (!requireStoreId(req, res)) {
+      return;
+    }
 
-    if (!dog_id || !reservation_date || !reservation_time) {
+    const { dog_id, reservation_date, reservation_time, memo, base_price, service_type, service_details, end_datetime } = req.body;
+
+    if (!isNumberLike(dog_id) || !isNonEmptyString(reservation_date) || !isNonEmptyString(reservation_time)) {
       sendBadRequest(res, '必須項目が不足しています');
       return;
     }
 
     const result = await pool.query(
       `INSERT INTO reservations (
-        store_id, dog_id, reservation_date, reservation_time, memo
+        store_id, dog_id, reservation_date, reservation_time, memo, service_type, service_details, end_datetime
       )
-      SELECT $5, d.id, $2, $3, $4
+      SELECT $5, d.id, $2, $3, $4, $6, $7, $8
       FROM dogs d
       JOIN owners o ON d.owner_id = o.id
       WHERE d.id = $1 AND o.store_id = $5
       RETURNING *`,
-      [dog_id, reservation_date, reservation_time, memo, req.storeId]
+      [dog_id, reservation_date, reservation_time, memo, req.storeId, service_type || null, service_details ? JSON.stringify(service_details) : null, end_datetime || null]
     );
 
     if (result.rows.length === 0) {
@@ -196,41 +206,58 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
 // 予約更新
 router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
-    const { id } = req.params;
-    const { reservation_date, reservation_time, status, memo } = req.body;
-
-    const result = await pool.query(
-      `UPDATE reservations SET
-        reservation_date = COALESCE($1, reservation_date),
-        reservation_time = COALESCE($2, reservation_time),
-        status = COALESCE($3, status),
-        memo = COALESCE($4, memo),
-        checked_in_at = CASE WHEN $3 = '登園済' THEN COALESCE(checked_in_at, CURRENT_TIMESTAMP) ELSE checked_in_at END,
-        checked_out_at = CASE WHEN $3 = '降園済' THEN COALESCE(checked_out_at, CURRENT_TIMESTAMP) ELSE checked_out_at END,
-        cancelled_at = CASE WHEN $3 = 'キャンセル' THEN COALESCE(cancelled_at, CURRENT_TIMESTAMP) ELSE cancelled_at END,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5 AND store_id = $6
-      RETURNING *`,
-      [reservation_date, reservation_time, status, memo, id, req.storeId]
-    );
-
-    if (result.rows.length === 0) {
-      sendNotFound(res, '予約が見つかりません');
+    if (!requireStoreId(req, res)) {
       return;
     }
 
-    const reservation = result.rows[0];
+    const { id } = req.params;
+    const { reservation_date, reservation_time, status, memo, service_type, service_details, end_datetime } = req.body;
 
-    // ステータスが「登園済」に変更された場合、契約残数を減算
-    if (status === '登園済') {
-      const previousStatus = await pool.query(
-        `SELECT status FROM reservations WHERE id = $1`,
-        [id]
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const previousStatusResult = await client.query(
+        `SELECT status, checked_in_at
+         FROM reservations
+         WHERE id = $1 AND store_id = $2
+         FOR UPDATE`,
+        [id, req.storeId]
       );
-      
-      // 既に登園済みでない場合のみ減算（重複減算を防ぐ）
-      if (previousStatus.rows[0]?.status !== '登園済') {
-        const contractResult = await pool.query(
+
+      if (previousStatusResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        sendNotFound(res, '予約が見つかりません');
+        return;
+      }
+
+      const previousStatus = previousStatusResult.rows[0]?.status;
+      const previousCheckedInAt = previousStatusResult.rows[0]?.checked_in_at;
+
+      const result = await client.query(
+        `UPDATE reservations SET
+          reservation_date = COALESCE($1, reservation_date),
+          reservation_time = COALESCE($2, reservation_time),
+          status = COALESCE($3, status),
+          memo = COALESCE($4, memo),
+          checked_in_at = CASE WHEN $3 = '登園済' THEN COALESCE(checked_in_at, CURRENT_TIMESTAMP) ELSE checked_in_at END,
+          checked_out_at = CASE WHEN $3 = '降園済' THEN COALESCE(checked_out_at, CURRENT_TIMESTAMP) ELSE checked_out_at END,
+          cancelled_at = CASE WHEN $3 = 'キャンセル' THEN COALESCE(cancelled_at, CURRENT_TIMESTAMP) ELSE cancelled_at END,
+          service_type = COALESCE($7, service_type),
+          service_details = COALESCE($8, service_details),
+          end_datetime = COALESCE($9, end_datetime),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $5 AND store_id = $6
+        RETURNING *`,
+        [reservation_date, reservation_time, status, memo, id, req.storeId, service_type || null, service_details ? JSON.stringify(service_details) : null, end_datetime || null]
+      );
+
+      const reservation = result.rows[0];
+      const nextStatus = reservation?.status;
+
+      // ステータスが「登園済」に遷移した場合のみ契約残数を減算
+      if (nextStatus === '登園済' && previousStatus !== '登園済' && !previousCheckedInAt) {
+        const contractResult = await client.query(
           `SELECT id, contract_type, remaining_sessions
            FROM contracts
            WHERE dog_id = $1
@@ -244,7 +271,7 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
 
         if (contractResult.rows.length > 0) {
           const contract = contractResult.rows[0];
-          await pool.query(
+          await client.query(
             `UPDATE contracts 
              SET remaining_sessions = remaining_sessions - 1,
                  updated_at = CURRENT_TIMESTAMP
@@ -253,17 +280,25 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
           );
         }
       }
+
+      await client.query('COMMIT');
+
+      // Googleカレンダーに同期（非ブロッキング: レスポンスを先に返す）
+      syncCalendarOnUpdate({
+        storeId: req.storeId!,
+        reservationId: parseInt(id, 10),
+        reservation,
+        status,
+      }).catch((err) => console.error('Calendar sync error (update):', err));
+
+      res.json(reservation);
+      return;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
-    // Googleカレンダーに同期（非ブロッキング: レスポンスを先に返す）
-    syncCalendarOnUpdate({
-      storeId: req.storeId!,
-      reservationId: parseInt(id, 10),
-      reservation,
-      status,
-    }).catch((err) => console.error('Calendar sync error (update):', err));
-
-    res.json(reservation);
   } catch (error) {
     sendServerError(res, '予約の更新に失敗しました', error);
   }
@@ -361,11 +396,11 @@ router.get('/export.ics', async function(req: AuthRequest, res): Promise<void> {
 // 予約削除
 router.delete('/:id', async function(req: AuthRequest, res): Promise<void> {
   try {
-    const { id } = req.params;
-
     if (!requireStoreId(req, res)) {
       return;
     }
+
+    const { id } = req.params;
 
     // Googleカレンダーから削除（エラーが発生しても予約削除は続行）
     await syncCalendarOnDelete({ storeId: req.storeId, reservationId: parseInt(id, 10) });

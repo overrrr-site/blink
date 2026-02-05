@@ -459,12 +459,12 @@ export default function Home() {
         />
 
         <MenuCard
-          onClick={() => navigate('/home/journals')}
-          icon="solar:notebook-bold"
+          onClick={() => navigate('/home/records')}
+          icon="solar:clipboard-text-bold"
           iconBgColor="bg-chart-3/10"
           iconColor="text-chart-3"
-          title="日誌"
-          description="登園日誌・写真を確認"
+          title="カルテ"
+          description="施術カルテ・写真を確認"
         />
 
         <MenuCard
@@ -529,13 +529,13 @@ export default function Home() {
             新規予約
           </button>
           <button
-            onClick={() => navigate('/home/journals')}
-            className="flex-1 bg-muted text-foreground py-3 rounded-xl text-sm font-bold 
+            onClick={() => navigate('/home/records')}
+            className="flex-1 bg-muted text-foreground py-3 rounded-xl text-sm font-bold
                        flex items-center justify-center gap-2 active:scale-95 transition-transform"
-            aria-label="日誌を見る"
+            aria-label="カルテを見る"
           >
-            <Icon icon="solar:notebook-bold" width="20" height="20" />
-            日誌を見る
+            <Icon icon="solar:clipboard-text-bold" width="20" height="20" />
+            カルテを見る
           </button>
         </div>
       </section>

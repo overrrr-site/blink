@@ -16,8 +16,11 @@ const ReservationsCalendar = lazy(() => import('./pages/ReservationsCalendar'))
 const ReservationDetail = lazy(() => import('./pages/ReservationDetail'))
 const JournalCreate = lazy(() => import('./pages/JournalCreate'))
 const JournalDetail = lazy(() => import('./pages/JournalDetail'))
-const JournalList = lazy(() => import('./pages/JournalList'))
-const JournalNew = lazy(() => import('./pages/JournalNew'))
+// journals routes are redirected to records; lazy imports kept only for direct journal detail/create
+
+const RecordList = lazy(() => import('./pages/RecordList'))
+const RecordCreate = lazy(() => import('./pages/RecordCreate'))
+const RecordDetail = lazy(() => import('./pages/RecordDetail'))
 const Settings = lazy(() => import('./pages/Settings'))
 const OwnerCreate = lazy(() => import('./pages/OwnerCreate'))
 const OwnerEdit = lazy(() => import('./pages/OwnerEdit'))
@@ -113,8 +116,13 @@ function App() {
                 <Route path="/reservations" element={<ReservationsCalendar />} />
                 <Route path="/reservations/new" element={<ReservationCreate />} />
                 <Route path="/reservations/:id" element={<ReservationDetail />} />
-                <Route path="/journals" element={<JournalList />} />
-                <Route path="/journals/new" element={<JournalNew />} />
+                <Route path="/records" element={<RecordList />} />
+                <Route path="/records/new" element={<RecordCreate />} />
+                <Route path="/records/:id" element={<RecordDetail />} />
+                <Route path="/records/create/:reservationId" element={<RecordCreate />} />
+                {/* 旧日誌URLからカルテへのリダイレクト */}
+                <Route path="/journals" element={<Navigate to="/records" replace />} />
+                <Route path="/journals/new" element={<Navigate to="/records/new" replace />} />
                 <Route path="/journals/:id" element={<JournalDetail />} />
                 <Route path="/journals/create/:reservationId" element={<JournalCreate />} />
                 <Route path="/inspection-records" element={<InspectionRecordList />} />

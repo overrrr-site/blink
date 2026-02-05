@@ -52,62 +52,35 @@ router.put('/settings', async (req: AuthRequest, res) => {
       line_bot_enabled,
     } = req.body;
 
-    // 既存の設定を確認
-    const existing = await pool.query(
-      `SELECT id FROM notification_settings WHERE store_id = $1`,
-      [req.storeId]
+    const result = await pool.query(
+      `INSERT INTO notification_settings (
+        store_id, reminder_before_visit, reminder_before_visit_days,
+        journal_notification, vaccine_alert, vaccine_alert_days,
+        line_notification_enabled, email_notification_enabled, line_bot_enabled
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (store_id) DO UPDATE SET
+        reminder_before_visit = COALESCE(EXCLUDED.reminder_before_visit, notification_settings.reminder_before_visit),
+        reminder_before_visit_days = COALESCE(EXCLUDED.reminder_before_visit_days, notification_settings.reminder_before_visit_days),
+        journal_notification = COALESCE(EXCLUDED.journal_notification, notification_settings.journal_notification),
+        vaccine_alert = COALESCE(EXCLUDED.vaccine_alert, notification_settings.vaccine_alert),
+        vaccine_alert_days = COALESCE(EXCLUDED.vaccine_alert_days, notification_settings.vaccine_alert_days),
+        line_notification_enabled = COALESCE(EXCLUDED.line_notification_enabled, notification_settings.line_notification_enabled),
+        email_notification_enabled = COALESCE(EXCLUDED.email_notification_enabled, notification_settings.email_notification_enabled),
+        line_bot_enabled = COALESCE(EXCLUDED.line_bot_enabled, notification_settings.line_bot_enabled),
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *`,
+      [
+        req.storeId,
+        reminder_before_visit ?? true,
+        reminder_before_visit_days ?? 1,
+        journal_notification ?? true,
+        vaccine_alert ?? true,
+        vaccine_alert_days ?? 14,
+        line_notification_enabled ?? false,
+        email_notification_enabled ?? false,
+        line_bot_enabled ?? false,
+      ]
     );
-
-    let result;
-    if (existing.rows.length === 0) {
-      // 新規作成
-      result = await pool.query(
-        `INSERT INTO notification_settings (
-          store_id, reminder_before_visit, reminder_before_visit_days,
-          journal_notification, vaccine_alert, vaccine_alert_days,
-          line_notification_enabled, email_notification_enabled, line_bot_enabled
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        RETURNING *`,
-        [
-          req.storeId,
-          reminder_before_visit ?? true,
-          reminder_before_visit_days ?? 1,
-          journal_notification ?? true,
-          vaccine_alert ?? true,
-          vaccine_alert_days ?? 14,
-          line_notification_enabled ?? false,
-          email_notification_enabled ?? false,
-          line_bot_enabled ?? false,
-        ]
-      );
-    } else {
-      // 更新
-      result = await pool.query(
-        `UPDATE notification_settings SET
-          reminder_before_visit = COALESCE($1, reminder_before_visit),
-          reminder_before_visit_days = COALESCE($2, reminder_before_visit_days),
-          journal_notification = COALESCE($3, journal_notification),
-          vaccine_alert = COALESCE($4, vaccine_alert),
-          vaccine_alert_days = COALESCE($5, vaccine_alert_days),
-          line_notification_enabled = COALESCE($6, line_notification_enabled),
-          email_notification_enabled = COALESCE($7, email_notification_enabled),
-          line_bot_enabled = COALESCE($8, line_bot_enabled),
-          updated_at = CURRENT_TIMESTAMP
-        WHERE store_id = $9
-        RETURNING *`,
-        [
-          reminder_before_visit,
-          reminder_before_visit_days,
-          journal_notification,
-          vaccine_alert,
-          vaccine_alert_days,
-          line_notification_enabled,
-          email_notification_enabled,
-          line_bot_enabled,
-          req.storeId,
-        ]
-      );
-    }
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -149,9 +122,13 @@ router.get('/logs', async (req: AuthRequest, res) => {
       paramIndex++;
     }
 
-    // 総件数取得
+    // 総件数取得（JOIN不要）
     const countResult = await pool.query(
-      query.replace('SELECT nl.*, o.name as owner_name', 'SELECT COUNT(*) as total'),
+      `SELECT COUNT(*) as total
+       FROM notification_logs nl
+       WHERE nl.store_id = $1
+       ${notification_type ? 'AND nl.notification_type = $2' : ''}
+       ${status ? `AND nl.status = $${notification_type ? 3 : 2}` : ''}`,
       params
     );
     const total = parseInt(countResult.rows[0]?.total || '0');

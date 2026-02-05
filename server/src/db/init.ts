@@ -16,6 +16,23 @@ const MIGRATIONS = [
   { file: '006_audit_log_and_soft_delete.sql',        label: '閲覧ログ・論理削除スキーマ' },
   { file: '007_notifications.sql',                    label: '通知機能スキーマ' },
   { file: '008_billing.sql',                          label: '決済機能スキーマ' },
+  { file: '009_supabase_auth.sql',                    label: 'Supabase認証スキーマ' },
+  { file: '010_line_multitenant.sql',                 label: 'LINEマルチテナントスキーマ' },
+  { file: '011_inspection_records.sql',               label: '検査記録スキーマ' },
+  { file: '012_line_link_codes.sql',                  label: 'LINE連携コードスキーマ' },
+  { file: '013_line_bot_enabled.sql',                 label: 'LINEボット有効化スキーマ' },
+  { file: '014_checkout_and_status.sql',              label: 'チェックアウト・ステータススキーマ' },
+  { file: '015_announcements.sql',                    label: 'お知らせスキーマ' },
+  { file: '016_performance_indexes.sql',              label: 'パフォーマンスインデックス' },
+  { file: '017_rename_checkout_status.sql',           label: 'チェックアウトステータスリネーム' },
+  { file: '018_dashboard_performance_indexes.sql',    label: 'ダッシュボードインデックス' },
+  { file: '019_additional_performance_indexes.sql',   label: '追加インデックス' },
+  { file: '020_meal_records.sql',                     label: '食事記録スキーマ' },
+  { file: '021_rls_security.sql',                     label: 'RLSセキュリティスキーマ' },
+  { file: '022_alert_query_index.sql',                label: 'アラートクエリインデックス' },
+  { file: '023_business_types.sql',                   label: '業種設定スキーマ' },
+  { file: '024_reservations_service_type.sql',        label: '予約サービス種別スキーマ' },
+  { file: '025_records_table.sql',                    label: 'カルテテーブルスキーマ' },
 ] as const;
 
 async function runMigration(file: string, label: string): Promise<void> {

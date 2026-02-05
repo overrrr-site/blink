@@ -194,10 +194,10 @@ const ReservationCard = React.memo(function ReservationCard({
             <button
               onClick={() => onNavigateJournal(reservation.id)}
               className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
-              aria-label="日誌を作成"
+              aria-label="カルテを作成"
             >
-              <Icon icon="solar:pen-new-square-bold" className="size-4" />
-              日誌
+              <Icon icon="solar:clipboard-add-bold" className="size-4" />
+              カルテ
             </button>
           )}
           {isPresent && reservation.has_journal && (
@@ -386,7 +386,7 @@ function Dashboard(): JSX.Element {
   }, [navigate])
 
   const handleNavigateJournalCreate = useCallback((id: number) => {
-    navigate(`/journals/create/${id}`)
+    navigate(`/records/create/${id}`)
   }, [navigate])
 
   const handleNavigateInspection = useCallback(() => {
@@ -397,8 +397,8 @@ function Dashboard(): JSX.Element {
     navigate('/announcements')
   }, [navigate])
 
-  const handleNavigateNewJournals = useCallback(() => {
-    navigate('/journals/new')
+  const handleNavigateNewRecords = useCallback(() => {
+    navigate('/records')
   }, [navigate])
 
   const handleNavigateNewReservation = useCallback(() => {
@@ -570,14 +570,14 @@ function Dashboard(): JSX.Element {
             description={data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
           />
 
-          {/* 未入力の日誌 */}
+          {/* 未入力のカルテ */}
           {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
             <QuickActionCard
-              onClick={handleNavigateNewJournals}
-              icon="solar:document-text-bold"
+              onClick={handleNavigateNewRecords}
+              icon="solar:clipboard-text-bold"
               iconClassName="bg-destructive/20 text-destructive"
               containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
-              title="未入力の日誌"
+              title="未入力のカルテ"
               titleClassName="text-destructive"
               description={`${data.incompleteJournals.slice(0, 2).map((j) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
               badge={(

@@ -15,7 +15,7 @@ const NAV_ITEMS = [
 const FAB_ACTIONS = [
   { label: '予約を追加', icon: 'solar:calendar-add-bold', path: '/reservations/new', color: 'bg-chart-1' },
   { label: '顧客を登録', icon: 'solar:user-plus-bold', path: '/owners/new', color: 'bg-chart-2' },
-  { label: '日誌を作成', icon: 'solar:document-add-bold', path: '/journals/new', color: 'bg-chart-3' },
+  { label: 'カルテを作成', icon: 'solar:clipboard-add-bold', path: '/records/new', color: 'bg-chart-3' },
 ] as const
 
 const GUIDE_KEYS: Record<string, string> = {

@@ -4,6 +4,7 @@ import { sendEmail } from './emailService.js';
 import {
   createReservationReminderFlexMessage,
   createJournalNotificationFlexMessage,
+  createRecordNotificationFlexMessage,
   createVaccineAlertFlexMessage,
 } from './lineFlexMessages.js';
 import type { FlexMessage } from '@line/bot-sdk';
@@ -13,7 +14,7 @@ export type OwnerContact = { lineId: string | null; email: string | null };
 export interface NotificationData {
   storeId: number;
   ownerId: number;
-  notificationType: 'reminder' | 'journal' | 'vaccine_alert';
+  notificationType: 'reminder' | 'journal' | 'record' | 'vaccine_alert';
   title: string;
   message: string;
 }
@@ -73,6 +74,7 @@ function shouldSendByType(
     case 'reminder':
       return settings.reminder_before_visit === true;
     case 'journal':
+    case 'record':
       return settings.journal_notification === true;
     case 'vaccine_alert':
       return settings.vaccine_alert === true;
@@ -360,6 +362,73 @@ export async function sendJournalNotification(
     });
   } catch (error) {
     console.error('Error sending journal notification:', error);
+  }
+}
+
+/**
+ * カルテ共有通知を送信（Flexメッセージ対応・業種別カラー）
+ */
+export async function sendRecordNotification(
+  storeId: number,
+  ownerId: number,
+  record: {
+    id: number;
+    record_date: string;
+    record_type: string;
+    dog_name: string;
+    report_text?: string | null;
+    photos?: string[] | null;
+  }
+): Promise<void> {
+  try {
+    const settingsResult = await pool.query<NotificationSettingsRow>(
+      `SELECT journal_notification, line_notification_enabled, email_notification_enabled
+       FROM notification_settings WHERE store_id = $1`,
+      [storeId]
+    );
+
+    if (settingsResult.rows.length === 0) {
+      console.warn(`通知設定が見つかりません: store_id=${storeId}`);
+      return;
+    }
+
+    const settings = settingsResult.rows[0];
+    if (!settings.journal_notification) {
+      console.log(`カルテ通知が無効です: store_id=${storeId}`);
+      return;
+    }
+
+    const contactMap = await getOwnerContactBatch([ownerId]);
+    const contact = contactMap.get(ownerId) ?? null;
+
+    const typeLabels: Record<string, string> = {
+      grooming: 'グルーミングカルテ',
+      daycare: 'デイケアカルテ',
+      hotel: 'ホテルカルテ',
+    };
+    const typeLabel = typeLabels[record.record_type] ?? 'カルテ';
+
+    const title = `${typeLabel}が届きました`;
+    const message = `${record.dog_name}ちゃんの${typeLabel}が共有されました。`;
+
+    const flexMessage = createRecordNotificationFlexMessage(record);
+
+    const { sent, sentVia } = await deliverNotification({
+      storeId,
+      settings,
+      contact,
+      title,
+      message: `${message}\n\nアプリから詳細をご確認ください。`,
+      flexMessage,
+    });
+
+    await insertNotificationLog({
+      data: { storeId, ownerId, notificationType: 'record', title, message },
+      sentVia,
+      sent,
+    });
+  } catch (error) {
+    console.error('Error sending record notification:', error);
   }
 }
 

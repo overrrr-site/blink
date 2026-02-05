@@ -22,7 +22,8 @@ router.get('/', cacheControl(30, 60), async (req: AuthRequest, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, address, phone, business_hours, closed_days, 
+      `SELECT id, name, address, phone, business_hours, closed_days,
+              business_types, primary_business_type,
               line_channel_id, line_channel_secret, line_channel_access_token,
               created_at, updated_at
        FROM stores WHERE id = $1`,
@@ -58,7 +59,8 @@ router.put('/', async (req: AuthRequest, res) => {
       return;
     }
 
-    const { name, address, phone, business_hours, closed_days, 
+    const { name, address, phone, business_hours, closed_days,
+            business_types, primary_business_type,
             line_channel_id, line_channel_secret, line_channel_access_token } = req.body;
 
     // 更新するフィールドを動的に構築
@@ -86,6 +88,14 @@ router.put('/', async (req: AuthRequest, res) => {
     if (closed_days !== undefined) {
       updates.push(`closed_days = $${paramIndex++}::jsonb`);
       values.push(closed_days && Array.isArray(closed_days) ? JSON.stringify(closed_days) : null);
+    }
+    if (business_types !== undefined && Array.isArray(business_types)) {
+      updates.push(`business_types = $${paramIndex++}`);
+      values.push(`{${business_types.join(',')}}`);
+    }
+    if (primary_business_type !== undefined) {
+      updates.push(`primary_business_type = $${paramIndex++}`);
+      values.push(primary_business_type);
     }
     if (line_channel_id !== undefined) {
       updates.push(`line_channel_id = $${paramIndex++}`);
@@ -115,7 +125,8 @@ router.put('/', async (req: AuthRequest, res) => {
 
     const result = await pool.query(
       `UPDATE stores SET ${updates.join(', ')} WHERE id = $${paramIndex} 
-       RETURNING id, name, address, phone, business_hours, closed_days, 
+       RETURNING id, name, address, phone, business_hours, closed_days,
+                 business_types, primary_business_type,
                  line_channel_id, line_channel_secret, line_channel_access_token,
                  created_at, updated_at`,
       values
