@@ -21,6 +21,14 @@ interface OwnerFormProps {
   submitIcon?: string
 }
 
+interface FormErrors {
+  name?: string
+  phone?: string
+  email?: string
+}
+
+const ERROR_INPUT_CLASS = 'border-destructive focus:border-destructive focus:ring-destructive/20'
+
 function OwnerForm({
   initialValues,
   onSubmit,
@@ -38,6 +46,8 @@ function OwnerForm({
     emergency_contact_phone: '',
     notes: '',
   })
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (initialValues) {
@@ -48,17 +58,60 @@ function OwnerForm({
     }
   }, [initialValues])
 
+  function validateField(name: string, value: string): string | undefined {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return '氏名は必須です'
+        break
+      case 'phone':
+        if (!value.trim()) return '電話番号は必須です'
+        if (!/^\d{10,11}$/.test(value)) return '電話番号は10〜11桁の数字で入力してください'
+        break
+      case 'email':
+        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'メールアドレスの形式が正しくありません'
+        break
+    }
+    return undefined
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void {
     const { name, value } = e.target
+    let processedValue = value
     if (name === 'phone' || name === 'emergency_contact_phone') {
-      setForm((prev) => ({ ...prev, [name]: value.replace(/-/g, '') }))
-      return
+      processedValue = value.replace(/-/g, '')
     }
-    setForm((prev) => ({ ...prev, [name]: value }))
+    setForm((prev) => ({ ...prev, [name]: processedValue }))
+
+    // リアルタイムバリデーション（一度タッチされたフィールドのみ）
+    if (touched[name]) {
+      const error = validateField(name, processedValue)
+      setErrors((prev) => ({ ...prev, [name]: error }))
+    }
+  }
+
+  function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void {
+    const { name, value } = e.target
+    setTouched((prev) => ({ ...prev, [name]: true }))
+    const error = validateField(name, value)
+    setErrors((prev) => ({ ...prev, [name]: error }))
   }
 
   function handleSubmit(e: React.FormEvent): void {
     e.preventDefault()
+
+    // 送信時に全フィールドをバリデーション
+    const newErrors: FormErrors = {}
+    newErrors.name = validateField('name', form.name)
+    newErrors.phone = validateField('phone', form.phone)
+    newErrors.email = validateField('email', form.email)
+
+    const hasErrors = Object.values(newErrors).some((err) => err)
+    if (hasErrors) {
+      setErrors(newErrors)
+      setTouched({ name: true, phone: true, email: true })
+      return
+    }
+
     onSubmit(form)
   }
 
@@ -81,9 +134,19 @@ function OwnerForm({
               name="name"
               value={form.name}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="田中 花子"
-              className={INPUT_CLASS}
+              className={`${INPUT_CLASS} ${errors.name ? ERROR_INPUT_CLASS : ''}`}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'owner-name-error' : undefined}
+              required
             />
+            {errors.name && (
+              <p id="owner-name-error" className="text-xs text-destructive mt-1 flex items-center gap-1">
+                <Icon icon="solar:danger-circle-bold" width="12" height="12" />
+                {errors.name}
+              </p>
+            )}
           </div>
 
           <div>
@@ -109,10 +172,22 @@ function OwnerForm({
               name="phone"
               value={form.phone}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="09012345678"
-              className={INPUT_CLASS}
+              inputMode="numeric"
+              className={`${INPUT_CLASS} ${errors.phone ? ERROR_INPUT_CLASS : ''}`}
+              aria-invalid={!!errors.phone}
+              aria-describedby={errors.phone ? 'owner-phone-error' : 'owner-phone-hint'}
+              required
             />
-            <p className="text-xs text-muted-foreground mt-1">ハイフンなしで入力してください</p>
+            {errors.phone ? (
+              <p id="owner-phone-error" className="text-xs text-destructive mt-1 flex items-center gap-1">
+                <Icon icon="solar:danger-circle-bold" width="12" height="12" />
+                {errors.phone}
+              </p>
+            ) : (
+              <p id="owner-phone-hint" className="text-xs text-muted-foreground mt-1">ハイフンなしで入力してください</p>
+            )}
           </div>
 
           <div>
@@ -123,9 +198,18 @@ function OwnerForm({
               name="email"
               value={form.email}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="example@email.com"
-              className={INPUT_CLASS}
+              className={`${INPUT_CLASS} ${errors.email ? ERROR_INPUT_CLASS : ''}`}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'owner-email-error' : undefined}
             />
+            {errors.email && (
+              <p id="owner-email-error" className="text-xs text-destructive mt-1 flex items-center gap-1">
+                <Icon icon="solar:danger-circle-bold" width="12" height="12" />
+                {errors.email}
+              </p>
+            )}
           </div>
 
           <div>

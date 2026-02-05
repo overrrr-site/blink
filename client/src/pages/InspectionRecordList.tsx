@@ -140,7 +140,7 @@ function DayCard({
   }
 
   return (
-    <div className={`bg-card rounded-2xl border-2 ${borderClass}`}>
+    <div id={`day-card-${date}`} className={`bg-card rounded-2xl border-2 ${borderClass}`}>
       <button
         onClick={onToggleExpanded}
         className="w-full flex items-center justify-between p-4 border-b border-border"
@@ -574,16 +574,37 @@ function InspectionRecordList(): JSX.Element {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => changeMonth(-1)}
-            className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+            className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors min-h-[44px]"
+            aria-label="前月"
           >
             <Icon icon="solar:alt-arrow-left-linear" width="20" height="20" />
           </button>
-          <h2 className="text-lg font-bold">
-            {year}年{month}月
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold">
+              {year}年{month}月
+            </h2>
+            {year === currentDate.getFullYear() && month === currentDate.getMonth() + 1 && (
+              <button
+                onClick={() => {
+                  setExpandedDates(new Set([today]))
+                  // 今日のカードまでスクロール
+                  setTimeout(() => {
+                    const todayCard = document.getElementById(`day-card-${today}`)
+                    if (todayCard) {
+                      todayCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                  }, 100)
+                }}
+                className="px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors min-h-[32px]"
+              >
+                今日
+              </button>
+            )}
+          </div>
           <button
             onClick={() => changeMonth(1)}
-            className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+            className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors min-h-[44px]"
+            aria-label="次月"
           >
             <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" />
           </button>

@@ -123,9 +123,9 @@ function Layout(): JSX.Element {
                 weekday: 'short',
               })}
             </p>
-            <h1 className="text-xl font-bold font-heading text-foreground">
-              {greeting}、<br />
-              {user?.name || 'スタッフ'}さん
+            <h1 className="text-lg font-bold font-heading text-foreground leading-tight">
+              <span className="whitespace-nowrap">{greeting}、</span>
+              <span className="whitespace-nowrap">{user?.name || 'スタッフ'}さん</span>
             </h1>
           </div>
           <BusinessTypeSwitcher />

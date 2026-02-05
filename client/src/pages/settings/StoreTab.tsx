@@ -705,36 +705,36 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                         className="flex items-center justify-between p-2 hover:bg-muted/30 rounded-lg group"
                       >
                         <span className="text-xs text-muted-foreground flex-1">{item.item_label}</span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5">
                           <button
                             onClick={(e) => handleReorderTrainingItem(category, item.id, 'up', e)}
                             disabled={index === 0}
-                            className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed min-w-[40px] min-h-[40px] flex items-center justify-center"
                             aria-label={`${item.item_label}を上に移動`}
                           >
-                            <Icon icon="solar:alt-arrow-up-linear" width="14" height="14" />
+                            <Icon icon="solar:alt-arrow-up-linear" width="16" height="16" />
                           </button>
                           <button
                             onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
                             disabled={index === items.length - 1}
-                            className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed min-w-[40px] min-h-[40px] flex items-center justify-center"
                             aria-label={`${item.item_label}を下に移動`}
                           >
-                            <Icon icon="solar:alt-arrow-down-linear" width="14" height="14" />
+                            <Icon icon="solar:alt-arrow-down-linear" width="16" height="16" />
                           </button>
                           <button
                             onClick={() => navigate(`/settings/training/${item.id}`)}
-                            className="p-1.5 text-muted-foreground rounded hover:bg-muted transition-colors"
+                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                             aria-label={`${item.item_label}を編集`}
                           >
-                            <Icon icon="solar:pen-bold" width="14" height="14" />
+                            <Icon icon="solar:pen-bold" width="16" height="16" />
                           </button>
                           <button
                             onClick={(e) => handleDeleteTrainingItem(item.id, e)}
-                            className="p-1.5 text-destructive rounded hover:bg-destructive/10 transition-colors"
+                            className="p-2 text-destructive rounded hover:bg-destructive/10 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                             aria-label={`${item.item_label}を削除`}
                           >
-                            <Icon icon="solar:trash-bin-minimalistic-bold" width="14" height="14" />
+                            <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
                           </button>
                         </div>
                       </div>

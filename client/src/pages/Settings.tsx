@@ -121,15 +121,15 @@ function Settings() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2.5 px-1 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-0.5 min-h-[44px] ${
+              className={`flex-1 py-2 px-1.5 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center justify-center gap-0.5 min-h-[52px] whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
                   : 'text-muted-foreground font-normal'
               }`}
               aria-pressed={activeTab === tab.id}
             >
-              <Icon icon={tab.icon} width="16" height="16" />
-              {tab.label}
+              <Icon icon={tab.icon} width="18" height="18" />
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
