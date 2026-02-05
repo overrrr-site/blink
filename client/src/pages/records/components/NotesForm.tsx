@@ -1,13 +1,34 @@
 import type { NotesData } from '@/types/record'
+import AISuggestion from './AISuggestion'
+import type { AISuggestionData } from '@/types/ai'
 
 interface NotesFormProps {
   data: NotesData
   onChange: (data: NotesData) => void
+  aiSuggestion?: AISuggestionData | null
+  onAISuggestionAction?: () => void
+  onAISuggestionDismiss?: () => void
 }
 
-export default function NotesForm({ data, onChange }: NotesFormProps) {
+export default function NotesForm({
+  data,
+  onChange,
+  aiSuggestion,
+  onAISuggestionAction,
+  onAISuggestionDismiss,
+}: NotesFormProps) {
   return (
     <div className="space-y-4">
+      {aiSuggestion && !aiSuggestion.dismissed && !aiSuggestion.applied && (
+        <AISuggestion
+          message={aiSuggestion.message}
+          preview={aiSuggestion.preview}
+          variant={aiSuggestion.variant}
+          actionLabel={aiSuggestion.actionLabel}
+          onApply={() => onAISuggestionAction?.()}
+          onDismiss={() => onAISuggestionDismiss?.()}
+        />
+      )}
       {/* 内部メモ */}
       <div>
         <label className="text-sm font-medium text-slate-700 mb-1 block">

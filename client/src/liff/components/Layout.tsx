@@ -1,12 +1,14 @@
 import { Icon } from '../../components/Icon'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
+import { getRecordLabel } from '../../utils/businessTypeColors';
 import logoImage from '../../assets/logo.png';
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { owner } = useLiffAuthStore();
+  const recordLabel = getRecordLabel(owner?.primaryBusinessType);
 
   const isActive = (path: string) => {
     if (path === '/home') {
@@ -71,7 +73,7 @@ export default function Layout() {
           <NavButton
             onClick={() => navigate('/home/records')}
             icon="solar:clipboard-text-bold"
-            label="カルテ"
+            label={recordLabel}
             isActive={isActive('/home/records')}
           />
           <NavButton

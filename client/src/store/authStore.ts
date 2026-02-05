@@ -3,12 +3,17 @@ import axios from 'axios'
 import { supabase } from '../lib/supabase'
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
 
+import type { RecordType } from '../types/record'
+
 interface StaffUser {
   id: number
   email: string
   name: string
   storeId: number
   isOwner: boolean
+  businessTypes?: RecordType[]
+  primaryBusinessType?: RecordType
+  onboardingCompleted?: boolean
 }
 
 interface AuthState {

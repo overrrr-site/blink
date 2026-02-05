@@ -40,6 +40,9 @@ interface BusinessHoursPayload {
 
 interface StoreSettings {
   max_capacity: number
+  ai_assistant_enabled?: boolean
+  ai_store_data_contribution?: boolean
+  ai_service_improvement?: boolean
 }
 
 interface StaffItem {

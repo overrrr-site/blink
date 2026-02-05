@@ -66,7 +66,8 @@ const OwnerCard = React.memo(function OwnerCard({
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Icon icon="solar:paw-print-bold"
-                    className="size-4 text-muted-foreground" />
+                    width={16} height={16}
+                    className="text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -78,7 +79,8 @@ const OwnerCard = React.memo(function OwnerCard({
           )}
         </div>
         <Icon icon="solar:alt-arrow-right-linear"
-          className="size-6 text-muted-foreground"
+          width={24} height={24}
+          className="text-muted-foreground"
           aria-hidden="true" />
       </div>
     </button>
@@ -108,7 +110,8 @@ const DogCard = React.memo(function DogCard({
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Icon icon="solar:paw-print-bold"
-                className="size-6 text-muted-foreground" />
+                width={24} height={24}
+                className="text-muted-foreground" />
             </div>
           )}
         </div>
@@ -120,7 +123,8 @@ const DogCard = React.memo(function DogCard({
           <p className="text-xs text-muted-foreground">{dog.owner_name} 様</p>
         </div>
         <Icon icon="solar:alt-arrow-right-linear"
-          className="size-6 text-muted-foreground"
+          width={24} height={24}
+          className="text-muted-foreground"
           aria-hidden="true" />
       </div>
     </button>
@@ -189,7 +193,8 @@ const Customers = () => {
         {/* 検索バー */}
         <div className="relative">
           <Icon icon="solar:magnifer-linear"
-            className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+            width={20} height={20}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
@@ -203,7 +208,7 @@ const Customers = () => {
               onClick={() => setSearchQuery('')}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
             >
-              <Icon icon="solar:close-circle-bold" className="size-5" />
+              <Icon icon="solar:close-circle-bold" width={20} height={20} />
             </button>
           )}
         </div>
@@ -220,7 +225,7 @@ const Customers = () => {
             aria-label="飼い主一覧を表示"
             aria-pressed={viewMode === 'owners'}
           >
-            <Icon icon="solar:user-bold" className="mr-1.5" />
+            <Icon icon="solar:user-bold" width={16} height={16} className="mr-1.5 inline-block" />
             飼い主
           </button>
           <button
@@ -233,7 +238,7 @@ const Customers = () => {
             aria-label="ワンちゃん一覧を表示"
             aria-pressed={viewMode === 'dogs'}
           >
-            <Icon icon="solar:paw-print-bold" className="mr-1.5" />
+            <Icon icon="solar:paw-print-bold" width={16} height={16} className="mr-1.5 inline-block" />
             ワンちゃん
           </button>
         </div>

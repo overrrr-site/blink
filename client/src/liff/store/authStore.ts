@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { RecordType } from '../../types/record';
 
 interface Owner {
   id: number;
@@ -7,6 +8,7 @@ interface Owner {
   storeName: string;
   storeAddress: string;
   lineUserId: string;
+  primaryBusinessType?: RecordType;
 }
 
 interface AuthState {

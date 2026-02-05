@@ -8,9 +8,11 @@ import { scanQRCode } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import { getAvatarUrl } from '../../utils/image';
 import { getAxiosErrorMessage } from '../../utils/error';
+import { getRecordLabel } from '../../utils/businessTypeColors';
 import useSWR from 'swr';
 import { liffFetcher } from '../lib/swr';
 import { LazyImage } from '../../components/LazyImage';
+import type { RecordType } from '../../types/record';
 
 interface OwnerData {
   id: number;
@@ -19,6 +21,7 @@ interface OwnerData {
   store_name: string;
   store_address: string;
   line_id: string;
+  primary_business_type?: RecordType;
   dogs: Array<{
     id: number;
     name: string;
@@ -98,6 +101,8 @@ export default function Home() {
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
 
+  const recordLabel = getRecordLabel(data?.primary_business_type);
+
   useEffect(() => {
     if (data && token) {
       setAuth(token, {
@@ -107,6 +112,7 @@ export default function Home() {
         storeName: data.store_name || '',
         storeAddress: data.store_address || '',
         lineUserId: data.line_id || owner?.lineUserId || '',
+        primaryBusinessType: data.primary_business_type,
       });
     }
   }, [data, owner?.lineUserId, setAuth, token]);
@@ -463,8 +469,8 @@ export default function Home() {
           icon="solar:clipboard-text-bold"
           iconBgColor="bg-chart-3/10"
           iconColor="text-chart-3"
-          title="カルテ"
-          description="施術カルテ・写真を確認"
+          title={recordLabel}
+          description={`${recordLabel}・写真を確認`}
         />
 
         <MenuCard
@@ -532,10 +538,10 @@ export default function Home() {
             onClick={() => navigate('/home/records')}
             className="flex-1 bg-muted text-foreground py-3 rounded-xl text-sm font-bold
                        flex items-center justify-center gap-2 active:scale-95 transition-transform"
-            aria-label="カルテを見る"
+            aria-label={`${recordLabel}を見る`}
           >
             <Icon icon="solar:clipboard-text-bold" width="20" height="20" />
-            カルテを見る
+            {recordLabel}を見る
           </button>
         </div>
       </section>

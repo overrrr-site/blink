@@ -4,8 +4,12 @@ import { Icon } from '../../components/Icon'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { getAvatarUrl, getDetailThumbnailUrl } from '../../utils/image'
+import { getRecordLabel } from '../../utils/businessTypeColors'
 import { liffFetcher } from '../lib/swr'
+import { useLiffAuthStore } from '../store/authStore'
 import { LazyImage } from '../../components/LazyImage'
+import { normalizePhotosData } from '../../utils/recordPhotos'
+import type { PhotosData } from '../../types/record'
 
 interface RecordData {
   id: number
@@ -19,7 +23,7 @@ interface RecordData {
   grooming_data: { selectedParts: string[]; partNotes: Record<string, string> } | null
   daycare_data: { activities: string[] } | null
   hotel_data: { check_in: string; check_out_scheduled: string; nights: number; special_care?: string; daily_notes?: Record<string, string> } | null
-  photos: { regular: string[]; concerns: Array<{ url: string; label?: string }> } | null
+  photos: PhotosData | null
   notes: { internal_notes: string | null; report_text: string | null } | null
   condition: { overall: string } | null
   health_check: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string } | null
@@ -57,6 +61,8 @@ const ACTIVITY_LABELS: Record<string, { label: string; emoji: string }> = {
 export default function RecordDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const primaryBusinessType = useLiffAuthStore((s) => s.owner?.primaryBusinessType)
+  const recordLabel = getRecordLabel(primaryBusinessType)
 
   const { data: record, isLoading, error } = useSWR<RecordData>(
     id ? `/records/${id}` : null,
@@ -75,7 +81,7 @@ export default function RecordDetail() {
     return (
       <div className="px-5 pt-6 pb-28 text-center">
         <Icon icon="solar:clipboard-remove-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
-        <p className="text-muted-foreground mb-4">カルテが見つかりません</p>
+        <p className="text-muted-foreground mb-4">{recordLabel}が見つかりません</p>
         <button onClick={() => navigate(-1)} className="text-primary text-sm font-medium">
           戻る
         </button>
@@ -84,8 +90,9 @@ export default function RecordDetail() {
   }
 
   const typeConfig = TYPE_CONFIG[record.record_type] || TYPE_CONFIG.daycare
-  const photoList = record.photos?.regular || []
-  const concerns = record.photos?.concerns || []
+  const normalizedPhotos = normalizePhotosData(record.photos || { regular: [], concerns: [] })
+  const photoList = normalizedPhotos.regular || []
+  const concerns = normalizedPhotos.concerns || []
 
   return (
     <div className="px-5 pt-6 pb-28">
@@ -98,7 +105,7 @@ export default function RecordDetail() {
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
-        <h1 className="text-lg font-bold font-heading flex-1">カルテ詳細</h1>
+        <h1 className="text-lg font-bold font-heading flex-1">{recordLabel}詳細</h1>
         <span
           className="text-xs font-bold px-3 py-1 rounded-full"
           style={{ background: `${typeConfig.color}15`, color: typeConfig.color }}
@@ -223,7 +230,7 @@ export default function RecordDetail() {
             {photoList.map((photo, idx) => (
               <LazyImage
                 key={idx}
-                src={getDetailThumbnailUrl(photo)}
+                src={getDetailThumbnailUrl(photo.url)}
                 alt={`${record.dog_name}の写真 ${idx + 1}`}
                 width={200}
                 height={200}

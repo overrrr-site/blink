@@ -25,7 +25,7 @@ export const recordsApi = {
       params: recordType ? { record_type: recordType } : undefined,
     }),
 
-  uploadPhoto: (id: number | string, data: { photo: string; type?: string; label?: string }) =>
+  uploadPhoto: (id: number | string, data: { photo: string; type?: string; label?: string; annotation?: { x: number; y: number } }) =>
     api.post(`/records/${id}/photos`, data),
 
   deletePhoto: (id: number | string, photoIndex: number, type?: string) =>

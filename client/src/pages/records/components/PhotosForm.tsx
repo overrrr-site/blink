@@ -1,14 +1,29 @@
 import { useRef } from 'react'
 import { Icon } from '@/components/Icon'
-import type { PhotosData } from '@/types/record'
+import type { PhotosData, ConcernPhoto } from '@/types/record'
+import AISuggestion from './AISuggestion'
+import type { AISuggestionData } from '@/types/ai'
+import { createLocalPhoto, createLocalConcernPhoto } from '@/utils/recordPhotos'
 
 interface PhotosFormProps {
   data: PhotosData
   onChange: (data: PhotosData) => void
   showConcerns?: boolean
+  aiSuggestion?: AISuggestionData | null
+  onAISuggestionAction?: () => void
+  onAISuggestionDismiss?: () => void
+  onPhotoAdded?: (photoUrl: string, type: 'regular' | 'concern') => void
 }
 
-export default function PhotosForm({ data, onChange, showConcerns }: PhotosFormProps) {
+export default function PhotosForm({
+  data,
+  onChange,
+  showConcerns,
+  aiSuggestion,
+  onAISuggestionAction,
+  onAISuggestionDismiss,
+  onPhotoAdded,
+}: PhotosFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const concernFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -21,16 +36,19 @@ export default function PhotosForm({ data, onChange, showConcerns }: PhotosFormP
       reader.onload = (ev) => {
         const base64 = ev.target?.result as string
         if (type === 'regular') {
-          onChange({
+          const next = {
             ...data,
-            regular: [...(data.regular || []), base64],
-          })
+            regular: [...(data.regular || []), createLocalPhoto(base64)],
+          }
+          onChange(next)
         } else {
-          onChange({
+          const next = {
             ...data,
-            concerns: [...(data.concerns || []), { url: base64, label: '' }],
-          })
+            concerns: [...(data.concerns || []), createLocalConcernPhoto(base64, '')],
+          }
+          onChange(next)
         }
+        onPhotoAdded?.(base64, type)
       }
       reader.readAsDataURL(file)
     })
@@ -50,8 +68,29 @@ export default function PhotosForm({ data, onChange, showConcerns }: PhotosFormP
     onChange({ ...data, concerns: updated })
   }
 
+  const handleAnnotate = (index: number, event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = ((event.clientX - rect.left) / rect.width) * 100
+    const y = ((event.clientY - rect.top) / rect.height) * 100
+    const updated = [...(data.concerns || [])]
+    const current = updated[index]
+    if (!current) return
+    updated[index] = { ...current, annotation: { x: Math.round(x), y: Math.round(y) } } as ConcernPhoto
+    onChange({ ...data, concerns: updated })
+  }
+
   return (
     <div className="space-y-4">
+      {aiSuggestion && !aiSuggestion.dismissed && !aiSuggestion.applied && (
+        <AISuggestion
+          message={aiSuggestion.message}
+          preview={aiSuggestion.preview}
+          variant={aiSuggestion.variant}
+          actionLabel={aiSuggestion.actionLabel}
+          onApply={() => onAISuggestionAction?.()}
+          onDismiss={() => onAISuggestionDismiss?.()}
+        />
+      )}
       {/* 仕上がり写真 */}
       <div>
         <p className="text-sm font-medium text-slate-700 mb-2">仕上がり写真</p>
@@ -59,7 +98,7 @@ export default function PhotosForm({ data, onChange, showConcerns }: PhotosFormP
           {(data.regular || []).map((photo, index) => (
             <div key={index} className="relative">
               <img
-                src={photo}
+                src={photo.url}
                 alt={`写真 ${index + 1}`}
                 className="size-20 rounded-xl object-cover"
               />
@@ -97,11 +136,28 @@ export default function PhotosForm({ data, onChange, showConcerns }: PhotosFormP
           <div className="flex flex-wrap gap-2">
             {(data.concerns || []).map((concern, index) => (
               <div key={index} className="relative">
-                <img
-                  src={concern.url}
-                  alt={concern.label || `気になる箇所 ${index + 1}`}
-                  className="size-[90px] rounded-xl object-cover"
-                />
+                <button
+                  type="button"
+                  onClick={(event) => handleAnnotate(index, event)}
+                  className="relative size-[90px] rounded-xl overflow-hidden"
+                  aria-label="気になる箇所を注釈"
+                >
+                  <img
+                    src={concern.url}
+                    alt={concern.label || `気になる箇所 ${index + 1}`}
+                    className="size-full object-cover"
+                  />
+                  {concern.annotation && (
+                    <div
+                      className="absolute size-8 rounded-full border-[3px] border-red-500"
+                      style={{
+                        left: `${concern.annotation.x}%`,
+                        top: `${concern.annotation.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                    />
+                  )}
+                </button>
                 <div className="absolute inset-x-0 bottom-0 bg-black/60 rounded-b-xl px-2 py-1">
                   <input
                     type="text"

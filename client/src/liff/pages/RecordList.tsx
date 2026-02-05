@@ -4,8 +4,12 @@ import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { getAvatarUrl, getListThumbnailUrl } from '../../utils/image'
+import { getRecordLabel } from '../../utils/businessTypeColors'
 import { usePaginatedData } from '../hooks/usePaginatedData'
+import { useLiffAuthStore } from '../store/authStore'
 import { LazyImage } from '../../components/LazyImage'
+import { normalizePhotosData } from '../../utils/recordPhotos'
+import type { PhotosData } from '../../types/record'
 
 interface LiffRecord {
   id: number
@@ -15,7 +19,7 @@ interface LiffRecord {
   dog_photo: string
   staff_name: string
   notes: { report_text?: string | null } | null
-  photos: { regular?: string[] } | null
+  photos: PhotosData | null
   condition: { overall?: string } | null
   shared_at: string
 }
@@ -29,6 +33,8 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }
 export default function RecordList() {
   const navigate = useNavigate()
   const [refreshing, setRefreshing] = useState(false)
+  const primaryBusinessType = useLiffAuthStore((s) => s.owner?.primaryBusinessType)
+  const recordLabel = getRecordLabel(primaryBusinessType)
   const {
     data: records,
     isLoading,
@@ -69,7 +75,7 @@ export default function RecordList() {
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
-        <h1 className="text-lg font-bold font-heading flex-1">カルテ一覧</h1>
+        <h1 className="text-lg font-bold font-heading flex-1">{recordLabel}一覧</h1>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -90,18 +96,19 @@ export default function RecordList() {
       {records.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 border border-border shadow-sm text-center">
           <Icon icon="solar:clipboard-text-linear" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-2">カルテがまだありません</p>
+          <p className="text-muted-foreground mb-2">{recordLabel}がまだありません</p>
           <p className="text-xs text-muted-foreground">
-            施術・登園後にスタッフがカルテを作成・共有します
+            施術・登園後にスタッフが{recordLabel}を作成・共有します
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">{records.length}件のカルテ</p>
+          <p className="text-xs text-muted-foreground">{records.length}件の{recordLabel}</p>
 
           {records.map((record) => {
             const typeConfig = TYPE_CONFIG[record.record_type] || TYPE_CONFIG.daycare
-            const photoList = record.photos?.regular || []
+            const normalizedPhotos = normalizePhotosData(record.photos || { regular: [], concerns: [] })
+            const photoList = normalizedPhotos.regular || []
             const reportText = record.notes?.report_text || ''
 
             return (
@@ -109,7 +116,7 @@ export default function RecordList() {
                 key={record.id}
                 onClick={() => navigate(`/home/records/${record.id}`)}
                 className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:bg-muted/50 active:bg-muted active:scale-[0.99] transition-all"
-                aria-label={`${record.dog_name}の${format(new Date(record.record_date), 'M月d日')}のカルテを見る`}
+                aria-label={`${record.dog_name}の${format(new Date(record.record_date), 'M月d日')}の${recordLabel}を見る`}
               >
                 <div className="flex items-center gap-3 mb-3">
                   {record.dog_photo ? (
@@ -158,7 +165,7 @@ export default function RecordList() {
                     {photoList.slice(0, 3).map((photo, idx) => (
                       <div key={idx} className="relative">
                         <LazyImage
-                          src={getListThumbnailUrl(photo)}
+                          src={getListThumbnailUrl(photo.url)}
                           alt={`${record.dog_name}の写真 ${idx + 1}`}
                           width={80}
                           height={80}

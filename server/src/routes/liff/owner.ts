@@ -22,9 +22,10 @@ router.get('/me', async function(req, res) {
 
     // パフォーマンス改善: 飼い主情報と犬情報を並列取得
     const [ownerResult, dogsResult, nextReservationResult, contractsResult] = await Promise.all([
-      // 飼い主情報と店舗情報を取得
+      // 飼い主情報と店舗情報を取得（業態情報含む）
       timedQuery('owner', () => pool.query(
-        `SELECT o.*, s.name as store_name, s.address as store_address
+        `SELECT o.*, s.name as store_name, s.address as store_address,
+                s.primary_business_type, s.business_types
          FROM owners o
          JOIN stores s ON o.store_id = s.id
          WHERE o.id = $1 AND o.store_id = $2`,

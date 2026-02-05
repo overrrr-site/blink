@@ -46,6 +46,8 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
     front_legs: '前足',
     back_legs: '後足',
     hip: 'お尻',
+    belly: 'お腹',
+    paws: '肉球',
   }
 
   return (

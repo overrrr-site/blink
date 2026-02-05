@@ -6,6 +6,8 @@ import AlertsModal from '../components/AlertsModal'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { getAvatarUrl } from '../utils/image'
+import { getRecordLabel } from '../utils/businessTypeColors'
+import { useAuthStore } from '../store/authStore'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 
@@ -119,6 +121,7 @@ const ReservationCard = React.memo(function ReservationCard({
   onNavigateDog,
   onNavigateJournal,
   checkingIn,
+  recordLabel,
 }: {
   reservation: Reservation
   isExpanded: boolean
@@ -129,6 +132,7 @@ const ReservationCard = React.memo(function ReservationCard({
   onNavigateDog: (id: number) => void
   onNavigateJournal: (id: number) => void
   checkingIn: number | null
+  recordLabel: string
 }) {
   const displayStatus = getDisplayStatus(reservation)
   const isWaiting = displayStatus === '来園待ち'
@@ -194,10 +198,10 @@ const ReservationCard = React.memo(function ReservationCard({
             <button
               onClick={() => onNavigateJournal(reservation.id)}
               className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
-              aria-label="カルテを作成"
+              aria-label={`${recordLabel}を作成`}
             >
               <Icon icon="solar:clipboard-add-bold" className="size-4" />
-              カルテ
+              {recordLabel}
             </button>
           )}
           {isPresent && reservation.has_journal && (
@@ -287,7 +291,7 @@ const ReservationCard = React.memo(function ReservationCard({
               className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
             >
               <Icon icon="solar:document-text-bold" className="size-4" />
-              カルテ
+              {recordLabel}
             </button>
           </div>
         </div>
@@ -343,6 +347,8 @@ function Dashboard(): JSX.Element {
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const navigate = useNavigate()
+  const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
+  const recordLabel = getRecordLabel(primaryBusinessType)
 
   const { data, isLoading, mutate } = useSWR<DashboardData>('/dashboard', fetcher, {
     revalidateOnFocus: true,
@@ -547,6 +553,7 @@ function Dashboard(): JSX.Element {
                       onNavigateDog={handleNavigateDog}
                       onNavigateJournal={handleNavigateJournalCreate}
                       checkingIn={checkingIn}
+                      recordLabel={recordLabel}
                     />
                   ))}
                 </div>
@@ -570,14 +577,14 @@ function Dashboard(): JSX.Element {
             description={data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
           />
 
-          {/* 未入力のカルテ */}
+          {/* 未入力のカルテ/連絡帳 */}
           {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
             <QuickActionCard
               onClick={handleNavigateNewRecords}
               icon="solar:clipboard-text-bold"
               iconClassName="bg-destructive/20 text-destructive"
               containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
-              title="未入力のカルテ"
+              title={`未入力の${recordLabel}`}
               titleClassName="text-destructive"
               description={`${data.incompleteJournals.slice(0, 2).map((j) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
               badge={(

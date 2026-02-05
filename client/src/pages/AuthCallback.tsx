@@ -6,8 +6,18 @@ import { useAuthStore } from '../store/authStore'
 
 const AuthCallback = () => {
   const navigate = useNavigate()
-  const { fetchStaffInfo } = useAuthStore()
+  const { fetchStaffInfo, user } = useAuthStore()
   const [error, setError] = useState<string | null>(null)
+
+  // オンボーディング状態に基づいてリダイレクト先を決定
+  const getRedirectPath = () => {
+    // fetchStaffInfo後にuserが更新されるので、最新の状態をストアから取得
+    const currentUser = useAuthStore.getState().user
+    if (currentUser && currentUser.onboardingCompleted === false) {
+      return '/onboarding'
+    }
+    return '/dashboard'
+  }
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -41,8 +51,8 @@ const AuthCallback = () => {
             if (data.session) {
               // スタッフ情報を取得
               await fetchStaffInfo(data.session.access_token)
-              // ダッシュボードにリダイレクト
-              navigate('/dashboard', { replace: true })
+              // オンボーディング状態に基づいてリダイレクト
+              navigate(getRedirectPath(), { replace: true })
               return
             }
           }
@@ -53,8 +63,8 @@ const AuthCallback = () => {
         // スタッフ情報を取得
         await fetchStaffInfo(session.access_token)
 
-        // ダッシュボードにリダイレクト
-        navigate('/dashboard', { replace: true })
+        // オンボーディング状態に基づいてリダイレクト
+        navigate(getRedirectPath(), { replace: true })
       } catch (err) {
         setError(err instanceof Error ? err.message : '認証に失敗しました')
         // 3秒後にログインページにリダイレクト

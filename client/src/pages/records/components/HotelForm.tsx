@@ -15,33 +15,6 @@ export default function HotelForm({ data, onChange }: HotelFormProps) {
     onChange({ ...data, [key]: value })
   }
 
-  const handleDailyNote = (date: string, value: string) => {
-    onChange({
-      ...data,
-      daily_notes: { ...(data.daily_notes || {}), [date]: value },
-    })
-  }
-
-  // Generate date list for daily notes
-  const getDates = (): string[] => {
-    if (!data.check_in) return []
-    const dates: string[] = []
-    const start = new Date(data.check_in)
-    for (let i = 0; i < nights; i++) {
-      const d = new Date(start)
-      d.setDate(d.getDate() + i)
-      dates.push(d.toISOString().split('T')[0])
-    }
-    return dates
-  }
-
-  const formatDate = (dateStr: string): string => {
-    const d = new Date(dateStr)
-    return `${d.getMonth() + 1}/${d.getDate()}（${['日', '月', '火', '水', '木', '金', '土'][d.getDay()]}）`
-  }
-
-  const dates = getDates()
-
   return (
     <div className="space-y-4">
       {/* Check-in / Check-out */}
@@ -109,46 +82,6 @@ export default function HotelForm({ data, onChange }: HotelFormProps) {
         </div>
       </div>
 
-      {/* Special Care */}
-      <div>
-        <label className="text-xs font-medium text-slate-500 mb-1 block">特別ケア・注意事項</label>
-        <textarea
-          value={data.special_care || ''}
-          onChange={(e) => handleFieldChange('special_care', e.target.value)}
-          placeholder="食事の好み、服薬情報、苦手なことなど"
-          rows={3}
-          className="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm border-none focus:outline-none focus:ring-2 focus:ring-cyan-200 resize-none"
-        />
-      </div>
-
-      {/* Daily Notes */}
-      {dates.length > 0 && (
-        <div>
-          <p className="text-sm font-medium text-slate-700 mb-2">デイリーノート</p>
-          <div className="space-y-2">
-            {dates.map((date, index) => (
-              <div key={date}>
-                <label className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                  <span
-                    className="inline-flex items-center justify-center size-5 rounded-full text-[10px] font-bold text-white"
-                    style={{ background: HOTEL_COLOR }}
-                  >
-                    {index + 1}
-                  </span>
-                  {formatDate(date)}
-                </label>
-                <textarea
-                  value={data.daily_notes?.[date] || ''}
-                  onChange={(e) => handleDailyNote(date, e.target.value)}
-                  placeholder="この日の様子を記録..."
-                  rows={2}
-                  className="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm border-none focus:outline-none focus:ring-2 focus:ring-cyan-200 resize-none"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

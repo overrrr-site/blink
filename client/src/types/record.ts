@@ -31,11 +31,19 @@ export interface HotelData {
 }
 
 export interface PhotosData {
-  regular: string[]
-  concerns: Array<{
-    url: string
-    label?: string
-  }>
+  regular: Photo[]
+  concerns: ConcernPhoto[]
+}
+
+export interface Photo {
+  id: string
+  url: string
+  uploadedAt: string
+}
+
+export interface ConcernPhoto extends Photo {
+  label?: string
+  annotation?: { x: number; y: number }
 }
 
 export interface NotesData {

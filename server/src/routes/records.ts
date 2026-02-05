@@ -1,4 +1,5 @@
 import express from 'express';
+import { randomUUID } from 'crypto';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { cacheControl } from '../middleware/cache.js';
@@ -22,77 +23,101 @@ function serializeJsonOrNull(value: unknown): string | null {
   return JSON.stringify(value);
 }
 
-/**
- * 写真配列を処理し、Base64データをSupabase Storageにアップロード
- */
-async function processPhotos(photos: string[] | null): Promise<string[] | null> {
-  if (!photos || photos.length === 0) {
-    return null;
+type PhotoInput = string | { id?: string; url: string; uploadedAt?: string };
+type ConcernInput = string | { id?: string; url: string; uploadedAt?: string; label?: string; annotation?: { x: number; y: number } };
+
+function createId(): string {
+  return typeof randomUUID === 'function'
+    ? randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizePhotoItem(item: PhotoInput): { id: string; url: string; uploadedAt: string } | null {
+  if (typeof item === 'string') {
+    return { id: createId(), url: item, uploadedAt: new Date().toISOString() };
   }
+  if (item && typeof item === 'object' && typeof item.url === 'string') {
+    return {
+      id: item.id || createId(),
+      url: item.url,
+      uploadedAt: item.uploadedAt || new Date().toISOString(),
+    };
+  }
+  return null;
+}
 
-  const storageAvailable = isSupabaseStorageAvailable();
+function normalizeConcernItem(item: ConcernInput): { id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } } | null {
+  if (typeof item === 'string') {
+    return { id: createId(), url: item, uploadedAt: new Date().toISOString() };
+  }
+  if (item && typeof item === 'object' && typeof item.url === 'string') {
+    return {
+      id: item.id || createId(),
+      url: item.url,
+      uploadedAt: item.uploadedAt || new Date().toISOString(),
+      label: item.label,
+      annotation: item.annotation,
+    };
+  }
+  return null;
+}
 
-  const processed = await Promise.all(
-    photos.map(async (photo) => {
-      if (photo.startsWith('http')) {
-        return photo;
-      }
-      if (photo.startsWith('data:image/')) {
-        if (storageAvailable) {
-          const result = await uploadBase64ToSupabaseStorage(photo, 'records');
-          if (result) {
-            return result.url;
-          }
-          console.warn('Failed to upload photo to Supabase Storage');
-          return null;
-        }
-        console.warn('Supabase Storage is not available, storing Base64 directly');
-        return photo;
-      }
-      return null;
-    })
-  );
+function normalizeStoredPhotos(photos: { regular?: PhotoInput[]; concerns?: ConcernInput[] } | null | undefined) {
+  const regular: Array<{ id: string; url: string; uploadedAt: string }> = [];
+  const concerns: Array<{ id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } }> = [];
 
-  const processedUrls = processed.filter((url): url is string => url !== null);
-  return processedUrls.length > 0 ? processedUrls : null;
+  (photos?.regular || []).forEach((item) => {
+    const normalized = normalizePhotoItem(item);
+    if (normalized) regular.push(normalized);
+  });
+
+  (photos?.concerns || []).forEach((item) => {
+    const normalized = normalizeConcernItem(item);
+    if (normalized) concerns.push(normalized);
+  });
+
+  return { regular, concerns };
 }
 
 /**
- * photos JSONB内の写真（regular/concerns）を処理
+ * 写真配列を処理し、Base64データをSupabase Storageにアップロード
  */
 async function processRecordPhotos(
-  photosData: { regular?: string[]; concerns?: Array<{ url: string; label?: string }> } | null
-): Promise<{ regular: string[]; concerns: Array<{ url: string; label?: string }> } | null> {
+  photosData: { regular?: PhotoInput[]; concerns?: ConcernInput[] } | null
+): Promise<{ regular: Array<{ id: string; url: string; uploadedAt: string }>; concerns: Array<{ id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } }> } | null> {
   if (!photosData) return null;
 
-  const result: { regular: string[]; concerns: Array<{ url: string; label?: string }> } = {
-    regular: [],
-    concerns: [],
-  };
+  const storageAvailable = isSupabaseStorageAvailable();
+  const result = { regular: [] as Array<{ id: string; url: string; uploadedAt: string }>, concerns: [] as Array<{ id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } }> };
 
-  // regular写真の処理
   if (photosData.regular && photosData.regular.length > 0) {
-    const processed = await processPhotos(photosData.regular);
-    result.regular = processed || [];
+    for (const item of photosData.regular) {
+      const normalized = normalizePhotoItem(item);
+      if (!normalized) continue;
+      if (normalized.url.startsWith('data:image/') && storageAvailable) {
+        const uploaded = await uploadBase64ToSupabaseStorage(normalized.url, 'records');
+        if (uploaded) {
+          result.regular.push({ ...normalized, url: uploaded.url });
+          continue;
+        }
+      }
+      result.regular.push(normalized);
+    }
   }
 
-  // concerns写真の処理
   if (photosData.concerns && photosData.concerns.length > 0) {
-    const storageAvailable = isSupabaseStorageAvailable();
-    result.concerns = await Promise.all(
-      photosData.concerns.map(async (concern) => {
-        if (concern.url.startsWith('http')) {
-          return concern;
+    for (const item of photosData.concerns) {
+      const normalized = normalizeConcernItem(item);
+      if (!normalized) continue;
+      if (normalized.url.startsWith('data:image/') && storageAvailable) {
+        const uploaded = await uploadBase64ToSupabaseStorage(normalized.url, 'records');
+        if (uploaded) {
+          result.concerns.push({ ...normalized, url: uploaded.url });
+          continue;
         }
-        if (concern.url.startsWith('data:image/') && storageAvailable) {
-          const uploaded = await uploadBase64ToSupabaseStorage(concern.url, 'records');
-          if (uploaded) {
-            return { ...concern, url: uploaded.url };
-          }
-        }
-        return concern;
-      })
-    );
+      }
+      result.concerns.push(normalized);
+    }
   }
 
   return result;
@@ -523,7 +548,7 @@ router.post('/:id/photos', async (req: AuthRequest, res) => {
     }
 
     const { id } = req.params;
-    const { photo, type = 'regular', label } = req.body;
+    const { photo, type = 'regular', label, annotation } = req.body;
 
     if (!photo) {
       sendBadRequest(res, '写真データが必要です');
@@ -552,14 +577,23 @@ router.post('/:id/photos', async (req: AuthRequest, res) => {
     }
 
     // 既存のphotos JSONBを更新
-    const currentPhotos = recordResult.rows[0].photos || { regular: [], concerns: [] };
+    const currentPhotos = normalizeStoredPhotos(recordResult.rows[0].photos || { regular: [], concerns: [] });
+    const uploadedAt = new Date().toISOString();
 
     if (type === 'concern') {
-      currentPhotos.concerns = currentPhotos.concerns || [];
-      currentPhotos.concerns.push({ url: photoUrl, label: label || '' });
+      currentPhotos.concerns.push({
+        id: createId(),
+        url: photoUrl,
+        uploadedAt,
+        label: label || '',
+        annotation: annotation && typeof annotation === 'object' ? annotation : undefined,
+      });
     } else {
-      currentPhotos.regular = currentPhotos.regular || [];
-      currentPhotos.regular.push(photoUrl);
+      currentPhotos.regular.push({
+        id: createId(),
+        url: photoUrl,
+        uploadedAt,
+      });
     }
 
     const result = await pool.query(
@@ -602,7 +636,7 @@ router.delete('/:id/photos/:photoIndex', async (req: AuthRequest, res) => {
       return;
     }
 
-    const currentPhotos = recordResult.rows[0].photos || { regular: [], concerns: [] };
+    const currentPhotos = normalizeStoredPhotos(recordResult.rows[0].photos || { regular: [], concerns: [] });
 
     if (type === 'concern') {
       if (currentPhotos.concerns && index < currentPhotos.concerns.length) {

@@ -38,6 +38,7 @@ const InspectionRecordList = lazy(() => import('./pages/InspectionRecordList'))
 const AnnouncementList = lazy(() => import('./pages/AnnouncementList'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Terms = lazy(() => import('./pages/Terms'))
+const Onboarding = lazy(() => import('./pages/Onboarding'))
 
 function PageLoader() {
   return (
@@ -89,6 +90,14 @@ function App() {
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<Terms />} />
+              <Route
+                path="/onboarding"
+                element={
+                  <PrivateRoute>
+                    <Onboarding />
+                  </PrivateRoute>
+                }
+              />
               <Route
                 element={
                   <PrivateRoute>

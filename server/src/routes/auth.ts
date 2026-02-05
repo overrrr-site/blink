@@ -14,12 +14,29 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'スタッフデータが設定されていません' });
     }
 
+    // 店舗の業態情報とオンボーディング状態を取得
+    let storeInfo = null;
+    if (req.storeId) {
+      const storeResult = await pool.query(
+        `SELECT business_types, primary_business_type, onboarding_completed FROM stores WHERE id = $1`,
+        [req.storeId]
+      );
+      if (storeResult.rows.length > 0) {
+        storeInfo = {
+          businessTypes: storeResult.rows[0].business_types || ['daycare'],
+          primaryBusinessType: storeResult.rows[0].primary_business_type || 'daycare',
+          onboardingCompleted: storeResult.rows[0].onboarding_completed ?? true,
+        };
+      }
+    }
+
     res.json({
       id: req.staffData.id,
       email: req.staffData.email,
       name: req.staffData.name,
       storeId: req.staffData.store_id,
       isOwner: req.staffData.is_owner,
+      ...storeInfo,
     });
   } catch (error: any) {
     sendServerError(res, 'スタッフ情報の取得に失敗しました', error);
@@ -111,6 +128,51 @@ router.post('/invite', authenticate, requireOwner, async (req: AuthRequest, res)
     });
   } catch (error) {
     sendServerError(res, 'スタッフの招待に失敗しました', error);
+  }
+});
+
+// オンボーディング完了（業態設定）
+router.post('/complete-onboarding', authenticate, requireOwner, async (req: AuthRequest, res) => {
+  try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    const { businessTypes, primaryBusinessType } = req.body;
+
+    if (!businessTypes || !Array.isArray(businessTypes) || businessTypes.length === 0) {
+      sendBadRequest(res, '業態を1つ以上選択してください');
+      return;
+    }
+
+    const validTypes = ['daycare', 'grooming', 'hotel'];
+    const invalidTypes = businessTypes.filter((t: string) => !validTypes.includes(t));
+    if (invalidTypes.length > 0) {
+      sendBadRequest(res, '無効な業態が含まれています');
+      return;
+    }
+
+    // primaryBusinessTypeが指定されていなければ最初の選択を使用
+    const primary = primaryBusinessType && businessTypes.includes(primaryBusinessType)
+      ? primaryBusinessType
+      : businessTypes[0];
+
+    await pool.query(
+      `UPDATE stores SET
+         business_types = $2,
+         primary_business_type = $3,
+         onboarding_completed = TRUE
+       WHERE id = $1`,
+      [req.storeId, businessTypes, primary]
+    );
+
+    res.json({
+      success: true,
+      businessTypes,
+      primaryBusinessType: primary,
+    });
+  } catch (error) {
+    sendServerError(res, 'オンボーディングの完了に失敗しました', error);
   }
 });
 

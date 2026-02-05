@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '@/components/Icon'
 
 const AI_COLOR = '#6366F1'
@@ -24,9 +24,18 @@ export default function AISettingsScreen({
 }: AISettingsScreenProps) {
   const [settings, setSettings] = useState<AISettings>({
     aiAssistantEnabled: initialSettings?.aiAssistantEnabled ?? true,
-    storeDataContribution: initialSettings?.storeDataContribution ?? false,
+    storeDataContribution: initialSettings?.storeDataContribution ?? true,
     serviceImprovement: initialSettings?.serviceImprovement ?? false,
   })
+
+  useEffect(() => {
+    if (!open) return
+    setSettings({
+      aiAssistantEnabled: initialSettings?.aiAssistantEnabled ?? true,
+      storeDataContribution: initialSettings?.storeDataContribution ?? true,
+      serviceImprovement: initialSettings?.serviceImprovement ?? false,
+    })
+  }, [open, initialSettings?.aiAssistantEnabled, initialSettings?.storeDataContribution, initialSettings?.serviceImprovement])
 
   if (!open) return null
 
@@ -131,6 +140,15 @@ export default function AISettingsScreen({
               AIアシスタントを無効にしても、既存のカルテデータには影響しません。
               データ活用設定はいつでも変更できます。
             </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+            <p className="text-xs font-semibold text-slate-600 mb-1">使用しない範囲</p>
+            <ul className="text-xs text-slate-500 leading-relaxed">
+              <li>外部AI（OpenAI等）のモデル学習</li>
+              <li>第三者への提供・販売</li>
+              <li>広告・マーケティング目的</li>
+            </ul>
           </div>
         </div>
 

@@ -1,4 +1,12 @@
 import type { HealthCheckData } from '@/types/record'
+import type { AISuggestionData } from '@/types/ai'
+import WeightGraph from './WeightGraph'
+import AISuggestion from './AISuggestion'
+
+interface WeightEntry {
+  date: string
+  weight: number
+}
 
 const HEALTH_ITEMS: Array<{
   key: keyof Omit<HealthCheckData, 'weight'>
@@ -14,13 +22,36 @@ const HEALTH_ITEMS: Array<{
 interface HealthCheckFormProps {
   data: HealthCheckData | null
   onChange: (data: HealthCheckData) => void
+  showWeightGraph?: boolean
+  weightHistory?: WeightEntry[]
+  aiSuggestion?: AISuggestionData | null
+  onAISuggestionAction?: () => void
+  onAISuggestionDismiss?: () => void
 }
 
-export default function HealthCheckForm({ data, onChange }: HealthCheckFormProps) {
+export default function HealthCheckForm({
+  data,
+  onChange,
+  showWeightGraph,
+  weightHistory = [],
+  aiSuggestion,
+  onAISuggestionAction,
+  onAISuggestionDismiss,
+}: HealthCheckFormProps) {
   const current = data || {}
 
   return (
     <div className="space-y-4">
+      {aiSuggestion && !aiSuggestion.dismissed && !aiSuggestion.applied && (
+        <AISuggestion
+          message={aiSuggestion.message}
+          preview={aiSuggestion.preview}
+          variant={aiSuggestion.variant}
+          actionLabel={aiSuggestion.actionLabel}
+          onApply={() => onAISuggestionAction?.()}
+          onDismiss={() => onAISuggestionDismiss?.()}
+        />
+      )}
       {/* 体重 */}
       <div>
         <label className="text-sm font-medium text-slate-700 mb-1 block">体重 (kg)</label>
@@ -36,6 +67,10 @@ export default function HealthCheckForm({ data, onChange }: HealthCheckFormProps
           className="w-32 px-3 py-2 bg-slate-50 rounded-lg text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-200"
         />
       </div>
+
+      {showWeightGraph && (weightHistory.length > 0 || current.weight) && (
+        <WeightGraph history={weightHistory} currentWeight={current.weight} />
+      )}
 
       {/* 健康チェック項目（2カラム） */}
       <div className="grid grid-cols-2 gap-3">

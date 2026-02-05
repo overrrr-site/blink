@@ -7,7 +7,8 @@ import type { PaginatedResponse } from '../types/api'
 import type { RecordItem, RecordType } from '../types/record'
 import { Pagination } from '../components/Pagination'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { getBusinessTypeColors, getBusinessTypeLabel } from '../utils/businessTypeColors'
+import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../utils/businessTypeColors'
+import { useAuthStore } from '../store/authStore'
 
 const PAGE_SIZE = 50
 
@@ -101,6 +102,8 @@ const RecordList = () => {
   const [selectedType, setSelectedType] = useState('')
   const [page, setPage] = useState(1)
   const navigate = useNavigate()
+  const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
+  const recordLabel = getRecordLabel(primaryBusinessType)
 
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
 
@@ -144,13 +147,13 @@ const RecordList = () => {
     <div className="pb-6">
       <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold font-heading text-foreground">カルテ一覧</h1>
+          <h1 className="text-2xl font-bold font-heading text-foreground">{recordLabel}一覧</h1>
           <button
             onClick={() => navigate('/records/new')}
             className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium active:bg-primary/90 transition-colors min-h-[44px]"
           >
             <Icon icon="solar:pen-new-square-bold" width="18" height="18" />
-            カルテ作成
+            {recordLabel}作成
           </button>
         </div>
 
@@ -168,7 +171,7 @@ const RecordList = () => {
               placeholder="ワンちゃん名・飼い主名で検索"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="カルテを検索"
+              aria-label={`${recordLabel}を検索`}
               className="w-full pl-10 pr-4 py-2.5 bg-muted border-none rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             {searchQuery && (
@@ -207,14 +210,14 @@ const RecordList = () => {
             <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
               <Icon icon="solar:clipboard-list-bold" width="40" height="40" className="text-muted-foreground" />
             </div>
-            <p className="text-lg font-medium text-foreground mb-2">カルテがありません</p>
-            <p className="text-sm text-muted-foreground mb-6">新規カルテを作成してください</p>
+            <p className="text-lg font-medium text-foreground mb-2">{recordLabel}がありません</p>
+            <p className="text-sm text-muted-foreground mb-6">新規{recordLabel}を作成してください</p>
             <button
               onClick={() => navigate('/records/new')}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium active:bg-primary/90 transition-colors"
             >
               <Icon icon="solar:pen-new-square-bold" width="20" height="20" />
-              カルテを作成
+              {recordLabel}を作成
             </button>
           </div>
         ) : (

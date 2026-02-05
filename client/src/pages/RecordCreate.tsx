@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import { recordsApi } from '../api/records'
+import api from '../api/client'
 import { useToast } from '../components/Toast'
-import { getBusinessTypeColors, getBusinessTypeLabel } from '../utils/businessTypeColors'
+import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../utils/businessTypeColors'
+import { useAuthStore } from '../store/authStore'
 import type {
   RecordType,
   RecordFormData,
@@ -16,6 +18,9 @@ import type {
   ConditionData,
   HealthCheckData,
 } from '../types/record'
+import type { AISuggestionData, AISuggestionType } from '../types/ai'
+import { normalizePhotosData } from '../utils/recordPhotos'
+import { validateRecord } from '../utils/recordValidation'
 import RecordHeader from './records/components/RecordHeader'
 import PetInfoCard from './records/components/PetInfoCard'
 import RequiredSection from './records/components/RequiredSection'
@@ -27,11 +32,12 @@ import PhotosForm from './records/components/PhotosForm'
 import NotesForm from './records/components/NotesForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
+import AISettingsScreen from './records/components/AISettingsScreen'
 
-function RecordTypeSelector({ recordType, onSelect }: { recordType: RecordType; onSelect: (t: RecordType) => void }) {
+function RecordTypeSelector({ recordType, onSelect, recordLabel }: { recordType: RecordType; onSelect: (t: RecordType) => void; recordLabel: string }) {
   return (
     <div className="mx-4 mt-4">
-      <p className="text-sm font-medium text-slate-500 mb-2">カルテ種別</p>
+      <p className="text-sm font-medium text-slate-500 mb-2">{recordLabel}種別</p>
       <div className="flex gap-2">
         {(['daycare', 'grooming', 'hotel'] as const).map((type) => {
           const colors = getBusinessTypeColors(type)
@@ -70,6 +76,8 @@ const RecordCreate = () => {
   const navigate = useNavigate()
   const { reservationId } = useParams()
   const { showToast } = useToast()
+  const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
+  const recordLabel = getRecordLabel(primaryBusinessType)
 
   // Dog selection
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
@@ -88,11 +96,30 @@ const RecordCreate = () => {
   const [saving, setSaving] = useState(false)
   const [copyLoading, setCopyLoading] = useState(false)
   const [collapsed, setCollapsed] = useState({ condition: true, health: true })
+  const [showAISettings, setShowAISettings] = useState(false)
+  const [aiSuggestions, setAiSuggestions] = useState<Record<AISuggestionType, AISuggestionData | null>>({
+    'photo-concern': null,
+    'health-history': null,
+    'report-draft': null,
+  })
 
   // Fetch dogs list
-  const { data: dogsData } = useSWR<{ data: Dog[] }>('/dogs?limit=200', fetcher)
-  const dogs = dogsData?.data ?? []
+  const { data: dogs = [] } = useSWR<Dog[]>('/dogs?limit=200', fetcher)
   const selectedDog = dogs.find((d) => d.id === selectedDogId)
+
+  interface StoreSettings {
+    ai_assistant_enabled?: boolean
+    ai_store_data_contribution?: boolean
+    ai_service_improvement?: boolean
+  }
+
+  const { data: storeSettings, mutate: mutateStoreSettings } = useSWR<StoreSettings>('/store-settings', fetcher, { revalidateOnFocus: false })
+
+  const aiSettings = useMemo(() => ({
+    aiAssistantEnabled: storeSettings?.ai_assistant_enabled ?? true,
+    storeDataContribution: storeSettings?.ai_store_data_contribution ?? true,
+    serviceImprovement: storeSettings?.ai_service_improvement ?? false,
+  }), [storeSettings?.ai_assistant_enabled, storeSettings?.ai_service_improvement, storeSettings?.ai_store_data_contribution])
 
   // Fetch reservation data if creating from reservation
   useSWR(
@@ -129,15 +156,58 @@ const RecordCreate = () => {
       if (prev.health_check) setHealthCheck(prev.health_check)
       showToast('前回のデータをコピーしました', 'success')
     } catch {
-      showToast('前回のカルテがありません', 'info')
+      showToast(`前回の${recordLabel}がありません`, 'info')
     } finally {
       setCopyLoading(false)
     }
   }, [selectedDogId, recordType, showToast])
 
+  useEffect(() => {
+    if (!aiSettings.aiAssistantEnabled) {
+      setAiSuggestions({ 'photo-concern': null, 'health-history': null, 'report-draft': null })
+    }
+  }, [aiSettings.aiAssistantEnabled])
+
+  useEffect(() => {
+    if (!aiSettings.aiAssistantEnabled) return
+    if (notes.report_text && notes.report_text.trim().length > 0) {
+      if (aiSuggestions['report-draft']) {
+        setAiSuggestions((prev) => ({ ...prev, 'report-draft': null }))
+      }
+      return
+    }
+    if (aiSuggestions['report-draft']?.dismissed) return
+    setAiSuggestions((prev) => ({
+      ...prev,
+      'report-draft': {
+        type: 'report-draft',
+        message: '入力内容から報告文を作成しました',
+        actionLabel: '下書きを使用',
+        variant: 'default',
+        preview: 'AIで報告文を生成できます',
+      },
+    }))
+  }, [aiSettings.aiAssistantEnabled, notes.report_text])
+
   const handleSave = async (shareAfter = false) => {
     if (!selectedDogId) {
       showToast('ワンちゃんを選択してください', 'error')
+      return
+    }
+
+    const validation = validateRecord({
+      recordType,
+      groomingData,
+      daycareData,
+      hotelData,
+      photos,
+      notes,
+      condition,
+      healthCheck,
+    }, shareAfter ? 'share' : 'save')
+
+    if (!validation.ok) {
+      showToast(validation.errors[0], 'error')
       return
     }
 
@@ -148,10 +218,10 @@ const RecordCreate = () => {
         reservation_id: reservationId ? parseInt(reservationId) : null,
         record_type: recordType,
         record_date: new Date().toISOString().split('T')[0],
-        daycare_data: recordType === 'daycare' ? daycareData : null,
-        grooming_data: recordType === 'grooming' ? groomingData : null,
-        hotel_data: recordType === 'hotel' ? hotelData : null,
-        photos,
+        daycare_data: recordType === 'daycare' ? daycareData : undefined,
+        grooming_data: recordType === 'grooming' ? groomingData : undefined,
+        hotel_data: recordType === 'hotel' ? hotelData : undefined,
+        photos: normalizePhotosData(photos),
         notes,
         condition,
         health_check: healthCheck,
@@ -163,9 +233,9 @@ const RecordCreate = () => {
 
       if (shareAfter) {
         await recordsApi.share(recordId)
-        showToast('カルテを共有しました', 'success')
+        showToast(`${recordLabel}を共有しました`, 'success')
       } else {
-        showToast('カルテを保存しました', 'success')
+        showToast(`${recordLabel}を保存しました`, 'success')
       }
 
       navigate(`/records/${recordId}`, { replace: true })
@@ -177,12 +247,97 @@ const RecordCreate = () => {
   }
 
   const handleShare = () => {
-    if (!notes.report_text || notes.report_text.trim().length < 10) {
-      showToast('報告文を10文字以上入力してください', 'error')
-      return
-    }
     if (confirm('飼い主に送信しますか？')) {
       handleSave(true)
+    }
+  }
+
+  const handleAISuggestionAction = async (type: AISuggestionType) => {
+    if (type === 'photo-concern') {
+      const suggestion = aiSuggestions['photo-concern']
+      const payload = suggestion?.payload as { photoUrl?: string; label?: string; annotation?: { x: number; y: number } } | undefined
+      if (payload?.photoUrl) {
+        setPhotos((prev) => ({
+          ...prev,
+          concerns: [
+            ...(prev.concerns || []),
+            {
+              id: `ai-${Date.now()}`,
+              url: payload.photoUrl,
+              uploadedAt: new Date().toISOString(),
+              label: payload.label || '気になる箇所',
+              annotation: payload.annotation,
+            },
+          ],
+        }))
+      }
+    }
+
+    if (type === 'health-history') {
+      setNotes((prev) => ({
+        ...prev,
+        report_text: `${prev.report_text || ''}\n\n耳の汚れが2回連続しています。継続的なケアをおすすめします。`.trim(),
+      }))
+    }
+
+    if (type === 'report-draft') {
+      if (!selectedDog) return
+      try {
+        const response = await api.post('/ai/generate-report', {
+          record_type: recordType,
+          dog_name: selectedDog.name,
+          grooming_data: recordType === 'grooming' ? groomingData : undefined,
+          daycare_data: recordType === 'daycare' ? daycareData : undefined,
+          hotel_data: recordType === 'hotel' ? hotelData : undefined,
+          condition,
+          health_check: healthCheck,
+          photos,
+          notes,
+        })
+        const report = response.data?.report
+        if (report) {
+          setNotes((prev) => ({ ...prev, report_text: report }))
+        }
+      } catch {
+        showToast('報告文の生成に失敗しました', 'error')
+        return
+      }
+    }
+
+    setAiSuggestions((prev) => ({
+      ...prev,
+      [type]: prev[type] ? { ...prev[type]!, applied: true } : prev[type],
+    }))
+
+    setTimeout(() => {
+      setAiSuggestions((prev) => ({
+        ...prev,
+        [type]: prev[type] ? { ...prev[type]!, dismissed: true } : prev[type],
+      }))
+    }, 2000)
+  }
+
+  const handleAISuggestionDismiss = (type: AISuggestionType) => {
+    setAiSuggestions((prev) => ({
+      ...prev,
+      [type]: prev[type] ? { ...prev[type]!, dismissed: true } : prev[type],
+    }))
+  }
+
+  const handlePhotoAdded = async (photoUrl: string, type: 'regular' | 'concern') => {
+    if (!aiSettings.aiAssistantEnabled || recordType !== 'grooming' || type !== 'regular') return
+    try {
+      const response = await api.post('/ai/analyze-photo', {
+        mode: 'record',
+        record_type: recordType,
+        photo: photoUrl,
+      })
+      const suggestion = response.data?.suggestion as AISuggestionData | undefined
+      if (suggestion) {
+        setAiSuggestions((prev) => ({ ...prev, 'photo-concern': suggestion }))
+      }
+    } catch {
+      // ignore AI errors
     }
   }
 
@@ -194,6 +349,7 @@ const RecordCreate = () => {
         saving={saving}
         onSave={() => handleSave(false)}
         onShare={handleShare}
+        onSettings={() => setShowAISettings(true)}
       />
 
       {/* Dog Selection */}
@@ -243,7 +399,7 @@ const RecordCreate = () => {
           />
 
           {/* Record Type Selector (future: show based on store business_types) */}
-          <RecordTypeSelector recordType={recordType} onSelect={setRecordType} />
+          <RecordTypeSelector recordType={recordType} onSelect={setRecordType} recordLabel={recordLabel} />
 
           {/* Business-type specific form */}
           <RequiredSection title={recordType === 'daycare' ? '今日の活動' : recordType === 'grooming' ? 'カット内容' : '宿泊情報'}>
@@ -263,11 +419,21 @@ const RecordCreate = () => {
               data={photos}
               onChange={setPhotos}
               showConcerns={recordType === 'grooming'}
+              aiSuggestion={aiSuggestions['photo-concern']}
+              onAISuggestionAction={() => handleAISuggestionAction('photo-concern')}
+              onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
+              onPhotoAdded={handlePhotoAdded}
             />
           </RequiredSection>
 
           <RequiredSection title="報告文">
-            <NotesForm data={notes} onChange={setNotes} />
+            <NotesForm
+              data={notes}
+              onChange={setNotes}
+              aiSuggestion={aiSuggestions['report-draft']}
+              onAISuggestionAction={() => handleAISuggestionAction('report-draft')}
+              onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
+            />
           </RequiredSection>
 
           <OptionalSection
@@ -283,10 +449,37 @@ const RecordCreate = () => {
             collapsed={collapsed.health}
             onToggle={() => setCollapsed((s) => ({ ...s, health: !s.health }))}
           >
-            <HealthCheckForm data={healthCheck} onChange={setHealthCheck} />
+            <HealthCheckForm
+              data={healthCheck}
+              onChange={setHealthCheck}
+              showWeightGraph={recordType === 'grooming'}
+              weightHistory={[]}
+              aiSuggestion={aiSuggestions['health-history']}
+              onAISuggestionAction={() => handleAISuggestionAction('health-history')}
+              onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
+            />
           </OptionalSection>
         </>
       )}
+
+      <AISettingsScreen
+        open={showAISettings}
+        onClose={() => setShowAISettings(false)}
+        initialSettings={aiSettings}
+        onSave={async (settings) => {
+          try {
+            await api.put('/store-settings', {
+              ai_assistant_enabled: settings.aiAssistantEnabled,
+              ai_store_data_contribution: settings.storeDataContribution,
+              ai_service_improvement: settings.serviceImprovement,
+            })
+            mutateStoreSettings()
+            showToast('AI設定を保存しました', 'success')
+          } catch {
+            showToast('AI設定の保存に失敗しました', 'error')
+          }
+        }}
+      />
     </div>
   )
 }

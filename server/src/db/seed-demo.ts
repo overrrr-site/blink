@@ -489,7 +489,10 @@ async function rollback(): Promise<void> {
 
   const demoStaffEmails = ['yamada@example.com', 'suzuki@example.com'];
 
-  // seed-demo で追加したデータを削除（既存の田中花子・ももは残す）
+  // 残すべき飼い主の名前（LINE連携済みアカウント）
+  const keepOwnerNames = ['中島 俊洋', '中井 翔太', '田中 花子'];
+
+  // seed-demo で追加したデータを削除（残すべきデータ以外）
   await pool.query(
     `DELETE FROM journals WHERE staff_id IN (SELECT id FROM staff WHERE email = ANY($1::text[]))`,
     [demoStaffEmails],
@@ -497,10 +500,10 @@ async function rollback(): Promise<void> {
   await pool.query(`DELETE FROM store_announcements WHERE store_id = $1`, [STORE_ID]);
   await pool.query(`DELETE FROM training_item_masters WHERE store_id = $1`, [STORE_ID]);
 
-  // デモで追加した飼い主（田中花子以外）に紐づくデータを削除
+  // デモで追加した飼い主（残すべき飼い主以外）に紐づくデータを削除
   const demoOwners = await pool.query(
-    `SELECT id FROM owners WHERE store_id = $1 AND name != '田中 花子'`,
-    [STORE_ID],
+    `SELECT id FROM owners WHERE store_id = $1 AND name != ALL($2::text[])`,
+    [STORE_ID, keepOwnerNames],
   );
   const demoOwnerIds = demoOwners.rows.map((r: { id: number }) => r.id);
 

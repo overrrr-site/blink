@@ -45,3 +45,12 @@ export function getBusinessTypeLabel(type: RecordType): string {
 export function getBusinessTypeIcon(type: RecordType): string {
   return COLORS[type]?.icon || 'solar:document-bold'
 }
+
+/**
+ * 業態に応じたカルテの呼称を返す
+ * - 幼稚園（daycare）→「連絡帳」
+ * - サロン（grooming）/ ホテル（hotel）→「カルテ」
+ */
+export function getRecordLabel(type?: RecordType): string {
+  return type === 'daycare' ? '連絡帳' : 'カルテ'
+}

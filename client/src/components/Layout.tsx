@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Icon } from './Icon'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { getRandomGreeting } from '../utils/greetings'
+import { getRecordLabel } from '../utils/businessTypeColors'
 import OnboardingGuide from './OnboardingGuide'
 
 const NAV_ITEMS = [
@@ -12,10 +13,10 @@ const NAV_ITEMS = [
   { path: '/settings', label: '設定', icon: 'solar:settings-bold' },
 ] as const
 
-const FAB_ACTIONS = [
+const FAB_ACTIONS_BASE = [
   { label: '予約を追加', icon: 'solar:calendar-add-bold', path: '/reservations/new', color: 'bg-chart-1' },
   { label: '顧客を登録', icon: 'solar:user-plus-bold', path: '/owners/new', color: 'bg-chart-2' },
-  { label: 'カルテを作成', icon: 'solar:clipboard-add-bold', path: '/records/new', color: 'bg-chart-3' },
+  { labelKey: 'record', icon: 'solar:clipboard-add-bold', path: '/records/new', color: 'bg-chart-3' },
 ] as const
 
 const GUIDE_KEYS: Record<string, string> = {
@@ -73,6 +74,17 @@ function Layout(): JSX.Element {
   const { user } = useAuthStore()
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())
+  const recordLabel = getRecordLabel(user?.primaryBusinessType)
+
+  // オンボーディング未完了の場合はリダイレクト
+  if (user && user.onboardingCompleted === false) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  const fabActions = useMemo(() => FAB_ACTIONS_BASE.map(action => ({
+    ...action,
+    label: 'labelKey' in action ? `${recordLabel}を作成` : action.label,
+  })), [recordLabel])
 
   const isActive = useCallback(
     (path: string) => getIsActive(location.pathname, path),
@@ -129,7 +141,7 @@ function Layout(): JSX.Element {
           fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        {FAB_ACTIONS.map((action, index) => (
+        {fabActions.map((action, index) => (
           <button
             key={action.path}
             onClick={(e) => {
