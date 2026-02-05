@@ -14,7 +14,7 @@ const COLORS: Record<RecordType, BusinessTypeColors> = {
     light: '#C4B5FD',
     pale: '#F5F3FF',
     label: 'トリミング',
-    icon: 'mdi:content-cut',
+    icon: 'solar:scissors-bold',
   },
   daycare: {
     primary: '#F97316',

@@ -7,6 +7,7 @@ import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { getAvatarUrl } from '../utils/image'
 import { getRecordLabel } from '../utils/businessTypeColors'
+import type { RecordType } from '../types/record'
 import { useAuthStore } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
 import useSWR from 'swr'
@@ -81,12 +82,48 @@ interface FilterConfig {
   borderColor: string
 }
 
-const FILTER_OPTIONS: FilterConfig[] = [
-  { id: 'all', label: 'すべて', icon: 'solar:list-bold', borderColor: 'border-primary' },
-  { id: '来園待ち', label: '登園前', icon: 'solar:clock-circle-bold', borderColor: 'border-chart-4' },
-  { id: '在園中', label: '利用中', icon: 'solar:home-smile-bold', borderColor: 'border-chart-2' },
-  { id: '帰宅済', label: '帰宅済', icon: 'solar:check-circle-bold', borderColor: 'border-chart-3' },
-]
+// 業種別のラベル定義
+const BUSINESS_TYPE_LABELS: Record<RecordType, {
+  waiting: string
+  active: string
+  done: string
+  checkIn: string
+  checkOut: string
+}> = {
+  daycare: {
+    waiting: '登園前', active: '登園中', done: '降園済',
+    checkIn: '登園', checkOut: '降園',
+  },
+  grooming: {
+    waiting: '来店前', active: '施術中', done: '完了',
+    checkIn: '来店', checkOut: '完了',
+  },
+  hotel: {
+    waiting: 'チェックイン前', active: 'お預かり中', done: 'チェックアウト済',
+    checkIn: 'チェックイン', checkOut: 'チェックアウト',
+  },
+}
+
+function getFilterOptions(businessType: RecordType | null): FilterConfig[] {
+  const l = BUSINESS_TYPE_LABELS[businessType || 'daycare'] || BUSINESS_TYPE_LABELS.daycare
+
+  // トリミングは2ステータスのみ（来店前・完了）
+  if (businessType === 'grooming') {
+    return [
+      { id: 'all', label: 'すべて', icon: 'solar:list-bold', borderColor: 'border-primary' },
+      { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', borderColor: 'border-chart-4' },
+      { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', borderColor: 'border-chart-3' },
+    ]
+  }
+
+  // daycare, hotel は3ステータス
+  return [
+    { id: 'all', label: 'すべて', icon: 'solar:list-bold', borderColor: 'border-primary' },
+    { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', borderColor: 'border-chart-4' },
+    { id: '在園中', label: l.active, icon: 'solar:home-smile-bold', borderColor: 'border-chart-2' },
+    { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', borderColor: 'border-chart-3' },
+  ]
+}
 
 type DisplayStatus = '来園待ち' | '在園中' | '帰宅済'
 
@@ -100,11 +137,12 @@ function getDisplayStatus(reservation: Reservation): DisplayStatus {
   return '来園待ち'
 }
 
-function getStatusLabel(status: DisplayStatus): string {
+function getStatusLabel(status: DisplayStatus, businessType: RecordType | null): string {
+  const l = BUSINESS_TYPE_LABELS[businessType || 'daycare'] || BUSINESS_TYPE_LABELS.daycare
   switch (status) {
-    case '来園待ち': return '登園前'
-    case '在園中': return '利用中'
-    case '帰宅済': return '帰宅済み'
+    case '来園待ち': return l.waiting
+    case '在園中': return l.active
+    case '帰宅済': return l.done
   }
 }
 
@@ -123,6 +161,7 @@ const ReservationCard = React.memo(function ReservationCard({
   onNavigateJournal,
   checkingIn,
   recordLabel,
+  businessType,
 }: {
   reservation: Reservation
   isExpanded: boolean
@@ -134,10 +173,12 @@ const ReservationCard = React.memo(function ReservationCard({
   onNavigateJournal: (id: number) => void
   checkingIn: number | null
   recordLabel: string
+  businessType: RecordType | null
 }) {
   const displayStatus = getDisplayStatus(reservation)
   const isWaiting = displayStatus === '来園待ち'
   const isPresent = displayStatus === '在園中'
+  const labels = BUSINESS_TYPE_LABELS[businessType || 'daycare'] || BUSINESS_TYPE_LABELS.daycare
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -183,7 +224,9 @@ const ReservationCard = React.memo(function ReservationCard({
         <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
           {isWaiting && (
             <button
-              onClick={() => onCheckIn(reservation.id)}
+              onClick={() => businessType === 'grooming'
+                ? onCheckOut(reservation.id)  // トリミングは直接完了へ
+                : onCheckIn(reservation.id)}
               disabled={checkingIn === reservation.id}
               className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
             >
@@ -192,7 +235,7 @@ const ReservationCard = React.memo(function ReservationCard({
               ) : (
                 <Icon icon="solar:check-circle-bold" className="size-4" />
               )}
-              登園
+              {labels.checkIn}
             </button>
           )}
           {isPresent && !reservation.has_journal && (
@@ -210,14 +253,14 @@ const ReservationCard = React.memo(function ReservationCard({
               onClick={() => onCheckOut(reservation.id)}
               disabled={checkingIn === reservation.id}
               className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
-              aria-label="降園"
+              aria-label={labels.checkOut}
             >
               {checkingIn === reservation.id ? (
                 <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
               ) : (
                 <Icon icon="solar:logout-3-bold" className="size-4" />
               )}
-              降園
+              {labels.checkOut}
             </button>
           )}
           {displayStatus === '帰宅済' && (
@@ -269,7 +312,7 @@ const ReservationCard = React.memo(function ReservationCard({
               {displayStatus === '帰宅済' && (
                 <Icon icon="solar:check-circle-bold" className="size-3 mr-1" />
               )}
-              {getStatusLabel(displayStatus)}
+              {getStatusLabel(displayStatus, businessType)}
             </span>
             {reservation.checked_in_at && (
               <span className="text-chart-2">
@@ -350,7 +393,11 @@ function Dashboard(): JSX.Element {
   const navigate = useNavigate()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
   const { selectedBusinessType } = useBusinessTypeStore()
-  const recordLabel = getRecordLabel(selectedBusinessType || primaryBusinessType)
+  const currentBusinessType = selectedBusinessType || primaryBusinessType
+  const recordLabel = getRecordLabel(currentBusinessType)
+
+  // 業種に応じたフィルターオプション
+  const filterOptions = useMemo(() => getFilterOptions(currentBusinessType), [currentBusinessType])
 
   // 業種フィルタを含むSWRキー
   const dashboardKey = selectedBusinessType
@@ -494,7 +541,7 @@ function Dashboard(): JSX.Element {
       {/* ステータスフィルター */}
       <div className="px-5 pt-2 mb-4">
         <div className="flex bg-muted rounded-xl p-1 gap-0.5">
-          {FILTER_OPTIONS.map((filter) => {
+          {filterOptions.map((filter) => {
             const count = filter.id === 'all' ? currentCount : statusCounts[filter.id]
             return (
               <button
@@ -522,8 +569,8 @@ function Dashboard(): JSX.Element {
         {filteredReservations.length === 0 ? (
           <EmptyState
             icon={statusFilter === '帰宅済' ? "solar:check-circle-bold" : "solar:calendar-linear"}
-            title={statusFilter === 'all' ? '今日の予約はありません' : statusFilter === '帰宅済' ? '帰宅済みのワンちゃんはいません' : `${getStatusLabel(statusFilter)}のワンちゃんはいません`}
-            description={statusFilter === 'all' ? '新しい予約を追加して登園スケジュールを管理しましょう' : '他のステータスを確認してください'}
+            title={statusFilter === 'all' ? '今日の予約はありません' : statusFilter === '帰宅済' ? '帰宅済みのワンちゃんはいません' : `${getStatusLabel(statusFilter, currentBusinessType)}のワンちゃんはいません`}
+            description={statusFilter === 'all' ? '新しい予約を追加してスケジュールを管理しましょう' : '他のステータスを確認してください'}
             action={statusFilter === 'all' ? {
               label: '新規予約を追加',
               onClick: handleNavigateNewReservation,
@@ -561,6 +608,7 @@ function Dashboard(): JSX.Element {
                       onNavigateJournal={handleNavigateJournalCreate}
                       checkingIn={checkingIn}
                       recordLabel={recordLabel}
+                      businessType={currentBusinessType}
                     />
                   ))}
                 </div>
