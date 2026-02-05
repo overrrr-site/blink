@@ -32,6 +32,7 @@ const ContractEdit = lazy(() => import('./pages/ContractEdit'))
 const StaffEdit = lazy(() => import('./pages/StaffEdit'))
 const CourseEdit = lazy(() => import('./pages/CourseEdit'))
 const TrainingEdit = lazy(() => import('./pages/TrainingEdit'))
+const GroomingMenuEdit = lazy(() => import('./pages/GroomingMenuEdit'))
 const Billing = lazy(() => import('./pages/Billing'))
 const Help = lazy(() => import('./pages/Help'))
 const InspectionRecordList = lazy(() => import('./pages/InspectionRecordList'))
@@ -122,6 +123,8 @@ function App() {
                 <Route path="/settings/courses/:id" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
                 <Route path="/settings/training/new" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
                 <Route path="/settings/training/:id" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
+                <Route path="/settings/grooming-menu/new" element={<OwnerRoute><GroomingMenuEdit /></OwnerRoute>} />
+                <Route path="/settings/grooming-menu/:id" element={<OwnerRoute><GroomingMenuEdit /></OwnerRoute>} />
                 <Route path="/reservations" element={<ReservationsCalendar />} />
                 <Route path="/reservations/new" element={<ReservationCreate />} />
                 <Route path="/reservations/:id" element={<ReservationDetail />} />

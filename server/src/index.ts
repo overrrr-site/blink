@@ -30,6 +30,8 @@ import storeSettingsRoutes from './routes/storeSettings.js';
 import staffRoutes from './routes/staff.js';
 import courseMastersRoutes from './routes/courseMasters.js';
 import trainingMastersRoutes from './routes/trainingMasters.js';
+import groomingMenusRoutes from './routes/groomingMenus.js';
+import hotelPricesRoutes from './routes/hotelPrices.js';
 
 // Routes - LIFF (LINE Front-end Framework)
 import liffRoutes from './routes/liff/index.js';
@@ -120,6 +122,8 @@ app.use('/api/store-settings', storeSettingsRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/course-masters', courseMastersRoutes);
 app.use('/api/training-masters', trainingMastersRoutes);
+app.use('/api/grooming-menus', groomingMenusRoutes);
+app.use('/api/hotel-prices', hotelPricesRoutes);
 
 // ---------------------------------------------------------------------------
 // API Routes - LIFF (LINE Front-end Framework)

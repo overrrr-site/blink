@@ -47,6 +47,29 @@ interface StoreSettings {
   ai_assistant_enabled?: boolean
   ai_store_data_contribution?: boolean
   ai_service_improvement?: boolean
+  // トリミング設定
+  grooming_default_duration?: number
+  // ホテル設定
+  hotel_room_count?: number
+  hotel_checkin_time?: string
+  hotel_checkout_time?: string
+}
+
+interface GroomingMenuItem {
+  id: number
+  menu_name: string
+  description?: string
+  price?: number
+  duration_minutes?: number
+  dog_size?: string
+  display_order: number
+}
+
+interface HotelPriceItem {
+  id?: number
+  dog_size: string
+  price_per_night: number
+  description?: string
 }
 
 interface StaffItem {
@@ -86,11 +109,15 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const [qrLoading, setQrLoading] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrExpanded, setQrExpanded] = useState(false)
+  const [localHotelPrices, setLocalHotelPrices] = useState<HotelPriceItem[]>([])
+  const [hotelPricesInitialized, setHotelPricesInitialized] = useState(false)
 
   // 店舗で利用可能な業種
   const storeBusinessTypes = (user?.businessTypes || []) as RecordType[]
-  // 幼稚園業態が有効かどうか
+  // 各業態が有効かどうか
   const isDaycareEnabled = selectedBusinessType === 'daycare' || (selectedBusinessType === null && storeBusinessTypes.includes('daycare'))
+  const isGroomingEnabled = selectedBusinessType === 'grooming' || (selectedBusinessType === null && storeBusinessTypes.includes('grooming'))
+  const isHotelEnabled = selectedBusinessType === 'hotel' || (selectedBusinessType === null && storeBusinessTypes.includes('hotel'))
 
   const {
     data: storeSettingsData,
@@ -115,18 +142,57 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
     mutate: mutateQrCode,
   } = useSWR<QrCodeResponse>('/liff/qr-code', fetcher, { revalidateOnFocus: false })
 
+  // トリミングメニュー一覧
+  const {
+    data: groomingMenus,
+    isLoading: loadingGroomingMenus,
+    mutate: mutateGroomingMenus,
+  } = useSWR<GroomingMenuItem[]>(isGroomingEnabled ? '/grooming-menus' : null, fetcher, { revalidateOnFocus: false })
+
+  // ホテル料金一覧
+  const {
+    data: hotelPrices,
+    isLoading: loadingHotelPrices,
+    mutate: mutateHotelPrices,
+  } = useSWR<HotelPriceItem[]>(isHotelEnabled ? '/hotel-prices' : null, fetcher, { revalidateOnFocus: false })
+
   useEffect(() => {
     if (storeSettingsData) {
       setStoreSettings(storeSettingsData)
     }
   }, [storeSettingsData])
 
-  const handleStoreSettingsChange = (field: keyof StoreSettings, value: number) => {
+  const handleStoreSettingsChange = (field: keyof StoreSettings, value: number | string | boolean) => {
     setStoreSettings((prev) => ({
       ...prev,
       [field]: value,
     }))
   }
+
+  // 店舗設定の保存
+  const saveStoreSettings = async (settings: StoreSettings) => {
+    try {
+      await api.put('/store-settings', settings)
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || '設定の保存に失敗しました')
+    }
+  }
+
+  // 設定変更時に自動保存（デバウンス）
+  useEffect(() => {
+    if (!storeSettingsData) return
+    const timer = setTimeout(() => {
+      // 初期データと異なる場合のみ保存
+      const hasChanges = JSON.stringify(storeSettings) !== JSON.stringify(storeSettingsData)
+      if (hasChanges) {
+        saveStoreSettings(storeSettings)
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [storeSettings, storeSettingsData])
 
   const handleDeleteStaff = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -225,6 +291,32 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const isQrLoading = qrLoading || qrLoadingData
   const resolvedStaffList = staffList ?? []
   const resolvedTrainingMasters = trainingMasters ?? {}
+  const resolvedGroomingMenus = groomingMenus ?? []
+  const resolvedHotelPrices = hotelPrices ?? []
+
+  // ホテル料金のデフォルト値（全サイズ）
+  const defaultHotelPrices: HotelPriceItem[] = [
+    { dog_size: '小型', price_per_night: 0 },
+    { dog_size: '中型', price_per_night: 0 },
+    { dog_size: '大型', price_per_night: 0 },
+  ]
+
+  // ホテル料金の初期化
+  useEffect(() => {
+    if (resolvedHotelPrices.length > 0 && !hotelPricesInitialized) {
+      const merged = defaultHotelPrices.map(dp => {
+        const existing = resolvedHotelPrices.find(hp => hp.dog_size === dp.dog_size)
+        return existing || dp
+      })
+      setLocalHotelPrices(merged)
+      setHotelPricesInitialized(true)
+    } else if (resolvedHotelPrices.length === 0 && !hotelPricesInitialized && !loadingHotelPrices) {
+      setLocalHotelPrices(defaultHotelPrices)
+      setHotelPricesInitialized(true)
+    }
+  }, [resolvedHotelPrices, hotelPricesInitialized, loadingHotelPrices])
+
+  const displayHotelPrices = localHotelPrices.length > 0 ? localHotelPrices : defaultHotelPrices
 
   const fetchQrCode = async () => {
     setQrLoading(true)
@@ -232,6 +324,38 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       await mutateQrCode()
     } finally {
       setQrLoading(false)
+    }
+  }
+
+  // トリミングメニュー削除
+  const handleDeleteGroomingMenu = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('このメニューを削除しますか？')) {
+      return
+    }
+
+    try {
+      await api.delete(`/grooming-menus/${id}`)
+      mutateGroomingMenus()
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || 'メニューの削除に失敗しました')
+    }
+  }
+
+  // ホテル料金保存
+  const handleSaveHotelPrices = async (prices: HotelPriceItem[]) => {
+    try {
+      await api.put('/hotel-prices', { prices })
+      mutateHotelPrices()
+      alert('ホテル料金を保存しました')
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data as { error?: string } | undefined)?.error
+        : null
+      alert(message || 'ホテル料金の保存に失敗しました')
     }
   }
 
@@ -621,6 +745,250 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
           </div>
         )}
       </section>
+      )}
+
+      {/* トリミング設定（トリミングのみ） */}
+      {isGroomingEnabled && (
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <Icon icon="solar:scissors-bold" width="16" height="16" className="text-chart-4" />
+              トリミング設定
+            </h2>
+          </div>
+          {/* デフォルト施術時間 */}
+          <div className="w-full flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Icon icon="solar:clock-circle-bold" width="20" height="20" className="text-muted-foreground" />
+              <div className="text-left flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium block">デフォルト施術時間</span>
+                  <div className="relative group">
+                    <Icon icon="solar:question-circle-bold"
+                      width="14" height="14" className="text-muted-foreground cursor-help" />
+                    <div className="absolute left-0 top-5 w-56 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
+                      予約作成時のデフォルトの施術時間です。メニューごとに個別設定も可能です。
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground">予約時のデフォルト時間</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {loadingStoreSettings ? (
+                <span className="text-sm text-muted-foreground">読み込み中...</span>
+              ) : (
+                <>
+                  <input
+                    type="number"
+                    value={storeSettings.grooming_default_duration || 60}
+                    onChange={(e) => handleStoreSettingsChange('grooming_default_duration', parseInt(e.target.value, 10))}
+                    min="15"
+                    step="15"
+                    className="w-24 px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                  />
+                  <span className="text-sm font-bold text-primary">分</span>
+                </>
+              )}
+            </div>
+          </div>
+          {/* 施術メニュー一覧 */}
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium">施術メニュー</span>
+              <button
+                onClick={() => navigate('/settings/grooming-menu/new')}
+                className="text-xs font-bold text-primary flex items-center gap-1"
+              >
+                <Icon icon="solar:add-circle-bold" width="14" height="14" />
+                追加
+              </button>
+            </div>
+            {loadingGroomingMenus ? (
+              <div className="text-center py-4">
+                <span className="text-xs text-muted-foreground">読み込み中...</span>
+              </div>
+            ) : resolvedGroomingMenus.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-xl">
+                <Icon icon="solar:scissors-bold" width="32" height="32" className="mx-auto mb-2 opacity-50" />
+                <p className="text-xs">メニューが登録されていません</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {resolvedGroomingMenus.map((menu) => (
+                  <div
+                    key={menu.id}
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{menu.menu_name}</span>
+                        {menu.dog_size && menu.dog_size !== '全サイズ' && (
+                          <span className="text-[10px] bg-chart-4/10 text-chart-4 px-1.5 py-0.5 rounded font-medium">
+                            {menu.dog_size}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        {menu.price !== undefined && menu.price !== null && (
+                          <span className="text-xs text-muted-foreground">¥{menu.price.toLocaleString()}</span>
+                        )}
+                        {menu.duration_minutes && (
+                          <span className="text-xs text-muted-foreground">{menu.duration_minutes}分</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => navigate(`/settings/grooming-menu/${menu.id}`)}
+                        className="p-2 text-muted-foreground rounded-full hover:bg-muted transition-colors"
+                        aria-label={`${menu.menu_name}を編集`}
+                      >
+                        <Icon icon="solar:pen-bold" width="16" height="16" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteGroomingMenu(menu.id, e)}
+                        className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
+                        aria-label={`${menu.menu_name}を削除`}
+                      >
+                        <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ホテル設定（ホテルのみ） */}
+      {isHotelEnabled && (
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <Icon icon="solar:sleeping-square-bold" width="16" height="16" className="text-chart-5" />
+              ホテル設定
+            </h2>
+          </div>
+          {/* 部屋/ケージ数 */}
+          <div className="w-full flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Icon icon="solar:home-2-bold" width="20" height="20" className="text-muted-foreground" />
+              <div className="text-left flex-1">
+                <span className="text-sm font-medium block">部屋/ケージ数</span>
+                <span className="text-[10px] text-muted-foreground">お預かり可能な部屋数</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {loadingStoreSettings ? (
+                <span className="text-sm text-muted-foreground">読み込み中...</span>
+              ) : (
+                <>
+                  <input
+                    type="number"
+                    value={storeSettings.hotel_room_count || 10}
+                    onChange={(e) => handleStoreSettingsChange('hotel_room_count', parseInt(e.target.value, 10))}
+                    min="1"
+                    className="w-24 px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                  />
+                  <span className="text-sm font-bold text-primary">室</span>
+                </>
+              )}
+            </div>
+          </div>
+          {/* チェックイン/アウト時間 */}
+          <div className="w-full flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Icon icon="solar:clock-circle-bold" width="20" height="20" className="text-muted-foreground" />
+              <div className="text-left flex-1">
+                <span className="text-sm font-medium block">チェックイン時間</span>
+                <span className="text-[10px] text-muted-foreground">デフォルトの受付開始時間</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {loadingStoreSettings ? (
+                <span className="text-sm text-muted-foreground">読み込み中...</span>
+              ) : (
+                <input
+                  type="time"
+                  value={storeSettings.hotel_checkin_time || '10:00'}
+                  onChange={(e) => {
+                    setStoreSettings(prev => ({ ...prev, hotel_checkin_time: e.target.value }))
+                  }}
+                  className="px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                />
+              )}
+            </div>
+          </div>
+          <div className="w-full flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Icon icon="solar:clock-circle-bold" width="20" height="20" className="text-muted-foreground" />
+              <div className="text-left flex-1">
+                <span className="text-sm font-medium block">チェックアウト時間</span>
+                <span className="text-[10px] text-muted-foreground">デフォルトのお迎え時間</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {loadingStoreSettings ? (
+                <span className="text-sm text-muted-foreground">読み込み中...</span>
+              ) : (
+                <input
+                  type="time"
+                  value={storeSettings.hotel_checkout_time || '18:00'}
+                  onChange={(e) => {
+                    setStoreSettings(prev => ({ ...prev, hotel_checkout_time: e.target.value }))
+                  }}
+                  className="px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-primary text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                />
+              )}
+            </div>
+          </div>
+          {/* 1泊料金（サイズ別） */}
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium">1泊料金（税込）</span>
+            </div>
+            {loadingHotelPrices ? (
+              <div className="text-center py-4">
+                <span className="text-xs text-muted-foreground">読み込み中...</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {displayHotelPrices.map((price, index) => (
+                  <div
+                    key={price.dog_size}
+                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"
+                  >
+                    <span className="text-sm font-medium w-12">{price.dog_size}</span>
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">¥</span>
+                      <input
+                        type="number"
+                        value={price.price_per_night}
+                        onChange={(e) => {
+                          const newPrices = [...displayHotelPrices]
+                          newPrices[index] = { ...newPrices[index], price_per_night: parseInt(e.target.value, 10) || 0 }
+                          setLocalHotelPrices(newPrices)
+                        }}
+                        min="0"
+                        step="100"
+                        className="flex-1 px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button
+                  onClick={() => handleSaveHotelPrices(localHotelPrices)}
+                  className="w-full mt-3 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+                >
+                  料金を保存
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
       {/* 店舗基本情報編集モーダル */}
