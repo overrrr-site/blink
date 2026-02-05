@@ -19,6 +19,9 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
     // 未入力日誌の検索範囲を過去30日に制限（パフォーマンス改善）
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+    // 業種フィルタ
+    const serviceType = req.query.service_type as string | undefined;
+
     // 5つのクエリを並列実行（パフォーマンス改善）
     const queryStart = Date.now();
     const timedQuery = async (label: string, queryFn: () => Promise<any>) => {
@@ -27,6 +30,10 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
       console.log(`[DASHBOARD] ${label}: ${Date.now() - s}ms`);
       return result;
     };
+
+    // 業種フィルタ用のクエリ条件とパラメータ
+    const serviceTypeCondition = serviceType ? ` AND r.service_type = $3` : '';
+    const reservationParams = serviceType ? [req.storeId, today, serviceType] : [req.storeId, today];
 
     const [
       reservationsResult,
@@ -48,34 +55,40 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
          JOIN owners o ON d.owner_id = o.id
          LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
          LEFT JOIN journals j ON r.id = j.reservation_id
-         WHERE r.store_id = $1 AND r.reservation_date = $2
+         WHERE r.store_id = $1 AND r.reservation_date = $2${serviceTypeCondition}
          ORDER BY r.reservation_time`,
-        [req.storeId, today]
+        reservationParams
       )),
 
-      timedQuery('incompleteJournals', () => pool.query(
-        `SELECT r.id as reservation_id,
-                r.reservation_date,
-                r.reservation_date as journal_date,
-                r.reservation_time,
-                r.dog_id,
-                d.name as dog_name,
-                d.photo_url as dog_photo,
-                o.name as owner_name,
-                j.id as journal_id,
-                j.comment
-         FROM reservations r
-         JOIN dogs d ON r.dog_id = d.id
-         JOIN owners o ON d.owner_id = o.id
-         LEFT JOIN journals j ON r.id = j.reservation_id
-         WHERE r.store_id = $1
-           AND r.reservation_date BETWEEN $2 AND $3
-           AND r.status IN ('登園済', '降園済')
-           AND (j.id IS NULL OR j.comment IS NULL OR j.comment = '')
-         ORDER BY r.reservation_date DESC
-         LIMIT 10`,
-        [req.storeId, thirtyDaysAgo, today]
-      )),
+      timedQuery('incompleteJournals', () => {
+        const incompleteServiceTypeCondition = serviceType ? ` AND r.service_type = $4` : '';
+        const incompleteParams = serviceType
+          ? [req.storeId, thirtyDaysAgo, today, serviceType]
+          : [req.storeId, thirtyDaysAgo, today];
+        return pool.query(
+          `SELECT r.id as reservation_id,
+                  r.reservation_date,
+                  r.reservation_date as journal_date,
+                  r.reservation_time,
+                  r.dog_id,
+                  d.name as dog_name,
+                  d.photo_url as dog_photo,
+                  o.name as owner_name,
+                  j.id as journal_id,
+                  j.comment
+           FROM reservations r
+           JOIN dogs d ON r.dog_id = d.id
+           JOIN owners o ON d.owner_id = o.id
+           LEFT JOIN journals j ON r.id = j.reservation_id
+           WHERE r.store_id = $1
+             AND r.reservation_date BETWEEN $2 AND $3
+             AND r.status IN ('登園済', '降園済')
+             AND (j.id IS NULL OR j.comment IS NULL OR j.comment = '')${incompleteServiceTypeCondition}
+           ORDER BY r.reservation_date DESC
+           LIMIT 10`,
+          incompleteParams
+        );
+      }),
 
       timedQuery('alerts', () => {
         const mixedExpiry = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];

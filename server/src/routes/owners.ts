@@ -13,9 +13,10 @@ import { isNonEmptyString } from '../utils/validation.js';
 function buildOwnersListQuery(params: {
   storeId: number;
   search?: string;
+  serviceType?: string;
   pagination: PaginationParams;
 }): { query: string; params: Array<string | number> } {
-  const { storeId, search, pagination } = params;
+  const { storeId, search, serviceType, pagination } = params;
   let query = `
       SELECT o.*,
              json_agg(json_build_object(
@@ -40,6 +41,18 @@ function buildOwnersListQuery(params: {
       WHERE o.store_id = $1 AND o.deleted_at IS NULL
     `;
   const queryParams: Array<string | number> = [storeId];
+
+  // 業種フィルタ：選択された業種の予約履歴を持つ飼い主のみ表示
+  if (serviceType) {
+    query += ` AND EXISTS (
+      SELECT 1 FROM reservations r2
+      JOIN dogs d2 ON r2.dog_id = d2.id
+      WHERE d2.owner_id = o.id
+        AND r2.service_type = $${queryParams.length + 1}
+        AND r2.store_id = o.store_id
+    )`;
+    queryParams.push(serviceType);
+  }
 
   if (search) {
     const searchParam = `%${search}%`;
@@ -66,13 +79,15 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const queryParams = req.query as { search?: string | string[]; filter?: string | string[]; page?: string | string[]; limit?: string | string[] };
-    const { search } = queryParams;
+    const queryParams = req.query as { search?: string | string[]; filter?: string | string[]; page?: string | string[]; limit?: string | string[]; service_type?: string | string[] };
+    const { search, service_type } = queryParams;
     const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
     const searchValue = Array.isArray(search) ? search[0] : search;
+    const serviceTypeValue = Array.isArray(service_type) ? service_type[0] : service_type;
     const { query, params } = buildOwnersListQuery({
       storeId: req.storeId,
       search: searchValue,
+      serviceType: serviceTypeValue,
       pagination,
     });
     const result = await pool.query(query, params);

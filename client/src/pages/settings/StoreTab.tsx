@@ -77,7 +77,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const [qrLoading, setQrLoading] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrExpanded, setQrExpanded] = useState(false)
-  const [savingBusinessTypes, setSavingBusinessTypes] = useState(false)
 
   const {
     data: storeSettingsData,
@@ -294,53 +293,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
     }
   }
 
-  const BUSINESS_TYPE_OPTIONS = [
-    { value: 'grooming', label: 'グルーミング', icon: 'solar:scissors-bold', color: '#8B5CF6' },
-    { value: 'daycare', label: '幼稚園', icon: 'solar:sun-bold', color: '#F97316' },
-    { value: 'hotel', label: 'ホテル', icon: 'solar:moon-bold', color: '#06B6D4' },
-  ] as const
-
-  const handleToggleBusinessType = (type: string) => {
-    const current = storeInfo?.business_types || []
-    const next = current.includes(type)
-      ? current.filter((t) => t !== type)
-      : [...current, type]
-    // primary_business_typeが選択解除された場合、最初の選択肢に変更
-    const currentPrimary = storeInfo?.primary_business_type
-    const newPrimary = next.length === 0 ? null : (currentPrimary && next.includes(currentPrimary) ? currentPrimary : next[0])
-    setStoreInfo((prev) => ({
-      ...(prev ?? {}),
-      business_types: next,
-      primary_business_type: newPrimary,
-    }))
-  }
-
-  const handleSetPrimaryBusinessType = (type: string) => {
-    setStoreInfo((prev) => ({
-      ...(prev ?? {}),
-      primary_business_type: type,
-    }))
-  }
-
-  const handleSaveBusinessTypes = async () => {
-    setSavingBusinessTypes(true)
-    try {
-      await api.put('/stores', {
-        business_types: storeInfo?.business_types || [],
-        primary_business_type: storeInfo?.primary_business_type || null,
-      })
-      fetchStoreInfo()
-      alert('業種設定を保存しました')
-    } catch (error: unknown) {
-      const message = axios.isAxiosError(error)
-        ? (error.response?.data as { error?: string } | undefined)?.error
-        : null
-      alert(message || '業種設定の保存に失敗しました')
-    } finally {
-      setSavingBusinessTypes(false)
-    }
-  }
-
   const handleSaveBusinessHours = async (businessHours: BusinessHoursPayload, closedDays: string[]) => {
     try {
       await api.put('/stores', {
@@ -427,99 +379,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               </>
             )}
           </div>
-        </div>
-      </section>
-
-      {/* 業種設定 */}
-      <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <Icon icon="solar:case-round-bold" width="16" height="16" className="text-chart-2" />
-            業種設定
-          </h2>
-          <p className="text-[10px] text-muted-foreground mt-0.5">提供するサービスの種類を選択してください</p>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="space-y-2">
-            {BUSINESS_TYPE_OPTIONS.map(({ value, label, icon, color }) => {
-              const selected = (storeInfo?.business_types || []).includes(value)
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => handleToggleBusinessType(value)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl transition-all border"
-                  style={{
-                    background: selected ? `${color}08` : undefined,
-                    borderColor: selected ? `${color}40` : 'var(--border)',
-                  }}
-                >
-                  <div
-                    className="size-10 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: selected ? `${color}15` : 'var(--muted)', color: selected ? color : undefined }}
-                  >
-                    <Icon icon={icon} width="20" height="20" className={selected ? undefined : 'text-muted-foreground'} />
-                  </div>
-                  <span
-                    className="text-sm font-medium flex-1 text-left"
-                    style={{ color: selected ? color : 'var(--muted-foreground)' }}
-                  >
-                    {label}
-                  </span>
-                  <div
-                    className="size-5 rounded-md border-2 flex items-center justify-center transition-all"
-                    style={{
-                      borderColor: selected ? color : 'var(--border)',
-                      background: selected ? color : 'transparent',
-                    }}
-                  >
-                    {selected && (
-                      <Icon icon="solar:check-read-bold" width="12" height="12" className="text-white" />
-                    )}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          {(storeInfo?.business_types?.length ?? 0) > 1 && (
-            <div>
-              <label className="block text-xs text-muted-foreground mb-2">メイン業種</label>
-              <div className="flex gap-2">
-                {BUSINESS_TYPE_OPTIONS
-                  .filter(({ value }) => (storeInfo?.business_types || []).includes(value))
-                  .map(({ value, label, color }) => {
-                    const isPrimary = storeInfo?.primary_business_type === value
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => handleSetPrimaryBusinessType(value)}
-                        className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border"
-                        style={{
-                          background: isPrimary ? color : 'transparent',
-                          borderColor: isPrimary ? color : 'var(--border)',
-                          color: isPrimary ? '#FFFFFF' : 'var(--muted-foreground)',
-                        }}
-                      >
-                        {label}
-                      </button>
-                    )
-                  })}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                メイン業種はダッシュボードのデフォルト表示に使用されます
-              </p>
-            </div>
-          )}
-
-          <button
-            onClick={handleSaveBusinessTypes}
-            disabled={savingBusinessTypes || (storeInfo?.business_types?.length ?? 0) === 0}
-            className="w-full px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {savingBusinessTypes ? '保存中...' : '業種設定を保存'}
-          </button>
         </div>
       </section>
 

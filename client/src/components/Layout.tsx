@@ -2,9 +2,11 @@ import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Icon } from './Icon'
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import { useBusinessTypeStore } from '../store/businessTypeStore'
 import { getRandomGreeting } from '../utils/greetings'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import OnboardingGuide from './OnboardingGuide'
+import BusinessTypeSwitcher from './BusinessTypeSwitcher'
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: '今日', icon: 'solar:calendar-mark-bold' },
@@ -72,9 +74,19 @@ function Layout(): JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
+  const { selectedBusinessType, initializeFromUser } = useBusinessTypeStore()
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())
-  const recordLabel = getRecordLabel(user?.primaryBusinessType)
+
+  // 業種ストアの初期化
+  useEffect(() => {
+    if (user?.primaryBusinessType) {
+      initializeFromUser(user.primaryBusinessType)
+    }
+  }, [user?.primaryBusinessType, initializeFromUser])
+
+  // 選択中の業種に応じたラベル（nullの場合はprimaryBusinessTypeを使用）
+  const recordLabel = getRecordLabel(selectedBusinessType || user?.primaryBusinessType)
 
   // オンボーディング未完了の場合はリダイレクト
   if (user && user.onboardingCompleted === false) {
@@ -116,11 +128,7 @@ function Layout(): JSX.Element {
               {user?.name || 'スタッフ'}さん
             </h1>
           </div>
-          <div className="size-12 rounded-full border-2 border-primary/20 p-0.5 bg-muted">
-            <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base">
-              {user?.name?.charAt(0) || 'S'}
-            </div>
-          </div>
+          <BusinessTypeSwitcher />
         </header>
       )}
 

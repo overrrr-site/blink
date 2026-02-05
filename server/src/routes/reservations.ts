@@ -42,7 +42,7 @@ router.use(authenticate);
 // 予約一覧取得（日付指定）
 router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<void> {
   try {
-    const { date, month } = req.query;
+    const { date, month, service_type } = req.query;
 
     // storeIdがnullの場合はエラー
     if (!requireStoreId(req, res)) {
@@ -50,7 +50,7 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
     }
 
     let query = `
-      SELECT r.*, 
+      SELECT r.*,
              d.name as dog_name, d.photo_url as dog_photo,
              o.name as owner_name
       FROM reservations r
@@ -61,15 +61,21 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
     const params: (string | number)[] =[req.storeId];
 
     if (date) {
-      query += ` AND r.reservation_date = $2`;
+      query += ` AND r.reservation_date = $${params.length + 1}`;
       params.push(String(date));
     } else if (month) {
       // month は 'yyyy-MM' 形式（例: '2024-01'）
       const range = getMonthDateRange(String(month));
       if (range) {
-        query += ` AND r.reservation_date >= $2 AND r.reservation_date < $3`;
+        query += ` AND r.reservation_date >= $${params.length + 1} AND r.reservation_date < $${params.length + 2}`;
         params.push(range.start, range.end);
       }
+    }
+
+    // 業種フィルタ
+    if (service_type) {
+      query += ` AND r.service_type = $${params.length + 1}`;
+      params.push(String(service_type));
     }
 
     query += ` ORDER BY r.reservation_date, r.reservation_time`;

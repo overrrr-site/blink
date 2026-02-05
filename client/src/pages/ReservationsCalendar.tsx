@@ -3,6 +3,7 @@ import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
 import api from '../api/client'
+import { useBusinessTypeStore } from '../store/businessTypeStore'
 
 const ReservationsCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -14,10 +15,11 @@ const ReservationsCalendar = () => {
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
   const navigate = useNavigate()
+  const { selectedBusinessType } = useBusinessTypeStore()
 
   useEffect(() => {
     fetchReservations()
-  }, [currentDate])
+  }, [currentDate, selectedBusinessType])
 
   useEffect(() => {
     if (selectedDate) {
@@ -37,11 +39,14 @@ const ReservationsCalendar = () => {
   const fetchReservations = async () => {
     try {
       const monthStr = format(currentDate, 'yyyy-MM')
-      
+
       const response = await api.get('/reservations', {
-        params: { month: monthStr },
+        params: {
+          month: monthStr,
+          service_type: selectedBusinessType || undefined,
+        },
       })
-      
+
       setReservations(response.data)
     } catch {
       // エラー時も空配列を設定して表示を続行

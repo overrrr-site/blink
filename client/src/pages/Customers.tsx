@@ -8,6 +8,7 @@ import { fetcher } from '../lib/swr'
 import type { PaginatedResponse } from '../types/api'
 import { Pagination } from '../components/Pagination'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { useBusinessTypeStore } from '../store/businessTypeStore'
 
 interface Owner {
   id: number
@@ -136,14 +137,17 @@ const Customers = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'owners' | 'dogs'>('owners')
   const [page, setPage] = useState(1)
+  const { selectedBusinessType } = useBusinessTypeStore()
 
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearchQuery])
+  }, [debouncedSearchQuery, selectedBusinessType])
 
-  const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}`
+  // 業種フィルタを含むSWRキー
+  const serviceTypeParam = selectedBusinessType ? `&service_type=${selectedBusinessType}` : ''
+  const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}${serviceTypeParam}`
   const { data, isLoading } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher, {
     revalidateOnFocus: false,
   })

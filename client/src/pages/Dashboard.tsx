@@ -8,6 +8,7 @@ import EmptyState from '../components/EmptyState'
 import { getAvatarUrl } from '../utils/image'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import { useAuthStore } from '../store/authStore'
+import { useBusinessTypeStore } from '../store/businessTypeStore'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 
@@ -348,9 +349,15 @@ function Dashboard(): JSX.Element {
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const navigate = useNavigate()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
-  const recordLabel = getRecordLabel(primaryBusinessType)
+  const { selectedBusinessType } = useBusinessTypeStore()
+  const recordLabel = getRecordLabel(selectedBusinessType || primaryBusinessType)
 
-  const { data, isLoading, mutate } = useSWR<DashboardData>('/dashboard', fetcher, {
+  // 業種フィルタを含むSWRキー
+  const dashboardKey = selectedBusinessType
+    ? `/dashboard?service_type=${selectedBusinessType}`
+    : '/dashboard'
+
+  const { data, isLoading, mutate } = useSWR<DashboardData>(dashboardKey, fetcher, {
     revalidateOnFocus: true,
     refreshInterval: 30000,
   })
