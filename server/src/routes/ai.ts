@@ -2,6 +2,14 @@ import express from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { sendBadRequest, sendServerError } from '../utils/response.js';
 import pool from '../db/connection.js';
+import {
+  saveAILearningData,
+  recordAIFeedback,
+  getHighQualityExamples,
+  analyzeWritingStyle,
+  recordSuggestionFeedback,
+  getAISettings,
+} from '../utils/aiLearning.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -291,38 +299,185 @@ function generateTemplateComment(
   return parts.join('\n');
 }
 
-// 写真からの活動推測
+// Base64データを処理してMIMEタイプを検出
+function processBase64Image(base64Input: string): { base64Data: string; mimeType: string } {
+  let base64Data = base64Input.includes(',')
+    ? base64Input.split(',')[1]
+    : base64Input;
+
+  let mimeType = 'image/jpeg';
+  if (base64Input.includes('data:image/')) {
+    const match = base64Input.match(/data:image\/([^;]+)/);
+    if (match) {
+      const ext = match[1];
+      if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'gif') mimeType = 'image/gif';
+      else if (ext === 'webp') mimeType = 'image/webp';
+    }
+  }
+
+  return { base64Data, mimeType };
+}
+
+// 写真からの活動推測・健康チェック
 router.post('/analyze-photo', async (req: AuthRequest, res) => {
   try {
     const { mode, record_type, photo, photo_base64, dog_name } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
 
+    // カルテ作成時の健康チェック用写真解析
     if (mode === 'record' || record_type) {
-      if (!photo) {
+      if (!photo_base64 && !photo) {
         sendBadRequest(res, '写真が必要です');
         return;
       }
 
-      return res.json({
-        suggestion: {
-          type: 'photo-concern',
-          message: '写真に気になる箇所がある可能性があります',
-          actionLabel: '気になる箇所に追加',
-          variant: 'warning',
-          payload: {
-            photoUrl: photo,
-            label: '赤み（AI検出）',
-            annotation: { x: 70, y: 75 },
-          },
-        },
-      });
+      // APIキーがない場合はフォールバック
+      if (!apiKey) {
+        return res.json({
+          analysis: '写真を確認しました。',
+          health_concerns: [],
+          suggestion: null,
+        });
+      }
+
+      // 写真URLからbase64を取得する必要がある場合の処理
+      let imageBase64 = photo_base64;
+      if (!imageBase64 && photo) {
+        // 外部URLの場合はそのまま解析をスキップ
+        return res.json({
+          analysis: '写真を確認しました。',
+          health_concerns: [],
+          suggestion: null,
+        });
+      }
+
+      const { base64Data, mimeType } = processBase64Image(imageBase64);
+
+      // 業種に応じたプロンプトを作成
+      const isGrooming = record_type === 'grooming';
+      const prompt = isGrooming
+        ? `この写真はトリミングサロンで撮影された犬の写真です。
+${dog_name ? `犬の名前は「${dog_name}」です。` : ''}
+
+以下の観点から健康状態を分析し、JSON形式で回答してください：
+
+1. **皮膚の状態**: 赤み、湿疹、かゆそうな箇所、脱毛などがないか
+2. **耳の状態**: 汚れ、赤み、炎症がないか
+3. **目の状態**: 目やに、充血、涙やけがないか
+4. **毛並み**: 毛玉、もつれ、艶の状態
+5. **全体的な印象**: 健康そうか、気になる点があるか
+
+回答形式（JSON）:
+{
+  "summary": "全体的な健康状態の要約（50文字程度）",
+  "concerns": [
+    {"area": "気になる部位", "issue": "問題の内容", "severity": "low/medium/high"}
+  ],
+  "coat_condition": "毛並みの状態",
+  "overall_health": "良好/注意/要確認"
+}`
+        : `この写真は犬の幼稚園・保育園で撮影された犬の写真です。
+${dog_name ? `犬の名前は「${dog_name}」です。` : ''}
+
+以下の観点から分析し、JSON形式で回答してください：
+
+1. **活動内容**: 何をしているか（遊んでいる、トレーニング中、休憩中など）
+2. **様子・表情**: 犬の様子や表情（楽しそう、集中している、リラックスしているなど）
+3. **健康面で気になる点**: 明らかに気になる点があれば（なければ空配列）
+
+回答形式（JSON）:
+{
+  "summary": "活動の要約（50文字程度、飼い主向けの温かい表現で）",
+  "activity": "主な活動内容",
+  "mood": "犬の様子",
+  "concerns": [
+    {"area": "気になる部位", "issue": "問題の内容", "severity": "low/medium/high"}
+  ]
+}`;
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: mimeType, data: base64Data } },
+                { text: prompt },
+              ],
+            }],
+            generationConfig: {
+              maxOutputTokens: 1000,
+              temperature: 0.3,
+            },
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const rawText = extractGeminiText(data);
+
+          // JSONを抽出
+          let analysisResult: any = {};
+          try {
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              analysisResult = JSON.parse(jsonMatch[0]);
+            }
+          } catch {
+            analysisResult = { summary: rawText, concerns: [] };
+          }
+
+          // 気になる点があればサジェスションを生成
+          let suggestion = null;
+          if (analysisResult.concerns && analysisResult.concerns.length > 0) {
+            const firstConcern = analysisResult.concerns[0];
+            suggestion = {
+              type: 'photo-concern',
+              message: `${firstConcern.area}に${firstConcern.issue}が見られます`,
+              actionLabel: '気になる箇所に追加',
+              variant: firstConcern.severity === 'high' ? 'warning' : 'default',
+              payload: {
+                photoUrl: photo,
+                label: `${firstConcern.issue}（AI検出）`,
+                concerns: analysisResult.concerns,
+              },
+            };
+          }
+
+          return res.json({
+            analysis: analysisResult.summary || '写真を確認しました。',
+            health_concerns: analysisResult.concerns || [],
+            coat_condition: analysisResult.coat_condition,
+            overall_health: analysisResult.overall_health,
+            activity: analysisResult.activity,
+            mood: analysisResult.mood,
+            suggestion,
+          });
+        } else {
+          console.error('Gemini API error for photo analysis');
+          return res.json({
+            analysis: '写真を確認しました。',
+            health_concerns: [],
+            suggestion: null,
+          });
+        }
+      } catch (apiError) {
+        console.error('Photo analysis API error:', apiError);
+        return res.json({
+          analysis: '写真を確認しました。',
+          health_concerns: [],
+          suggestion: null,
+        });
+      }
     }
 
+    // 日誌作成時の活動推測（既存機能）
     if (!photo_base64) {
       sendBadRequest(res, '写真が必要です');
       return;
     }
-
-    const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return res.json({
@@ -332,24 +487,8 @@ router.post('/analyze-photo', async (req: AuthRequest, res) => {
       });
     }
 
-    // base64データからdata:image/...;base64,の部分を除去
-    let base64Data = photo_base64.includes(',') 
-      ? photo_base64.split(',')[1] 
-      : photo_base64;
-    
-    // メディアタイプを検出
-    let mimeType = 'image/jpeg';
-    if (photo_base64.includes('data:image/')) {
-      const match = photo_base64.match(/data:image\/([^;]+)/);
-      if (match) {
-        const ext = match[1];
-        if (ext === 'png') mimeType = 'image/png';
-        else if (ext === 'gif') mimeType = 'image/gif';
-        else if (ext === 'webp') mimeType = 'image/webp';
-      }
-    }
+    const { base64Data, mimeType } = processBase64Image(photo_base64);
 
-    // Gemini APIを使用して写真を解析
     try {
       const prompt = `この写真は犬の幼稚園・保育園で撮影された写真です。写真に写っている犬の活動内容を分析してください。
 
@@ -365,31 +504,19 @@ ${dog_name ? `この犬の名前は「${dog_name}」です。` : ''}
 分析結果を、日誌のコメントとして使えるような自然な日本語で、100文字程度でまとめてください。
 温かみのある表現で、飼い主さんに伝える形式で書いてください。`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
             parts: [
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Data,
-                },
-              },
-              {
-                text: prompt,
-              },
+              { inline_data: { mime_type: mimeType, data: base64Data } },
+              { text: prompt },
             ],
           }],
           generationConfig: {
             maxOutputTokens: 500,
             temperature: 0.7,
-            thinkingConfig: {
-              thinkingBudget: 0,
-            },
           },
         }),
       });
@@ -397,11 +524,11 @@ ${dog_name ? `この犬の名前は「${dog_name}」です。` : ''}
       if (response.ok) {
         const data = await response.json();
         const analysis = extractGeminiText(data);
-        
+
         if (!analysis) {
           throw new Error('解析結果が取得できませんでした');
         }
-        
+
         // トレーニング項目を抽出（キーワードベース）
         const trainingKeywords: Record<string, string[]> = {
           sit: ['オスワリ', '座', 'sit'],
@@ -420,7 +547,7 @@ ${dog_name ? `この犬の名前は「${dog_name}」です。` : ''}
         return res.json({
           analysis,
           training_suggestions: trainingSuggestions,
-          suggested_comment: analysis, // 分析結果をそのままコメントとして使用
+          suggested_comment: analysis,
         });
       } else {
         const errorData = await response.json();
@@ -455,9 +582,45 @@ router.post('/generate-report', async (req: AuthRequest, res) => {
       return;
     }
 
+    // 店舗の文体パターンを取得（データ活用が有効な場合）
+    let styleHint = '';
+    if (req.storeId) {
+      const writingStyle = await analyzeWritingStyle(req.storeId, record_type);
+      if (writingStyle) {
+        const styleDescriptions: string[] = [];
+        if (writingStyle.avgLength > 300) {
+          styleDescriptions.push('詳しく丁寧に');
+        } else if (writingStyle.avgLength < 150) {
+          styleDescriptions.push('簡潔に');
+        }
+        if (writingStyle.usesEmoji) {
+          styleDescriptions.push('絵文字を適度に使用');
+        } else {
+          styleDescriptions.push('絵文字は控えめに');
+        }
+        if (writingStyle.formalLevel === 'casual') {
+          styleDescriptions.push('親しみやすい口調で');
+        } else if (writingStyle.formalLevel === 'formal') {
+          styleDescriptions.push('丁寧な敬語で');
+        }
+        if (styleDescriptions.length > 0) {
+          styleHint = `\n\n【この店舗の好みの文体】\n${styleDescriptions.join('、')}書いてください。`;
+        }
+      }
+
+      // 高品質な過去の例を取得
+      const examples = await getHighQualityExamples(req.storeId, 'report_generation', record_type, 2);
+      if (examples.length > 0) {
+        styleHint += '\n\n【参考：この店舗で好評だった過去のレポート例】\n';
+        examples.forEach((ex, i) => {
+          styleHint += `例${i + 1}: ${ex.finalText.substring(0, 150)}...\n`;
+        });
+      }
+    }
+
     const prompt = buildReportPrompt(record_type, dog_name, {
       grooming_data, daycare_data, hotel_data, condition, health_check, notes,
-    });
+    }, styleHint);
 
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
@@ -477,7 +640,22 @@ router.post('/generate-report', async (req: AuthRequest, res) => {
         const data = await response.json();
         const reportText = extractGeminiText(data);
         if (reportText) {
-          return res.json({ report: reportText });
+          // 学習データを保存
+          let learningDataId: number | null = null;
+          if (req.storeId) {
+            learningDataId = await saveAILearningData({
+              storeId: req.storeId,
+              dataType: 'report_generation',
+              inputContext: { grooming_data, daycare_data, hotel_data, condition, health_check },
+              aiOutput: reportText,
+              recordType: record_type,
+            });
+          }
+
+          return res.json({
+            report: reportText,
+            learning_data_id: learningDataId, // フィードバック用
+          });
         }
       }
     } catch (apiError) {
@@ -502,7 +680,8 @@ function buildReportPrompt(
     condition?: { overall?: string };
     health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
     notes?: { internal_notes?: string };
-  }
+  },
+  styleHint: string = ''
 ): string {
   const partLabels: Record<string, string> = {
     head: '頭', face: '顔', ears: '耳', body: '体',
@@ -534,7 +713,7 @@ ${memo}
 - カットの仕上がり
 - 健康面で気づいたこと
 - ご自宅でのケアアドバイス
-温かみのある丁寧な日本語でお願いします。`;
+温かみのある丁寧な日本語でお願いします。${styleHint}`;
   }
 
   if (recordType === 'hotel') {
@@ -552,7 +731,7 @@ ${memo}
 - 滞在中の様子・リラックス度
 - お食事やお散歩の様子
 - 飼い主さんへの安心メッセージ
-温かみのある丁寧な日本語でお願いします。`;
+温かみのある丁寧な日本語でお願いします。${styleHint}`;
   }
 
   // daycare (default)
@@ -569,7 +748,7 @@ ${memo}
 - 今日の活動と楽しんでいた様子
 - 成長が見られた点
 - 次回への期待
-温かみのある丁寧な日本語でお願いします。`;
+温かみのある丁寧な日本語でお願いします。${styleHint}`;
 }
 
 function generateReportFallback(recordType: string, dogName: string): string {
@@ -837,6 +1016,61 @@ router.get('/suggestions/:recordId', async (req: AuthRequest, res) => {
     res.json({ suggestions });
   } catch (error) {
     sendServerError(res, 'サジェスション取得に失敗しました', error);
+  }
+});
+
+// AI出力へのフィードバック記録
+router.post('/feedback', async (req: AuthRequest, res) => {
+  try {
+    const { learning_data_id, was_used, was_edited, final_text } = req.body;
+
+    if (learning_data_id && req.storeId) {
+      await recordAIFeedback({
+        learningDataId: learning_data_id,
+        wasUsed: was_used ?? false,
+        wasEdited: was_edited ?? false,
+        finalText: final_text,
+      });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    sendServerError(res, 'フィードバック記録に失敗しました', error);
+  }
+});
+
+// サジェスションへのフィードバック記録
+router.post('/suggestion-feedback', async (req: AuthRequest, res) => {
+  try {
+    const { suggestion_type, was_applied, record_type } = req.body;
+
+    if (suggestion_type && req.storeId) {
+      await recordSuggestionFeedback(
+        req.storeId,
+        suggestion_type,
+        was_applied ?? false,
+        record_type
+      );
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    sendServerError(res, 'フィードバック記録に失敗しました', error);
+  }
+});
+
+// AI設定の取得
+router.get('/settings', async (req: AuthRequest, res) => {
+  try {
+    if (!req.storeId) {
+      sendBadRequest(res, 'storeIdが必要です');
+      return;
+    }
+
+    const settings = await getAISettings(req.storeId);
+    res.json(settings);
+  } catch (error) {
+    sendServerError(res, 'AI設定の取得に失敗しました', error);
   }
 });
 
