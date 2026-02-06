@@ -30,10 +30,10 @@ jobs:
         run: npm ci --prefix server
 
       - name: Type check (client)
-        run: npm --prefix client exec tsc --noEmit
+        run: cd client && npx tsc --noEmit
 
       - name: Type check (server)
-        run: npm --prefix server exec tsc --noEmit
+        run: cd server && npx tsc --noEmit
 
       - name: Build client
         run: npm --prefix client run build

@@ -70,6 +70,8 @@ describe('useRecordAISuggestions', () => {
 
     await act(async () => {
       await handlers!.sendAIFeedback('final text')
+    })
+    await act(async () => {
       await handlers!.sendAIFeedback('final text')
     })
 
