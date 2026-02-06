@@ -353,9 +353,10 @@ const RecordDetail = () => {
         <PhotosForm
           data={photos}
           onChange={setPhotos}
+          recordType={record.record_type}
           showConcerns={record.record_type === 'grooming'}
           aiSuggestion={recordAISuggestions['photo-concern']}
-          onAISuggestionAction={() => handleAISuggestionAction('photo-concern')}
+          onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
           onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
           onPhotoAdded={handlePhotoAdded}
         />
@@ -366,7 +367,7 @@ const RecordDetail = () => {
           data={notes}
           onChange={setNotes}
           aiSuggestion={recordAISuggestions['report-draft']}
-          onAISuggestionAction={() => handleAISuggestionAction('report-draft')}
+          onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
           onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
         />
       </RequiredSection>
@@ -390,7 +391,7 @@ const RecordDetail = () => {
           showWeightGraph={record.record_type === 'grooming'}
           weightHistory={weightHistory}
           aiSuggestion={recordAISuggestions['health-history']}
-          onAISuggestionAction={() => handleAISuggestionAction('health-history')}
+          onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
           onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
         />
       </OptionalSection>

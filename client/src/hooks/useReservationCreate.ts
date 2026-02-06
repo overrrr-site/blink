@@ -37,6 +37,7 @@ export function useReservationCreate({ dateParam, onSuccess }: UseReservationCre
       await api.post('/reservations', {
         dog_id: selectedDogId,
         ...form,
+        service_type: 'daycare',
       })
 
       onSuccess()

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
@@ -6,6 +6,7 @@ import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
 import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../utils/businessTypeColors'
 import { useAuthStore } from '../store/authStore'
+import { useBusinessTypeStore } from '../store/businessTypeStore'
 import type { RecordType } from '../types/record'
 import RecordHeader from './records/components/RecordHeader'
 import PetInfoCard from './records/components/PetInfoCard'
@@ -65,11 +66,20 @@ const RecordCreate = () => {
   const { reservationId } = useParams()
   const { showToast } = useToast()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
-  const recordLabel = getRecordLabel(primaryBusinessType)
+  const { selectedBusinessType } = useBusinessTypeStore()
+  const effectiveType = selectedBusinessType || primaryBusinessType as RecordType || 'daycare'
+  const recordLabel = getRecordLabel(effectiveType)
 
   // Dog selection
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
-  const [recordType, setRecordType] = useState<RecordType>('daycare')
+  const [recordType, setRecordType] = useState<RecordType>(effectiveType)
+
+  // 業種切り替え時にrecordTypeを同期
+  useEffect(() => {
+    if (selectedBusinessType) {
+      setRecordType(selectedBusinessType)
+    }
+  }, [selectedBusinessType])
 
   const {
     daycareData,
@@ -113,6 +123,24 @@ const RecordCreate = () => {
       onSuccess: (data) => {
         if (data?.dog_id && !selectedDogId) {
           setSelectedDogId(data.dog_id)
+        }
+        // ホテルカルテの自動入力
+        if (recordType === 'hotel' && data?.service_type === 'hotel') {
+          setHotelData((prev) => {
+            if (prev.check_in) return prev
+            const checkinDate = data.reservation_date || ''
+            const checkoutDate = data.end_datetime?.split('T')[0] || ''
+            const diffMs = checkinDate && checkoutDate
+              ? new Date(checkoutDate).getTime() - new Date(checkinDate).getTime()
+              : 0
+            return {
+              ...prev,
+              check_in: checkinDate,
+              check_out_scheduled: checkoutDate,
+              nights: Math.max(0, Math.ceil(diffMs / 86_400_000)),
+              special_care: data.service_details?.special_care || data.notes || prev.special_care || '',
+            }
+          })
         }
       },
     }
@@ -298,8 +326,10 @@ const RecordCreate = () => {
             copyLoading={copyLoading}
           />
 
-          {/* Record Type Selector (future: show based on store business_types) */}
-          <RecordTypeSelector recordType={recordType} onSelect={setRecordType} recordLabel={recordLabel} />
+          {/* 業種が未選択（すべて）の場合のみ業種セレクターを表示 */}
+          {!selectedBusinessType && (
+            <RecordTypeSelector recordType={recordType} onSelect={setRecordType} recordLabel={recordLabel} />
+          )}
 
           {/* Business-type specific form */}
           <RecordTypeSection
@@ -316,9 +346,10 @@ const RecordCreate = () => {
             <PhotosForm
               data={photos}
               onChange={setPhotos}
+              recordType={recordType}
               showConcerns={recordType === 'grooming'}
               aiSuggestion={recordAISuggestions['photo-concern']}
-              onAISuggestionAction={() => handleAISuggestionAction('photo-concern')}
+              onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
               onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
               onPhotoAdded={handlePhotoAdded}
             />
@@ -329,7 +360,7 @@ const RecordCreate = () => {
               data={notes}
               onChange={setNotes}
               aiSuggestion={recordAISuggestions['report-draft']}
-              onAISuggestionAction={() => handleAISuggestionAction('report-draft')}
+              onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
               onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
             />
           </RequiredSection>
@@ -353,7 +384,7 @@ const RecordCreate = () => {
               showWeightGraph={recordType === 'grooming'}
               weightHistory={[]}
               aiSuggestion={recordAISuggestions['health-history']}
-              onAISuggestionAction={() => handleAISuggestionAction('health-history')}
+              onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
               onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
             />
           </OptionalSection>

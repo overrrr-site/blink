@@ -9,6 +9,7 @@ import type { PaginatedResponse } from '../types/api'
 import { Pagination } from '../components/Pagination'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
+import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
 
 interface Owner {
   id: number
@@ -190,7 +191,10 @@ const Customers = () => {
   return (
     <div className="pb-6">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
-        <h1 className="text-lg font-bold font-heading">顧客管理</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold font-heading">顧客管理</h1>
+          <BusinessTypeSwitcher />
+        </div>
       </header>
 
       <div className="px-5 pt-4 space-y-4">

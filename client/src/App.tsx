@@ -27,6 +27,8 @@ const OwnerEdit = lazy(() => import('./pages/OwnerEdit'))
 const DogCreate = lazy(() => import('./pages/DogCreate'))
 const DogEdit = lazy(() => import('./pages/DogEdit'))
 const ReservationCreate = lazy(() => import('./pages/ReservationCreate'))
+const GroomingReservationCreate = lazy(() => import('./pages/GroomingReservationCreate'))
+const HotelReservationCreate = lazy(() => import('./pages/HotelReservationCreate'))
 const Customers = lazy(() => import('./pages/Customers'))
 const ContractEdit = lazy(() => import('./pages/ContractEdit'))
 const StaffEdit = lazy(() => import('./pages/StaffEdit'))
@@ -127,6 +129,8 @@ function App() {
                 <Route path="/settings/grooming-menu/:id" element={<OwnerRoute><GroomingMenuEdit /></OwnerRoute>} />
                 <Route path="/reservations" element={<ReservationsCalendar />} />
                 <Route path="/reservations/new" element={<ReservationCreate />} />
+                <Route path="/reservations/grooming/create" element={<GroomingReservationCreate />} />
+                <Route path="/reservations/hotel/create" element={<HotelReservationCreate />} />
                 <Route path="/reservations/:id" element={<ReservationDetail />} />
                 <Route path="/records" element={<RecordList />} />
                 <Route path="/records/new" element={<RecordCreate />} />

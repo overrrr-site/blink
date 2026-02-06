@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
 import api from '../api/client'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
+import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
 
 const ReservationsCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -16,6 +17,17 @@ const ReservationsCalendar = () => {
   const [updating, setUpdating] = useState<number | null>(null)
   const navigate = useNavigate()
   const { selectedBusinessType } = useBusinessTypeStore()
+
+  const getCreateUrl = () => {
+    switch (selectedBusinessType) {
+      case 'grooming':
+        return '/reservations/grooming/create'
+      case 'hotel':
+        return '/reservations/hotel/create'
+      default:
+        return '/reservations/new'
+    }
+  }
 
   useEffect(() => {
     fetchReservations()
@@ -150,7 +162,8 @@ const ReservationsCalendar = () => {
       <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">予約管理</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <BusinessTypeSwitcher />
             <button
               onClick={() => {
                 const monthStr = format(currentDate, 'yyyy-MM')
@@ -182,7 +195,7 @@ const ReservationsCalendar = () => {
               <Icon icon="solar:download-bold" className="size-5" />
             </button>
             <button
-              onClick={() => navigate('/reservations/new')}
+              onClick={() => navigate(getCreateUrl())}
               className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors min-h-[44px]"
             >
               <Icon icon="solar:add-circle-bold" className="size-4" />
@@ -305,7 +318,7 @@ const ReservationsCalendar = () => {
                 <p className="text-sm font-medium mb-1">この日の予約はありません</p>
                 <p className="text-xs text-muted-foreground mb-4">新しい予約を追加してスケジュールを管理しましょう</p>
                 <button
-                  onClick={() => navigate('/reservations/new')}
+                  onClick={() => navigate(getCreateUrl())}
                   className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
                   aria-label="新規予約を追加"
                 >

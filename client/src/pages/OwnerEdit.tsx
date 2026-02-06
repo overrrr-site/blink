@@ -3,6 +3,8 @@ import { Icon } from '../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api/client'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
+import { useAuthStore } from '../store/authStore'
+import type { RecordType } from '../types/record'
 
 const OwnerEdit = () => {
   const { id } = useParams<{ id: string }>()
@@ -10,6 +12,7 @@ const OwnerEdit = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [initialValues, setInitialValues] = useState<Partial<OwnerFormValues>>({})
+  const businessTypes = useAuthStore((s) => s.user?.businessTypes) as RecordType[] | undefined
 
   useEffect(() => {
     if (id) {
@@ -30,6 +33,7 @@ const OwnerEdit = () => {
         emergency_contact_name: owner.emergency_contact_name || '',
         emergency_contact_phone: owner.emergency_contact_phone || '',
         notes: owner.notes || '',
+        business_types: owner.business_types || [],
       })
     } catch {
       alert('飼い主情報の取得に失敗しました')
@@ -82,6 +86,7 @@ const OwnerEdit = () => {
         onSubmit={handleSubmit}
         loading={saving}
         submitLabel="保存する"
+        availableBusinessTypes={businessTypes}
       />
     </div>
   )

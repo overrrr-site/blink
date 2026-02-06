@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { DaycareData } from '@/types/record'
 import { Icon } from '@/components/Icon'
 
@@ -12,6 +13,14 @@ const ACTIVITIES = [
 const TIME_PERIODS = [
   { key: 'morning', label: '朝' },
   { key: 'afternoon', label: '午後' },
+] as const
+
+const TOILET_SLOTS = [
+  { key: '08:00', label: '8:00' },
+  { key: '10:00', label: '10:00' },
+  { key: '12:00', label: '12:00' },
+  { key: '14:00', label: '14:00' },
+  { key: '16:00', label: '16:00' },
 ] as const
 
 interface DaycareFormProps {
@@ -38,15 +47,26 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
     })
   }
 
-  const toggleToilet = (period: 'morning' | 'afternoon', type: 'urination' | 'defecation') => {
-    const currentPeriodData = data.toilet?.[period] || { urination: false, defecation: false }
+  const migratedToilet = useMemo(() => {
+    if (!data.toilet) return data.toilet
+    const result: Record<string, { urination: boolean; defecation: boolean }> = {}
+    Object.entries(data.toilet).forEach(([key, val]) => {
+      if (key === 'morning') result['10:00'] = val
+      else if (key === 'afternoon') result['14:00'] = val
+      else result[key] = val
+    })
+    return result
+  }, [data.toilet])
+
+  const toggleToilet = (slot: string, type: 'urination' | 'defecation') => {
+    const currentData = migratedToilet?.[slot] || { urination: false, defecation: false }
     onChange({
       ...data,
       toilet: {
-        ...data.toilet,
-        [period]: {
-          ...currentPeriodData,
-          [type]: !currentPeriodData[type],
+        ...migratedToilet,
+        [slot]: {
+          ...currentData,
+          [type]: !currentData[type],
         },
       },
     })
@@ -109,40 +129,39 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
           <Icon icon="mdi:toilet" width="18" height="18" />
           トイレ
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {TIME_PERIODS.map(({ key, label }) => {
-            const periodKey = key as 'morning' | 'afternoon'
-            const periodData = data.toilet?.[periodKey] || { urination: false, defecation: false }
+        <div className="flex overflow-x-auto gap-2 pb-2 -mx-1 px-1">
+          {TOILET_SLOTS.map(({ key, label }) => {
+            const slotData = migratedToilet?.[key] || { urination: false, defecation: false }
             return (
-              <div key={key} className="bg-muted/30 rounded-xl p-3">
-                <p className="text-xs text-muted-foreground mb-2">{label}</p>
-                <div className="flex gap-2">
+              <div key={key} className="bg-muted/30 rounded-xl p-3 min-w-[100px] flex-shrink-0">
+                <p className="text-xs text-muted-foreground mb-2 text-center">{label}</p>
+                <div className="flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={() => toggleToilet(periodKey, 'urination')}
-                    className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
+                    onClick={() => toggleToilet(key, 'urination')}
+                    className="py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
                     style={{
-                      background: periodData.urination ? '#DBEAFE' : '#FFFFFF',
-                      border: periodData.urination ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
-                      color: periodData.urination ? '#3B82F6' : '#475569',
+                      background: slotData.urination ? '#DBEAFE' : '#FFFFFF',
+                      border: slotData.urination ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
+                      color: slotData.urination ? '#3B82F6' : '#475569',
                     }}
-                    aria-pressed={periodData.urination}
+                    aria-pressed={slotData.urination}
                   >
                     <Icon icon="mdi:water" width="16" height="16" />
                     おしっこ
                   </button>
                   <button
                     type="button"
-                    onClick={() => toggleToilet(periodKey, 'defecation')}
-                    className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
+                    onClick={() => toggleToilet(key, 'defecation')}
+                    className="py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
                     style={{
-                      background: periodData.defecation ? '#FEF3C7' : '#FFFFFF',
-                      border: periodData.defecation ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
-                      color: periodData.defecation ? '#D97706' : '#475569',
+                      background: slotData.defecation ? '#FEF3C7' : '#FFFFFF',
+                      border: slotData.defecation ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
+                      color: slotData.defecation ? '#D97706' : '#475569',
                     }}
-                    aria-pressed={periodData.defecation}
+                    aria-pressed={slotData.defecation}
                   >
-                    <Icon icon="mdi:emoticon-poop" width="16" height="16" />
+                    <Icon icon="fa-solid:poop" width="16" height="16" />
                     うんち
                   </button>
                 </div>

@@ -8,17 +8,17 @@ const GROOMING_COLOR = '#8B5CF6'
 // 画像に合わせてボタン位置を調整
 // 左側の犬（背中側）をベースに配置
 const BODY_PARTS = [
-  { id: 'head', label: '頭', x: '25%', y: '12%' },
-  { id: 'face', label: '顔', x: '25%', y: '25%' },
-  { id: 'ears', label: '耳', x: '12%', y: '18%' },
-  { id: 'body', label: '体', x: '25%', y: '50%' },
-  { id: 'tail', label: 'しっぽ', x: '25%', y: '88%' },
-  { id: 'front_legs', label: '前足', x: '12%', y: '35%' },
-  { id: 'back_legs', label: '後足', x: '12%', y: '70%' },
-  { id: 'hip', label: 'お尻', x: '25%', y: '72%' },
+  { id: 'head', label: '頭', x: '30%', y: '15%' },
+  { id: 'face', label: '顔', x: '30%', y: '28%' },
+  { id: 'ears', label: '耳', x: '16%', y: '20%' },
+  { id: 'body', label: '体', x: '30%', y: '48%' },
+  { id: 'tail', label: 'しっぽ', x: '30%', y: '88%' },
+  { id: 'front_legs', label: '前足', x: '16%', y: '38%' },
+  { id: 'back_legs', label: '後足', x: '16%', y: '68%' },
+  { id: 'hip', label: 'お尻', x: '16%', y: '78%' },
   // 右側の犬（腹側）用のボタン
-  { id: 'belly', label: 'お腹', x: '75%', y: '50%' },
-  { id: 'paws', label: '肉球', x: '88%', y: '35%' },
+  { id: 'belly', label: 'お腹', x: '70%', y: '48%' },
+  { id: 'paws', label: '肉球', x: '84%', y: '30%' },
 ] as const
 
 export default function DogSilhouette({ selectedParts, onTogglePart }: DogSilhouetteProps) {
@@ -26,7 +26,7 @@ export default function DogSilhouette({ selectedParts, onTogglePart }: DogSilhou
     <div
       className="relative rounded-2xl overflow-hidden"
       style={{
-        height: 220,
+        height: 280,
         background: '#FAF5FF',
         border: `2px solid ${GROOMING_COLOR}66`,
       }}
@@ -35,8 +35,8 @@ export default function DogSilhouette({ selectedParts, onTogglePart }: DogSilhou
       <img
         src="/images/dog-silhouette.webp"
         alt="犬のイラスト"
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[90%] w-auto opacity-40 pointer-events-none"
-        style={{ maxWidth: '100%', objectFit: 'contain' }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto pointer-events-none"
+        style={{ height: '100%', maxWidth: '100%', objectFit: 'contain', opacity: 0.5 }}
       />
 
       {/* Interactive body part buttons */}

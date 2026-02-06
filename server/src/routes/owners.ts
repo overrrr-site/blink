@@ -10,7 +10,7 @@ import {
 import { buildPaginatedResponse, extractTotalCount, parsePaginationParams, PaginationParams } from '../utils/pagination.js';
 import { isNonEmptyString } from '../utils/validation.js';
 import type { BusinessType } from '../utils/businessTypes.js';
-import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../utils/businessTypes.js';
+import { parseBusinessTypeInput } from '../utils/businessTypes.js';
 
 function buildOwnersListQuery(params: {
   storeId: number;
@@ -44,16 +44,10 @@ function buildOwnersListQuery(params: {
     `;
   const queryParams: Array<string | number> = [storeId];
 
-  // 業種フィルタ：選択された業種の予約履歴を持つ飼い主のみ表示
+  // 業種フィルタ：owners.business_typesで直接フィルタ
   if (serviceType) {
-    query += ` AND EXISTS (
-      SELECT 1 FROM reservations r2
-      JOIN dogs d2 ON r2.dog_id = d2.id
-      WHERE d2.owner_id = o.id
-        AND r2.store_id = o.store_id`;
-    query += appendBusinessTypeFilter(queryParams, 'r2.service_type', serviceType);
-    query += `
-    )`;
+    query += ` AND ($${queryParams.length + 1} = ANY(o.business_types))`;
+    queryParams.push(serviceType);
   }
 
   if (search) {
@@ -154,6 +148,7 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       emergency_picker,
       line_id,
       memo,
+      business_types,
     } = req.body;
 
     if (!isNonEmptyString(name) || !isNonEmptyString(phone)) {
@@ -161,11 +156,13 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
+    const businessTypesValue = Array.isArray(business_types) && business_types.length > 0 ? business_types : null;
+
     const result = await pool.query(
       `INSERT INTO owners (
         store_id, name, name_kana, phone, email, address,
-        emergency_contact, emergency_picker, line_id, memo
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        emergency_contact, emergency_picker, line_id, memo, business_types
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *`,
       [
         req.storeId,
@@ -178,6 +175,7 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
         emergency_picker,
         line_id,
         memo,
+        businessTypesValue,
       ]
     );
 
@@ -205,14 +203,17 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
       emergency_picker,
       line_id,
       memo,
+      business_types,
     } = req.body;
+
+    const businessTypesValue = Array.isArray(business_types) && business_types.length > 0 ? business_types : null;
 
     const result = await pool.query(
       `UPDATE owners SET
         name = $1, name_kana = $2, phone = $3, email = $4,
         address = $5, emergency_contact = $6, emergency_picker = $7,
-        line_id = $8, memo = $9, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $10 AND store_id = $11
+        line_id = $8, memo = $9, business_types = $10, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $11 AND store_id = $12
       RETURNING *`,
       [
         name,
@@ -224,6 +225,7 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
         emergency_picker,
         line_id,
         memo,
+        businessTypesValue,
         id,
         req.storeId,
       ]

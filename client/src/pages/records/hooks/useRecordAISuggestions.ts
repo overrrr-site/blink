@@ -105,10 +105,9 @@ export const useRecordAISuggestions = ({
       ...prev,
       'report-draft': {
         type: 'report-draft',
-        message: '入力内容から報告文を作成しました',
-        actionLabel: '下書きを使用',
+        message: 'AIで報告文を作成できます',
+        actionLabel: '作成する',
         variant: 'default',
-        preview: 'AIで報告文を生成できます',
       },
     }))
   }, [aiEnabled, context.notes.report_text])
@@ -134,7 +133,7 @@ export const useRecordAISuggestions = ({
     fetchSuggestions()
   }, [aiEnabled, recordId, context.recordType, context.healthCheck])
 
-  const handleAISuggestionAction = useCallback(async (type: AISuggestionType) => {
+  const handleAISuggestionAction = useCallback(async (type: AISuggestionType, editedText?: string) => {
     if (type === 'photo-concern') {
       const suggestion = aiSuggestions['photo-concern']
       const payload = suggestion?.payload as { photoUrl?: string; label?: string; annotation?: { x: number; y: number } } | undefined
@@ -163,31 +162,54 @@ export const useRecordAISuggestions = ({
     }
 
     if (type === 'report-draft') {
-      if (!context.dogName) return
-      try {
-        const response = await api.post('/ai/generate-report', {
-          record_type: context.recordType,
-          dog_name: context.dogName,
-          grooming_data: context.recordType === 'grooming' ? context.groomingData : undefined,
-          daycare_data: context.recordType === 'daycare' ? context.daycareData : undefined,
-          hotel_data: context.recordType === 'hotel' ? context.hotelData : undefined,
-          condition: context.condition,
-          health_check: context.healthCheck,
-          photos: context.photos,
-          notes: context.notes,
-        })
-        const report = response.data?.report
-        const learningDataId = response.data?.learning_data_id as number | undefined
-        if (report) {
-          setNotes((prev) => ({ ...prev, report_text: report }))
-          if (learningDataId) {
-            setAiLearningDataId(learningDataId)
-            setAiGeneratedReport(report)
-            setAiFeedbackSent(false)
+      // Two-step flow:
+      // 1. If editedText is provided, apply it directly (user clicked "使う" or "この内容で適用")
+      // 2. If editedText is NOT provided and no existing preview, call API to generate and store as preview
+      if (editedText) {
+        // Apply step: user confirmed the text
+        setNotes((prev) => ({ ...prev, report_text: editedText }))
+        if (aiGeneratedReport) {
+          const wasEdited = editedText.trim() !== aiGeneratedReport.trim()
+          if (wasEdited) {
+            setAiGeneratedReport(editedText)
           }
         }
-      } catch {
-        onReportDraftError?.()
+      } else {
+        // Generate step: call API and store result as preview
+        if (!context.dogName) return
+        try {
+          const response = await api.post('/ai/generate-report', {
+            record_type: context.recordType,
+            dog_name: context.dogName,
+            grooming_data: context.recordType === 'grooming' ? context.groomingData : undefined,
+            daycare_data: context.recordType === 'daycare' ? context.daycareData : undefined,
+            hotel_data: context.recordType === 'hotel' ? context.hotelData : undefined,
+            condition: context.condition,
+            health_check: context.healthCheck,
+            photos: context.photos,
+            notes: context.notes,
+          })
+          const report = response.data?.report
+          const learningDataId = response.data?.learning_data_id as number | undefined
+          if (report) {
+            // Store as preview in the suggestion instead of directly setting notes
+            setAiSuggestions((prev) => ({
+              ...prev,
+              'report-draft': prev['report-draft']
+                ? { ...prev['report-draft']!, preview: report, message: '入力内容から報告文を作成しました', actionLabel: '使う' }
+                : prev['report-draft'],
+            }))
+            if (learningDataId) {
+              setAiLearningDataId(learningDataId)
+              setAiGeneratedReport(report)
+              setAiFeedbackSent(false)
+            }
+          }
+        } catch {
+          onReportDraftError?.()
+          return
+        }
+        // Don't mark as applied yet - wait for user to confirm
         return
       }
     }
@@ -205,7 +227,7 @@ export const useRecordAISuggestions = ({
         [type]: prev[type] ? { ...prev[type]!, dismissed: true } : prev[type],
       }))
     }, 2000)
-  }, [aiSuggestions, context, onReportDraftError, sendSuggestionFeedback, setNotes, setPhotos])
+  }, [aiSuggestions, aiGeneratedReport, context, onReportDraftError, sendSuggestionFeedback, setNotes, setPhotos])
 
   const handleAISuggestionDismiss = useCallback((type: AISuggestionType) => {
     setAiSuggestions((prev) => ({

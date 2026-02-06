@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { Icon } from '@/components/Icon'
-import type { PhotosData, ConcernPhoto } from '@/types/record'
+import type { PhotosData, ConcernPhoto, RecordType } from '@/types/record'
 import AISuggestion from './AISuggestion'
 import type { AISuggestionData } from '@/types/ai'
 import { createLocalPhoto, createLocalConcernPhoto } from '@/utils/recordPhotos'
@@ -8,9 +8,10 @@ import { createLocalPhoto, createLocalConcernPhoto } from '@/utils/recordPhotos'
 interface PhotosFormProps {
   data: PhotosData
   onChange: (data: PhotosData) => void
+  recordType?: RecordType
   showConcerns?: boolean
   aiSuggestion?: AISuggestionData | null
-  onAISuggestionAction?: () => void
+  onAISuggestionAction?: (editedText?: string) => void
   onAISuggestionDismiss?: () => void
   onPhotoAdded?: (photoUrl: string, type: 'regular' | 'concern') => void
 }
@@ -18,6 +19,7 @@ interface PhotosFormProps {
 export default function PhotosForm({
   data,
   onChange,
+  recordType,
   showConcerns,
   aiSuggestion,
   onAISuggestionAction,
@@ -87,13 +89,13 @@ export default function PhotosForm({
           preview={aiSuggestion.preview}
           variant={aiSuggestion.variant}
           actionLabel={aiSuggestion.actionLabel}
-          onApply={() => onAISuggestionAction?.()}
+          onApply={(editedText) => onAISuggestionAction?.(editedText)}
           onDismiss={() => onAISuggestionDismiss?.()}
         />
       )}
-      {/* 仕上がり写真 */}
+      {/* 写真 */}
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">仕上がり写真</p>
+        <p className="text-sm font-medium text-slate-700 mb-2">{recordType === 'grooming' ? '仕上がり' : '写真'}</p>
         <div className="flex flex-wrap gap-2">
           {(data.regular || []).map((photo, index) => (
             <div key={index} className="relative">

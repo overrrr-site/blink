@@ -80,14 +80,6 @@ function normalizeStoredPhotos(photos: { regular?: PhotoInput[]; concerns?: Conc
   return { regular, concerns };
 }
 
-async function shouldAutoShareRecord(storeId: number): Promise<boolean> {
-  const settingsResult = await pool.query<{ auto_share_record?: boolean }>(
-    `SELECT auto_share_record FROM notification_settings WHERE store_id = $1`,
-    [storeId]
-  );
-  return settingsResult.rows[0]?.auto_share_record === true;
-}
-
 async function shareRecordForOwner(storeId: number, recordId: number) {
   const recordResult = await pool.query(
     `SELECT r.*, d.name as dog_name, o.id as owner_id, o.store_id
@@ -408,16 +400,7 @@ router.post('/', async (req: AuthRequest, res) => {
       ]
     );
 
-    let record = result.rows[0];
-    if (statusValue === 'saved' && req.storeId) {
-      const autoShare = await shouldAutoShareRecord(req.storeId);
-      if (autoShare) {
-        const sharedRecord = await shareRecordForOwner(req.storeId, record.id);
-        if (sharedRecord) {
-          record = sharedRecord;
-        }
-      }
-    }
+    const record = result.rows[0];
 
     res.status(201).json(record);
   } catch (error) {
@@ -523,16 +506,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return;
     }
 
-    let record = result.rows[0];
-    if (record.status === 'saved' && req.storeId) {
-      const autoShare = await shouldAutoShareRecord(req.storeId);
-      if (autoShare) {
-        const sharedRecord = await shareRecordForOwner(req.storeId, record.id);
-        if (sharedRecord) {
-          record = sharedRecord;
-        }
-      }
-    }
+    const record = result.rows[0];
 
     res.json(record);
   } catch (error) {

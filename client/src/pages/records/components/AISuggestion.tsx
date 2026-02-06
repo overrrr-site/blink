@@ -3,10 +3,10 @@ import { Icon } from '@/components/Icon'
 
 type Variant = 'default' | 'warning' | 'success'
 
-const VARIANT_STYLES: Record<Variant, { lineColor: string; bg: string; iconBg: string }> = {
-  default: { lineColor: '#6366F1', bg: '#EEF2FF', iconBg: '#6366F1' },
-  warning: { lineColor: '#F59E0B', bg: '#FFFBEB', iconBg: '#F59E0B' },
-  success: { lineColor: '#10B981', bg: '#ECFDF5', iconBg: '#10B981' },
+const VARIANT_STYLES: Record<Variant, { bg: string; border: string; iconColor: string }> = {
+  default: { bg: '#F8F9FF', border: '#E0E7FF', iconColor: '#6366F1' },
+  warning: { bg: '#FFFBEB', border: '#FEF3C7', iconColor: '#F59E0B' },
+  success: { bg: '#ECFDF5', border: '#D1FAE5', iconColor: '#10B981' },
 }
 
 interface AISuggestionProps {
@@ -14,7 +14,7 @@ interface AISuggestionProps {
   preview?: string
   variant?: Variant
   actionLabel?: string
-  onApply: () => void
+  onApply: (editedText?: string) => void
   onDismiss: () => void
 }
 
@@ -22,19 +22,18 @@ export default function AISuggestion({
   message,
   preview,
   variant = 'default',
-  actionLabel = '適用する',
+  actionLabel = '使う',
   onApply,
   onDismiss,
 }: AISuggestionProps) {
   const [applied, setApplied] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editedText, setEditedText] = useState(preview || '')
   const style = VARIANT_STYLES[variant]
 
   if (applied) {
     return (
-      <div
-        className="rounded-xl p-3 flex items-center gap-2"
-        style={{ background: '#ECFDF5' }}
-      >
+      <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#ECFDF5' }}>
         <div className="size-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
           <Icon icon="solar:check-circle-bold" width="12" height="12" className="text-white" />
         </div>
@@ -46,73 +45,126 @@ export default function AISuggestion({
   }
 
   return (
-    <div
-      className="rounded-xl shadow-sm overflow-hidden"
-      style={{ background: style.bg }}
-    >
-      {/* Color top line */}
+    <div className="flex items-start gap-3">
+      {/* AI Avatar */}
       <div
+        className="size-10 rounded-full flex items-center justify-center shrink-0 shadow-sm"
         style={{
-          height: 3,
-          background: `linear-gradient(90deg, ${style.lineColor}, ${style.lineColor})`,
+          background: `linear-gradient(135deg, ${style.iconColor}, ${style.iconColor}CC)`,
         }}
-      />
+      >
+        <Icon icon="solar:magic-stick-3-bold" width="18" height="18" className="text-white" />
+      </div>
 
-      <div className="p-3.5">
-        {/* Header */}
-        <div className="flex items-start gap-2 mb-2">
+      {/* Chat Bubble */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <span className="text-xs font-bold" style={{ color: style.iconColor }}>
+            AI アシスタント
+          </span>
           <div
-            className="size-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{
-              background: `linear-gradient(135deg, ${style.iconBg}, ${style.iconBg}CC)`,
-              boxShadow: `0 2px 4px ${style.lineColor}66`,
-            }}
-          >
-            <Icon icon="solar:magic-stick-3-bold" width="16" height="16" className="text-white" />
-          </div>
-          <p className="flex-1 text-sm font-semibold leading-snug" style={{ color: 'var(--foreground)' }}>
-            {message}
-          </p>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="size-6 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors shrink-0"
-            aria-label="閉じる"
-          >
-            <Icon icon="solar:close-bold" width="14" height="14" className="text-slate-400" />
-          </button>
+            className="size-1.5 rounded-full animate-pulse"
+            style={{ backgroundColor: style.iconColor }}
+          />
         </div>
 
-        {/* Preview */}
-        {preview && (
-          <div className="mb-3 p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-600 leading-relaxed">
-            {preview}
-          </div>
-        )}
+        <div
+          className="rounded-2xl rounded-tl-sm p-4 shadow-sm"
+          style={{
+            backgroundColor: style.bg,
+            border: `1px solid ${style.border}`,
+          }}
+        >
+          <p className="text-sm leading-relaxed text-slate-700 mb-3">{message}</p>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setApplied(true)
-              onApply()
-            }}
-            className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white transition-all"
-            style={{
-              background: `linear-gradient(135deg, ${style.lineColor}, ${style.lineColor}CC)`,
-              boxShadow: `0 2px 4px ${style.lineColor}40`,
-            }}
-          >
-            {actionLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="px-4 py-2 rounded-lg text-[13px] font-medium bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
-          >
-            スキップ
-          </button>
+          {/* Preview */}
+          {preview && !editing && (
+            <div className="mb-3 p-3 bg-white rounded-xl border border-slate-200 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+              {preview}
+            </div>
+          )}
+
+          {/* Edit mode */}
+          {editing && (
+            <div className="mb-3">
+              <textarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                rows={6}
+                className="w-full p-3 bg-white rounded-xl border border-slate-300 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {!editing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (preview) setApplied(true)
+                    onApply(preview)
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all shadow-sm hover:shadow-md"
+                  style={{
+                    background: `linear-gradient(135deg, ${style.iconColor}, ${style.iconColor}CC)`,
+                  }}
+                >
+                  {actionLabel}
+                </button>
+                {preview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(true)
+                      setEditedText(preview)
+                    }}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[13px] font-medium bg-white text-slate-700 hover:bg-slate-50 transition-colors"
+                    style={{ border: `1.5px solid ${style.border}` }}
+                  >
+                    <Icon icon="solar:pen-bold" width="14" height="14" className="inline mr-1" />
+                    編集する
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onDismiss}
+                  className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+                  aria-label="閉じる"
+                >
+                  <Icon icon="solar:close-bold" width="14" height="14" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApplied(true)
+                    onApply(editedText)
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all shadow-sm hover:shadow-md"
+                  style={{
+                    background: `linear-gradient(135deg, ${style.iconColor}, ${style.iconColor}CC)`,
+                  }}
+                >
+                  この内容で適用
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(false)
+                    setEditedText(preview || '')
+                  }}
+                  className="px-4 py-2.5 rounded-xl text-[13px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  キャンセル
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

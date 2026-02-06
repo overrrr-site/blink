@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Icon } from './Icon'
 import { INPUT_CLASS } from '../utils/styles'
+import { getBusinessTypeColors, getBusinessTypeLabel } from '../utils/businessTypeColors'
+import type { RecordType } from '../types/record'
 
 export interface OwnerFormValues {
   name: string
@@ -11,6 +13,7 @@ export interface OwnerFormValues {
   emergency_contact_name: string
   emergency_contact_phone: string
   notes: string
+  business_types: string[]
 }
 
 interface OwnerFormProps {
@@ -19,6 +22,7 @@ interface OwnerFormProps {
   loading?: boolean
   submitLabel?: string
   submitIcon?: string
+  availableBusinessTypes?: RecordType[]
 }
 
 interface FormErrors {
@@ -35,6 +39,7 @@ function OwnerForm({
   loading = false,
   submitLabel = '登録する',
   submitIcon = 'solar:check-circle-bold',
+  availableBusinessTypes,
 }: OwnerFormProps): JSX.Element {
   const [form, setForm] = useState<OwnerFormValues>({
     name: '',
@@ -45,6 +50,7 @@ function OwnerForm({
     emergency_contact_name: '',
     emergency_contact_phone: '',
     notes: '',
+    business_types: [],
   })
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
@@ -96,6 +102,15 @@ function OwnerForm({
     setErrors((prev) => ({ ...prev, [name]: error }))
   }
 
+  function toggleBusinessType(type: string): void {
+    setForm((prev) => ({
+      ...prev,
+      business_types: prev.business_types.includes(type)
+        ? prev.business_types.filter((t) => t !== type)
+        : [...prev.business_types, type],
+    }))
+  }
+
   function handleSubmit(e: React.FormEvent): void {
     e.preventDefault()
 
@@ -114,6 +129,8 @@ function OwnerForm({
 
     onSubmit(form)
   }
+
+  const businessTypes = availableBusinessTypes || (['daycare', 'grooming', 'hotel'] as RecordType[])
 
   return (
     <form onSubmit={handleSubmit} className="px-5 pt-4 space-y-4">
@@ -226,6 +243,45 @@ function OwnerForm({
           </div>
         </div>
       </section>
+
+      {/* 利用サービス */}
+      {businessTypes.length > 1 && (
+        <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
+            <Icon icon="solar:buildings-2-bold" className="text-primary size-4" />
+            利用サービス
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {businessTypes.map((type) => {
+              const colors = getBusinessTypeColors(type)
+              const label = getBusinessTypeLabel(type)
+              const checked = form.business_types.includes(type)
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => toggleBusinessType(type)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px]"
+                  style={{
+                    background: checked ? colors.pale : '#FFFFFF',
+                    border: checked ? `1.5px solid ${colors.primary}` : '1px solid #E2E8F0',
+                    color: checked ? colors.primary : '#94A3B8',
+                  }}
+                  aria-pressed={checked}
+                >
+                  <Icon
+                    icon={checked ? 'solar:check-circle-bold' : 'solar:circle-linear'}
+                    width="18"
+                    height="18"
+                  />
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">未選択の場合はすべてのサービスに表示されます</p>
+        </section>
+      )}
 
       <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">

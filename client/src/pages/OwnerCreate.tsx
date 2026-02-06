@@ -3,10 +3,13 @@ import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
+import { useAuthStore } from '../store/authStore'
+import type { RecordType } from '../types/record'
 
 const OwnerCreate = () => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const businessTypes = useAuthStore((s) => s.user?.businessTypes) as RecordType[] | undefined
   const [dogInfo, setDogInfo] = useState({
     name: '',
     breed: '',
@@ -73,7 +76,7 @@ const OwnerCreate = () => {
         </div>
       </header>
 
-      <OwnerForm onSubmit={handleSubmit} loading={loading} />
+      <OwnerForm onSubmit={handleSubmit} loading={loading} availableBusinessTypes={businessTypes} />
 
       {/* 犬情報入力セクション */}
       <div className="px-5 pt-4">

@@ -44,21 +44,29 @@ export default function BusinessTypeSwitcher(): JSX.Element {
     setIsOpen(false)
   }
 
+  // 選択中の業種ラベル
+  const currentLabel = selectedBusinessType ? getBusinessTypeLabel(selectedBusinessType) : null
+
   // 1業種のみの場合は表示のみ（クリック不可）
   if (!hasMultipleTypes && availableTypes.length === 1) {
     const singleType = availableTypes[0]
     const colors = getBusinessTypeColors(singleType)
     return (
-      <div
-        className="size-12 rounded-full p-0.5 flex items-center justify-center"
-        style={{ backgroundColor: colors.pale, border: `2px solid ${colors.light}` }}
-      >
+      <div className="flex flex-col items-center gap-0.5">
         <div
-          className="w-full h-full rounded-full flex items-center justify-center"
-          style={{ backgroundColor: colors.pale, color: colors.primary }}
+          className="size-10 rounded-full p-0.5 flex items-center justify-center"
+          style={{ backgroundColor: colors.pale, border: `2px solid ${colors.light}` }}
         >
-          <Icon icon={getBusinessTypeIcon(singleType)} width="24" height="24" />
+          <div
+            className="w-full h-full rounded-full flex items-center justify-center"
+            style={{ backgroundColor: colors.pale, color: colors.primary }}
+          >
+            <Icon icon={getBusinessTypeIcon(singleType)} width="20" height="20" />
+          </div>
         </div>
+        <span className="text-[9px] font-bold leading-none" style={{ color: colors.primary }}>
+          {getBusinessTypeLabel(singleType)}
+        </span>
       </div>
     )
   }
@@ -66,28 +74,33 @@ export default function BusinessTypeSwitcher(): JSX.Element {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* トリガーボタン */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="size-12 rounded-full p-0.5 flex items-center justify-center transition-all active:scale-95"
-        style={{
-          backgroundColor: currentColors?.pale || '#F3F4F6',
-          border: `2px solid ${currentColors?.light || '#D1D5DB'}`,
-        }}
-        aria-label="業種を切り替え"
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-      >
-        <div
-          className="w-full h-full rounded-full flex items-center justify-center"
-          style={{ backgroundColor: currentColors?.pale || '#F3F4F6', color: currentColors?.primary || '#6B7280' }}
+      <div className="flex flex-col items-center gap-0.5">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="size-10 rounded-full p-0.5 flex items-center justify-center transition-all active:scale-95"
+          style={{
+            backgroundColor: currentColors?.pale || '#F3F4F6',
+            border: `2px solid ${currentColors?.light || '#D1D5DB'}`,
+          }}
+          aria-label="業種を切り替え"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
         >
-          <Icon
-            icon={currentIcon}
-            width="24"
-            height="24"
-          />
-        </div>
-      </button>
+          <div
+            className="w-full h-full rounded-full flex items-center justify-center"
+            style={{ backgroundColor: currentColors?.pale || '#F3F4F6', color: currentColors?.primary || '#6B7280' }}
+          >
+            <Icon
+              icon={currentIcon}
+              width="20"
+              height="20"
+            />
+          </div>
+        </button>
+        <span className="text-[9px] font-bold leading-none" style={{ color: currentColors?.primary || '#6B7280' }}>
+          {currentLabel || 'すべて'}
+        </span>
+      </div>
 
       {/* ドロップダウンメニュー */}
       {isOpen && (

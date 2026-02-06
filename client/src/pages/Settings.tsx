@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon'
 import { useAuthStore } from '../store/authStore'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
+import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
 
 type TabId = 'store' | 'pricing' | 'integration' | 'other'
 
@@ -114,7 +115,10 @@ function Settings() {
   return (
     <div className="pb-32">
       <header className="px-5 pt-6 pb-2 bg-background sticky top-0 z-10 safe-area-pt">
-        <h1 className="text-2xl font-bold font-heading text-foreground mb-4">設定</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold font-heading text-foreground">設定</h1>
+          <BusinessTypeSwitcher />
+        </div>
 
         <div className="flex bg-muted rounded-xl p-1 gap-0.5">
           {TABS.map((tab) => (

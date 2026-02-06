@@ -6,7 +6,7 @@ interface NotesFormProps {
   data: NotesData
   onChange: (data: NotesData) => void
   aiSuggestion?: AISuggestionData | null
-  onAISuggestionAction?: () => void
+  onAISuggestionAction?: (editedText?: string) => void
   onAISuggestionDismiss?: () => void
 }
 
@@ -25,7 +25,7 @@ export default function NotesForm({
           preview={aiSuggestion.preview}
           variant={aiSuggestion.variant}
           actionLabel={aiSuggestion.actionLabel}
-          onApply={() => onAISuggestionAction?.()}
+          onApply={(editedText) => onAISuggestionAction?.(editedText)}
           onDismiss={() => onAISuggestionDismiss?.()}
         />
       )}

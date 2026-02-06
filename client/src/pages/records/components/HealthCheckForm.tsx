@@ -25,7 +25,7 @@ interface HealthCheckFormProps {
   showWeightGraph?: boolean
   weightHistory?: WeightEntry[]
   aiSuggestion?: AISuggestionData | null
-  onAISuggestionAction?: () => void
+  onAISuggestionAction?: (editedText?: string) => void
   onAISuggestionDismiss?: () => void
 }
 
@@ -48,7 +48,7 @@ export default function HealthCheckForm({
           preview={aiSuggestion.preview}
           variant={aiSuggestion.variant}
           actionLabel={aiSuggestion.actionLabel}
-          onApply={() => onAISuggestionAction?.()}
+          onApply={(editedText) => onAISuggestionAction?.(editedText)}
           onDismiss={() => onAISuggestionDismiss?.()}
         />
       )}

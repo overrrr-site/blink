@@ -15,10 +15,7 @@ export interface DaycareData {
     morning?: string
     afternoon?: string
   }
-  toilet?: {
-    morning?: { urination: boolean; defecation: boolean }
-    afternoon?: { urination: boolean; defecation: boolean }
-  }
+  toilet?: Record<string, { urination: boolean; defecation: boolean }>
 }
 
 export interface HotelData {
