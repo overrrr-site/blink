@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install dependencies (root)
+        run: npm ci
+
+      - name: Install dependencies (client)
+        run: npm ci --prefix client
+
+      - name: Install dependencies (server)
+        run: npm ci --prefix server
+
+      - name: Type check (client)
+        run: npm --prefix client exec tsc --noEmit
+
+      - name: Type check (server)
+        run: npm --prefix server exec tsc --noEmit
+
+      - name: Build client
+        run: npm --prefix client run build
+
+      - name: Build server
+        run: npm --prefix server run build
+
+      - name: Run tests
+        run: npm test
