@@ -148,7 +148,7 @@ const DogCreate = () => {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between safe-area-pt">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(`/owners/${ownerId}`)}

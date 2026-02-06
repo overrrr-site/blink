@@ -27,7 +27,7 @@ export default function HotelForm({ data, onChange }: HotelFormProps) {
           <span className="text-sm font-bold text-cyan-700">宿泊情報</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-slate-500 mb-1 block">チェックイン</label>
             <input
@@ -55,7 +55,7 @@ export default function HotelForm({ data, onChange }: HotelFormProps) {
               <button
                 type="button"
                 onClick={() => handleFieldChange('nights', Math.max(1, nights - 1))}
-                className="size-8 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 transition-colors"
+                className="size-11 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 transition-colors"
               >
                 <Icon icon="solar:minus-circle-bold" width="16" height="16" />
               </button>
@@ -63,7 +63,7 @@ export default function HotelForm({ data, onChange }: HotelFormProps) {
               <button
                 type="button"
                 onClick={() => handleFieldChange('nights', nights + 1)}
-                className="size-8 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 transition-colors"
+                className="size-11 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 transition-colors"
               >
                 <Icon icon="solar:add-circle-bold" width="16" height="16" />
               </button>

@@ -176,7 +176,7 @@ const Customers = () => {
   if (isLoading) {
     return (
       <div className="pb-6">
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3">
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
           <h1 className="text-lg font-bold font-heading">顧客管理</h1>
         </header>
         <div className="px-5 pt-4">
@@ -189,7 +189,7 @@ const Customers = () => {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
         <h1 className="text-lg font-bold font-heading">顧客管理</h1>
       </header>
 

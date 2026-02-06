@@ -3,6 +3,7 @@ import { Icon } from './Icon'
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
+import { getAvailableBusinessTypes, getEffectiveBusinessType } from '../utils/businessTypeAccess'
 import { getRandomGreeting } from '../utils/greetings'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import OnboardingGuide from './OnboardingGuide'
@@ -74,19 +75,32 @@ function Layout(): JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
-  const { selectedBusinessType, initializeFromUser } = useBusinessTypeStore()
+  const { selectedBusinessType, syncFromUser } = useBusinessTypeStore()
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())
 
+  const availableBusinessTypes = useMemo(() => getAvailableBusinessTypes({
+    storeBusinessTypes: user?.businessTypes,
+    assignedBusinessTypes: user?.assignedBusinessTypes,
+    isOwner: user?.isOwner,
+  }), [user?.assignedBusinessTypes, user?.businessTypes, user?.isOwner])
+
   // 業種ストアの初期化
   useEffect(() => {
-    if (user?.primaryBusinessType) {
-      initializeFromUser(user.primaryBusinessType)
-    }
-  }, [user?.primaryBusinessType, initializeFromUser])
+    syncFromUser({
+      primaryType: user?.primaryBusinessType,
+      availableTypes: availableBusinessTypes,
+    })
+  }, [availableBusinessTypes, syncFromUser, user?.primaryBusinessType])
+
+  const effectiveBusinessType = getEffectiveBusinessType({
+    selectedBusinessType,
+    primaryBusinessType: user?.primaryBusinessType,
+    availableBusinessTypes,
+  })
 
   // 選択中の業種に応じたラベル（nullの場合はprimaryBusinessTypeを使用）
-  const recordLabel = getRecordLabel(selectedBusinessType || user?.primaryBusinessType)
+  const recordLabel = getRecordLabel(effectiveBusinessType)
 
   // オンボーディング未完了の場合はリダイレクト
   if (user && user.onboardingCompleted === false) {
@@ -113,7 +127,7 @@ function Layout(): JSX.Element {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans">
       {isHomePage && (
-        <header className="px-5 pt-4 pb-3 flex items-center justify-between bg-background sticky top-0 z-10 border-b border-border">
+        <header className="px-5 pt-4 pb-3 flex items-center justify-between bg-background sticky top-0 z-10 border-b border-border safe-area-pt">
           <div>
             <p className="text-xs text-muted-foreground font-medium mb-0.5">
               {new Date().toLocaleDateString('ja-JP', {

@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
       {/* ヘッダー */}
-      <header className="px-5 pt-6 pb-4 border-b border-border sticky top-0 bg-background/95 backdrop-blur z-10">
+      <header className="px-5 pt-6 pb-4 border-b border-border sticky top-0 bg-background/95 backdrop-blur z-10 safe-area-pt">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}

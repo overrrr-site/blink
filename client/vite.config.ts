@@ -39,7 +39,6 @@ export default defineConfig({
           'vendor-date': ['date-fns'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-state': ['zustand', 'axios', 'swr'],
-          'vendor-liff': ['@line/liff'],
         },
       },
     },

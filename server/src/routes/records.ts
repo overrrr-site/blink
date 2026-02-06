@@ -17,6 +17,7 @@ import {
 } from '../utils/response.js';
 import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
 import { sendRecordNotification } from '../services/notificationService.js';
+import { appendBusinessTypeFilter, isBusinessType, parseBusinessTypeInput } from '../utils/businessTypes.js';
 
 function serializeJsonOrNull(value: unknown): string | null {
   if (!value) return null;
@@ -142,6 +143,11 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
       limit?: string | string[];
     };
     const { record_type, dog_id, status, search } = queryParams;
+    const { value: recordType, error: recordTypeError } = parseBusinessTypeInput(record_type, 'record_type');
+    if (recordTypeError) {
+      sendBadRequest(res, recordTypeError);
+      return;
+    }
     const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
 
     let query = `
@@ -158,11 +164,7 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
     `;
     const params: Array<string | number> = [req.storeId ?? 0];
 
-    if (record_type) {
-      const val = Array.isArray(record_type) ? record_type[0] : record_type;
-      query += ` AND r.record_type = $${params.length + 1}`;
-      params.push(val);
-    }
+    query += appendBusinessTypeFilter(params, 'r.record_type', recordType);
 
     if (dog_id) {
       const val = Array.isArray(dog_id) ? dog_id[0] : dog_id;
@@ -203,6 +205,11 @@ router.get('/dogs/:dogId/latest', async (req: AuthRequest, res) => {
 
     const { dogId } = req.params;
     const { record_type } = req.query as { record_type?: string };
+    const { value: recordType, error: recordTypeError } = parseBusinessTypeInput(record_type, 'record_type');
+    if (recordTypeError) {
+      sendBadRequest(res, recordTypeError);
+      return;
+    }
 
     const dogCheck = await pool.query(
       `SELECT o.store_id FROM dogs d
@@ -223,10 +230,7 @@ router.get('/dogs/:dogId/latest', async (req: AuthRequest, res) => {
     `;
     const params: Array<string | number> = [dogId];
 
-    if (record_type) {
-      query += ` AND r.record_type = $${params.length + 1}`;
-      params.push(record_type);
-    }
+    query += appendBusinessTypeFilter(params, 'r.record_type', recordType);
 
     query += ` ORDER BY r.record_date DESC, r.created_at DESC LIMIT 1`;
 
@@ -306,7 +310,7 @@ router.post('/', async (req: AuthRequest, res) => {
       return;
     }
 
-    if (!['grooming', 'daycare', 'hotel'].includes(record_type)) {
+    if (!isBusinessType(record_type)) {
       sendBadRequest(res, 'record_typeが不正です');
       return;
     }
@@ -384,6 +388,11 @@ router.put('/:id', async (req: AuthRequest, res) => {
       ai_suggestions,
       status,
     } = req.body;
+    const { value: recordType, error: recordTypeError } = parseBusinessTypeInput(record_type, 'record_type');
+    if (recordTypeError) {
+      sendBadRequest(res, recordTypeError);
+      return;
+    }
 
     // カルテの存在確認
     const recordCheck = await pool.query(
@@ -411,7 +420,9 @@ router.put('/:id', async (req: AuthRequest, res) => {
       }
     };
 
-    addParam('record_type', record_type);
+    if (recordType !== undefined) {
+      addParam('record_type', recordType);
+    }
     addParam('record_date', record_date);
     addParam('grooming_data', grooming_data, true);
     addParam('daycare_data', daycare_data, true);

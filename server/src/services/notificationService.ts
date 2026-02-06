@@ -402,7 +402,7 @@ export async function sendRecordNotification(
     const contact = contactMap.get(ownerId) ?? null;
 
     const typeLabels: Record<string, string> = {
-      grooming: 'グルーミングカルテ',
+      grooming: 'トリミングカルテ',
       daycare: 'デイケアカルテ',
       hotel: 'ホテルカルテ',
     };

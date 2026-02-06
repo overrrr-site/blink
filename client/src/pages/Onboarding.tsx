@@ -4,27 +4,7 @@ import { Icon } from '../components/Icon'
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 import type { RecordType } from '../types/record'
-
-const BUSINESS_TYPES: { value: RecordType; label: string; icon: string; description: string }[] = [
-  {
-    value: 'daycare',
-    label: '犬の幼稚園',
-    icon: 'solar:book-2-bold',
-    description: '日帰りでのお預かりとトレーニング',
-  },
-  {
-    value: 'grooming',
-    label: 'トリミングサロン',
-    icon: 'solar:scissors-bold',
-    description: 'カット・シャンプーなどのトリミング',
-  },
-  {
-    value: 'hotel',
-    label: 'ペットホテル',
-    icon: 'solar:moon-bold',
-    description: '宿泊でのお預かり',
-  },
-]
+import { ONBOARDING_BUSINESS_TYPES } from '../domain/businessTypeConfig'
 
 export default function Onboarding() {
   const navigate = useNavigate()
@@ -123,7 +103,7 @@ export default function Onboarding() {
         {/* 業態選択 */}
         {step === 'select' && (
           <div className="space-y-3">
-            {BUSINESS_TYPES.map((type) => {
+            {ONBOARDING_BUSINESS_TYPES.map((type) => {
               const isSelected = selectedTypes.includes(type.value)
               return (
                 <button
@@ -186,7 +166,7 @@ export default function Onboarding() {
         {/* メイン業態選択 */}
         {step === 'primary' && (
           <div className="space-y-3">
-            {BUSINESS_TYPES.filter((t) => selectedTypes.includes(t.value)).map((type) => {
+            {ONBOARDING_BUSINESS_TYPES.filter((t) => selectedTypes.includes(t.value)).map((type) => {
               const isSelected = primaryType === type.value
               return (
                 <button

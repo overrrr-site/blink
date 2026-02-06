@@ -5,7 +5,7 @@ import type { RecordType } from '../types/record'
 interface BusinessTypeState {
   selectedBusinessType: RecordType | null // null = 全業種表示
   setSelectedBusinessType: (type: RecordType | null) => void
-  initializeFromUser: (primaryType?: RecordType) => void
+  syncFromUser: (params: { primaryType?: RecordType; availableTypes: RecordType[] }) => void
 }
 
 export const useBusinessTypeStore = create<BusinessTypeState>()(
@@ -15,9 +15,23 @@ export const useBusinessTypeStore = create<BusinessTypeState>()(
 
       setSelectedBusinessType: (type) => set({ selectedBusinessType: type }),
 
-      initializeFromUser: (primaryType) => {
+      syncFromUser: ({ primaryType, availableTypes }) => {
+        const { selectedBusinessType } = get()
+
+        if (availableTypes.length === 0) {
+          if (selectedBusinessType !== null) {
+            set({ selectedBusinessType: null })
+          }
+          return
+        }
+
+        if (selectedBusinessType && !availableTypes.includes(selectedBusinessType)) {
+          set({ selectedBusinessType: availableTypes[0] })
+          return
+        }
+
         // localStorageに値がなければprimaryBusinessTypeを初期値として設定
-        if (get().selectedBusinessType === null && primaryType) {
+        if (selectedBusinessType === null && primaryType && availableTypes.includes(primaryType)) {
           set({ selectedBusinessType: primaryType })
         }
       },

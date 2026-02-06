@@ -10,6 +10,7 @@ import {
   sendServerError,
 } from '../utils/response.js';
 import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
+import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../utils/businessTypes.js';
 import {
   syncCalendarOnCreate,
   syncCalendarOnUpdate,
@@ -72,11 +73,14 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
       }
     }
 
-    // 業種フィルタ
-    if (service_type) {
-      query += ` AND r.service_type = $${params.length + 1}`;
-      params.push(String(service_type));
+    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
     }
+
+    // 業種フィルタ
+    query += appendBusinessTypeFilter(params, 'r.service_type', serviceType);
 
     query += ` ORDER BY r.reservation_date, r.reservation_time`;
 
@@ -177,6 +181,12 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
+    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
+
     const result = await pool.query(
       `INSERT INTO reservations (
         store_id, dog_id, reservation_date, reservation_time, memo, service_type, service_details, end_datetime
@@ -186,7 +196,7 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       JOIN owners o ON d.owner_id = o.id
       WHERE d.id = $1 AND o.store_id = $5
       RETURNING *`,
-      [dog_id, reservation_date, reservation_time, memo, req.storeId, service_type || null, service_details ? JSON.stringify(service_details) : null, end_datetime || null]
+      [dog_id, reservation_date, reservation_time, memo, req.storeId, serviceType || null, service_details ? JSON.stringify(service_details) : null, end_datetime || null]
     );
 
     if (result.rows.length === 0) {
@@ -240,6 +250,13 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
       const previousStatus = previousStatusResult.rows[0]?.status;
       const previousCheckedInAt = previousStatusResult.rows[0]?.checked_in_at;
 
+      const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+      if (serviceTypeError) {
+        await client.query('ROLLBACK');
+        sendBadRequest(res, serviceTypeError);
+        return;
+      }
+
       const result = await client.query(
         `UPDATE reservations SET
           reservation_date = COALESCE($1, reservation_date),
@@ -255,7 +272,7 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $5 AND store_id = $6
         RETURNING *`,
-        [reservation_date, reservation_time, status, memo, id, req.storeId, service_type || null, service_details ? JSON.stringify(service_details) : null, end_datetime || null]
+        [reservation_date, reservation_time, status, memo, id, req.storeId, serviceType || null, service_details ? JSON.stringify(service_details) : null, end_datetime || null]
       );
 
       const reservation = result.rows[0];

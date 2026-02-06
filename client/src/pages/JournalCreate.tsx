@@ -400,7 +400,7 @@ const JournalCreate = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* ヘッダー */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-foreground">
             <Icon icon="solar:arrow-left-linear" className="size-6" />

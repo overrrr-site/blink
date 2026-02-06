@@ -31,7 +31,7 @@ export default function RecordHeader({
   const label = getBusinessTypeLabel(recordType)
 
   return (
-    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-border px-4 py-3">
+    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -58,7 +58,7 @@ export default function RecordHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onSettings && (
             <button
               onClick={onSettings}
@@ -71,14 +71,14 @@ export default function RecordHeader({
           <button
             onClick={onSave}
             disabled={saving}
-            className="px-4 py-2 rounded-xl border border-border text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 min-h-[40px]"
+            className="px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 min-h-[44px]"
           >
             {saving ? '保存中...' : '保存'}
           </button>
           <button
             onClick={onShare}
             disabled={status === 'shared'}
-            className="px-4 py-2 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 min-h-[40px]"
+            className="px-4 py-2.5 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 min-h-[44px]"
             style={{
               background: status === 'shared'
                 ? '#94A3B8'

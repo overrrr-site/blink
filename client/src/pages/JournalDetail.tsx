@@ -326,7 +326,7 @@ const JournalDetail = () => {
       </div>
 
       {/* 通常ヘッダー（印刷時は非表示） */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between print:hidden">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between print:hidden safe-area-pt">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/journals')}

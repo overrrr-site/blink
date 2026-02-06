@@ -33,6 +33,12 @@ const MIGRATIONS = [
   { file: '023_business_types.sql',                   label: '業種設定スキーマ' },
   { file: '024_reservations_service_type.sql',        label: '予約サービス種別スキーマ' },
   { file: '025_records_table.sql',                    label: 'カルテテーブルスキーマ' },
+  { file: '026_onboarding_completed.sql',             label: 'オンボーディング完了フラグ' },
+  { file: '027_store_settings_ai.sql',                label: 'AI設定フラグ' },
+  { file: '028_staff_assigned_business_types.sql',    label: 'スタッフ業種割り当て' },
+  { file: '029_business_type_settings.sql',           label: '業種別設定・マスタ' },
+  { file: '030_ai_learning_data.sql',                 label: 'AI学習データ' },
+  { file: '031_integrity_and_indexes.sql',            label: '整合性制約・補助インデックス' },
 ] as const;
 
 async function runMigration(file: string, label: string): Promise<void> {

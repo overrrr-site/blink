@@ -273,7 +273,7 @@ const DogEdit = () => {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between safe-area-pt">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(`/dogs/${id}`)}
@@ -340,7 +340,7 @@ const DogEdit = () => {
             onClick={() => setShowPhotoModal(false)}
           ></div>
           <div className="relative bg-background rounded-t-3xl w-full max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom">
-            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between safe-area-pt">
               <h3 className="text-lg font-bold">日誌の写真から選択</h3>
               <button
                 onClick={() => setShowPhotoModal(false)}

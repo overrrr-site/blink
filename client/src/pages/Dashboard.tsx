@@ -6,7 +6,7 @@ import AlertsModal from '../components/AlertsModal'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { getAvatarUrl } from '../utils/image'
-import { getRecordLabel } from '../utils/businessTypeColors'
+import { getDashboardEmptyStateMessage, getDashboardStatusLabels, getRecordLabel } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
 import { useAuthStore } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
@@ -82,30 +82,8 @@ interface FilterConfig {
   borderColor: string
 }
 
-// 業種別のラベル定義
-const BUSINESS_TYPE_LABELS: Record<RecordType, {
-  waiting: string
-  active: string
-  done: string
-  checkIn: string
-  checkOut: string
-}> = {
-  daycare: {
-    waiting: '登園前', active: '登園中', done: '降園済',
-    checkIn: '登園', checkOut: '降園',
-  },
-  grooming: {
-    waiting: '来店前', active: '施術中', done: '完了',
-    checkIn: '来店', checkOut: '完了',
-  },
-  hotel: {
-    waiting: 'チェックイン前', active: 'お預かり中', done: 'チェックアウト済',
-    checkIn: 'チェックイン', checkOut: 'チェックアウト',
-  },
-}
-
 function getFilterOptions(businessType: RecordType | null): FilterConfig[] {
-  const l = BUSINESS_TYPE_LABELS[businessType || 'daycare'] || BUSINESS_TYPE_LABELS.daycare
+  const l = getDashboardStatusLabels(businessType)
 
   // トリミングは2ステータスのみ（来店前・完了）
   if (businessType === 'grooming') {
@@ -138,7 +116,7 @@ function getDisplayStatus(reservation: Reservation): DisplayStatus {
 }
 
 function getStatusLabel(status: DisplayStatus, businessType: RecordType | null): string {
-  const l = BUSINESS_TYPE_LABELS[businessType || 'daycare'] || BUSINESS_TYPE_LABELS.daycare
+  const l = getDashboardStatusLabels(businessType)
   switch (status) {
     case '来園待ち': return l.waiting
     case '在園中': return l.active
@@ -178,7 +156,7 @@ const ReservationCard = React.memo(function ReservationCard({
   const displayStatus = getDisplayStatus(reservation)
   const isWaiting = displayStatus === '来園待ち'
   const isPresent = displayStatus === '在園中'
-  const labels = BUSINESS_TYPE_LABELS[businessType || 'daycare'] || BUSINESS_TYPE_LABELS.daycare
+  const labels = getDashboardStatusLabels(businessType)
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -228,7 +206,7 @@ const ReservationCard = React.memo(function ReservationCard({
                 ? onCheckOut(reservation.id)  // トリミングは直接完了へ
                 : onCheckIn(reservation.id)}
               disabled={checkingIn === reservation.id}
-              className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
+              className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2.5 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[44px]"
             >
               {checkingIn === reservation.id ? (
                 <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
@@ -395,6 +373,7 @@ function Dashboard(): JSX.Element {
   const { selectedBusinessType } = useBusinessTypeStore()
   const currentBusinessType = selectedBusinessType || primaryBusinessType
   const recordLabel = getRecordLabel(currentBusinessType)
+  const dashboardEmptyState = getDashboardEmptyStateMessage(currentBusinessType)
 
   // 業種に応じたフィルターオプション
   const filterOptions = useMemo(() => getFilterOptions(currentBusinessType), [currentBusinessType])
@@ -540,14 +519,14 @@ function Dashboard(): JSX.Element {
     <div className="pb-6">
       {/* ステータスフィルター */}
       <div className="px-5 pt-2 mb-4">
-        <div className="flex bg-muted rounded-xl p-1 gap-0.5">
+        <div className="flex bg-muted rounded-xl p-1 gap-2 overflow-x-auto scrollbar-hide">
           {filterOptions.map((filter) => {
             const count = filter.id === 'all' ? currentCount : statusCounts[filter.id]
             return (
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`flex-1 py-2.5 px-1 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-0.5 relative min-h-[44px] ${
+                className={`flex-none min-w-[84px] py-2.5 px-2 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-1 relative min-h-[44px] ${
                   statusFilter === filter.id
                     ? `bg-background text-foreground shadow-sm border-b-2 ${filter.borderColor}`
                     : 'text-muted-foreground font-normal'
@@ -569,13 +548,21 @@ function Dashboard(): JSX.Element {
         {filteredReservations.length === 0 ? (
           <EmptyState
             icon={statusFilter === '帰宅済' ? "solar:check-circle-bold" : "solar:calendar-linear"}
-            title={statusFilter === 'all' ? '今日の予約はありません' : statusFilter === '帰宅済' ? '帰宅済みのワンちゃんはいません' : `${getStatusLabel(statusFilter, currentBusinessType)}のワンちゃんはいません`}
-            description={statusFilter === 'all' ? '新しい予約を追加してスケジュールを管理しましょう' : '他のステータスを確認してください'}
-            action={statusFilter === 'all' ? {
-              label: '新規予約を追加',
-              onClick: handleNavigateNewReservation,
-              icon: 'solar:add-circle-bold'
-            } : undefined}
+            title={statusFilter === 'all'
+              ? dashboardEmptyState.title
+              : statusFilter === '帰宅済'
+                ? '帰宅済みのワンちゃんはいません'
+                : `${getStatusLabel(statusFilter, currentBusinessType)}のワンちゃんはいません`}
+            description={statusFilter === 'all'
+              ? dashboardEmptyState.description
+              : '他のステータスを確認してください'}
+            action={statusFilter === 'all'
+              ? {
+                label: dashboardEmptyState.actionLabel,
+                onClick: handleNavigateNewReservation,
+                icon: 'solar:add-circle-bold'
+              }
+              : undefined}
           />
         ) : (
           <div className="space-y-4">

@@ -20,7 +20,7 @@ export function Pagination({ page, totalPages, total, onPageChange }: Pagination
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={!canPrev}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-medium border border-border bg-card disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Icon icon="solar:alt-arrow-left-linear" width="16" height="16" />
           前へ
@@ -28,7 +28,7 @@ export function Pagination({ page, totalPages, total, onPageChange }: Pagination
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={!canNext}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-medium border border-border bg-card disabled:opacity-50 disabled:cursor-not-allowed"
         >
           次へ
           <Icon icon="solar:alt-arrow-right-linear" width="16" height="16" />

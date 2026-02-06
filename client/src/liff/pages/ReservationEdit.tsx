@@ -108,7 +108,7 @@ export default function ReservationEdit(): JSX.Element {
   return (
     <div className="pb-6">
       {/* ヘッダー */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2 safe-area-pt">
         <button
           onClick={function() { navigate('/home/reservations'); }}
           className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"

@@ -3,6 +3,7 @@ import { Icon } from './Icon'
 import { useAuthStore } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
 import { getBusinessTypeColors, getBusinessTypeLabel, getBusinessTypeIcon } from '../utils/businessTypeColors'
+import { getAvailableBusinessTypes } from '../utils/businessTypeAccess'
 import type { RecordType } from '../types/record'
 
 const ALL_BUSINESS_TYPES: RecordType[] = ['daycare', 'grooming', 'hotel']
@@ -13,14 +14,12 @@ export default function BusinessTypeSwitcher(): JSX.Element {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // 店舗で利用可能な業種
   const storeBusinessTypes = user?.businessTypes || []
-  // スタッフに割り当てられた業種（null=全業種、配列=指定業種のみ）
-  const staffAssignedTypes = user?.assignedBusinessTypes
-  // 実際に選択可能な業種を計算
-  const availableTypes = staffAssignedTypes === null || staffAssignedTypes === undefined
-    ? storeBusinessTypes // 管理者は店舗の全業種にアクセス可能
-    : storeBusinessTypes.filter(type => staffAssignedTypes.includes(type)) // 一般スタッフは割り当て業種のみ
+  const availableTypes = getAvailableBusinessTypes({
+    storeBusinessTypes,
+    assignedBusinessTypes: user?.assignedBusinessTypes,
+    isOwner: user?.isOwner,
+  })
   const hasMultipleTypes = availableTypes.length > 1
 
   // 選択中の業種の表示情報
@@ -109,7 +108,7 @@ export default function BusinessTypeSwitcher(): JSX.Element {
             <div className="size-8 rounded-full bg-gray-100 flex items-center justify-center">
               <Icon icon="solar:widget-4-bold" width="18" height="18" className="text-gray-500" />
             </div>
-            <span className="font-medium text-foreground">すべて</span>
+            <span className="font-medium text-foreground">すべての業種</span>
             {selectedBusinessType === null && (
               <Icon icon="solar:check-circle-bold" width="20" height="20" className="ml-auto text-primary" />
             )}

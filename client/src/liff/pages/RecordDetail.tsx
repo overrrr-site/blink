@@ -4,7 +4,7 @@ import { Icon } from '../../components/Icon'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { getAvatarUrl, getDetailThumbnailUrl } from '../../utils/image'
-import { getRecordLabel } from '../../utils/businessTypeColors'
+import { getBusinessTypeConfig, getRecordLabel } from '../../domain/businessTypeConfig'
 import { liffFetcher } from '../lib/swr'
 import { useLiffAuthStore } from '../store/authStore'
 import { LazyImage } from '../../components/LazyImage'
@@ -29,12 +29,6 @@ interface RecordData {
   health_check: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string } | null
   shared_at: string
   created_at: string
-}
-
-const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  grooming: { label: 'トリミング', color: '#8B5CF6', icon: 'solar:scissors-bold' },
-  daycare: { label: '幼稚園', color: '#F97316', icon: 'solar:sun-bold' },
-  hotel: { label: 'ホテル', color: '#06B6D4', icon: 'solar:moon-bold' },
 }
 
 const CONDITION_LABELS: Record<string, { emoji: string; label: string }> = {
@@ -89,7 +83,7 @@ export default function RecordDetail() {
     )
   }
 
-  const typeConfig = TYPE_CONFIG[record.record_type] || TYPE_CONFIG.daycare
+  const typeConfig = getBusinessTypeConfig(record.record_type)
   const normalizedPhotos = normalizePhotosData(record.photos || { regular: [], concerns: [] })
   const photoList = normalizedPhotos.regular || []
   const concerns = normalizedPhotos.concerns || []
@@ -108,7 +102,7 @@ export default function RecordDetail() {
         <h1 className="text-lg font-bold font-heading flex-1">{recordLabel}詳細</h1>
         <span
           className="text-xs font-bold px-3 py-1 rounded-full"
-          style={{ background: `${typeConfig.color}15`, color: typeConfig.color }}
+          style={{ background: `${typeConfig.colors.primary}15`, color: typeConfig.colors.primary }}
         >
           {typeConfig.label}
         </span>

@@ -9,11 +9,13 @@ import {
 } from '../utils/response.js';
 import { buildPaginatedResponse, extractTotalCount, parsePaginationParams, PaginationParams } from '../utils/pagination.js';
 import { isNonEmptyString } from '../utils/validation.js';
+import type { BusinessType } from '../utils/businessTypes.js';
+import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../utils/businessTypes.js';
 
 function buildOwnersListQuery(params: {
   storeId: number;
   search?: string;
-  serviceType?: string;
+  serviceType?: BusinessType;
   pagination: PaginationParams;
 }): { query: string; params: Array<string | number> } {
   const { storeId, search, serviceType, pagination } = params;
@@ -48,10 +50,10 @@ function buildOwnersListQuery(params: {
       SELECT 1 FROM reservations r2
       JOIN dogs d2 ON r2.dog_id = d2.id
       WHERE d2.owner_id = o.id
-        AND r2.service_type = $${queryParams.length + 1}
-        AND r2.store_id = o.store_id
+        AND r2.store_id = o.store_id`;
+    query += appendBusinessTypeFilter(queryParams, 'r2.service_type', serviceType);
+    query += `
     )`;
-    queryParams.push(serviceType);
   }
 
   if (search) {
@@ -83,7 +85,11 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
     const { search, service_type } = queryParams;
     const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
     const searchValue = Array.isArray(search) ? search[0] : search;
-    const serviceTypeValue = Array.isArray(service_type) ? service_type[0] : service_type;
+    const { value: serviceTypeValue, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
     const { query, params } = buildOwnersListQuery({
       storeId: req.storeId,
       search: searchValue,

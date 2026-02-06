@@ -7,7 +7,12 @@ import type { PaginatedResponse } from '../types/api'
 import type { RecordItem, RecordType } from '../types/record'
 import { Pagination } from '../components/Pagination'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../utils/businessTypeColors'
+import {
+  getBusinessTypeColors,
+  getBusinessTypeLabel,
+  getRecordLabel,
+  RECORD_TYPE_FILTERS,
+} from '../domain/businessTypeConfig'
 import { useAuthStore } from '../store/authStore'
 
 const PAGE_SIZE = 50
@@ -90,13 +95,6 @@ const RecordCard = React.memo(function RecordCard({
   )
 })
 
-const RECORD_TYPE_FILTERS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'すべて' },
-  { value: 'grooming', label: 'トリミング' },
-  { value: 'daycare', label: '幼稚園' },
-  { value: 'hotel', label: 'ホテル' },
-]
-
 const RecordList = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedType, setSelectedType] = useState('')
@@ -145,7 +143,7 @@ const RecordList = () => {
 
   return (
     <div className="pb-6">
-      <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
+      <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">{recordLabel}一覧</h1>
           <button

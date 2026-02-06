@@ -82,7 +82,7 @@ export default function AISettingsScreen({
           </div>
           <button
             onClick={onClose}
-            className="size-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+            className="size-11 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
             aria-label="閉じる"
           >
             <Icon icon="solar:close-bold" width="18" height="18" className="text-slate-400" />
@@ -195,8 +195,13 @@ function SettingItem({
   disabled?: boolean
 }) {
   return (
-    <div
-      className={`flex items-start gap-3 rounded-xl p-3 transition-colors ${
+    <button
+      type="button"
+      onClick={() => !disabled && onToggle()}
+      disabled={disabled}
+      role="switch"
+      aria-checked={enabled}
+      className={`w-full text-left flex items-start gap-3 rounded-xl p-3 transition-colors ${
         disabled ? 'opacity-50' : ''
       }`}
     >
@@ -217,18 +222,13 @@ function SettingItem({
         <p className="text-sm font-semibold text-foreground">{title}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
       </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={disabled}
+      <span
         className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${
           disabled ? 'cursor-not-allowed' : 'cursor-pointer'
         }`}
         style={{
           background: enabled && !disabled ? AI_COLOR : '#D1D5DB',
         }}
-        role="switch"
-        aria-checked={enabled}
       >
         <span
           className="absolute top-0.5 left-0.5 size-5 bg-white rounded-full shadow-sm transition-transform"
@@ -236,7 +236,7 @@ function SettingItem({
             transform: enabled ? 'translateX(20px)' : 'translateX(0)',
           }}
         />
-      </button>
-    </div>
+      </span>
+    </button>
   )
 }

@@ -147,7 +147,7 @@ const ReservationsCalendar = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
+      <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">予約管理</h1>
           <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ const ReservationsCalendar = () => {
             </button>
             <button
               onClick={() => navigate('/reservations/new')}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+              className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors min-h-[44px]"
             >
               <Icon icon="solar:add-circle-bold" className="size-4" />
               新規予約

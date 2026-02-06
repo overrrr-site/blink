@@ -463,7 +463,7 @@ export function createRecordNotificationFlexMessage(record: {
 
   // 業種別のカラーと絵文字・ラベル
   const typeConfig: Record<string, { color: string; emoji: string; label: string }> = {
-    grooming: { color: '#8B5CF6', emoji: '✂️', label: 'グルーミングカルテ' },
+    grooming: { color: '#8B5CF6', emoji: '✂️', label: 'トリミングカルテ' },
     daycare: { color: '#F97316', emoji: '🐾', label: 'デイケアカルテ' },
     hotel: { color: '#06B6D4', emoji: '🏨', label: 'ホテルカルテ' },
   };

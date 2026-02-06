@@ -2,7 +2,8 @@ import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { cacheControl } from '../middleware/cache.js';
-import { requireStoreId, sendServerError } from '../utils/response.js';
+import { requireStoreId, sendBadRequest, sendServerError } from '../utils/response.js';
+import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../utils/businessTypes.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -20,7 +21,11 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // 業種フィルタ
-    const serviceType = req.query.service_type as string | undefined;
+    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(req.query.service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
 
     // 5つのクエリを並列実行（パフォーマンス改善）
     const queryStart = Date.now();
@@ -32,8 +37,8 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
     };
 
     // 業種フィルタ用のクエリ条件とパラメータ
-    const serviceTypeCondition = serviceType ? ` AND r.service_type = $3` : '';
-    const reservationParams = serviceType ? [req.storeId, today, serviceType] : [req.storeId, today];
+    const reservationParams: Array<string | number> = [req.storeId, today];
+    const serviceTypeCondition = appendBusinessTypeFilter(reservationParams, 'r.service_type', serviceType);
 
     const [
       reservationsResult,
@@ -61,10 +66,8 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
       )),
 
       timedQuery('incompleteJournals', () => {
-        const incompleteServiceTypeCondition = serviceType ? ` AND r.service_type = $4` : '';
-        const incompleteParams = serviceType
-          ? [req.storeId, thirtyDaysAgo, today, serviceType]
-          : [req.storeId, thirtyDaysAgo, today];
+        const incompleteParams: Array<string | number> = [req.storeId, thirtyDaysAgo, today];
+        const incompleteServiceTypeCondition = appendBusinessTypeFilter(incompleteParams, 'r.service_type', serviceType);
         return pool.query(
           `SELECT r.id as reservation_id,
                   r.reservation_date,

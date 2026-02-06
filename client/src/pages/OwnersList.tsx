@@ -78,7 +78,7 @@ const OwnersList = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10">
+      <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">顧客管理</h1>
           <button

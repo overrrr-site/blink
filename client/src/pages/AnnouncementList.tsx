@@ -165,7 +165,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
       <div className="relative bg-background w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between safe-area-pt">
           <h2 className="text-lg font-bold">
             {editingAnnouncement ? 'お知らせを編集' : '新しいお知らせ'}
           </h2>

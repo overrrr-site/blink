@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { getAvatarUrl, getListThumbnailUrl } from '../../utils/image'
-import { getRecordLabel } from '../../utils/businessTypeColors'
+import { getBusinessTypeConfig, getRecordLabel } from '../../domain/businessTypeConfig'
 import { usePaginatedData } from '../hooks/usePaginatedData'
 import { useLiffAuthStore } from '../store/authStore'
 import { LazyImage } from '../../components/LazyImage'
@@ -22,12 +22,6 @@ interface LiffRecord {
   photos: PhotosData | null
   condition: { overall?: string } | null
   shared_at: string
-}
-
-const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  grooming: { label: 'トリミング', color: '#8B5CF6', icon: 'solar:scissors-bold' },
-  daycare: { label: '幼稚園', color: '#F97316', icon: 'solar:sun-bold' },
-  hotel: { label: 'ホテル', color: '#06B6D4', icon: 'solar:moon-bold' },
 }
 
 export default function RecordList() {
@@ -106,7 +100,7 @@ export default function RecordList() {
           <p className="text-xs text-muted-foreground">{records.length}件の{recordLabel}</p>
 
           {records.map((record) => {
-            const typeConfig = TYPE_CONFIG[record.record_type] || TYPE_CONFIG.daycare
+            const typeConfig = getBusinessTypeConfig(record.record_type)
             const normalizedPhotos = normalizePhotosData(record.photos || { regular: [], concerns: [] })
             const photoList = normalizedPhotos.regular || []
             const reportText = record.notes?.report_text || ''
@@ -135,9 +129,9 @@ export default function RecordList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-base">{record.dog_name}</h3>
-                      <span
+                        <span
                         className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                        style={{ background: `${typeConfig.color}15`, color: typeConfig.color }}
+                        style={{ background: `${typeConfig.colors.primary}15`, color: typeConfig.colors.primary }}
                       >
                         {typeConfig.label}
                       </span>

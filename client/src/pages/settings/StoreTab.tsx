@@ -10,6 +10,7 @@ import { fetcher } from '../../lib/swr'
 import { useAuthStore } from '../../store/authStore'
 import { useBusinessTypeStore } from '../../store/businessTypeStore'
 import { getBusinessTypeLabel, getBusinessTypeIcon, getBusinessTypeColors } from '../../utils/businessTypeColors'
+import { getAvailableBusinessTypes, isBusinessTypeVisible } from '../../utils/businessTypeAccess'
 import type { RecordType } from '../../types/record'
 
 interface StoreTabProps {
@@ -112,12 +113,17 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const [localHotelPrices, setLocalHotelPrices] = useState<HotelPriceItem[]>([])
   const [hotelPricesInitialized, setHotelPricesInitialized] = useState(false)
 
-  // 店舗で利用可能な業種
   const storeBusinessTypes = (user?.businessTypes || []) as RecordType[]
+  const availableBusinessTypes = getAvailableBusinessTypes({
+    storeBusinessTypes,
+    assignedBusinessTypes: user?.assignedBusinessTypes,
+    isOwner: user?.isOwner,
+  })
+
   // 各業態が有効かどうか
-  const isDaycareEnabled = selectedBusinessType === 'daycare' || (selectedBusinessType === null && storeBusinessTypes.includes('daycare'))
-  const isGroomingEnabled = selectedBusinessType === 'grooming' || (selectedBusinessType === null && storeBusinessTypes.includes('grooming'))
-  const isHotelEnabled = selectedBusinessType === 'hotel' || (selectedBusinessType === null && storeBusinessTypes.includes('hotel'))
+  const isDaycareEnabled = isBusinessTypeVisible(selectedBusinessType, availableBusinessTypes, 'daycare')
+  const isGroomingEnabled = isBusinessTypeVisible(selectedBusinessType, availableBusinessTypes, 'grooming')
+  const isHotelEnabled = isBusinessTypeVisible(selectedBusinessType, availableBusinessTypes, 'hotel')
 
   const {
     data: storeSettingsData,
@@ -220,7 +226,9 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
     setInviting(true)
     try {
       // 管理者の場合はnull（全業種アクセス）、スタッフの場合は選択した業種
-      const assignedBusinessTypes = inviteIsOwner ? null : (inviteBusinessTypes.length > 0 ? inviteBusinessTypes : null)
+      const assignedBusinessTypes = inviteIsOwner
+        ? null
+        : (inviteBusinessTypes.length > 0 ? inviteBusinessTypes : null)
       await api.post('/auth/invite', {
         email: inviteEmail,
         name: inviteName,
@@ -995,7 +1003,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       {showStoreInfoModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between safe-area-pt">
               <h2 className="text-lg font-bold">店舗基本情報</h2>
               <button
                 onClick={() => setShowStoreInfoModal(false)}
@@ -1061,7 +1069,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       {showBusinessHoursModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between safe-area-pt">
               <h2 className="text-lg font-bold">営業日・定休日</h2>
               <button
                 onClick={() => setShowBusinessHoursModal(false)}

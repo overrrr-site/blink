@@ -87,7 +87,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
           <Icon icon="mdi:silverware-fork-knife" width="18" height="18" />
           ごはん
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {TIME_PERIODS.map(({ key, label }) => (
             <div key={key}>
               <label className="block text-xs text-muted-foreground mb-1">{label}ごはん</label>
@@ -109,7 +109,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
           <Icon icon="mdi:toilet" width="18" height="18" />
           トイレ
         </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {TIME_PERIODS.map(({ key, label }) => {
             const periodKey = key as 'morning' | 'afternoon'
             const periodData = data.toilet?.[periodKey] || { urination: false, defecation: false }

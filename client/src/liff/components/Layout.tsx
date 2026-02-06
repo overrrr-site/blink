@@ -20,7 +20,7 @@ export default function Layout() {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans">
       {/* ヘッダー */}
-      <header className="px-5 pt-4 pb-4 bg-background sticky top-0 z-20 flex items-center justify-between border-b border-border">
+      <header className="px-5 pt-4 pb-4 bg-background sticky top-0 z-20 flex items-center justify-between border-b border-border safe-area-pt">
         <button 
           onClick={() => navigate('/home')}
           className="flex items-center gap-3 active:opacity-70 transition-opacity"
@@ -47,7 +47,7 @@ export default function Layout() {
       </header>
 
       {/* メインコンテンツ */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto pb-24">
         <Outlet />
       </main>
 

@@ -95,7 +95,7 @@ const ReservationDetail = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between safe-area-pt">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/reservations')} className="p-2 -ml-2 text-foreground">
             <Icon icon="solar:arrow-left-linear" className="size-6" />
