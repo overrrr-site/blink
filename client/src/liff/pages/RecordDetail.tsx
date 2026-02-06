@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 import { Icon } from '../../components/Icon'
@@ -10,6 +11,7 @@ import { useLiffAuthStore } from '../store/authStore'
 import { LazyImage } from '../../components/LazyImage'
 import { normalizePhotosData } from '../../utils/recordPhotos'
 import type { PhotosData } from '../../types/record'
+import PhotoViewer from '../components/PhotoViewer'
 
 interface RecordData {
   id: number
@@ -87,6 +89,24 @@ export default function RecordDetail() {
   const normalizedPhotos = normalizePhotosData(record.photos || { regular: [], concerns: [] })
   const photoList = normalizedPhotos.regular || []
   const concerns = normalizedPhotos.concerns || []
+  const viewerPhotos = photoList.map((photo) => ({
+    url: getDetailThumbnailUrl(photo.url),
+  }))
+  const viewerConcerns = concerns.map((photo) => ({
+    url: getDetailThumbnailUrl(photo.url),
+    label: photo.label,
+  }))
+  const hasBeforeAfter = record.record_type === 'grooming' && viewerPhotos.length >= 2
+  const hotelDailyNotes = record.hotel_data?.daily_notes
+    ? Object.entries(record.hotel_data.daily_notes).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+    : []
+  const groomingParts = record.grooming_data?.selectedParts || []
+  const groomingNotes = record.grooming_data?.partNotes || {}
+  const [viewerState, setViewerState] = useState<{
+    photos: { url: string; label?: string }[]
+    initialIndex: number
+    title?: string
+  } | null>(null)
 
   return (
     <div className="px-5 pt-6 pb-28">
@@ -138,27 +158,48 @@ export default function RecordDetail() {
 
       {/* 業種固有セクション */}
       {record.record_type === 'grooming' && record.grooming_data && (
-        <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
-          <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-            <Icon icon="solar:scissors-bold" width="16" height="16" className="text-violet-500" />
-            カット内容
-          </h3>
-          <div className="space-y-2">
-            {(record.grooming_data.selectedParts || []).map((part) => (
-              <div key={part} className="flex items-center gap-2">
-                <span
-                  className="text-xs font-bold text-center rounded-lg shrink-0 text-white"
-                  style={{ width: 48, padding: '4px 0', background: '#8B5CF6' }}
-                >
-                  {PART_LABELS[part] || part}
-                </span>
-                <span className="text-sm text-foreground">
-                  {record.grooming_data?.partNotes?.[part] || '—'}
-                </span>
+        <>
+          <section className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+              <Icon icon="solar:scissors-bold" width="16" height="16" className="text-violet-500" />
+              施術内容
+            </h3>
+            {groomingParts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {groomingParts.map((part) => (
+                  <div key={part} className="bg-muted/50 rounded-xl p-3">
+                    <p className="text-xs font-medium text-muted-foreground">{PART_LABELS[part] || part}</p>
+                    <p className="text-sm mt-1">{groomingNotes?.[part] || '施術済み'}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">施術内容の記録はありません</p>
+            )}
+          </section>
+
+          {hasBeforeAfter && (
+            <section className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+              <h3 className="text-sm font-bold mb-3">ビフォーアフター</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setViewerState({ photos: viewerPhotos, initialIndex: 0, title: 'ビフォーアフター' })}
+                >
+                  <p className="text-xs text-center text-muted-foreground mb-1">Before</p>
+                  <LazyImage src={viewerPhotos[0].url} alt="Before" className="rounded-xl aspect-square object-cover" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewerState({ photos: viewerPhotos, initialIndex: 1, title: 'ビフォーアフター' })}
+                >
+                  <p className="text-xs text-center text-muted-foreground mb-1">After</p>
+                  <LazyImage src={viewerPhotos[1].url} alt="After" className="rounded-xl aspect-square object-cover" />
+                </button>
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       {record.record_type === 'daycare' && record.daycare_data && (
@@ -181,18 +222,36 @@ export default function RecordDetail() {
       )}
 
       {record.record_type === 'hotel' && record.hotel_data && (
-        <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
-          <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-            <Icon icon="solar:moon-bold" width="16" height="16" className="text-cyan-500" />
-            宿泊情報（{record.hotel_data.nights}泊）
-          </h3>
-          {record.hotel_data.special_care && (
-            <p className="text-sm text-foreground mb-2">
-              <span className="text-xs text-muted-foreground">特別ケア: </span>
-              {record.hotel_data.special_care}
-            </p>
+        <>
+          <section className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+              <Icon icon="solar:moon-bold" width="16" height="16" className="text-cyan-500" />
+              宿泊情報（{record.hotel_data.nights}泊）
+            </h3>
+            {record.hotel_data.special_care && (
+              <p className="text-sm text-foreground mb-2">
+                <span className="text-xs text-muted-foreground">特別ケア: </span>
+                {record.hotel_data.special_care}
+              </p>
+            )}
+          </section>
+
+          {hotelDailyNotes.length > 0 && (
+            <section className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+              <h3 className="text-sm font-bold mb-3">お預かりレポート</h3>
+              <div className="space-y-4">
+                {hotelDailyNotes.map(([date, note]) => (
+                  <div key={date} className="border-l-2 border-primary/30 pl-3">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {format(new Date(date), 'M月d日(E)', { locale: ja })}
+                    </p>
+                    <p className="text-sm mt-1">{note}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
-        </div>
+        </>
       )}
 
       {/* 体調 */}
@@ -221,15 +280,20 @@ export default function RecordDetail() {
         <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
           <h3 className="text-sm font-bold mb-3">写真</h3>
           <div className="grid grid-cols-2 gap-2">
-            {photoList.map((photo, idx) => (
-              <LazyImage
+            {photoList.map((_photo, idx) => (
+              <button
+                type="button"
                 key={idx}
-                src={getDetailThumbnailUrl(photo.url)}
-                alt={`${record.dog_name}の写真 ${idx + 1}`}
-                width={200}
-                height={200}
-                className="w-full aspect-square rounded-xl object-cover"
-              />
+                onClick={() => setViewerState({ photos: viewerPhotos, initialIndex: idx, title: '写真' })}
+              >
+                <LazyImage
+                  src={viewerPhotos[idx].url}
+                  alt={`${record.dog_name}の写真 ${idx + 1}`}
+                  width={200}
+                  height={200}
+                  className="w-full aspect-square rounded-xl object-cover"
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -241,9 +305,14 @@ export default function RecordDetail() {
           <h3 className="text-sm font-bold mb-3 text-red-500">気になる箇所</h3>
           <div className="grid grid-cols-2 gap-2">
             {concerns.map((concern, idx) => (
-              <div key={idx} className="relative">
+              <button
+                type="button"
+                key={idx}
+                onClick={() => setViewerState({ photos: viewerConcerns, initialIndex: idx, title: '気になる箇所' })}
+                className="relative"
+              >
                 <LazyImage
-                  src={getDetailThumbnailUrl(concern.url)}
+                  src={viewerConcerns[idx].url}
                   alt={concern.label || `気になる箇所 ${idx + 1}`}
                   width={200}
                   height={200}
@@ -254,7 +323,7 @@ export default function RecordDetail() {
                     {concern.label}
                   </div>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -297,6 +366,15 @@ export default function RecordDetail() {
             )}
           </div>
         </div>
+      )}
+
+      {viewerState && (
+        <PhotoViewer
+          photos={viewerState.photos}
+          initialIndex={viewerState.initialIndex}
+          title={viewerState.title}
+          onClose={() => setViewerState(null)}
+        />
       )}
     </div>
   )

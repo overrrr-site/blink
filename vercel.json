@@ -7,6 +7,10 @@
   "regions": ["hnd1"],
   "rewrites": [
     {
+      "source": "/api/billing/webhook",
+      "destination": "/api"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api"
     },

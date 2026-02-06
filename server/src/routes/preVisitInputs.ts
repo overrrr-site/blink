@@ -8,6 +8,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { parseBusinessTypeInput } from '../utils/businessTypes.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -45,6 +46,7 @@ router.post('/', async (req: AuthRequest, res) => {
   try {
     const {
       reservation_id,
+      service_type,
       morning_urination,
       morning_defecation,
       afternoon_urination,
@@ -53,6 +55,8 @@ router.post('/', async (req: AuthRequest, res) => {
       health_status,
       notes,
       meal_data,
+      grooming_data,
+      hotel_data,
     } = req.body;
 
     if (!requireStoreId(req, res)) {
@@ -66,7 +70,7 @@ router.post('/', async (req: AuthRequest, res) => {
 
     // 予約のstore_idを確認
     const reservationCheck = await pool.query(
-      `SELECT store_id FROM reservations WHERE id = $1 AND store_id = $2`,
+      `SELECT store_id, service_type FROM reservations WHERE id = $1 AND store_id = $2`,
       [reservation_id, req.storeId]
     );
 
@@ -74,6 +78,14 @@ router.post('/', async (req: AuthRequest, res) => {
       sendForbidden(res);
       return;
     }
+
+    const { value: parsedServiceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
+    const reservationServiceType = reservationCheck.rows[0]?.service_type;
+    const finalServiceType = parsedServiceType ?? reservationServiceType ?? null;
 
     // 既存の入力があるか確認
     const existing = await pool.query(
@@ -89,8 +101,9 @@ router.post('/', async (req: AuthRequest, res) => {
           morning_urination = $1, morning_defecation = $2,
           afternoon_urination = $3, afternoon_defecation = $4,
           breakfast_status = $5, health_status = $6, notes = $7,
-          meal_data = $8
-        WHERE reservation_id = $9
+          meal_data = $8, service_type = $9,
+          grooming_data = $10, hotel_data = $11
+        WHERE reservation_id = $12
         RETURNING *`,
         [
           morning_urination,
@@ -101,6 +114,9 @@ router.post('/', async (req: AuthRequest, res) => {
           health_status,
           notes,
           meal_data ? JSON.stringify(meal_data) : null,
+          finalServiceType,
+          grooming_data ? JSON.stringify(grooming_data) : null,
+          hotel_data ? JSON.stringify(hotel_data) : null,
           reservation_id,
         ]
       );
@@ -110,8 +126,9 @@ router.post('/', async (req: AuthRequest, res) => {
         `INSERT INTO pre_visit_inputs (
           reservation_id, morning_urination, morning_defecation,
           afternoon_urination, afternoon_defecation,
-          breakfast_status, health_status, notes, meal_data
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          breakfast_status, health_status, notes, meal_data,
+          service_type, grooming_data, hotel_data
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *`,
         [
           reservation_id,
@@ -123,6 +140,9 @@ router.post('/', async (req: AuthRequest, res) => {
           health_status,
           notes,
           meal_data ? JSON.stringify(meal_data) : null,
+          finalServiceType,
+          grooming_data ? JSON.stringify(grooming_data) : null,
+          hotel_data ? JSON.stringify(hotel_data) : null,
         ]
       );
     }

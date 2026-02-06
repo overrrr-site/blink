@@ -36,6 +36,7 @@ interface BillingHistory {
 }
 
 type BillingTab = 'plan' | 'payment' | 'history'
+type CardAction = 'subscribe' | 'update' | null
 
 const BILLING_TABS: { id: BillingTab; label: string }[] = [
   { id: 'plan', label: 'プラン' },
@@ -54,6 +55,19 @@ function getStatusBadge(status: string): { label: string; className: string } {
   }
 }
 
+function getSubscriptionStatusBadge(status: string): { label: string; className: string } {
+  switch (status) {
+    case 'active':
+      return { label: 'アクティブ', className: 'bg-chart-2/10 text-chart-2' }
+    case 'past_due':
+      return { label: '支払い失敗', className: 'bg-destructive/10 text-destructive' }
+    case 'canceled':
+      return { label: 'キャンセル', className: 'bg-muted text-muted-foreground' }
+    default:
+      return { label: '非アクティブ', className: 'bg-muted text-muted-foreground' }
+  }
+}
+
 export default function Billing() {
   const [activeTab, setActiveTab] = useState<BillingTab>('plan')
   const [plans, setPlans] = useState<Plan[]>([])
@@ -65,6 +79,7 @@ export default function Billing() {
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
   const [processing, setProcessing] = useState(false)
   const [showCardForm, setShowCardForm] = useState(false)
+  const [cardAction, setCardAction] = useState<CardAction>(null)
 
   useEffect(() => {
     fetchData()
@@ -98,25 +113,45 @@ export default function Billing() {
   const handlePlanChange = (planId: number) => {
     if (!confirm('プランを変更しますか？')) return
     setSelectedPlan(planId)
+    setCardAction('subscribe')
     setShowCardForm(true)
+    setActiveTab('payment')
+  }
+
+  const handleUpdateCard = () => {
+    setSelectedPlan(null)
+    setCardAction('update')
+    setShowCardForm(true)
+    setActiveTab('payment')
   }
 
   const handleTokenCreated = async (token: string) => {
-    if (!selectedPlan) return
+    if (cardAction !== 'update' && !selectedPlan) {
+      alert('プランが選択されていません')
+      return
+    }
 
     setProcessing(true)
     try {
-      await api.post('/billing/subscribe', {
-        plan_id: selectedPlan,
-        payjp_token: token,
-      })
-
-      alert('プランを変更しました')
+      if (cardAction === 'update') {
+        await api.post('/billing/update-card', {
+          payjp_token: token,
+        })
+        alert('カード情報を更新しました')
+      } else {
+        if (!selectedPlan) return
+        await api.post('/billing/subscribe', {
+          plan_id: selectedPlan,
+          payjp_token: token,
+        })
+        alert('プランを変更しました')
+      }
       setShowCardForm(false)
       setSelectedPlan(null)
+      setCardAction(null)
       fetchData()
     } catch (err) {
-      alert(getAxiosErrorMessage(err, 'プラン変更に失敗しました'))
+      alert(getAxiosErrorMessage(err, cardAction === 'update' ? 'カード情報の更新に失敗しました' : 'プラン変更に失敗しました'))
     } finally {
       setProcessing(false)
     }
@@ -192,6 +227,21 @@ export default function Billing() {
 
       {/* コンテンツ */}
       <div className="px-5 pt-4 space-y-4">
+        {currentPlan?.subscription_status === 'past_due' && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+            <p className="text-red-800 font-bold">お支払いに失敗しました</p>
+            <p className="text-red-600 text-sm mt-1">
+              カード情報を更新してください。更新しない場合、サービスが一時停止される場合があります。
+            </p>
+            <button
+              onClick={handleUpdateCard}
+              className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+            >
+              カード情報を更新
+            </button>
+          </div>
+        )}
+
         {activeTab === 'plan' && (
           <>
             {currentPlan && (
@@ -203,13 +253,14 @@ export default function Billing() {
                 <div className="bg-accent/30 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-accent-foreground">プラン名</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                      currentPlan.subscription_status === 'active'
-                        ? 'bg-chart-2/10 text-chart-2'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {currentPlan.subscription_status === 'active' ? 'アクティブ' : '非アクティブ'}
-                    </span>
+                    {(() => {
+                      const badge = getSubscriptionStatusBadge(currentPlan.subscription_status)
+                      return (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      )
+                    })()}
                   </div>
                   <p className="text-lg font-bold mb-1">{currentPlan.display_name}</p>
                   <p className="text-xs text-muted-foreground mb-3">
@@ -305,6 +356,11 @@ export default function Billing() {
             </h3>
             {showCardForm && payjpPublicKey ? (
               <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  {cardAction === 'update'
+                    ? '登録済みカードの更新を行います。'
+                    : 'プラン変更に必要なカード情報を入力してください。'}
+                </p>
                 <PayjpForm
                   publicKey={payjpPublicKey}
                   onTokenCreated={handleTokenCreated}
@@ -315,6 +371,7 @@ export default function Billing() {
                   onClick={() => {
                     setShowCardForm(false)
                     setSelectedPlan(null)
+                    setCardAction(null)
                   }}
                   className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm font-medium hover:bg-muted transition-colors"
                 >
@@ -324,8 +381,14 @@ export default function Billing() {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  お支払い方法の設定は、プラン変更時にカード情報を入力して設定できます。
+                  お支払い方法の設定は、プラン変更時またはカード更新時に行えます。
                 </p>
+                <button
+                  onClick={handleUpdateCard}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-muted/50 text-sm font-bold hover:bg-muted transition-colors"
+                >
+                  カード情報を更新
+                </button>
                 <button
                   onClick={() => setActiveTab('plan')}
                   className="w-full px-4 py-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold hover:bg-primary/10 transition-colors"

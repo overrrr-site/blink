@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import * as Sentry from '@sentry/react'
 import { Icon } from './Icon'
 
 interface Props {
@@ -21,6 +22,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('ErrorBoundary caught:', error, info)
+    Sentry.captureException(error, {
+      extra: { componentStack: info.componentStack },
+    })
   }
 
   handleGoBack = () => {

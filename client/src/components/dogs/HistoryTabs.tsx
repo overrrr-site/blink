@@ -1,6 +1,7 @@
 import { Icon } from '../Icon'
 import { formatDateFullWithWeekday } from '../../utils/date'
 import { getBusinessTypeColors } from '../../utils/businessTypeColors'
+import { getBusinessTypeConfig } from '../../domain/businessTypeConfig'
 import type { RecordType } from '../../types/record'
 
 type ReservationItem = {
@@ -85,6 +86,9 @@ export default function HistoryTabs({
                 const serviceTypeColors = reservation.service_type
                   ? getBusinessTypeColors(reservation.service_type as RecordType)
                   : null
+                const serviceTypeConfig = reservation.service_type
+                  ? getBusinessTypeConfig(reservation.service_type as RecordType)
+                  : null
                 return (
                   <div
                     key={reservation.id}
@@ -96,12 +100,12 @@ export default function HistoryTabs({
                         <p className="text-sm font-bold">
                           {formatDateFullWithWeekday(reservationDate)}
                         </p>
-                        {serviceTypeColors && !selectedBusinessType && (
+                        {serviceTypeColors && serviceTypeConfig && !selectedBusinessType && (
                           <span
                             className="text-[10px] px-1.5 py-0.5 rounded font-bold"
                             style={{ color: serviceTypeColors.primary, backgroundColor: serviceTypeColors.pale }}
                           >
-                            {serviceTypeColors.label}
+                            {serviceTypeConfig.label}
                           </span>
                         )}
                         <span

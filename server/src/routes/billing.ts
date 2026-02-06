@@ -232,6 +232,54 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
   }
 });
 
+// カード情報更新（サブスクリプション維持）
+router.post('/update-card', async (req: AuthRequest, res) => {
+  try {
+    const { payjp_token } = req.body;
+
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    if (!payjp_token) {
+      sendBadRequest(res, 'PAY.JPトークンが必要です');
+      return;
+    }
+
+    const storeResult = await pool.query(
+      `SELECT payjp_customer_id FROM stores WHERE id = $1`,
+      [req.storeId]
+    );
+
+    if (storeResult.rows.length === 0) {
+      sendNotFound(res, '店舗が見つかりません');
+      return;
+    }
+
+    const customerId = storeResult.rows[0]?.payjp_customer_id as string | null;
+    if (!customerId) {
+      sendBadRequest(res, 'PAY.JP顧客情報が存在しません');
+      return;
+    }
+
+    try {
+      await payjp.customers.update(customerId, {
+        card: payjp_token,
+      });
+
+      res.json({ success: true, message: 'カード情報を更新しました' });
+    } catch (payjpError: any) {
+      console.error('PAY.JP update card error:', payjpError);
+      res.status(400).json({
+        error: 'カード情報の更新に失敗しました',
+        details: payjpError.message || 'Unknown error',
+      });
+    }
+  } catch (error) {
+    sendServerError(res, 'カード情報の更新に失敗しました', error);
+  }
+});
+
 // サブスクリプションキャンセル
 router.post('/cancel', async (req: AuthRequest, res) => {
   try {

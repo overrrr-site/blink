@@ -26,7 +26,8 @@ router.get('/reservations', async function(req, res) {
              pvi.morning_urination, pvi.morning_defecation,
              pvi.afternoon_urination, pvi.afternoon_defecation,
              pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
-             pvi.meal_data,
+             pvi.meal_data, pvi.service_type as pre_visit_service_type,
+             pvi.grooming_data, pvi.hotel_data,
              CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit_input,
              COUNT(*) OVER() as total_count
       FROM reservations r

@@ -433,6 +433,48 @@ export async function sendRecordNotification(
 }
 
 /**
+ * 店舗オーナー向けの決済失敗通知を送信（主にメール）。
+ */
+export async function sendStoreOwnerPaymentFailedNotification(params: {
+  storeId: number;
+  storeName: string;
+  failureReason?: string | null;
+}): Promise<void> {
+  const { storeId, storeName, failureReason } = params;
+
+  try {
+    const staffResult = await pool.query<{ email: string | null; name: string | null }>(
+      `SELECT s.email, s.name
+       FROM staff s
+       JOIN staff_stores ss ON s.id = ss.staff_id
+       WHERE ss.store_id = $1 AND s.is_owner = true
+       ORDER BY s.created_at ASC`,
+      [storeId]
+    );
+
+    if (staffResult.rows.length === 0) {
+      console.warn(`決済失敗通知: スタッフが見つかりません (store_id=${storeId})`);
+      return;
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const subject = '【Blink】お支払いに失敗しました';
+    const reasonLine = failureReason ? `\n理由: ${failureReason}` : '';
+    const message = `${storeName}のお支払いが失敗しました。カード情報を更新してください。${reasonLine}\n\n更新しない場合、サービスが一時停止される場合があります。`;
+    const actionUrl = `${frontendUrl}/billing`;
+
+    const htmlMessage = `<h2>${subject}</h2><p>${message.replace(/\n/g, '<br>')}</p><p><a href="${actionUrl}">カード情報を更新する</a></p><hr><p style=\"color:#999;font-size:12px\">Blink - ペットサロン管理システム</p>`;
+
+    for (const staff of staffResult.rows) {
+      if (!staff.email) continue;
+      await sendEmail(staff.email, subject, `${message}\n\n${actionUrl}`, htmlMessage);
+    }
+  } catch (error) {
+    console.error('Failed to notify payment failure:', error);
+  }
+}
+
+/**
  * ワクチンアラート通知を送信
  * 店舗ごとに設定1回・犬一覧1回・owner連絡先1括取得でI/O削減
  */

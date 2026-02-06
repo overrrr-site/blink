@@ -80,6 +80,53 @@ function normalizeStoredPhotos(photos: { regular?: PhotoInput[]; concerns?: Conc
   return { regular, concerns };
 }
 
+async function shouldAutoShareRecord(storeId: number): Promise<boolean> {
+  const settingsResult = await pool.query<{ auto_share_record?: boolean }>(
+    `SELECT auto_share_record FROM notification_settings WHERE store_id = $1`,
+    [storeId]
+  );
+  return settingsResult.rows[0]?.auto_share_record === true;
+}
+
+async function shareRecordForOwner(storeId: number, recordId: number) {
+  const recordResult = await pool.query(
+    `SELECT r.*, d.name as dog_name, o.id as owner_id, o.store_id
+     FROM records r
+     JOIN dogs d ON r.dog_id = d.id
+     JOIN owners o ON d.owner_id = o.id
+     WHERE r.id = $1 AND r.store_id = $2 AND r.deleted_at IS NULL`,
+    [recordId, storeId]
+  );
+
+  if (recordResult.rows.length === 0) {
+    return null;
+  }
+
+  const updateResult = await pool.query(
+    `UPDATE records SET status = 'shared', shared_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1 AND store_id = $2
+     RETURNING *`,
+    [recordId, storeId]
+  );
+
+  const record = recordResult.rows[0];
+  const photos = record.photos ? (typeof record.photos === 'string' ? JSON.parse(record.photos) : record.photos) : null;
+  sendRecordNotification(
+    storeId,
+    record.owner_id,
+    {
+      id: record.id,
+      record_date: record.record_date,
+      record_type: record.record_type,
+      dog_name: record.dog_name,
+      report_text: record.report_text,
+      photos,
+    }
+  ).catch((err) => console.error('Record notification error:', err));
+
+  return updateResult.rows[0];
+}
+
 /**
  * 写真配列を処理し、Base64データをSupabase Storageにアップロード
  */
@@ -331,6 +378,7 @@ router.post('/', async (req: AuthRequest, res) => {
     // 写真処理
     const processedPhotos = photos ? await processRecordPhotos(photos) : null;
 
+    const statusValue = status || 'draft';
     const result = await pool.query(
       `INSERT INTO records (
         store_id, dog_id, reservation_id, staff_id,
@@ -356,11 +404,22 @@ router.post('/', async (req: AuthRequest, res) => {
         serializeJsonOrNull(health_check),
         ai_generated_text || null,
         serializeJsonOrNull(ai_suggestions),
-        status || 'draft',
+        statusValue,
       ]
     );
 
-    res.status(201).json(result.rows[0]);
+    let record = result.rows[0];
+    if (statusValue === 'saved' && req.storeId) {
+      const autoShare = await shouldAutoShareRecord(req.storeId);
+      if (autoShare) {
+        const sharedRecord = await shareRecordForOwner(req.storeId, record.id);
+        if (sharedRecord) {
+          record = sharedRecord;
+        }
+      }
+    }
+
+    res.status(201).json(record);
   } catch (error) {
     sendServerError(res, 'カルテの作成に失敗しました', error);
   }
@@ -464,7 +523,18 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return;
     }
 
-    res.json(result.rows[0]);
+    let record = result.rows[0];
+    if (record.status === 'saved' && req.storeId) {
+      const autoShare = await shouldAutoShareRecord(req.storeId);
+      if (autoShare) {
+        const sharedRecord = await shareRecordForOwner(req.storeId, record.id);
+        if (sharedRecord) {
+          record = sharedRecord;
+        }
+      }
+    }
+
+    res.json(record);
   } catch (error) {
     sendServerError(res, 'カルテの更新に失敗しました', error);
   }
@@ -506,46 +576,13 @@ router.post('/:id/share', async (req: AuthRequest, res) => {
 
     const { id } = req.params;
 
-    // カルテを取得
-    const recordResult = await pool.query(
-      `SELECT r.*, d.name as dog_name, o.id as owner_id, o.store_id
-       FROM records r
-       JOIN dogs d ON r.dog_id = d.id
-       JOIN owners o ON d.owner_id = o.id
-       WHERE r.id = $1 AND r.store_id = $2 AND r.deleted_at IS NULL`,
-      [id, req.storeId]
-    );
-
-    if (recordResult.rows.length === 0) {
+    const sharedRecord = await shareRecordForOwner(req.storeId!, Number(id));
+    if (!sharedRecord) {
       sendNotFound(res, 'カルテが見つかりません');
       return;
     }
 
-    // ステータスを shared に更新
-    const result = await pool.query(
-      `UPDATE records SET status = 'shared', shared_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING *`,
-      [id]
-    );
-
-    // LINE通知送信（非ブロッキング）
-    const record = recordResult.rows[0];
-    const photos = record.photos ? (typeof record.photos === 'string' ? JSON.parse(record.photos) : record.photos) : null;
-    sendRecordNotification(
-      req.storeId!,
-      record.owner_id,
-      {
-        id: record.id,
-        record_date: record.record_date,
-        record_type: record.record_type,
-        dog_name: record.dog_name,
-        report_text: record.report_text,
-        photos,
-      }
-    ).catch((err) => console.error('Record notification error:', err));
-
-    res.json(result.rows[0]);
+    res.json(sharedRecord);
   } catch (error) {
     sendServerError(res, 'カルテの共有に失敗しました', error);
   }

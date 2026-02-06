@@ -6,6 +6,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../../utils/response.js';
+import { parseBusinessTypeInput } from '../../utils/businessTypes.js';
 import { requireOwnerToken } from './common.js';
 
 const router = express.Router();
@@ -28,17 +29,25 @@ router.get('/pre-visit-inputs/latest/:dogId', async function(req, res) {
       return;
     }
 
+    const { service_type } = req.query as { service_type?: string };
+    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
+
     const result = await pool.query(
       `SELECT pvi.morning_urination, pvi.morning_defecation,
               pvi.afternoon_urination, pvi.afternoon_defecation,
               pvi.breakfast_status, pvi.health_status, pvi.notes,
-              pvi.meal_data
+              pvi.meal_data, pvi.service_type, pvi.grooming_data, pvi.hotel_data
        FROM pre_visit_inputs pvi
        JOIN reservations r ON pvi.reservation_id = r.id
        WHERE r.dog_id = $1
+         AND ($2::text IS NULL OR COALESCE(pvi.service_type, r.service_type, 'daycare') = $2)
        ORDER BY pvi.submitted_at DESC
        LIMIT 1`,
-      [dogId]
+      [dogId, serviceType ?? null]
     );
 
     if (result.rows.length === 0) {
@@ -60,6 +69,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
 
     const {
       reservation_id,
+      service_type,
       morning_urination,
       morning_defecation,
       afternoon_urination,
@@ -68,6 +78,8 @@ router.post('/pre-visit-inputs', async function(req, res) {
       health_status,
       notes,
       meal_data,
+      grooming_data,
+      hotel_data,
     } = req.body;
 
     if (!reservation_id) {
@@ -88,14 +100,25 @@ router.post('/pre-visit-inputs', async function(req, res) {
       return;
     }
 
+    const { value: parsedServiceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
+    const reservationServiceType = reservationCheck.rows[0]?.service_type;
+    const finalServiceType = parsedServiceType ?? reservationServiceType ?? null;
+
     const mealDataJson = meal_data ? JSON.stringify(meal_data) : null;
+    const groomingDataJson = grooming_data ? JSON.stringify(grooming_data) : null;
+    const hotelDataJson = hotel_data ? JSON.stringify(hotel_data) : null;
 
     const result = await pool.query(
       `INSERT INTO pre_visit_inputs (
         reservation_id, morning_urination, morning_defecation,
         afternoon_urination, afternoon_defecation,
-        breakfast_status, health_status, notes, meal_data
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        breakfast_status, health_status, notes, meal_data,
+        service_type, grooming_data, hotel_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT (reservation_id) DO UPDATE SET
         morning_urination = EXCLUDED.morning_urination,
         morning_defecation = EXCLUDED.morning_defecation,
@@ -105,6 +128,9 @@ router.post('/pre-visit-inputs', async function(req, res) {
         health_status = EXCLUDED.health_status,
         notes = EXCLUDED.notes,
         meal_data = EXCLUDED.meal_data,
+        service_type = EXCLUDED.service_type,
+        grooming_data = EXCLUDED.grooming_data,
+        hotel_data = EXCLUDED.hotel_data,
         submitted_at = CURRENT_TIMESTAMP
       RETURNING *`,
       [
@@ -117,6 +143,9 @@ router.post('/pre-visit-inputs', async function(req, res) {
         health_status,
         notes,
         mealDataJson,
+        finalServiceType,
+        groomingDataJson,
+        hotelDataJson,
       ]
     );
 

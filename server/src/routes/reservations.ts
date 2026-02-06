@@ -125,7 +125,8 @@ router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
               pvi.morning_urination, pvi.morning_defecation,
               pvi.afternoon_urination, pvi.afternoon_defecation,
               pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
-              pvi.meal_data,
+              pvi.meal_data, pvi.service_type as pre_visit_service_type,
+              pvi.grooming_data, pvi.hotel_data,
               COALESCE(stats.visit_count, 0) as visit_count,
               next.next_visit_date
        FROM reservations r

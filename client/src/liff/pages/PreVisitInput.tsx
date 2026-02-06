@@ -13,6 +13,7 @@ interface PreVisitReservation {
   dog_name: string;
   reservation_date: string;
   reservation_time: string;
+  service_type?: 'daycare' | 'grooming' | 'hotel';
   has_pre_visit_input: boolean;
   morning_urination?: boolean;
   morning_defecation?: boolean;
@@ -22,7 +23,72 @@ interface PreVisitReservation {
   health_status?: string;
   pre_visit_notes?: string;
   meal_data?: MealEntry[];
+  grooming_data?: GroomingPreVisitData;
+  hotel_data?: HotelPreVisitData;
 }
+
+interface GroomingPreVisitData {
+  style_preference?: string;
+  style_notes?: string;
+  concern_areas?: string[];
+  concern_notes?: string;
+  changes_since_last?: string;
+  skin_issues?: boolean;
+}
+
+interface HotelPreVisitData {
+  feeding_schedule?: {
+    morning?: string;
+    evening?: string;
+    snack?: string;
+  };
+  medication?: {
+    has_medication?: boolean;
+    details?: string;
+  };
+  walk_preference?: string;
+  sleeping_habit?: string;
+  special_notes?: string;
+  emergency_contact_confirmed?: boolean;
+}
+
+const DEFAULT_DAYCARE_DATA = {
+  morning_urination: false,
+  morning_defecation: false,
+  afternoon_urination: false,
+  afternoon_defecation: false,
+  breakfast_status: '',
+  health_status: '',
+  notes: '',
+  meal_data: [] as MealEntry[],
+};
+
+const DEFAULT_GROOMING_DATA: GroomingPreVisitData = {
+  style_preference: '',
+  style_notes: '',
+  concern_areas: [],
+  concern_notes: '',
+  changes_since_last: '',
+  skin_issues: false,
+};
+
+const DEFAULT_HOTEL_DATA: HotelPreVisitData = {
+  feeding_schedule: { morning: '', evening: '', snack: '' },
+  medication: { has_medication: false, details: '' },
+  walk_preference: '',
+  sleeping_habit: '',
+  special_notes: '',
+  emergency_contact_confirmed: false,
+};
+
+const GROOMING_CONCERN_OPTIONS = [
+  { value: 'ears', label: '耳' },
+  { value: 'skin', label: '皮膚' },
+  { value: 'nails', label: '爪' },
+  { value: 'teeth', label: '歯' },
+  { value: 'eyes', label: '目' },
+  { value: 'other', label: 'その他' },
+];
 
 // チェックボックスコンポーネント
 function CheckboxItem({
@@ -72,16 +138,9 @@ export default function PreVisitInput() {
   const [saving, setSaving] = useState(false);
   const [loadingLastRecord, setLoadingLastRecord] = useState(false);
   const [reservation, setReservation] = useState<PreVisitReservation | null>(null);
-  const [formData, setFormData] = useState({
-    morning_urination: false,
-    morning_defecation: false,
-    afternoon_urination: false,
-    afternoon_defecation: false,
-    breakfast_status: '',
-    health_status: '',
-    notes: '',
-    meal_data: [] as MealEntry[],
-  });
+  const [daycareData, setDaycareData] = useState(DEFAULT_DAYCARE_DATA);
+  const [groomingData, setGroomingData] = useState<GroomingPreVisitData>(DEFAULT_GROOMING_DATA);
+  const [hotelData, setHotelData] = useState<HotelPreVisitData>(DEFAULT_HOTEL_DATA);
 
   useEffect(() => {
     const fetchReservation = async () => {
@@ -92,18 +151,42 @@ export default function PreVisitInput() {
         const res = reservations.find((r) => r.id === parseInt(reservationId || '0'));
         if (res) {
           setReservation(res);
+          const serviceType = res.service_type || 'daycare';
+          if (serviceType === 'daycare') {
+            setDaycareData(DEFAULT_DAYCARE_DATA);
+          }
+          if (serviceType === 'grooming') {
+            setGroomingData(DEFAULT_GROOMING_DATA);
+          }
+          if (serviceType === 'hotel') {
+            setHotelData(DEFAULT_HOTEL_DATA);
+          }
           // 既存の登園前入力データがあればフォームに読み込む
           if (res.has_pre_visit_input) {
-            setFormData({
-              morning_urination: res.morning_urination ?? false,
-              morning_defecation: res.morning_defecation ?? false,
-              afternoon_urination: res.afternoon_urination ?? false,
-              afternoon_defecation: res.afternoon_defecation ?? false,
-              breakfast_status: res.breakfast_status ?? '',
-              health_status: res.health_status ?? '',
-              notes: res.pre_visit_notes ?? '',
-              meal_data: res.meal_data ?? [],
-            });
+            if (serviceType === 'daycare') {
+              setDaycareData({
+                morning_urination: res.morning_urination ?? false,
+                morning_defecation: res.morning_defecation ?? false,
+                afternoon_urination: res.afternoon_urination ?? false,
+                afternoon_defecation: res.afternoon_defecation ?? false,
+                breakfast_status: res.breakfast_status ?? '',
+                health_status: res.health_status ?? '',
+                notes: res.pre_visit_notes ?? '',
+                meal_data: res.meal_data ?? [],
+              });
+            }
+            if (serviceType === 'grooming') {
+              setGroomingData({
+                ...DEFAULT_GROOMING_DATA,
+                ...(res.grooming_data || {}),
+              });
+            }
+            if (serviceType === 'hotel') {
+              setHotelData({
+                ...DEFAULT_HOTEL_DATA,
+                ...(res.hotel_data || {}),
+              });
+            }
           }
         }
       } catch {
@@ -121,28 +204,57 @@ export default function PreVisitInput() {
 
     setSaving(true);
     try {
-      await liffClient.post('/pre-visit-inputs', {
+      const serviceType = reservation?.service_type || 'daycare';
+      const payload: Record<string, unknown> = {
         reservation_id: parseInt(reservationId),
-        ...formData,
-        meal_data: formData.meal_data.length > 0 ? formData.meal_data : null,
+        service_type: serviceType,
+      };
+
+      if (serviceType === 'daycare') {
+        Object.assign(payload, {
+          morning_urination: daycareData.morning_urination,
+          morning_defecation: daycareData.morning_defecation,
+          afternoon_urination: daycareData.afternoon_urination,
+          afternoon_defecation: daycareData.afternoon_defecation,
+          breakfast_status: daycareData.breakfast_status,
+          health_status: daycareData.health_status,
+          notes: daycareData.notes,
+          meal_data: daycareData.meal_data.length > 0 ? daycareData.meal_data : null,
+        });
+      }
+
+      if (serviceType === 'grooming') {
+        Object.assign(payload, {
+          grooming_data: groomingData,
+        });
+      }
+
+      if (serviceType === 'hotel') {
+        Object.assign(payload, {
+          hotel_data: hotelData,
+        });
+      }
+
+      await liffClient.post('/pre-visit-inputs', {
+        ...payload,
       });
       navigate('/home');
     } catch (error) {
-      alert(getAxiosErrorMessage(error, '登園前入力の保存に失敗しました'));
+      alert(getAxiosErrorMessage(error, '事前入力の保存に失敗しました'));
     } finally {
       setSaving(false);
     }
   };
 
   const addMealEntry = () => {
-    setFormData(prev => ({
+    setDaycareData(prev => ({
       ...prev,
       meal_data: [...prev.meal_data, { time: '', food_name: '', amount: '' }],
     }));
   };
 
   const updateMealEntry = (index: number, field: keyof MealEntry, value: string) => {
-    setFormData(prev => ({
+    setDaycareData(prev => ({
       ...prev,
       meal_data: prev.meal_data.map((entry, i) =>
         i === index ? { ...entry, [field]: value } : entry
@@ -151,9 +263,41 @@ export default function PreVisitInput() {
   };
 
   const removeMealEntry = (index: number) => {
-    setFormData(prev => ({
+    setDaycareData(prev => ({
       ...prev,
       meal_data: prev.meal_data.filter((_, i) => i !== index),
+    }));
+  };
+
+  const toggleGroomingConcern = (area: string, checked: boolean) => {
+    setGroomingData(prev => {
+      const current = new Set(prev.concern_areas || []);
+      if (checked) {
+        current.add(area);
+      } else {
+        current.delete(area);
+      }
+      return { ...prev, concern_areas: Array.from(current) };
+    });
+  };
+
+  const updateHotelFeeding = (field: 'morning' | 'evening' | 'snack', value: string) => {
+    setHotelData(prev => ({
+      ...prev,
+      feeding_schedule: {
+        ...prev.feeding_schedule,
+        [field]: value,
+      },
+    }));
+  };
+
+  const updateHotelMedication = (field: 'has_medication' | 'details', value: boolean | string) => {
+    setHotelData(prev => ({
+      ...prev,
+      medication: {
+        ...prev.medication,
+        [field]: value,
+      },
     }));
   };
 
@@ -161,18 +305,35 @@ export default function PreVisitInput() {
     if (!reservation?.dog_id) return;
     setLoadingLastRecord(true);
     try {
-      const response = await liffClient.get(`/pre-visit-inputs/latest/${reservation.dog_id}`);
-      const lastRecord = response.data;
-      setFormData({
-        morning_urination: lastRecord.morning_urination ?? false,
-        morning_defecation: lastRecord.morning_defecation ?? false,
-        afternoon_urination: lastRecord.afternoon_urination ?? false,
-        afternoon_defecation: lastRecord.afternoon_defecation ?? false,
-        breakfast_status: lastRecord.breakfast_status ?? '',
-        health_status: lastRecord.health_status ?? '',
-        notes: lastRecord.notes ?? '',
-        meal_data: lastRecord.meal_data ?? [],
+      const serviceType = reservation?.service_type || 'daycare';
+      const response = await liffClient.get(`/pre-visit-inputs/latest/${reservation.dog_id}`, {
+        params: { service_type: serviceType },
       });
+      const lastRecord = response.data;
+      if (serviceType === 'daycare') {
+        setDaycareData({
+          morning_urination: lastRecord.morning_urination ?? false,
+          morning_defecation: lastRecord.morning_defecation ?? false,
+          afternoon_urination: lastRecord.afternoon_urination ?? false,
+          afternoon_defecation: lastRecord.afternoon_defecation ?? false,
+          breakfast_status: lastRecord.breakfast_status ?? '',
+          health_status: lastRecord.health_status ?? '',
+          notes: lastRecord.notes ?? '',
+          meal_data: lastRecord.meal_data ?? [],
+        });
+      }
+      if (serviceType === 'grooming') {
+        setGroomingData({
+          ...DEFAULT_GROOMING_DATA,
+          ...(lastRecord.grooming_data || {}),
+        });
+      }
+      if (serviceType === 'hotel') {
+        setHotelData({
+          ...DEFAULT_HOTEL_DATA,
+          ...(lastRecord.hotel_data || {}),
+        });
+      }
     } catch {
       // 過去の登園前入力がない場合は何もしない
     } finally {
@@ -206,6 +367,14 @@ export default function PreVisitInput() {
     );
   }
 
+  const serviceType = reservation?.service_type || 'daycare';
+  const serviceLabel = serviceType === 'grooming'
+    ? 'トリミング事前入力'
+    : serviceType === 'hotel'
+      ? 'ホテル事前入力'
+      : '登園前入力';
+  const reservationTimeLabel = serviceType === 'daycare' ? '登園予定' : '予約時間';
+
   return (
     <div className="px-5 pt-6 pb-36">
       {/* ヘッダー */}
@@ -218,7 +387,7 @@ export default function PreVisitInput() {
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
         <div className="flex-1">
-          <h1 className="text-lg font-bold font-heading">登園前入力</h1>
+          <h1 className="text-lg font-bold font-heading">{serviceLabel}</h1>
           <p className="text-xs text-muted-foreground">
             {format(new Date(reservation.reservation_date), 'yyyy年M月d日 (E)', { locale: ja })}
           </p>
@@ -233,7 +402,7 @@ export default function PreVisitInput() {
         <div>
           <p className="font-bold">{reservation.dog_name}</p>
           <p className="text-xs text-muted-foreground">
-            {reservation.reservation_time} 登園予定
+            {reservation.reservation_time} {reservationTimeLabel}
           </p>
         </div>
       </div>
@@ -261,172 +430,393 @@ export default function PreVisitInput() {
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 排泄 */}
-        <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-          <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <Icon icon="solar:toilet-paper-bold" width="20" height="20" className="text-chart-3" />
-            排泄
-          </h2>
-          <p className="text-xs text-muted-foreground mb-3">
-            前日夜〜今朝の排泄状況をお知らせください
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <CheckboxItem
-              id="morning_urination"
-              label="今朝オシッコした"
-              checked={formData.morning_urination}
-              onChange={(checked) => setFormData({ ...formData, morning_urination: checked })}
-            />
-            <CheckboxItem
-              id="morning_defecation"
-              label="今朝ウンチした"
-              checked={formData.morning_defecation}
-              onChange={(checked) => setFormData({ ...formData, morning_defecation: checked })}
-            />
-            <CheckboxItem
-              id="afternoon_urination"
-              label="昨夜オシッコした"
-              checked={formData.afternoon_urination}
-              onChange={(checked) => setFormData({ ...formData, afternoon_urination: checked })}
-            />
-            <CheckboxItem
-              id="afternoon_defecation"
-              label="昨夜ウンチした"
-              checked={formData.afternoon_defecation}
-              onChange={(checked) => setFormData({ ...formData, afternoon_defecation: checked })}
-            />
-          </div>
-        </section>
-
-        {/* 食事 */}
-        <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-          <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <Icon icon="solar:bowl-bold" width="20" height="20" className="text-chart-2" />
-            食事
-          </h2>
-          <div className="mb-4">
-            <label htmlFor="breakfast_status" className="block text-sm font-medium mb-2">
-              朝ごはんの食べ具合
-            </label>
-            <select
-              id="breakfast_status"
-              value={formData.breakfast_status}
-              onChange={(e) => setFormData({ ...formData, breakfast_status: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
-                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              aria-describedby="breakfast-hint"
-            >
-              <option value="">選択してください</option>
-              <option value="完食">完食</option>
-              <option value="少し残した">少し残した</option>
-              <option value="半分以下">半分以下</option>
-              <option value="食べていない">食べていない</option>
-            </select>
-            <p id="breakfast-hint" className="text-xs text-muted-foreground mt-1.5">
-              いつもと比べた食欲をお選びください
-            </p>
-          </div>
-
-          {/* ごはん記録 */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              ごはん記録 <span className="text-muted-foreground font-normal">(任意)</span>
-            </label>
-
-            {formData.meal_data.map((entry, index) => (
-              <div key={index} className="bg-muted/50 rounded-xl p-3 mb-2 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-muted-foreground">ごはん {index + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeMealEntry(index)}
-                    className="text-destructive text-xs font-medium min-h-[32px] px-2"
-                  >
-                    削除
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  placeholder="いつ（例: 朝8時）"
-                  value={entry.time}
-                  onChange={(e) => updateMealEntry(index, 'time', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
-                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+        {serviceType === 'daycare' && (
+          <>
+            {/* 排泄 */}
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:toilet-paper-bold" width="20" height="20" className="text-chart-3" />
+                排泄
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                前日夜〜今朝の排泄状況をお知らせください
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <CheckboxItem
+                  id="morning_urination"
+                  label="今朝オシッコした"
+                  checked={daycareData.morning_urination}
+                  onChange={(checked) => setDaycareData({ ...daycareData, morning_urination: checked })}
                 />
-                <input
-                  type="text"
-                  placeholder="フード名（例: ロイカナ）"
-                  value={entry.food_name}
-                  onChange={(e) => updateMealEntry(index, 'food_name', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
-                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                <CheckboxItem
+                  id="morning_defecation"
+                  label="今朝ウンチした"
+                  checked={daycareData.morning_defecation}
+                  onChange={(checked) => setDaycareData({ ...daycareData, morning_defecation: checked })}
                 />
-                <input
-                  type="text"
-                  placeholder="量（例: 50g）"
-                  value={entry.amount}
-                  onChange={(e) => updateMealEntry(index, 'amount', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
-                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                <CheckboxItem
+                  id="afternoon_urination"
+                  label="昨夜オシッコした"
+                  checked={daycareData.afternoon_urination}
+                  onChange={(checked) => setDaycareData({ ...daycareData, afternoon_urination: checked })}
+                />
+                <CheckboxItem
+                  id="afternoon_defecation"
+                  label="昨夜ウンチした"
+                  checked={daycareData.afternoon_defecation}
+                  onChange={(checked) => setDaycareData({ ...daycareData, afternoon_defecation: checked })}
                 />
               </div>
-            ))}
+            </section>
 
-            <button
-              type="button"
-              onClick={addMealEntry}
-              className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground font-medium
+            {/* 食事 */}
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:bowl-bold" width="20" height="20" className="text-chart-2" />
+                食事
+              </h2>
+              <div className="mb-4">
+                <label htmlFor="breakfast_status" className="block text-sm font-medium mb-2">
+                  朝ごはんの食べ具合
+                </label>
+                <select
+                  id="breakfast_status"
+                  value={daycareData.breakfast_status}
+                  onChange={(e) => setDaycareData({ ...daycareData, breakfast_status: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  aria-describedby="breakfast-hint"
+                >
+                  <option value="">選択してください</option>
+                  <option value="完食">完食</option>
+                  <option value="少し残した">少し残した</option>
+                  <option value="半分以下">半分以下</option>
+                  <option value="食べていない">食べていない</option>
+                </select>
+                <p id="breakfast-hint" className="text-xs text-muted-foreground mt-1.5">
+                  いつもと比べた食欲をお選びください
+                </p>
+              </div>
+
+              {/* ごはん記録 */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  ごはん記録 <span className="text-muted-foreground font-normal">(任意)</span>
+                </label>
+
+                {daycareData.meal_data.map((entry, index) => (
+                  <div key={index} className="bg-muted/50 rounded-xl p-3 mb-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground">ごはん {index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeMealEntry(index)}
+                        className="text-destructive text-xs font-medium min-h-[32px] px-2"
+                      >
+                        削除
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="いつ（例: 朝8時）"
+                      value={entry.time}
+                      onChange={(e) => updateMealEntry(index, 'time', e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
+                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                    <input
+                      type="text"
+                      placeholder="フード名（例: ロイカナ）"
+                      value={entry.food_name}
+                      onChange={(e) => updateMealEntry(index, 'food_name', e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
+                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                    <input
+                      type="text"
+                      placeholder="量（例: 50g）"
+                      value={entry.amount}
+                      onChange={(e) => updateMealEntry(index, 'amount', e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
+                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addMealEntry}
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground font-medium
                          flex items-center justify-center gap-1.5 active:bg-muted transition-colors"
-            >
-              <Icon icon="solar:add-circle-linear" width="18" height="18" />
-              ごはんを追加
-            </button>
-          </div>
-        </section>
+                >
+                  <Icon icon="solar:add-circle-linear" width="18" height="18" />
+                  ごはんを追加
+                </button>
+              </div>
+            </section>
 
-        {/* 体調 */}
-        <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-          <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <Icon icon="solar:heart-pulse-bold" width="20" height="20" className="text-destructive" />
-            体調
-          </h2>
-          <div>
-            <label htmlFor="health_status" className="block text-sm font-medium mb-2">
-              体調の変化 <span className="text-muted-foreground font-normal">(任意)</span>
-            </label>
-            <textarea
-              id="health_status"
-              value={formData.health_status}
-              onChange={(e) => setFormData({ ...formData, health_status: e.target.value })}
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+            {/* 体調 */}
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:heart-pulse-bold" width="20" height="20" className="text-destructive" />
+                体調
+              </h2>
+              <div>
+                <label htmlFor="health_status" className="block text-sm font-medium mb-2">
+                  体調の変化 <span className="text-muted-foreground font-normal">(任意)</span>
+                </label>
+                <textarea
+                  id="health_status"
+                  value={daycareData.health_status}
+                  onChange={(e) => setDaycareData({ ...daycareData, health_status: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
                          focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              placeholder="例: 昨日から少し元気がない、咳をしている等"
-            />
-          </div>
-        </section>
+                  placeholder="例: 昨日から少し元気がない、咳をしている等"
+                />
+              </div>
+            </section>
 
-        {/* 連絡事項 */}
-        <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-          <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-            <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-chart-4" />
-            連絡事項
-          </h2>
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium mb-2">
-              その他の連絡事項 <span className="text-muted-foreground font-normal">(任意)</span>
-            </label>
-            <textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+            {/* 連絡事項 */}
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-chart-4" />
+                連絡事項
+              </h2>
+              <div>
+                <label htmlFor="notes" className="block text-sm font-medium mb-2">
+                  その他の連絡事項 <span className="text-muted-foreground font-normal">(任意)</span>
+                </label>
+                <textarea
+                  id="notes"
+                  value={daycareData.notes}
+                  onChange={(e) => setDaycareData({ ...daycareData, notes: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
                          focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              placeholder="例: 今日は17時お迎えが少し遅れます等"
-            />
-          </div>
-        </section>
+                  placeholder="例: 今日は17時お迎えが少し遅れます等"
+                />
+              </div>
+            </section>
+          </>
+        )}
+
+        {serviceType === 'grooming' && (
+          <>
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:scissors-bold" width="20" height="20" className="text-violet-500" />
+                ご希望のスタイル
+              </h2>
+              <label htmlFor="style_preference" className="block text-sm font-medium mb-2">
+                スタイルの希望
+              </label>
+              <select
+                id="style_preference"
+                value={groomingData.style_preference ?? ''}
+                onChange={(e) => setGroomingData({ ...groomingData, style_preference: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              >
+                <option value="">選択してください</option>
+                <option value="前回と同じ">前回と同じ</option>
+                <option value="おまかせ">おまかせ</option>
+                <option value="具体的なリクエストあり">具体的なリクエストあり</option>
+              </select>
+              {groomingData.style_preference === '具体的なリクエストあり' && (
+                <textarea
+                  value={groomingData.style_notes ?? ''}
+                  onChange={(e) => setGroomingData({ ...groomingData, style_notes: e.target.value })}
+                  rows={3}
+                  className="w-full mt-3 px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  placeholder="具体的なご要望を入力してください"
+                />
+              )}
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:eye-bold" width="20" height="20" className="text-chart-4" />
+                気になる箇所
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                気になる点があれば選択してください
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {GROOMING_CONCERN_OPTIONS.map((option) => (
+                  <CheckboxItem
+                    key={option.value}
+                    id={`concern_${option.value}`}
+                    label={option.label}
+                    checked={(groomingData.concern_areas || []).includes(option.value)}
+                    onChange={(checked) => toggleGroomingConcern(option.value, checked)}
+                  />
+                ))}
+              </div>
+              <textarea
+                value={groomingData.concern_notes ?? ''}
+                onChange={(e) => setGroomingData({ ...groomingData, concern_notes: e.target.value })}
+                rows={3}
+                className="w-full mt-3 px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="詳細を教えてください（任意）"
+              />
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:refresh-bold" width="20" height="20" className="text-chart-1" />
+                前回からの変化
+              </h2>
+              <textarea
+                value={groomingData.changes_since_last ?? ''}
+                onChange={(e) => setGroomingData({ ...groomingData, changes_since_last: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="例: 最近かゆがっている、薬を飲み始めた等"
+              />
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:heart-pulse-bold" width="20" height="20" className="text-destructive" />
+                皮膚トラブル
+              </h2>
+              <CheckboxItem
+                id="skin_issues"
+                label="皮膚トラブルがあります"
+                checked={!!groomingData.skin_issues}
+                onChange={(checked) => setGroomingData({ ...groomingData, skin_issues: checked })}
+              />
+            </section>
+          </>
+        )}
+
+        {serviceType === 'hotel' && (
+          <>
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:bowl-bold" width="20" height="20" className="text-chart-2" />
+                食事について
+              </h2>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="朝ごはん（時間・内容）"
+                  value={hotelData.feeding_schedule?.morning ?? ''}
+                  onChange={(e) => updateHotelFeeding('morning', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="夜ごはん（時間・内容）"
+                  value={hotelData.feeding_schedule?.evening ?? ''}
+                  onChange={(e) => updateHotelFeeding('evening', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="おやつ"
+                  value={hotelData.feeding_schedule?.snack ?? ''}
+                  onChange={(e) => updateHotelFeeding('snack', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:pill-bold" width="20" height="20" className="text-chart-3" />
+                お薬
+              </h2>
+              <CheckboxItem
+                id="has_medication"
+                label="投薬があります"
+                checked={!!hotelData.medication?.has_medication}
+                onChange={(checked) => updateHotelMedication('has_medication', checked)}
+              />
+              {hotelData.medication?.has_medication && (
+                <textarea
+                  value={hotelData.medication?.details ?? ''}
+                  onChange={(e) => updateHotelMedication('details', e.target.value)}
+                  rows={3}
+                  className="w-full mt-3 px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  placeholder="薬名・タイミングなど"
+                />
+              )}
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:walk-bold" width="20" height="20" className="text-chart-1" />
+                お散歩の希望
+              </h2>
+              <select
+                value={hotelData.walk_preference ?? ''}
+                onChange={(e) => setHotelData({ ...hotelData, walk_preference: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              >
+                <option value="">選択してください</option>
+                <option value="朝のみ">朝のみ</option>
+                <option value="朝夕">朝夕</option>
+                <option value="お散歩不要">お散歩不要</option>
+              </select>
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:bed-bold" width="20" height="20" className="text-chart-4" />
+                寝る時の習慣
+              </h2>
+              <select
+                value={hotelData.sleeping_habit ?? ''}
+                onChange={(e) => setHotelData({ ...hotelData, sleeping_habit: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              >
+                <option value="">選択してください</option>
+                <option value="ケージ">ケージ</option>
+                <option value="フリー">フリー</option>
+                <option value="どちらでも">どちらでも</option>
+              </select>
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-chart-2" />
+                その他の特記事項
+              </h2>
+              <textarea
+                value={hotelData.special_notes ?? ''}
+                onChange={(e) => setHotelData({ ...hotelData, special_notes: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="スタッフに伝えておきたいこと"
+              />
+            </section>
+
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:phone-rounded-bold" width="20" height="20" className="text-chart-3" />
+                緊急連絡先の確認
+              </h2>
+              <CheckboxItem
+                id="emergency_contact_confirmed"
+                label="緊急連絡先に変更はありません"
+                checked={!!hotelData.emergency_contact_confirmed}
+                onChange={(checked) => setHotelData({ ...hotelData, emergency_contact_confirmed: checked })}
+              />
+            </section>
+          </>
+        )}
       </form>
 
       {/* 送信ボタン */}

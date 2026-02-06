@@ -14,6 +14,7 @@ interface RecordHeaderProps {
   onSave: () => void
   onShare: () => void
   onSettings?: () => void
+  shareLabel?: string
 }
 
 export default function RecordHeader({
@@ -25,6 +26,7 @@ export default function RecordHeader({
   onSave,
   onShare,
   onSettings,
+  shareLabel = '共有',
 }: RecordHeaderProps) {
   const navigate = useNavigate()
   const colors = getBusinessTypeColors(recordType)
@@ -86,7 +88,7 @@ export default function RecordHeader({
               boxShadow: status === 'shared' ? 'none' : `0 2px 8px ${colors.primary}40`,
             }}
           >
-            {status === 'shared' ? '共有済み' : '共有'}
+            {status === 'shared' ? '共有済み' : shareLabel}
           </button>
         </div>
       </div>

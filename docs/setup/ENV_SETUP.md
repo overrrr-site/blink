@@ -100,6 +100,18 @@ GOOGLE_REDIRECT_URI=https://your-app.vercel.app/api/google-calendar/callback
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
+### Sentry（エラー監視）
+
+```env
+# Sentry DSN（サーバー側）
+SENTRY_DSN=https://xxx@o0.ingest.sentry.io/000000
+
+# フロントエンドのソースマップアップロード用（ビルド時に参照）
+SENTRY_AUTH_TOKEN=your-sentry-auth-token
+SENTRY_ORG=blink-pet
+SENTRY_PROJECT=blink-frontend
+```
+
 ## クライアント側（client/.env）
 
 ```env
@@ -115,6 +127,9 @@ VITE_LIFF_ID=your-liff-id
 
 # フロントエンドURL
 VITE_FRONTEND_URL=https://your-app.vercel.app
+
+# Sentry DSN（フロントエンド）
+VITE_SENTRY_DSN=https://xxx@o0.ingest.sentry.io/000000
 ```
 
 ## 設定手順
@@ -198,6 +213,11 @@ Vercelダッシュボード → Settings → Environment Variables で設定:
 | SMTP_PASSWORD | △ | メール送信（オプション） |
 | SMTP_FROM | △ | メール送信（オプション） |
 | GEMINI_API_KEY | △ | AI機能（オプション） |
+| SENTRY_DSN | △ | Sentry（サーバー側エラー監視） |
+| SENTRY_AUTH_TOKEN | △ | Sentryソースマップアップロード |
+| SENTRY_ORG | △ | Sentry org（既定: blink-pet） |
+| SENTRY_PROJECT | △ | Sentry project（既定: blink-frontend） |
+| VITE_SENTRY_DSN | △ | Sentry（フロントエンド） |
 | GOOGLE_CLIENT_ID | △ | カレンダー連携（オプション） |
 | GOOGLE_CLIENT_SECRET | △ | カレンダー連携（オプション） |
 | GOOGLE_REDIRECT_URI | △ | カレンダー連携（オプション） |

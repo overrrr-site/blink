@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import compression from 'compression';
+import * as Sentry from '@sentry/node';
 import { initializeDatabase } from './db/init.js';
 import { initializeServices } from './services/initServices.js';
 import { requestLogger } from './middleware/requestLogger.js';
@@ -36,6 +37,7 @@ import hotelPricesRoutes from './routes/hotelPrices.js';
 // Routes - LIFF (LINE Front-end Framework)
 import liffRoutes from './routes/liff/index.js';
 import lineWebhookRoutes from './routes/lineWebhook.js';
+import billingWebhookRoutes from './routes/billingWebhook.js';
 
 // Routes - Integrations & utilities
 import googleCalendarRoutes from './routes/googleCalendar.js';
@@ -48,6 +50,16 @@ import announcementsRoutes from './routes/announcements.js';
 import cronRoutes from './routes/cron.js';
 
 dotenv.config();
+
+const isVercel = Boolean(process.env.VERCEL);
+const sentryDsn = process.env.SENTRY_DSN;
+
+Sentry.init({
+  dsn: sentryDsn,
+  enabled: isVercel && Boolean(sentryDsn),
+  environment: isVercel ? 'production' : 'development',
+  tracesSampleRate: 0.1,
+});
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -62,6 +74,10 @@ app.use(requestLogger);
 // LINE Webhook は express.text() で raw body を受け取るため、
 // express.json() より先に登録する必要がある。
 app.use('/api/line/webhook', lineWebhookRoutes);
+
+// PAY.JP Webhook も raw body を受け取るため express.json() より先に登録
+app.use('/api/billing/webhook', express.text({ type: '*/*' }));
+app.use('/api/billing/webhook', billingWebhookRoutes);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -154,10 +170,31 @@ app.use('/api/cron', cronRoutes);
 app.use(
   (
     err: unknown,
-    _req: express.Request,
+    req: express.Request,
     res: express.Response,
     _next: express.NextFunction,
   ) => {
+    Sentry.withScope((scope) => {
+      const authReq = req as {
+        userId?: number;
+        storeId?: number;
+        isOwner?: boolean;
+        staffData?: { email?: string };
+      };
+      if (authReq.userId) {
+        scope.setUser({
+          id: authReq.userId.toString(),
+          email: authReq.staffData?.email,
+        });
+      }
+      if (authReq.storeId) {
+        scope.setTag('store_id', authReq.storeId.toString());
+      }
+      if (typeof authReq.isOwner !== 'undefined') {
+        scope.setTag('is_owner', authReq.isOwner ? 'true' : 'false');
+      }
+      Sentry.captureException(err);
+    });
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });
   },

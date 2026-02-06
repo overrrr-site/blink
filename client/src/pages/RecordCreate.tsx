@@ -249,6 +249,7 @@ const RecordCreate = () => {
         onSave={() => handleSave(false)}
         onShare={handleShare}
         onSettings={openAISettings}
+        shareLabel="保存して送信"
       />
 
       {/* Dog Selection */}

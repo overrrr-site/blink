@@ -10,6 +10,8 @@ interface StaffData {
   is_owner: boolean;
   store_id: number;
   assigned_business_types: string[] | null;
+  subscription_status?: string | null;
+  subscription_end_date?: string | null;
 }
 
 export interface AuthRequest extends Request {
@@ -110,15 +112,17 @@ export async function authenticate(
     const cachedStaff = getStaffFromCache(authUserId);
     if (cachedStaff) {
       attachStaffToRequest(req, authUserId, cachedStaff);
+      if (enforcePastDueRestrictions(req, res, cachedStaff)) return;
       next();
       return;
     }
 
     // 3. スタッフ情報をデータベースから取得
     const result = await pool.query(
-      `SELECT s.*, ss.store_id
+      `SELECT s.*, ss.store_id, st.subscription_status, st.subscription_end_date
        FROM staff s
        LEFT JOIN staff_stores ss ON s.id = ss.staff_id
+       LEFT JOIN stores st ON st.id = ss.store_id
        WHERE s.auth_user_id = $1`,
       [authUserId]
     );
@@ -140,9 +144,12 @@ export async function authenticate(
       is_owner: row.is_owner ?? false,
       store_id: row.store_id,
       assigned_business_types: row.assigned_business_types ?? null,
+      subscription_status: row.subscription_status ?? null,
+      subscription_end_date: row.subscription_end_date ?? null,
     };
     attachStaffToRequest(req, authUserId, staffData);
     setStaffCache(authUserId, staffData);
+    if (enforcePastDueRestrictions(req, res, staffData)) return;
     next();
   } catch (error) {
     console.error('認証エラー:', error);
@@ -151,6 +158,37 @@ export async function authenticate(
       details: error instanceof Error ? error.message : '不明なエラーが発生しました',
     });
   }
+}
+
+function enforcePastDueRestrictions(
+  req: AuthRequest,
+  res: Response,
+  staffData: StaffData
+): boolean {
+  if (staffData.subscription_status !== 'past_due') return false;
+
+  const daysPastDue = getDaysSince(staffData.subscription_end_date);
+  if (daysPastDue === null || daysPastDue <= 14) return false;
+
+  const isWriteMethod = ['POST', 'PUT', 'DELETE'].includes(req.method);
+  const isBillingRoute = req.baseUrl === '/api/billing';
+
+  if (isWriteMethod && !isBillingRoute) {
+    res.status(402).json({
+      error: 'お支払いが未完了のため、データの変更ができません。課金設定から更新してください。',
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function getDaysSince(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const diffMs = Date.now() - date.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
 /**

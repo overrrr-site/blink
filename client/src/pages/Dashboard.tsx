@@ -371,7 +371,7 @@ function Dashboard(): JSX.Element {
   const navigate = useNavigate()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
   const { selectedBusinessType } = useBusinessTypeStore()
-  const currentBusinessType = selectedBusinessType || primaryBusinessType
+  const currentBusinessType = selectedBusinessType || primaryBusinessType || null
   const recordLabel = getRecordLabel(currentBusinessType)
   const dashboardEmptyState = getDashboardEmptyStateMessage(currentBusinessType)
 

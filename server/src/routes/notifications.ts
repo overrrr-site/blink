@@ -50,14 +50,16 @@ router.put('/settings', async (req: AuthRequest, res) => {
       line_notification_enabled,
       email_notification_enabled,
       line_bot_enabled,
+      auto_share_record,
     } = req.body;
 
     const result = await pool.query(
       `INSERT INTO notification_settings (
         store_id, reminder_before_visit, reminder_before_visit_days,
         journal_notification, vaccine_alert, vaccine_alert_days,
-        line_notification_enabled, email_notification_enabled, line_bot_enabled
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        line_notification_enabled, email_notification_enabled, line_bot_enabled,
+        auto_share_record
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       ON CONFLICT (store_id) DO UPDATE SET
         reminder_before_visit = COALESCE(EXCLUDED.reminder_before_visit, notification_settings.reminder_before_visit),
         reminder_before_visit_days = COALESCE(EXCLUDED.reminder_before_visit_days, notification_settings.reminder_before_visit_days),
@@ -67,6 +69,7 @@ router.put('/settings', async (req: AuthRequest, res) => {
         line_notification_enabled = COALESCE(EXCLUDED.line_notification_enabled, notification_settings.line_notification_enabled),
         email_notification_enabled = COALESCE(EXCLUDED.email_notification_enabled, notification_settings.email_notification_enabled),
         line_bot_enabled = COALESCE(EXCLUDED.line_bot_enabled, notification_settings.line_bot_enabled),
+        auto_share_record = COALESCE(EXCLUDED.auto_share_record, notification_settings.auto_share_record),
         updated_at = CURRENT_TIMESTAMP
       RETURNING *`,
       [
@@ -79,6 +82,7 @@ router.put('/settings', async (req: AuthRequest, res) => {
         line_notification_enabled ?? false,
         email_notification_enabled ?? false,
         line_bot_enabled ?? false,
+        auto_share_record ?? null,
       ]
     );
 

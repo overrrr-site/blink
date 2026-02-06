@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import axios from 'axios'
 import { supabase } from '../lib/supabase'
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
+import * as Sentry from '@sentry/react'
 
 import type { RecordType } from '../types/record'
 
@@ -43,6 +44,22 @@ function setAuthHeader(token: string): void {
 
 function clearAuthHeader(): void {
   delete axios.defaults.headers.common['Authorization']
+}
+
+function setSentryContext(staff: StaffUser | null): void {
+  if (!staff) return
+  Sentry.setUser({
+    id: staff.id.toString(),
+    email: staff.email,
+  })
+  Sentry.setTag('store_id', staff.storeId.toString())
+  Sentry.setTag('is_owner', staff.isOwner.toString())
+}
+
+function clearSentryContext(): void {
+  Sentry.setUser(null)
+  Sentry.setTag('store_id', '')
+  Sentry.setTag('is_owner', '')
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -90,6 +107,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await supabase.auth.signOut()
     clearAuthHeader()
     localStorage.removeItem('staff_user')
+    clearSentryContext()
     set(UNAUTHENTICATED_STATE)
   },
 
@@ -98,6 +116,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       setAuthHeader(accessToken)
       const response = await axios.get('/api/auth/me')
       localStorage.setItem('staff_user', JSON.stringify(response.data))
+      setSentryContext(response.data)
       set({ user: response.data })
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { error?: string; details?: string } }; message?: string }
@@ -128,6 +147,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           isLoading: false,
         })
+        setSentryContext(cachedStaffUser)
       }
 
       try {
@@ -161,6 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else if (event === 'SIGNED_OUT') {
         clearAuthHeader()
         localStorage.removeItem('staff_user')
+        clearSentryContext()
         set(UNAUTHENTICATED_STATE)
       } else if (event === 'TOKEN_REFRESHED' && session) {
         setAuthHeader(session.access_token)

@@ -12,10 +12,15 @@
     "build:client": "npm --prefix client run build",
     "start": "npm --prefix server start",
     "lint": "npm --prefix client run lint",
-    "install:all": "npm --prefix server install && npm --prefix client install"
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "test": "vitest run --workspace vitest.workspace.ts",
+    "test:watch": "vitest --workspace vitest.workspace.ts",
+    "test:coverage": "vitest run --workspace vitest.workspace.ts --coverage"
   },
   "devDependencies": {
     "@vercel/node": "^5.5.26",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.9"
   }
 }

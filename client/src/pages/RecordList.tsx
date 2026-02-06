@@ -47,6 +47,24 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+function ShareBadge({ sharedAt, status }: { sharedAt?: string | null; status: string }) {
+  if (sharedAt) {
+    return (
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-emerald-600 bg-emerald-50">
+        送信済
+      </span>
+    )
+  }
+  if (status === 'saved') {
+    return (
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-amber-600 bg-amber-50">
+        未送信
+      </span>
+    )
+  }
+  return null
+}
+
 const RecordCard = React.memo(function RecordCard({
   record,
   onNavigate,
@@ -85,6 +103,7 @@ const RecordCard = React.memo(function RecordCard({
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <StatusBadge status={record.status} />
+          <ShareBadge sharedAt={record.shared_at} status={record.status} />
           <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
         </div>
       </div>

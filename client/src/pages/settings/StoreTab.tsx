@@ -19,6 +19,28 @@ interface StoreTabProps {
   fetchStoreInfo: () => Promise<void>
 }
 
+interface ToggleSwitchProps {
+  checked: boolean
+  onChange: () => void
+}
+
+function ToggleSwitch({ checked, onChange }: ToggleSwitchProps) {
+  return (
+    <button
+      onClick={onChange}
+      className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
+        checked ? 'bg-primary' : 'bg-muted'
+      }`}
+      role="switch"
+      aria-checked={checked}
+    >
+      <span className={`absolute top-1 size-6 bg-white rounded-full shadow transition-all ${
+        checked ? 'right-1' : 'left-1'
+      }`}></span>
+    </button>
+  )
+}
+
 interface StoreInfo {
   name?: string | null
   address?: string | null
@@ -54,6 +76,10 @@ interface StoreSettings {
   hotel_room_count?: number
   hotel_checkin_time?: string
   hotel_checkout_time?: string
+}
+
+interface NotificationSettings {
+  auto_share_record?: boolean
 }
 
 interface GroomingMenuItem {
@@ -131,6 +157,11 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   } = useSWR<StoreSettings>('/store-settings', fetcher, { revalidateOnFocus: false })
 
   const {
+    data: notificationSettingsData,
+    mutate: mutateNotificationSettings,
+  } = useSWR<NotificationSettings>('/notifications/settings', fetcher, { revalidateOnFocus: false })
+
+  const {
     data: staffList,
     isLoading: loadingStaff,
     mutate: mutateStaff,
@@ -167,6 +198,21 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       setStoreSettings(storeSettingsData)
     }
   }, [storeSettingsData])
+
+  const autoShareRecord = notificationSettingsData?.auto_share_record ?? false
+
+  const updateAutoShareRecord = async (value: boolean) => {
+    const previousSettings = notificationSettingsData
+    mutateNotificationSettings({ ...(notificationSettingsData || {}), auto_share_record: value }, { revalidate: false })
+    try {
+      await api.put('/notifications/settings', { auto_share_record: value })
+      mutateNotificationSettings()
+    } catch {
+      if (previousSettings) {
+        mutateNotificationSettings(previousSettings, { revalidate: false })
+      }
+    }
+  }
 
   const handleStoreSettingsChange = (field: keyof StoreSettings, value: number | string | boolean) => {
     setStoreSettings((prev) => ({
@@ -537,6 +583,29 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
             </div>
           </div>
         )}
+      </section>
+
+      {/* カルテ共有設定 */}
+      <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+            <Icon icon="solar:paper-plane-bold" width="16" height="16" className="text-chart-2" />
+            カルテ共有
+          </h2>
+        </div>
+        <div className="w-full flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <Icon icon="solar:clipboard-check-bold" width="20" height="20" className="text-muted-foreground" />
+            <div className="text-left">
+              <span className="text-sm font-medium block">カルテ保存時に自動で飼い主に送信</span>
+              <span className="text-[10px] text-muted-foreground">保存と同時にLINE通知を送信します</span>
+            </div>
+          </div>
+          <ToggleSwitch
+            checked={autoShareRecord}
+            onChange={() => updateAutoShareRecord(!autoShareRecord)}
+          />
+        </div>
       </section>
 
       {/* 登園用QRコード（幼稚園のみ） */}

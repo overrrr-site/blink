@@ -145,7 +145,7 @@ export const useRecordAISuggestions = ({
             ...(prev.concerns || []),
             {
               id: `ai-${Date.now()}`,
-              url: payload.photoUrl,
+              url: payload.photoUrl!,
               uploadedAt: new Date().toISOString(),
               label: payload.label || '気になる箇所',
               annotation: payload.annotation,
