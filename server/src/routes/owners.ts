@@ -218,28 +218,49 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
+    const hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
     const businessTypesValue = Array.isArray(business_types) && business_types.length > 0 ? business_types : null;
 
-    const result = await pool.query(
-      `INSERT INTO owners (
-        store_id, name, name_kana, phone, email, address,
-        emergency_contact, emergency_picker, line_id, memo, business_types
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *`,
-      [
-        req.storeId,
-        name,
-        name_kana,
-        phone,
-        email,
-        address,
-        emergency_contact,
-        emergency_picker,
-        line_id,
-        memo,
-        businessTypesValue,
-      ]
-    );
+    const result = hasOwnerBusinessTypes
+      ? await pool.query(
+        `INSERT INTO owners (
+          store_id, name, name_kana, phone, email, address,
+          emergency_contact, emergency_picker, line_id, memo, business_types
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *`,
+        [
+          req.storeId,
+          name,
+          name_kana,
+          phone,
+          email,
+          address,
+          emergency_contact,
+          emergency_picker,
+          line_id,
+          memo,
+          businessTypesValue,
+        ]
+      )
+      : await pool.query(
+        `INSERT INTO owners (
+          store_id, name, name_kana, phone, email, address,
+          emergency_contact, emergency_picker, line_id, memo
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *`,
+        [
+          req.storeId,
+          name,
+          name_kana,
+          phone,
+          email,
+          address,
+          emergency_contact,
+          emergency_picker,
+          line_id,
+          memo,
+        ]
+      );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -268,30 +289,53 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
       business_types,
     } = req.body;
 
+    const hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
     const businessTypesValue = Array.isArray(business_types) && business_types.length > 0 ? business_types : null;
 
-    const result = await pool.query(
-      `UPDATE owners SET
-        name = $1, name_kana = $2, phone = $3, email = $4,
-        address = $5, emergency_contact = $6, emergency_picker = $7,
-        line_id = $8, memo = $9, business_types = $10, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $11 AND store_id = $12
-      RETURNING *`,
-      [
-        name,
-        name_kana,
-        phone,
-        email,
-        address,
-        emergency_contact,
-        emergency_picker,
-        line_id,
-        memo,
-        businessTypesValue,
-        id,
-        req.storeId,
-      ]
-    );
+    const result = hasOwnerBusinessTypes
+      ? await pool.query(
+        `UPDATE owners SET
+          name = $1, name_kana = $2, phone = $3, email = $4,
+          address = $5, emergency_contact = $6, emergency_picker = $7,
+          line_id = $8, memo = $9, business_types = $10, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $11 AND store_id = $12
+        RETURNING *`,
+        [
+          name,
+          name_kana,
+          phone,
+          email,
+          address,
+          emergency_contact,
+          emergency_picker,
+          line_id,
+          memo,
+          businessTypesValue,
+          id,
+          req.storeId,
+        ]
+      )
+      : await pool.query(
+        `UPDATE owners SET
+          name = $1, name_kana = $2, phone = $3, email = $4,
+          address = $5, emergency_contact = $6, emergency_picker = $7,
+          line_id = $8, memo = $9, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $10 AND store_id = $11
+        RETURNING *`,
+        [
+          name,
+          name_kana,
+          phone,
+          email,
+          address,
+          emergency_contact,
+          emergency_picker,
+          line_id,
+          memo,
+          id,
+          req.storeId,
+        ]
+      );
 
     if (result.rows.length === 0) {
       sendNotFound(res, '飼い主が見つかりません');
