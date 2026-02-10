@@ -1,9 +1,10 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef, type RefObject } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
+import { Icon } from '../components/Icon'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import type { RecordType } from '../types/record'
@@ -12,11 +13,11 @@ import PetInfoCard from './records/components/PetInfoCard'
 import RequiredSection from './records/components/RequiredSection'
 import OptionalSection from './records/components/OptionalSection'
 import PhotosForm from './records/components/PhotosForm'
-import NotesForm from './records/components/NotesForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
 import AISettingsScreen from './records/components/AISettingsScreen'
 import RecordTypeSection from './records/components/RecordTypeSection'
+import HotelForm from './records/components/HotelForm'
 import { useRecordFormState } from './records/hooks/useRecordFormState'
 import { buildCreateRecordPayload, validateRecordForm } from './records/utils/recordForm'
 import { useAISettings } from './records/hooks/useAISettings'
@@ -64,6 +65,21 @@ function combineDateAndTime(date?: string, time?: string | null): string {
   return `${date}T${timeValue}`
 }
 
+const CONDITION_SUMMARY: Record<string, string> = {
+  excellent: '😆 絶好調',
+  good: '😊 元気',
+  normal: '😐 普通',
+  tired: '😴 疲れ気味',
+  observe: '🤒 要観察',
+}
+
+const HOTEL_CARE_LOG_SUMMARY: Record<string, string> = {
+  feeding: '食事',
+  medication: '投薬',
+  toilet: '排泄',
+  walk: '散歩',
+}
+
 const RecordCreate = () => {
   const navigate = useNavigate()
   const { reservationId } = useParams()
@@ -102,9 +118,16 @@ const RecordCreate = () => {
   // UI state
   const [saving, setSaving] = useState(false)
   const [copyLoading, setCopyLoading] = useState(false)
-  const [collapsed, setCollapsed] = useState({ condition: true, health: true })
-  const [activeTab, setActiveTab] = useState<'record' | 'report'>('record')
+  const [collapsed, setCollapsed] = useState({ condition: true, health: true, careLogs: true })
   const [reservationLookupDone, setReservationLookupDone] = useState(!isCreatingFromReservation)
+  const recordMainSectionRef = useRef<HTMLDivElement>(null)
+  const photosSectionRef = useRef<HTMLDivElement>(null)
+  const conditionSectionRef = useRef<HTMLDivElement>(null)
+  const healthSectionRef = useRef<HTMLDivElement>(null)
+  const hotelStaySectionRef = useRef<HTMLDivElement>(null)
+  const hotelCareSectionRef = useRef<HTMLDivElement>(null)
+  const reportSectionRef = useRef<HTMLDivElement>(null)
+  const internalMemoSectionRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setReservationLookupDone(!isCreatingFromReservation)
@@ -219,6 +242,24 @@ const RecordCreate = () => {
     onReportDraftError: () => showToast('報告文の生成に失敗しました', 'error'),
   })
 
+  const reportSuggestion = aiSettings.aiAssistantEnabled ? recordAISuggestions['report-draft'] : null
+  const missingInputCount = reportInputTrace.filter((item) => item.status === 'missing').length
+  const firstMissingField = reportInputTrace.find((item) => item.status === 'missing')?.key
+  const conditionSummary = condition?.overall
+    ? CONDITION_SUMMARY[condition.overall] || '入力あり'
+    : '未入力'
+  const healthSummaryCount = healthCheck
+    ? Object.values(healthCheck).filter((v) => v !== undefined && v !== null && v !== '').length
+    : 0
+  const healthSummary = healthSummaryCount > 0 ? `${healthSummaryCount}項目入力済み` : '未入力'
+  const hotelCareLogCount = hotelData.care_logs?.length || 0
+  const latestHotelCare = hotelCareLogCount > 0
+    ? HOTEL_CARE_LOG_SUMMARY[hotelData.care_logs![hotelCareLogCount - 1]?.category || ''] || '記録あり'
+    : ''
+  const hotelCareSummary = hotelCareLogCount > 0
+    ? `${hotelCareLogCount}件${latestHotelCare ? ` / 最新: ${latestHotelCare}` : ''}`
+    : '未入力'
+
   const handleSave = async (shareAfter = false) => {
     if (!selectedDogId) {
       showToast('ワンちゃんを選択してください', 'error')
@@ -287,14 +328,55 @@ const RecordCreate = () => {
     await analyzePhotoConcern(photoUrl)
   }
 
+  const scrollToSection = (ref: RefObject<HTMLDivElement>) => {
+    window.setTimeout(() => {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+  }
+
   const handleJumpToField = (fieldKey: string) => {
-    setActiveTab('record')
+    if (fieldKey === 'daycare_activities' || fieldKey === 'grooming_parts') {
+      scrollToSection(recordMainSectionRef)
+      return
+    }
+    if (fieldKey === 'photos') {
+      scrollToSection(photosSectionRef)
+      return
+    }
     if (fieldKey === 'condition') {
       setCollapsed((s) => ({ ...s, condition: false }))
+      scrollToSection(conditionSectionRef)
     }
     if (fieldKey === 'health_check') {
       setCollapsed((s) => ({ ...s, health: false }))
+      scrollToSection(healthSectionRef)
     }
+    if (fieldKey === 'hotel_stay') {
+      scrollToSection(hotelStaySectionRef)
+      return
+    }
+    if (fieldKey === 'hotel_care_logs') {
+      setCollapsed((s) => ({ ...s, careLogs: false }))
+      scrollToSection(hotelCareSectionRef)
+      return
+    }
+    if (fieldKey === 'internal_notes') {
+      scrollToSection(internalMemoSectionRef)
+      return
+    }
+    if (fieldKey === 'report_text') {
+      scrollToSection(reportSectionRef)
+    }
+  }
+
+  const handleGenerateReport = async (tone?: 'formal' | 'casual') => {
+    if (tone) {
+      setReportTone(tone)
+    }
+    await handleAISuggestionAction('report-draft', undefined, {
+      regenerate: true,
+      ...(tone ? { tone } : {}),
+    })
   }
 
   return (
@@ -370,38 +452,22 @@ const RecordCreate = () => {
             copyLoading={copyLoading}
           />
 
-          <div className="mx-4 mt-4">
-            <div className="flex bg-muted rounded-xl p-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab('record')}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
-                  activeTab === 'record' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
-                }`}
-                aria-pressed={activeTab === 'record'}
-              >
-                記録
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('report')}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
-                  activeTab === 'report' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
-                }`}
-                aria-pressed={activeTab === 'report'}
-              >
-                報告
-              </button>
-            </div>
-          </div>
-
           <p className="mx-4 mt-3 text-xs text-muted-foreground">
             来店中に下書き入力し、来店後に最終確認して保存/送信してください。
           </p>
 
-          {activeTab === 'record' && (
-            <>
-              {/* Business-type specific form */}
+          <div ref={recordMainSectionRef}>
+            {recordType === 'hotel' ? (
+              <div ref={hotelStaySectionRef}>
+                <RequiredSection title="宿泊情報">
+                  <HotelForm
+                    data={hotelData}
+                    onChange={setHotelData}
+                    mode="stay"
+                  />
+                </RequiredSection>
+              </div>
+            ) : (
               <RecordTypeSection
                 recordType={recordType}
                 daycareData={daycareData}
@@ -411,65 +477,170 @@ const RecordCreate = () => {
                 onGroomingChange={setGroomingData}
                 onHotelChange={setHotelData}
               />
+            )}
+          </div>
 
-              <RequiredSection title="写真">
-                <PhotosForm
-                  data={photos}
-                  onChange={setPhotos}
-                  recordType={recordType}
-                  showConcerns={recordType === 'grooming'}
-                  aiSuggestion={recordAISuggestions['photo-concern']}
-                  onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
-                  onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
-                  onPhotoAdded={handlePhotoAdded}
-                />
-              </RequiredSection>
-
-              <OptionalSection
-                title="体調・様子"
-                collapsed={collapsed.condition}
-                onToggle={() => setCollapsed((s) => ({ ...s, condition: !s.condition }))}
-              >
-                <ConditionForm data={condition} onChange={setCondition} />
-              </OptionalSection>
-
-              <OptionalSection
-                title="健康チェック"
-                collapsed={collapsed.health}
-                onToggle={() => setCollapsed((s) => ({ ...s, health: !s.health }))}
-              >
-                <HealthCheckForm
-                  data={healthCheck}
-                  onChange={setHealthCheck}
-                  showWeightGraph={recordType === 'grooming'}
-                  weightHistory={[]}
-                  aiSuggestion={recordAISuggestions['health-history']}
-                  onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
-                  onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
-                />
-              </OptionalSection>
-            </>
-          )}
-
-          {activeTab === 'report' && (
-            <RequiredSection title="報告文">
-              <NotesForm
-                data={notes}
-                onChange={setNotes}
-                aiSuggestion={recordAISuggestions['report-draft']}
-                inputTrace={aiSettings.aiAssistantEnabled ? reportInputTrace : []}
-                generatedFrom={aiSettings.aiAssistantEnabled ? (recordAISuggestions['report-draft']?.generated_from || []) : []}
-                onRegenerate={() => handleAISuggestionAction('report-draft', undefined, { regenerate: true })}
-                onToneChange={(tone) => {
-                  setReportTone(tone)
-                  handleAISuggestionAction('report-draft', undefined, { regenerate: true, tone })
-                }}
-                onJumpToField={handleJumpToField}
-                onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
-                onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
+          <div ref={photosSectionRef}>
+            <RequiredSection title="写真">
+              <PhotosForm
+                data={photos}
+                onChange={setPhotos}
+                recordType={recordType}
+                showConcerns={recordType === 'grooming'}
+                aiSuggestion={recordAISuggestions['photo-concern']}
+                onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
+                onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
+                onPhotoAdded={handlePhotoAdded}
               />
             </RequiredSection>
+          </div>
+
+          {recordType === 'hotel' && (
+            <div ref={hotelCareSectionRef}>
+              <OptionalSection
+                title="滞在ログ"
+                collapsed={collapsed.careLogs}
+                summary={hotelCareSummary}
+                onToggle={() => setCollapsed((s) => ({ ...s, careLogs: !s.careLogs }))}
+              >
+                <HotelForm
+                  data={hotelData}
+                  onChange={setHotelData}
+                  mode="careLogs"
+                />
+              </OptionalSection>
+            </div>
           )}
+
+          <div ref={conditionSectionRef}>
+            <OptionalSection
+              title="体調・様子"
+              collapsed={collapsed.condition}
+              summary={conditionSummary}
+              onToggle={() => setCollapsed((s) => ({ ...s, condition: !s.condition }))}
+            >
+              <ConditionForm data={condition} onChange={setCondition} />
+            </OptionalSection>
+          </div>
+
+          <div ref={healthSectionRef}>
+            <OptionalSection
+              title="健康チェック"
+              collapsed={collapsed.health}
+              summary={healthSummary}
+              onToggle={() => setCollapsed((s) => ({ ...s, health: !s.health }))}
+            >
+              <HealthCheckForm
+                data={healthCheck}
+                onChange={setHealthCheck}
+                showWeightGraph={recordType === 'grooming'}
+                weightHistory={[]}
+                aiSuggestion={recordAISuggestions['health-history']}
+                onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
+                onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
+              />
+            </OptionalSection>
+          </div>
+
+          {aiSettings.aiAssistantEnabled ? (
+            <div className="mx-4 mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">AIで報告文を作成</p>
+                  <p className="text-xs text-slate-500 mt-1">上の入力内容をもとに生成します</p>
+                </div>
+                {missingInputCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (firstMissingField) handleJumpToField(firstMissingField)
+                    }}
+                    className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                  >
+                    未入力 {missingInputCount}項目
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleGenerateReport()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-colors"
+                >
+                  <Icon icon="solar:magic-stick-3-bold" width="14" height="14" />
+                  作成する
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGenerateReport('formal')}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  丁寧
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGenerateReport('casual')}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  カジュアル
+                </button>
+              </div>
+
+              {reportSuggestion?.preview && !reportSuggestion.dismissed && !reportSuggestion.applied && (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs font-semibold text-slate-600 mb-2">生成プレビュー</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{reportSuggestion.preview}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleAISuggestionAction('report-draft', reportSuggestion.preview)}
+                      className="rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-colors"
+                    >
+                      この内容を反映
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAISuggestionDismiss('report-draft')}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                    >
+                      閉じる
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mx-4 mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-600">
+              AIアシスタントはオフです。ヘッダー右上の設定から有効化できます。
+            </div>
+          )}
+
+          <div ref={reportSectionRef}>
+            <RequiredSection title="飼い主への報告文">
+              <textarea
+                value={notes.report_text || ''}
+                onChange={(e) => setNotes((prev) => ({ ...prev, report_text: e.target.value }))}
+                placeholder="今日の様子を飼い主さんにお伝えする文章を入力してください"
+                className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-slate-200 resize-y focus:outline-none focus:ring-2 focus:ring-orange-200"
+                style={{ minHeight: 120 }}
+              />
+            </RequiredSection>
+          </div>
+
+          <div ref={internalMemoSectionRef} className="mx-4 mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Icon icon="solar:lock-keyhole-bold" width="16" height="16" className="text-slate-500" />
+              <h3 className="text-sm font-bold text-slate-700">内部メモ（飼い主に非公開）</h3>
+            </div>
+            <textarea
+              value={notes.internal_notes || ''}
+              onChange={(e) => setNotes((prev) => ({ ...prev, internal_notes: e.target.value }))}
+              placeholder="スタッフ間の申し送りなど"
+              className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-slate-200 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200"
+              style={{ minHeight: 88 }}
+            />
+          </div>
         </>
       )}
 
