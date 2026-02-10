@@ -4,8 +4,7 @@ import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
-import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../utils/businessTypeColors'
-import { BUSINESS_TYPE_ORDER } from '../domain/businessTypeConfig'
+import { getRecordLabel } from '../utils/businessTypeColors'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import type { RecordType } from '../types/record'
 import RecordHeader from './records/components/RecordHeader'
@@ -23,35 +22,6 @@ import { buildCreateRecordPayload, validateRecordForm } from './records/utils/re
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
 import { calculateAge } from '../utils/dog'
-
-function RecordTypeSelector({ recordType, onSelect, recordLabel }: { recordType: RecordType; onSelect: (t: RecordType) => void; recordLabel: string }) {
-  return (
-    <div className="mx-4 mt-4">
-      <p className="text-sm font-medium text-slate-500 mb-2">{recordLabel}種別</p>
-      <div className="flex gap-2">
-        {BUSINESS_TYPE_ORDER.map((type) => {
-          const colors = getBusinessTypeColors(type)
-          const label = getBusinessTypeLabel(type)
-          const selected = recordType === type
-          return (
-            <button
-              key={type}
-              onClick={() => onSelect(type)}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px]"
-              style={{
-                background: selected ? colors.pale : '#FFFFFF',
-                border: selected ? `1.5px solid ${colors.primary}` : '1px solid #E2E8F0',
-                color: selected ? colors.primary : '#94A3B8',
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
 
 interface Dog {
   id: number
@@ -99,19 +69,17 @@ const RecordCreate = () => {
   const { reservationId } = useParams()
   const { showToast } = useToast()
   const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
-  const effectiveType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
-  const recordLabel = getRecordLabel(effectiveType)
+  const activeBusinessType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
+  const recordLabel = getRecordLabel(activeBusinessType)
 
   // Dog selection
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
-  const [recordType, setRecordType] = useState<RecordType>(effectiveType)
+  const [recordType, setRecordType] = useState<RecordType>(activeBusinessType)
 
-  // 業種切り替え時にrecordTypeを同期
+  // 業種固定：現在選択業種にrecordTypeを常時同期
   useEffect(() => {
-    if (selectedBusinessType) {
-      setRecordType(selectedBusinessType)
-    }
-  }, [selectedBusinessType])
+    setRecordType(activeBusinessType)
+  }, [activeBusinessType])
 
   const {
     daycareData,
@@ -158,8 +126,7 @@ const RecordCreate = () => {
           setSelectedDogId(data.dog_id)
         }
         // ホテルカルテの自動入力
-        if (data?.service_type === 'hotel') {
-          setRecordType('hotel')
+        if (data?.service_type === 'hotel' && activeBusinessType === 'hotel') {
           setHotelData((prev) => {
             if (prev.check_in || prev.check_out_scheduled) return prev
 
@@ -393,11 +360,6 @@ const RecordCreate = () => {
 
           {activeTab === 'record' && (
             <>
-              {/* 業種が未選択（すべて）の場合のみ業種セレクターを表示 */}
-              {!selectedBusinessType && (
-                <RecordTypeSelector recordType={recordType} onSelect={setRecordType} recordLabel={recordLabel} />
-              )}
-
               {/* Business-type specific form */}
               <RecordTypeSection
                 recordType={recordType}

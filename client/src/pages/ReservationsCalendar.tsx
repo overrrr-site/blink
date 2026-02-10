@@ -15,7 +15,6 @@ const ReservationsCalendar = () => {
   const [draggedReservation, setDraggedReservation] = useState<number | null>(null)
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
-  const [exportingCsv, setExportingCsv] = useState(false)
   const navigate = useNavigate()
   const { selectedBusinessType } = useBusinessTypeFilter()
 
@@ -150,36 +149,6 @@ const ReservationsCalendar = () => {
     }
   }
 
-  const handleExportCsv = async () => {
-    setExportingCsv(true)
-    try {
-      const monthStart = format(startOfMonth(currentDate), 'yyyy-MM-dd')
-      const monthEnd = format(endOfMonth(currentDate), 'yyyy-MM-dd')
-      const response = await api.get('/reservations/export.csv', {
-        params: {
-          date_from: monthStart,
-          date_to: monthEnd,
-          service_type: selectedBusinessType || undefined,
-        },
-        responseType: 'blob',
-      })
-
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `reservations-${format(currentDate, 'yyyy-MM')}.csv`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-    } catch {
-      alert('予約CSVの出力に失敗しました')
-    } finally {
-      setExportingCsv(false)
-    }
-  }
-
   const handlePrint = () => {
     api.post('/exports/log', {
       export_type: 'reservations',
@@ -219,15 +188,6 @@ const ReservationsCalendar = () => {
               <Icon icon="solar:printer-bold" className="size-5" />
             </button>
             <button
-              onClick={handleExportCsv}
-              disabled={exportingCsv}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors disabled:opacity-60 print:hidden"
-              aria-label="CSV出力"
-              title="CSV形式で出力"
-            >
-              <Icon icon="solar:download-bold" className="size-5" />
-            </button>
-            <button
               onClick={() => {
                 const monthStr = format(currentDate, 'yyyy-MM')
                 const token = localStorage.getItem('token')
@@ -252,8 +212,8 @@ const ReservationsCalendar = () => {
                   })
               }}
               className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors"
-              aria-label="カレンダーをエクスポート"
-              title="iCS形式でエクスポート"
+              aria-label="カレンダーをiCS形式でダウンロード"
+              title="iCS形式でダウンロード"
             >
               <Icon icon="solar:download-bold" className="size-5" />
             </button>

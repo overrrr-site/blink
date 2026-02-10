@@ -134,7 +134,7 @@ const ReservationCard = React.memo(function ReservationCard({
   onCheckIn,
   onCheckOut,
   onNavigateReservation,
-  onNavigateDog,
+  onNavigateRecord,
   onNavigateJournal,
   checkingIn,
   recordLabel,
@@ -146,7 +146,7 @@ const ReservationCard = React.memo(function ReservationCard({
   onCheckIn: (id: number) => void
   onCheckOut: (id: number) => void
   onNavigateReservation: (id: number) => void
-  onNavigateDog: (id: number) => void
+  onNavigateRecord: (id: number) => void
   onNavigateJournal: (id: number) => void
   checkingIn: number | null
   recordLabel: string
@@ -205,7 +205,7 @@ const ReservationCard = React.memo(function ReservationCard({
                 ? onCheckOut(reservation.id)  // トリミングは直接完了へ
                 : onCheckIn(reservation.id)}
               disabled={checkingIn === reservation.id}
-              className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2.5 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[44px]"
+              className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2.5 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[44px] whitespace-nowrap"
             >
               {checkingIn === reservation.id ? (
                 <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
@@ -218,7 +218,7 @@ const ReservationCard = React.memo(function ReservationCard({
           {isPresent && !reservation.has_journal && (
             <button
               onClick={() => onNavigateJournal(reservation.id)}
-              className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px]"
+              className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px] whitespace-nowrap"
               aria-label={`${recordLabel}を作成`}
             >
               <Icon icon="solar:clipboard-add-bold" className="size-4" />
@@ -229,7 +229,7 @@ const ReservationCard = React.memo(function ReservationCard({
             <button
               onClick={() => onCheckOut(reservation.id)}
               disabled={checkingIn === reservation.id}
-              className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px]"
+              className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px] whitespace-nowrap"
               aria-label={labels.checkOut}
             >
               {checkingIn === reservation.id ? (
@@ -308,7 +308,7 @@ const ReservationCard = React.memo(function ReservationCard({
             </button>
             <div className="w-px bg-border" />
             <button
-              onClick={() => onNavigateDog(reservation.dog_id)}
+              onClick={() => onNavigateRecord(reservation.id)}
               className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
             >
               <Icon icon="solar:document-text-bold" className="size-4" />
@@ -422,8 +422,8 @@ function Dashboard(): JSX.Element {
     navigate(`/reservations/${id}`)
   }, [navigate])
 
-  const handleNavigateDog = useCallback((id: number) => {
-    navigate(`/dogs/${id}`)
+  const handleNavigateRecord = useCallback((id: number) => {
+    navigate(`/records/create/${id}`)
   }, [navigate])
 
   const handleNavigateJournalCreate = useCallback((id: number) => {
@@ -593,7 +593,7 @@ function Dashboard(): JSX.Element {
                       onCheckIn={handleCheckIn}
                       onCheckOut={handleCheckOut}
                       onNavigateReservation={handleNavigateReservation}
-                      onNavigateDog={handleNavigateDog}
+                      onNavigateRecord={handleNavigateRecord}
                       onNavigateJournal={handleNavigateJournalCreate}
                       checkingIn={checkingIn}
                       recordLabel={recordLabel}
