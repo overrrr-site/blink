@@ -97,7 +97,7 @@ export default function BusinessTypeSwitcher(): JSX.Element {
             />
           </div>
         </button>
-        <span className="text-[9px] font-bold leading-none" style={{ color: currentColors?.primary || '#6B7280' }}>
+        <span className="text-[9px] font-bold leading-none whitespace-nowrap" style={{ color: currentColors?.primary || '#6B7280' }}>
           {currentLabel || 'すべて'}
         </span>
       </div>

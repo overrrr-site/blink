@@ -68,6 +68,7 @@ const RecordCreate = () => {
   const navigate = useNavigate()
   const { reservationId } = useParams()
   const { showToast } = useToast()
+  const isCreatingFromReservation = Boolean(reservationId)
   const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
   const activeBusinessType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
   const recordLabel = getRecordLabel(activeBusinessType)
@@ -106,7 +107,16 @@ const RecordCreate = () => {
 
   // Fetch dogs list
   const { data: dogs = [] } = useSWR<Dog[]>('/dogs?limit=200', fetcher)
-  const selectedDog = dogs.find((d) => d.id === selectedDogId)
+  const selectedDogFromList = dogs.find((d) => d.id === selectedDogId)
+  const {
+    data: selectedDogFallback,
+    isLoading: loadingSelectedDogFallback,
+  } = useSWR<Dog>(
+    selectedDogId && !selectedDogFromList ? `/dogs/${selectedDogId}` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+  const selectedDog = selectedDogFromList || selectedDogFallback
 
   const {
     aiSettings,
@@ -117,12 +127,15 @@ const RecordCreate = () => {
   } = useAISettings()
 
   // Fetch reservation data if creating from reservation
-  useSWR(
+  const {
+    isLoading: loadingReservationSource,
+    error: reservationSourceError,
+  } = useSWR<ReservationSource>(
     reservationId ? `/reservations/${reservationId}` : null,
     fetcher,
     {
       onSuccess: (data: ReservationSource) => {
-        if (data?.dog_id && !selectedDogId) {
+        if (data?.dog_id) {
           setSelectedDogId(data.dog_id)
         }
         // ホテルカルテの自動入力
@@ -149,6 +162,7 @@ const RecordCreate = () => {
       },
     }
   )
+  const waitingReservationSource = isCreatingFromReservation && loadingReservationSource && !selectedDogId
 
   const handleCopyPrevious = useCallback(async () => {
     if (!selectedDogId) return
@@ -287,10 +301,19 @@ const RecordCreate = () => {
         shareLabel="保存して送信"
       />
 
+      {waitingReservationSource && (
+        <div className="mx-4 mt-4 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
+          予約情報を読み込み中です...
+        </div>
+      )}
+
       {/* Dog Selection */}
-      {!selectedDogId && (
+      {!selectedDogId && !waitingReservationSource && (
         <div className="mx-4 mt-4">
           <h3 className="text-sm font-bold text-slate-700 mb-2">ワンちゃんを選択</h3>
+          {reservationSourceError && (
+            <p className="mb-2 text-xs text-destructive">予約情報の取得に失敗したため、ワンちゃんを手動で選択してください。</p>
+          )}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             {dogs.length === 0 ? (
               <p className="p-4 text-sm text-slate-400 text-center">登録されたワンちゃんがいません</p>
@@ -318,6 +341,12 @@ const RecordCreate = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {selectedDogId && !selectedDog && (
+        <div className="mx-4 mt-4 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
+          {loadingSelectedDogFallback ? 'ワンちゃん情報を読み込み中です...' : 'ワンちゃん情報を取得できませんでした。'}
         </div>
       )}
 
@@ -357,6 +386,10 @@ const RecordCreate = () => {
               </button>
             </div>
           </div>
+
+          <p className="mx-4 mt-3 text-xs text-muted-foreground">
+            来店中に下書き入力し、来店後に最終確認して保存/送信してください。
+          </p>
 
           {activeTab === 'record' && (
             <>

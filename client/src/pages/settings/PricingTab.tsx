@@ -34,15 +34,6 @@ interface HotelPriceItem {
   price_per_night: number
 }
 
-interface HotelRoomItem {
-  id: number
-  room_name: string
-  room_size: '小型' | '中型' | '大型'
-  capacity: number
-  enabled: boolean
-  display_order: number
-}
-
 function getContractTypeStyle(contractType: string): string {
   switch (contractType) {
     case '月謝制':
@@ -84,19 +75,7 @@ function PricingTab() {
     isLoading: loadingHotelPrices,
     mutate: mutateHotelPrices,
   } = useSWR<HotelPriceItem[]>(isHotelEnabled ? '/hotel-prices' : null, fetcher, { revalidateOnFocus: false })
-  const {
-    data: hotelRooms,
-    isLoading: loadingHotelRooms,
-    mutate: mutateHotelRooms,
-  } = useSWR<HotelRoomItem[]>(isHotelEnabled ? '/hotel-rooms' : null, fetcher, { revalidateOnFocus: false })
   const [localHotelPrices, setLocalHotelPrices] = useState<HotelPriceItem[]>([])
-  const [localHotelRooms, setLocalHotelRooms] = useState<HotelRoomItem[]>([])
-  const [newRoom, setNewRoom] = useState({
-    room_name: '',
-    room_size: '小型' as '小型' | '中型' | '大型',
-    capacity: 1,
-    display_order: 0,
-  })
 
   const resolvedGroomingMenus = groomingMenus ?? []
 
@@ -113,13 +92,6 @@ function PricingTab() {
     const merged = defaults.map((row) => prices.find((price) => price.dog_size === row.dog_size) || row)
     setLocalHotelPrices(merged)
   }, [hotelPrices, isHotelEnabled])
-
-  useEffect(() => {
-    if (!isHotelEnabled) {
-      return
-    }
-    setLocalHotelRooms(hotelRooms ?? [])
-  }, [hotelRooms, isHotelEnabled])
 
   const handleDeleteCourse = useCallback(async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -167,62 +139,6 @@ function PricingTab() {
       alert(errorMessage || 'ホテル料金の保存に失敗しました')
     }
   }, [localHotelPrices, mutateHotelPrices])
-
-  const handleCreateRoom = useCallback(async () => {
-    if (!newRoom.room_name.trim()) {
-      alert('部屋名を入力してください')
-      return
-    }
-
-    try {
-      await api.post('/hotel-rooms', {
-        room_name: newRoom.room_name.trim(),
-        room_size: newRoom.room_size,
-        capacity: newRoom.capacity,
-        display_order: newRoom.display_order,
-      })
-      setNewRoom({ room_name: '', room_size: '小型', capacity: 1, display_order: 0 })
-      mutateHotelRooms()
-    } catch (error: unknown) {
-      const errorMessage = axios.isAxiosError(error)
-        ? (error.response?.data as { error?: string } | undefined)?.error
-        : null
-      alert(errorMessage || '部屋の追加に失敗しました')
-    }
-  }, [mutateHotelRooms, newRoom])
-
-  const handleSaveRoom = useCallback(async (room: HotelRoomItem) => {
-    try {
-      await api.put(`/hotel-rooms/${room.id}`, {
-        room_name: room.room_name,
-        room_size: room.room_size,
-        capacity: room.capacity,
-        enabled: room.enabled,
-        display_order: room.display_order,
-      })
-      mutateHotelRooms()
-    } catch (error: unknown) {
-      const errorMessage = axios.isAxiosError(error)
-        ? (error.response?.data as { error?: string } | undefined)?.error
-        : null
-      alert(errorMessage || '部屋の更新に失敗しました')
-    }
-  }, [mutateHotelRooms])
-
-  const handleDeleteRoom = useCallback(async (roomId: number) => {
-    if (!confirm('この部屋を削除しますか？')) {
-      return
-    }
-    try {
-      await api.delete(`/hotel-rooms/${roomId}`)
-      mutateHotelRooms()
-    } catch (error: unknown) {
-      const errorMessage = axios.isAxiosError(error)
-        ? (error.response?.data as { error?: string } | undefined)?.error
-        : null
-      alert(errorMessage || '部屋の削除に失敗しました')
-    }
-  }, [mutateHotelRooms])
 
   return (
     <div className="space-y-4">
@@ -418,169 +334,6 @@ function PricingTab() {
                 >
                   料金を保存
                 </button>
-              </div>
-            )}
-          </div>
-          <div className="px-5 py-4 border-t border-border">
-            <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-3">
-              <Icon icon="solar:sleeping-square-bold" width="16" height="16" className="text-chart-5" />
-              部屋マスタ
-            </h3>
-            {loadingHotelRooms ? (
-              <div className="text-center py-4">
-                <span className="text-xs text-muted-foreground">読み込み中...</span>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {localHotelRooms.map((room) => (
-                  <div key={room.id} className="p-3 bg-muted/30 rounded-xl space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={room.room_name}
-                        disabled={!user?.isOwner}
-                        onChange={(e) => {
-                          setLocalHotelRooms((prev) => prev.map((item) => (
-                            item.id === room.id ? { ...item, room_name: e.target.value } : item
-                          )))
-                        }}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                        placeholder="部屋名"
-                      />
-                      <select
-                        value={room.room_size}
-                        disabled={!user?.isOwner}
-                        onChange={(e) => {
-                          const nextSize = e.target.value as '小型' | '中型' | '大型'
-                          setLocalHotelRooms((prev) => prev.map((item) => (
-                            item.id === room.id ? { ...item, room_size: nextSize } : item
-                          )))
-                        }}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                      >
-                        <option value="小型">小型</option>
-                        <option value="中型">中型</option>
-                        <option value="大型">大型</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input
-                        type="number"
-                        value={room.capacity}
-                        min={1}
-                        disabled={!user?.isOwner}
-                        onChange={(e) => {
-                          setLocalHotelRooms((prev) => prev.map((item) => (
-                            item.id === room.id
-                              ? { ...item, capacity: Math.max(1, Number.parseInt(e.target.value, 10) || 1) }
-                              : item
-                          )))
-                        }}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                        placeholder="定員"
-                      />
-                      <input
-                        type="number"
-                        value={room.display_order}
-                        disabled={!user?.isOwner}
-                        onChange={(e) => {
-                          setLocalHotelRooms((prev) => prev.map((item) => (
-                            item.id === room.id
-                              ? { ...item, display_order: Number.parseInt(e.target.value, 10) || 0 }
-                              : item
-                          )))
-                        }}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                        placeholder="表示順"
-                      />
-                      <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]">
-                        <input
-                          type="checkbox"
-                          checked={room.enabled}
-                          disabled={!user?.isOwner}
-                          onChange={(e) => {
-                            setLocalHotelRooms((prev) => prev.map((item) => (
-                              item.id === room.id ? { ...item, enabled: e.target.checked } : item
-                            )))
-                          }}
-                        />
-                        有効
-                      </label>
-                    </div>
-                    {user?.isOwner && (
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleSaveRoom(room)}
-                          className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[40px]"
-                        >
-                          保存
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRoom(room.id)}
-                          className="px-3 py-2 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors min-h-[40px]"
-                        >
-                          削除
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {user?.isOwner && (
-                  <div className="p-3 border border-dashed border-border rounded-xl space-y-2">
-                    <p className="text-xs text-muted-foreground">新しい部屋を追加</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={newRoom.room_name}
-                        onChange={(e) => setNewRoom((prev) => ({ ...prev, room_name: e.target.value }))}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                        placeholder="部屋名"
-                      />
-                      <select
-                        value={newRoom.room_size}
-                        onChange={(e) => setNewRoom((prev) => ({
-                          ...prev,
-                          room_size: e.target.value as '小型' | '中型' | '大型',
-                        }))}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                      >
-                        <option value="小型">小型</option>
-                        <option value="中型">中型</option>
-                        <option value="大型">大型</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="number"
-                        value={newRoom.capacity}
-                        min={1}
-                        onChange={(e) => setNewRoom((prev) => ({
-                          ...prev,
-                          capacity: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                        }))}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                        placeholder="定員"
-                      />
-                      <input
-                        type="number"
-                        value={newRoom.display_order}
-                        onChange={(e) => setNewRoom((prev) => ({
-                          ...prev,
-                          display_order: Number.parseInt(e.target.value, 10) || 0,
-                        }))}
-                        className="px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[44px]"
-                        placeholder="表示順"
-                      />
-                    </div>
-                    <button
-                      onClick={handleCreateRoom}
-                      className="w-full py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
-                    >
-                      部屋を追加
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>

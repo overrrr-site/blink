@@ -141,6 +141,7 @@ const ReservationDetail = () => {
   }
 
   const serviceType = reservation.service_type || 'daycare'
+  const createRecordLabel = serviceType === 'daycare' ? '連絡帳を作成する' : 'カルテを作成する'
   const hasPreVisitInput = Boolean(
     reservation.grooming_data ||
       reservation.hotel_data ||
@@ -450,10 +451,10 @@ const ReservationDetail = () => {
         )}
 
         <button
-          onClick={() => navigate(`/records/create/${id}`)}
+          onClick={() => navigate(`/records/create/${reservation.id}`)}
           className="w-full bg-chart-3 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-3/90 transition-colors"
         >
-          日誌を作成する
+          {createRecordLabel}
         </button>
       </main>
     </div>

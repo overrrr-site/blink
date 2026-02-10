@@ -438,8 +438,8 @@ function Dashboard(): JSX.Element {
     navigate('/announcements')
   }, [navigate])
 
-  const handleNavigateNewRecords = useCallback(() => {
-    navigate('/records')
+  const handleNavigateIncompleteRecord = useCallback((reservationId: number) => {
+    navigate(`/records/create/${reservationId}`)
   }, [navigate])
 
   const handleNavigateNewReservation = useCallback(() => {
@@ -624,7 +624,7 @@ function Dashboard(): JSX.Element {
           {/* 未入力のカルテ/連絡帳 */}
           {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
             <QuickActionCard
-              onClick={handleNavigateNewRecords}
+              onClick={() => handleNavigateIncompleteRecord(data.incompleteJournals[0].reservation_id)}
               icon="solar:clipboard-text-bold"
               iconClassName="bg-destructive/20 text-destructive"
               containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
