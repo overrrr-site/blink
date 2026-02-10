@@ -181,11 +181,12 @@ const ReservationsCalendar = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors print:hidden"
+              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors print:hidden"
               aria-label="印刷"
               title="印刷"
             >
               <Icon icon="solar:printer-bold" className="size-5" />
+              <span className="text-[9px] leading-none">印刷</span>
             </button>
             <button
               onClick={() => {
@@ -211,11 +212,12 @@ const ReservationsCalendar = () => {
                     alert('カレンダーのエクスポートに失敗しました')
                   })
               }}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors"
+              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors"
               aria-label="カレンダーをiCS形式でダウンロード"
               title="iCS形式でダウンロード"
             >
               <Icon icon="solar:download-bold" className="size-5" />
+              <span className="text-[9px] leading-none">出力</span>
             </button>
             <button
               onClick={() => navigate(getCreateUrl())}

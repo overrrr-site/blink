@@ -56,6 +56,7 @@ function PricingTab() {
     assignedBusinessTypes: user?.assignedBusinessTypes,
     isOwner: user?.isOwner,
   })
+  const isDaycareEnabled = isBusinessTypeVisible(selectedBusinessType, availableBusinessTypes, 'daycare')
   const isGroomingEnabled = isBusinessTypeVisible(selectedBusinessType, availableBusinessTypes, 'grooming')
   const isHotelEnabled = isBusinessTypeVisible(selectedBusinessType, availableBusinessTypes, 'hotel')
 
@@ -142,78 +143,80 @@ function PricingTab() {
 
   return (
     <div className="space-y-4">
-      <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-sm font-bold font-heading flex items-center gap-2">
-            <Icon icon="solar:tag-price-bold" width="16" height="16" className="text-chart-4" />
-            コース・料金設定
-          </h2>
-          <button
-            onClick={() => navigate('/settings/courses/new')}
-            className="text-xs font-bold text-primary flex items-center gap-1"
-          >
-            <Icon icon="solar:add-circle-bold" width="14" height="14" />
-            追加
-          </button>
-        </div>
-        {isLoading ? (
-          <div className="text-center py-4">
-            <span className="text-xs text-muted-foreground">読み込み中...</span>
+      {isDaycareEnabled && (
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-bold font-heading flex items-center gap-2">
+              <Icon icon="solar:tag-price-bold" width="16" height="16" className="text-chart-4" />
+              幼稚園コース・料金設定
+            </h2>
+            <button
+              onClick={() => navigate('/settings/courses/new')}
+              className="text-xs font-bold text-primary flex items-center gap-1"
+            >
+              <Icon icon="solar:add-circle-bold" width="14" height="14" />
+              追加
+            </button>
           </div>
-        ) : courseList.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Icon icon="solar:tag-price-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
-            <p className="text-sm">コースが登録されていません</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {courseList.map((course) => (
-              <div
-                key={course.id}
-                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors group"
-              >
+          {isLoading ? (
+            <div className="text-center py-4">
+              <span className="text-xs text-muted-foreground">読み込み中...</span>
+            </div>
+          ) : courseList.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Icon icon="solar:tag-price-bold" width="48" height="48" className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm">コースが登録されていません</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {courseList.map((course) => (
                 <div
-                  className="flex-1 text-left cursor-pointer"
-                  onClick={() => navigate(`/settings/courses/${course.id}`)}
+                  key={course.id}
+                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors group"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium block">{course.course_name}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getContractTypeStyle(course.contract_type)}`}>
-                      {course.contract_type}
-                    </span>
-                    {!course.enabled && (
-                      <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                        無効
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">
-                    {course.sessions && `${course.sessions}回 / `}
-                    ¥{Math.floor(course.price ?? 0).toLocaleString()}
-                    {course.valid_days && ` / 有効期限${course.valid_days}日`}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
+                  <div
+                    className="flex-1 text-left cursor-pointer"
                     onClick={() => navigate(`/settings/courses/${course.id}`)}
-                    className="p-2 rounded-full hover:bg-muted transition-colors"
-                    aria-label={`${course.course_name}の詳細`}
                   >
-                    <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteCourse(course.id, e)}
-                    className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
-                    aria-label={`${course.course_name}を削除`}
-                  >
-                    <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
-                  </button>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium block">{course.course_name}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getContractTypeStyle(course.contract_type)}`}>
+                        {course.contract_type}
+                      </span>
+                      {!course.enabled && (
+                        <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                          無効
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {course.sessions && `${course.sessions}回 / `}
+                      ¥{Math.floor(course.price ?? 0).toLocaleString()}
+                      {course.valid_days && ` / 有効期限${course.valid_days}日`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate(`/settings/courses/${course.id}`)}
+                      className="p-2 rounded-full hover:bg-muted transition-colors"
+                      aria-label={`${course.course_name}の詳細`}
+                    >
+                      <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteCourse(course.id, e)}
+                      className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
+                      aria-label={`${course.course_name}を削除`}
+                    >
+                      <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {isGroomingEnabled && (
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
