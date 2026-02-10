@@ -56,23 +56,6 @@ interface StoreSettings {
   hotel_checkout_time?: string
 }
 
-interface GroomingMenuItem {
-  id: number
-  menu_name: string
-  description?: string
-  price?: number
-  duration_minutes?: number
-  dog_size?: string
-  display_order: number
-}
-
-interface HotelPriceItem {
-  id?: number
-  dog_size: string
-  price_per_night: number
-  description?: string
-}
-
 interface StaffItem {
   id: number
   name: string
@@ -110,8 +93,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const [qrLoading, setQrLoading] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrExpanded, setQrExpanded] = useState(false)
-  const [localHotelPrices, setLocalHotelPrices] = useState<HotelPriceItem[]>([])
-  const [hotelPricesInitialized, setHotelPricesInitialized] = useState(false)
 
   const storeBusinessTypes = (user?.businessTypes || []) as RecordType[]
   const availableBusinessTypes = getAvailableBusinessTypes({
@@ -147,20 +128,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
     isLoading: qrLoadingData,
     mutate: mutateQrCode,
   } = useSWR<QrCodeResponse>('/liff/qr-code', fetcher, { revalidateOnFocus: false })
-
-  // トリミングメニュー一覧
-  const {
-    data: groomingMenus,
-    isLoading: loadingGroomingMenus,
-    mutate: mutateGroomingMenus,
-  } = useSWR<GroomingMenuItem[]>(isGroomingEnabled ? '/grooming-menus' : null, fetcher, { revalidateOnFocus: false })
-
-  // ホテル料金一覧
-  const {
-    data: hotelPrices,
-    isLoading: loadingHotelPrices,
-    mutate: mutateHotelPrices,
-  } = useSWR<HotelPriceItem[]>(isHotelEnabled ? '/hotel-prices' : null, fetcher, { revalidateOnFocus: false })
 
   useEffect(() => {
     if (storeSettingsData) {
@@ -299,32 +266,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const isQrLoading = qrLoading || qrLoadingData
   const resolvedStaffList = staffList ?? []
   const resolvedTrainingMasters = trainingMasters ?? {}
-  const resolvedGroomingMenus = groomingMenus ?? []
-  const resolvedHotelPrices = hotelPrices ?? []
-
-  // ホテル料金のデフォルト値（全サイズ）
-  const defaultHotelPrices: HotelPriceItem[] = [
-    { dog_size: '小型', price_per_night: 0 },
-    { dog_size: '中型', price_per_night: 0 },
-    { dog_size: '大型', price_per_night: 0 },
-  ]
-
-  // ホテル料金の初期化
-  useEffect(() => {
-    if (resolvedHotelPrices.length > 0 && !hotelPricesInitialized) {
-      const merged = defaultHotelPrices.map(dp => {
-        const existing = resolvedHotelPrices.find(hp => hp.dog_size === dp.dog_size)
-        return existing || dp
-      })
-      setLocalHotelPrices(merged)
-      setHotelPricesInitialized(true)
-    } else if (resolvedHotelPrices.length === 0 && !hotelPricesInitialized && !loadingHotelPrices) {
-      setLocalHotelPrices(defaultHotelPrices)
-      setHotelPricesInitialized(true)
-    }
-  }, [resolvedHotelPrices, hotelPricesInitialized, loadingHotelPrices])
-
-  const displayHotelPrices = localHotelPrices.length > 0 ? localHotelPrices : defaultHotelPrices
 
   const fetchQrCode = async () => {
     setQrLoading(true)
@@ -332,38 +273,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       await mutateQrCode()
     } finally {
       setQrLoading(false)
-    }
-  }
-
-  // トリミングメニュー削除
-  const handleDeleteGroomingMenu = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!confirm('このメニューを削除しますか？')) {
-      return
-    }
-
-    try {
-      await api.delete(`/grooming-menus/${id}`)
-      mutateGroomingMenus()
-    } catch (error: unknown) {
-      const message = axios.isAxiosError(error)
-        ? (error.response?.data as { error?: string } | undefined)?.error
-        : null
-      alert(message || 'メニューの削除に失敗しました')
-    }
-  }
-
-  // ホテル料金保存
-  const handleSaveHotelPrices = async (prices: HotelPriceItem[]) => {
-    try {
-      await api.put('/hotel-prices', { prices })
-      mutateHotelPrices()
-      alert('ホテル料金を保存しました')
-    } catch (error: unknown) {
-      const message = axios.isAxiosError(error)
-        ? (error.response?.data as { error?: string } | undefined)?.error
-        : null
-      alert(message || 'ホテル料金の保存に失敗しました')
     }
   }
 
@@ -800,73 +709,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               )}
             </div>
           </div>
-          {/* 施術メニュー一覧 */}
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium">施術メニュー</span>
-              <button
-                onClick={() => navigate('/settings/grooming-menu/new')}
-                className="text-xs font-bold text-primary flex items-center gap-1"
-              >
-                <Icon icon="solar:add-circle-bold" width="14" height="14" />
-                追加
-              </button>
-            </div>
-            {loadingGroomingMenus ? (
-              <div className="text-center py-4">
-                <span className="text-xs text-muted-foreground">読み込み中...</span>
-              </div>
-            ) : resolvedGroomingMenus.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-xl">
-                <Icon icon="solar:scissors-bold" width="32" height="32" className="mx-auto mb-2 opacity-50" />
-                <p className="text-xs">メニューが登録されていません</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {resolvedGroomingMenus.map((menu) => (
-                  <div
-                    key={menu.id}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{menu.menu_name}</span>
-                        {menu.dog_size && menu.dog_size !== '全サイズ' && (
-                          <span className="text-[10px] bg-chart-4/10 text-chart-4 px-1.5 py-0.5 rounded font-medium">
-                            {menu.dog_size}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        {menu.price !== undefined && menu.price !== null && (
-                          <span className="text-xs text-muted-foreground">¥{menu.price.toLocaleString()}</span>
-                        )}
-                        {menu.duration_minutes && (
-                          <span className="text-xs text-muted-foreground">{menu.duration_minutes}分</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => navigate(`/settings/grooming-menu/${menu.id}`)}
-                        className="p-2 text-muted-foreground rounded-full hover:bg-muted transition-colors"
-                        aria-label={`${menu.menu_name}を編集`}
-                      >
-                        <Icon icon="solar:pen-bold" width="16" height="16" />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteGroomingMenu(menu.id, e)}
-                        className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
-                        aria-label={`${menu.menu_name}を削除`}
-                      >
-                        <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </section>
       )}
 
@@ -951,50 +793,6 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                 />
               )}
             </div>
-          </div>
-          {/* 1泊料金（サイズ別） */}
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium">1泊料金（税込）</span>
-            </div>
-            {loadingHotelPrices ? (
-              <div className="text-center py-4">
-                <span className="text-xs text-muted-foreground">読み込み中...</span>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {displayHotelPrices.map((price, index) => (
-                  <div
-                    key={price.dog_size}
-                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"
-                  >
-                    <span className="text-sm font-medium w-12">{price.dog_size}</span>
-                    <div className="flex-1 flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">¥</span>
-                      <input
-                        type="number"
-                        value={price.price_per_night}
-                        onChange={(e) => {
-                          const newPrices = [...displayHotelPrices]
-                          newPrices[index] = { ...newPrices[index], price_per_night: parseInt(e.target.value, 10) || 0 }
-                          setLocalHotelPrices(newPrices)
-                        }}
-                        min="0"
-                        step="100"
-                        className="flex-1 px-3 py-2 rounded-lg border border-border bg-input text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <button
-                  onClick={() => handleSaveHotelPrices(localHotelPrices)}
-                  className="w-full mt-3 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
-                >
-                  料金を保存
-                </button>
-              </div>
-            )}
           </div>
         </section>
       )}

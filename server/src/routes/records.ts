@@ -1,13 +1,8 @@
 import express from 'express';
-import { randomUUID } from 'crypto';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { cacheControl } from '../middleware/cache.js';
 import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../utils/pagination.js';
-import {
-  isSupabaseStorageAvailable,
-  uploadBase64ToSupabaseStorage,
-} from '../services/storageService.js';
 import {
   requireStoreId,
   sendBadRequest,
@@ -15,152 +10,76 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../utils/businessTypes.js';
+import {
+  createPhotoId,
+  normalizeStoredPhotos,
+  processRecordPhotos,
+  resolveRecordPhotoUrl,
+} from '../services/recordPhotos.js';
+import {
+  ensureDogBelongsToStore,
+  fetchLatestRecordForDog,
+  shareRecordForOwner,
+} from '../services/recordsService.js';
+import { logExportAction } from '../services/exportLogService.js';
+import {
+  validateCreateRecordPayload,
+  validateUpdateRecordPayload,
+} from '../utils/recordValidation.js';
 import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
-import { sendRecordNotification } from '../services/notificationService.js';
-import { appendBusinessTypeFilter, isBusinessType, parseBusinessTypeInput } from '../utils/businessTypes.js';
 
 function serializeJsonOrNull(value: unknown): string | null {
   if (!value) return null;
   return JSON.stringify(value);
 }
 
-type PhotoInput = string | { id?: string; url: string; uploadedAt?: string };
-type ConcernInput = string | { id?: string; url: string; uploadedAt?: string; label?: string; annotation?: { x: number; y: number } };
-
-function createId(): string {
-  return typeof randomUUID === 'function'
-    ? randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+function escapeCsvValue(value: unknown): string {
+  const text = value === null || value === undefined ? '' : String(value);
+  const escaped = text.replace(/"/g, '""');
+  return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped;
 }
 
-function normalizePhotoItem(item: PhotoInput): { id: string; url: string; uploadedAt: string } | null {
-  if (typeof item === 'string') {
-    return { id: createId(), url: item, uploadedAt: new Date().toISOString() };
-  }
-  if (item && typeof item === 'object' && typeof item.url === 'string') {
-    return {
-      id: item.id || createId(),
-      url: item.url,
-      uploadedAt: item.uploadedAt || new Date().toISOString(),
-    };
-  }
-  return null;
+function buildCsv(headers: string[], rows: unknown[][]): string {
+  const lines = [
+    headers.map(escapeCsvValue).join(','),
+    ...rows.map((row) => row.map(escapeCsvValue).join(',')),
+  ];
+  return `\uFEFF${lines.join('\n')}`;
 }
 
-function normalizeConcernItem(item: ConcernInput): { id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } } | null {
-  if (typeof item === 'string') {
-    return { id: createId(), url: item, uploadedAt: new Date().toISOString() };
+function hasRequiredGroomingCounseling(groomingData: unknown): boolean {
+  if (!groomingData) return false;
+
+  let parsed = groomingData;
+  if (typeof groomingData === 'string') {
+    try {
+      parsed = JSON.parse(groomingData);
+    } catch {
+      return false;
+    }
   }
-  if (item && typeof item === 'object' && typeof item.url === 'string') {
-    return {
-      id: item.id || createId(),
-      url: item.url,
-      uploadedAt: item.uploadedAt || new Date().toISOString(),
-      label: item.label,
-      annotation: item.annotation,
-    };
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return false;
   }
-  return null;
-}
 
-function normalizeStoredPhotos(photos: { regular?: PhotoInput[]; concerns?: ConcernInput[] } | null | undefined) {
-  const regular: Array<{ id: string; url: string; uploadedAt: string }> = [];
-  const concerns: Array<{ id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } }> = [];
+  const counseling = (parsed as Record<string, unknown>).counseling;
+  if (!counseling || typeof counseling !== 'object' || Array.isArray(counseling)) {
+    return false;
+  }
 
-  (photos?.regular || []).forEach((item) => {
-    const normalized = normalizePhotoItem(item);
-    if (normalized) regular.push(normalized);
-  });
+  const styleRequest = (counseling as Record<string, unknown>).style_request;
+  const conditionNotes = (counseling as Record<string, unknown>).condition_notes;
+  const consentConfirmed = (counseling as Record<string, unknown>).consent_confirmed;
 
-  (photos?.concerns || []).forEach((item) => {
-    const normalized = normalizeConcernItem(item);
-    if (normalized) concerns.push(normalized);
-  });
-
-  return { regular, concerns };
-}
-
-async function shareRecordForOwner(storeId: number, recordId: number) {
-  const recordResult = await pool.query(
-    `SELECT r.*, d.name as dog_name, o.id as owner_id, o.store_id
-     FROM records r
-     JOIN dogs d ON r.dog_id = d.id
-     JOIN owners o ON d.owner_id = o.id
-     WHERE r.id = $1 AND r.store_id = $2 AND r.deleted_at IS NULL`,
-    [recordId, storeId]
+  return (
+    typeof styleRequest === 'string'
+    && styleRequest.trim().length > 0
+    && typeof conditionNotes === 'string'
+    && conditionNotes.trim().length > 0
+    && consentConfirmed === true
   );
-
-  if (recordResult.rows.length === 0) {
-    return null;
-  }
-
-  const updateResult = await pool.query(
-    `UPDATE records SET status = 'shared', shared_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1 AND store_id = $2
-     RETURNING *`,
-    [recordId, storeId]
-  );
-
-  const record = recordResult.rows[0];
-  const photos = record.photos ? (typeof record.photos === 'string' ? JSON.parse(record.photos) : record.photos) : null;
-  sendRecordNotification(
-    storeId,
-    record.owner_id,
-    {
-      id: record.id,
-      record_date: record.record_date,
-      record_type: record.record_type,
-      dog_name: record.dog_name,
-      report_text: record.report_text,
-      photos,
-    }
-  ).catch((err) => console.error('Record notification error:', err));
-
-  return updateResult.rows[0];
-}
-
-/**
- * 写真配列を処理し、Base64データをSupabase Storageにアップロード
- */
-async function processRecordPhotos(
-  photosData: { regular?: PhotoInput[]; concerns?: ConcernInput[] } | null
-): Promise<{ regular: Array<{ id: string; url: string; uploadedAt: string }>; concerns: Array<{ id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } }> } | null> {
-  if (!photosData) return null;
-
-  const storageAvailable = isSupabaseStorageAvailable();
-  const result = { regular: [] as Array<{ id: string; url: string; uploadedAt: string }>, concerns: [] as Array<{ id: string; url: string; uploadedAt: string; label?: string; annotation?: { x: number; y: number } }> };
-
-  if (photosData.regular && photosData.regular.length > 0) {
-    for (const item of photosData.regular) {
-      const normalized = normalizePhotoItem(item);
-      if (!normalized) continue;
-      if (normalized.url.startsWith('data:image/') && storageAvailable) {
-        const uploaded = await uploadBase64ToSupabaseStorage(normalized.url, 'records');
-        if (uploaded) {
-          result.regular.push({ ...normalized, url: uploaded.url });
-          continue;
-        }
-      }
-      result.regular.push(normalized);
-    }
-  }
-
-  if (photosData.concerns && photosData.concerns.length > 0) {
-    for (const item of photosData.concerns) {
-      const normalized = normalizeConcernItem(item);
-      if (!normalized) continue;
-      if (normalized.url.startsWith('data:image/') && storageAvailable) {
-        const uploaded = await uploadBase64ToSupabaseStorage(normalized.url, 'records');
-        if (uploaded) {
-          result.concerns.push({ ...normalized, url: uploaded.url });
-          continue;
-        }
-      }
-      result.concerns.push(normalized);
-    }
-  }
-
-  return result;
 }
 
 const router = express.Router();
@@ -177,11 +96,14 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
       record_type?: string | string[];
       dog_id?: string | string[];
       status?: string | string[];
+      staff_id?: string | string[];
+      date_from?: string | string[];
+      date_to?: string | string[];
       search?: string | string[];
       page?: string | string[];
       limit?: string | string[];
     };
-    const { record_type, dog_id, status, search } = queryParams;
+    const { record_type, dog_id, status, staff_id, date_from, date_to, search } = queryParams;
     const { value: recordType, error: recordTypeError } = parseBusinessTypeInput(record_type, 'record_type');
     if (recordTypeError) {
       sendBadRequest(res, recordTypeError);
@@ -217,6 +139,30 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
       params.push(val);
     }
 
+    if (staff_id) {
+      const val = Array.isArray(staff_id) ? staff_id[0] : staff_id;
+      if (isNumberLike(val)) {
+        query += ` AND r.staff_id = $${params.length + 1}`;
+        params.push(Number(val));
+      }
+    }
+
+    if (date_from) {
+      const val = Array.isArray(date_from) ? date_from[0] : date_from;
+      if (isNonEmptyString(val)) {
+        query += ` AND r.record_date >= $${params.length + 1}`;
+        params.push(val);
+      }
+    }
+
+    if (date_to) {
+      const val = Array.isArray(date_to) ? date_to[0] : date_to;
+      if (isNonEmptyString(val)) {
+        query += ` AND r.record_date <= $${params.length + 1}`;
+        params.push(val);
+      }
+    }
+
     if (search) {
       const searchValue = Array.isArray(search) ? search[0] : search;
       query += ` AND (d.name ILIKE $${params.length + 1} OR o.name ILIKE $${params.length + 1})`;
@@ -235,6 +181,142 @@ router.get('/', cacheControl(), async (req: AuthRequest, res) => {
   }
 });
 
+// カルテ履歴をCSV形式でエクスポート
+router.get('/export.csv', async (req: AuthRequest, res) => {
+  try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    const {
+      record_type,
+      dog_id,
+      staff_id,
+      status,
+      date_from,
+      date_to,
+      search,
+    } = req.query as {
+      record_type?: string;
+      dog_id?: string;
+      staff_id?: string;
+      status?: string;
+      date_from?: string;
+      date_to?: string;
+      search?: string;
+    };
+
+    const { value: recordType, error: recordTypeError } = parseBusinessTypeInput(record_type, 'record_type');
+    if (recordTypeError) {
+      sendBadRequest(res, recordTypeError);
+      return;
+    }
+
+    let query = `
+      SELECT r.id,
+             r.record_date,
+             r.status,
+             r.record_type,
+             d.name AS dog_name,
+             o.name AS owner_name,
+             s.name AS staff_name,
+             r.notes,
+             r.created_at
+      FROM records r
+      JOIN dogs d ON r.dog_id = d.id
+      JOIN owners o ON d.owner_id = o.id
+      LEFT JOIN staff s ON r.staff_id = s.id
+      WHERE r.store_id = $1
+        AND r.deleted_at IS NULL
+    `;
+    const params: Array<string | number> = [req.storeId!];
+
+    query += appendBusinessTypeFilter(params, 'r.record_type', recordType);
+
+    if (isNumberLike(dog_id)) {
+      query += ` AND r.dog_id = $${params.length + 1}`;
+      params.push(Number(dog_id));
+    }
+    if (isNumberLike(staff_id)) {
+      query += ` AND r.staff_id = $${params.length + 1}`;
+      params.push(Number(staff_id));
+    }
+    if (isNonEmptyString(status)) {
+      query += ` AND r.status = $${params.length + 1}`;
+      params.push(status);
+    }
+    if (isNonEmptyString(date_from)) {
+      query += ` AND r.record_date >= $${params.length + 1}`;
+      params.push(date_from);
+    }
+    if (isNonEmptyString(date_to)) {
+      query += ` AND r.record_date <= $${params.length + 1}`;
+      params.push(date_to);
+    }
+    if (isNonEmptyString(search)) {
+      query += ` AND (d.name ILIKE $${params.length + 1} OR o.name ILIKE $${params.length + 1})`;
+      params.push(`%${search}%`);
+    }
+
+    query += ` ORDER BY r.record_date DESC, r.created_at DESC`;
+
+    const result = await pool.query(query, params);
+    const headers = [
+      'カルテID',
+      '記録日',
+      'ステータス',
+      '業態',
+      '犬名',
+      '飼い主名',
+      '担当スタッフ',
+      'レポート',
+      '作成日時',
+    ];
+    const rows = result.rows.map((row) => {
+      let reportText = '';
+      if (row.notes && typeof row.notes === 'object' && !Array.isArray(row.notes)) {
+        const maybeReport = (row.notes as Record<string, unknown>).report_text;
+        reportText = typeof maybeReport === 'string' ? maybeReport : '';
+      }
+      return [
+        row.id,
+        row.record_date ? new Date(row.record_date).toISOString().slice(0, 10) : '',
+        row.status ?? '',
+        row.record_type ?? '',
+        row.dog_name ?? '',
+        row.owner_name ?? '',
+        row.staff_name ?? '',
+        reportText,
+        row.created_at ? new Date(row.created_at).toISOString().slice(0, 16).replace('T', ' ') : '',
+      ];
+    });
+
+    await logExportAction({
+      storeId: req.storeId!,
+      staffId: req.userId,
+      exportType: 'records',
+      outputFormat: 'csv',
+      filters: {
+        record_type: recordType ?? null,
+        dog_id: dog_id ?? null,
+        staff_id: staff_id ?? null,
+        status: status ?? null,
+        date_from: date_from ?? null,
+        date_to: date_to ?? null,
+        search: search ?? null,
+      },
+    });
+
+    const csv = buildCsv(headers, rows);
+    const filename = `records-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+  } catch (error) {
+    sendServerError(res, 'カルテCSVエクスポートに失敗しました', error);
+  }
+});
+
 // 特定の犬の最新カルテを取得（前回コピー用）
 router.get('/dogs/:dogId/latest', async (req: AuthRequest, res) => {
   try {
@@ -250,37 +332,17 @@ router.get('/dogs/:dogId/latest', async (req: AuthRequest, res) => {
       return;
     }
 
-    const dogCheck = await pool.query(
-      `SELECT o.store_id FROM dogs d
-       JOIN owners o ON d.owner_id = o.id
-       WHERE d.id = $1 AND o.store_id = $2`,
-      [dogId, req.storeId]
-    );
-
-    if (dogCheck.rows.length === 0) {
+    const dogBelongs = await ensureDogBelongsToStore(Number(dogId), req.storeId!);
+    if (!dogBelongs) {
       sendForbidden(res);
       return;
     }
-
-    let query = `
-      SELECT r.*
-      FROM records r
-      WHERE r.dog_id = $1 AND r.deleted_at IS NULL
-    `;
-    const params: Array<string | number> = [dogId];
-
-    query += appendBusinessTypeFilter(params, 'r.record_type', recordType);
-
-    query += ` ORDER BY r.record_date DESC, r.created_at DESC LIMIT 1`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
+    const record = await fetchLatestRecordForDog(Number(dogId), req.storeId!, recordType);
+    if (!record) {
       sendNotFound(res, '過去のカルテがありません');
       return;
     }
-
-    res.json(result.rows[0]);
+    res.json(record);
   } catch (error) {
     sendServerError(res, '最新カルテの取得に失敗しました', error);
   }
@@ -344,25 +406,14 @@ router.post('/', async (req: AuthRequest, res) => {
       status,
     } = req.body;
 
-    if (!isNumberLike(dog_id) || !isNonEmptyString(record_type) || !isNonEmptyString(record_date)) {
-      sendBadRequest(res, '必須項目が不足しています（dog_id, record_type, record_date）');
+    const validation = validateCreateRecordPayload(req.body);
+    if (!validation.ok) {
+      sendBadRequest(res, validation.error || '必須項目が不足しています（dog_id, record_type, record_date）');
       return;
     }
 
-    if (!isBusinessType(record_type)) {
-      sendBadRequest(res, 'record_typeが不正です');
-      return;
-    }
-
-    // 犬のstore_idを確認
-    const dogCheck = await pool.query(
-      `SELECT o.store_id FROM dogs d
-       JOIN owners o ON d.owner_id = o.id
-       WHERE d.id = $1 AND o.store_id = $2`,
-      [dog_id, req.storeId]
-    );
-
-    if (dogCheck.rows.length === 0) {
+    const dogBelongs = await ensureDogBelongsToStore(Number(dog_id), req.storeId!);
+    if (!dogBelongs) {
       sendForbidden(res);
       return;
     }
@@ -430,6 +481,13 @@ router.put('/:id', async (req: AuthRequest, res) => {
       ai_suggestions,
       status,
     } = req.body;
+
+    const updateValidation = validateUpdateRecordPayload(req.body);
+    if (!updateValidation.ok) {
+      sendBadRequest(res, updateValidation.error || '更新内容が不正です');
+      return;
+    }
+
     const { value: recordType, error: recordTypeError } = parseBusinessTypeInput(record_type, 'record_type');
     if (recordTypeError) {
       sendBadRequest(res, recordTypeError);
@@ -550,6 +608,27 @@ router.post('/:id/share', async (req: AuthRequest, res) => {
 
     const { id } = req.params;
 
+    const recordCheck = await pool.query(
+      `SELECT record_type, grooming_data
+       FROM records
+       WHERE id = $1 AND store_id = $2 AND deleted_at IS NULL`,
+      [id, req.storeId]
+    );
+
+    if (recordCheck.rows.length === 0) {
+      sendNotFound(res, 'カルテが見つかりません');
+      return;
+    }
+
+    const targetRecord = recordCheck.rows[0];
+    if (
+      targetRecord.record_type === 'grooming'
+      && !hasRequiredGroomingCounseling(targetRecord.grooming_data)
+    ) {
+      sendBadRequest(res, 'トリミングのカウンセリング項目（希望スタイル・当日体調・確認チェック）を入力してください');
+      return;
+    }
+
     const sharedRecord = await shareRecordForOwner(req.storeId!, Number(id));
     if (!sharedRecord) {
       sendNotFound(res, 'カルテが見つかりません');
@@ -590,13 +669,7 @@ router.post('/:id/photos', async (req: AuthRequest, res) => {
     }
 
     // 写真をアップロード
-    let photoUrl = photo;
-    if (photo.startsWith('data:image/') && isSupabaseStorageAvailable()) {
-      const uploaded = await uploadBase64ToSupabaseStorage(photo, 'records');
-      if (uploaded) {
-        photoUrl = uploaded.url;
-      }
-    }
+    const photoUrl = await resolveRecordPhotoUrl(photo);
 
     // 既存のphotos JSONBを更新
     const currentPhotos = normalizeStoredPhotos(recordResult.rows[0].photos || { regular: [], concerns: [] });
@@ -604,7 +677,7 @@ router.post('/:id/photos', async (req: AuthRequest, res) => {
 
     if (type === 'concern') {
       currentPhotos.concerns.push({
-        id: createId(),
+        id: createPhotoId(),
         url: photoUrl,
         uploadedAt,
         label: label || '',
@@ -612,7 +685,7 @@ router.post('/:id/photos', async (req: AuthRequest, res) => {
       });
     } else {
       currentPhotos.regular.push({
-        id: createId(),
+        id: createPhotoId(),
         url: photoUrl,
         uploadedAt,
       });

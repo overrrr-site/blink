@@ -6,6 +6,52 @@ import { sendBadRequest, sendForbidden, sendNotFound, sendServerError } from '..
 import { requireOwnerToken } from './common.js';
 
 const router = express.Router();
+const STORE_QR_TOKEN_TYPE = 'store_checkin';
+const LEGACY_STORE_QR_TOKEN_TYPE = 'checkin';
+
+function verifyStoreQrToken(qrCode: string, ownerStoreId: number): {
+  ok: boolean;
+  storeId?: number;
+  code?: 'QR_INVALID' | 'QR_STORE_MISMATCH';
+  error?: string;
+} {
+  try {
+    const qrData = jwt.verify(qrCode, process.env.JWT_SECRET || 'secret') as {
+      storeId?: number;
+      type?: string;
+    };
+
+    if (
+      qrData.type !== STORE_QR_TOKEN_TYPE
+      && qrData.type !== LEGACY_STORE_QR_TOKEN_TYPE
+    ) {
+      return {
+        ok: false,
+        code: 'QR_INVALID',
+        error: '無効なQRコードです',
+      };
+    }
+
+    if (qrData.storeId !== ownerStoreId) {
+      return {
+        ok: false,
+        code: 'QR_STORE_MISMATCH',
+        error: 'このQRコードは別の店舗のものです',
+      };
+    }
+
+    return {
+      ok: true,
+      storeId: qrData.storeId,
+    };
+  } catch {
+    return {
+      ok: false,
+      code: 'QR_INVALID',
+      error: 'QRコードが無効または期限切れです',
+    };
+  }
+}
 
 // 店舗側: 店舗固定のQRコード生成（店舗認証が必要）
 router.get('/qr-code', authenticate, async function(req: AuthRequest, res) {
@@ -20,7 +66,7 @@ router.get('/qr-code', authenticate, async function(req: AuthRequest, res) {
     // QRコードに含める情報: store_id のみ（固定）
     const qrData = {
       storeId,
-      type: 'checkin',
+      type: STORE_QR_TOKEN_TYPE,
     };
 
     // 署名付きトークンを生成（有効期限なし、店舗固定）
@@ -52,27 +98,11 @@ router.post('/check-in', async function(req, res) {
       return;
     }
 
-    // QRコードの署名を検証
-    let qrData: any;
-    try {
-      qrData = jwt.verify(qrCode, process.env.JWT_SECRET || 'secret') as any;
-    } catch (error: any) {
+    const qrVerification = verifyStoreQrToken(qrCode, decoded.storeId);
+    if (!qrVerification.ok) {
       return res.status(400).json({
-        error: '無効なQRコードです',
-      });
-    }
-
-    // QRコードタイプを確認
-    if (qrData.type !== 'checkin') {
-      return res.status(400).json({
-        error: '無効なQRコードです',
-      });
-    }
-
-    // 店舗IDを確認
-    if (qrData.storeId !== decoded.storeId) {
-      return res.status(400).json({
-        error: 'このQRコードは別の店舗のものです',
+        error: qrVerification.error,
+        code: qrVerification.code,
       });
     }
 
@@ -163,21 +193,11 @@ router.post('/check-out', async function(req, res) {
       return;
     }
 
-    // QRコードを検証
-    try {
-      const qrData = jwt.verify(qrCode, process.env.JWT_SECRET || 'secret') as {
-        storeId: number;
-        type: string;
-      };
-
-      if (qrData.type !== 'store_checkin' || qrData.storeId !== decoded.storeId) {
-        return res.status(400).json({
-          error: 'QRコードが無効です',
-        });
-      }
-    } catch (jwtError) {
+    const qrVerification = verifyStoreQrToken(qrCode, decoded.storeId);
+    if (!qrVerification.ok) {
       return res.status(400).json({
-        error: 'QRコードが無効または期限切れです',
+        error: qrVerification.error,
+        code: qrVerification.code,
       });
     }
 

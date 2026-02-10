@@ -1,14 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import useSWR from 'swr'
-import { fetcher } from '../lib/swr'
 import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
 import { Icon } from '../components/Icon'
 import { useAutoSave } from '../hooks/useAutoSave'
-import type { RecordItem } from '../types/record'
-import type { PaginatedResponse } from '../types/api'
-import { normalizePhotosData } from '../utils/recordPhotos'
 import RecordHeader from './records/components/RecordHeader'
 import PetInfoCard from './records/components/PetInfoCard'
 import RequiredSection from './records/components/RequiredSection'
@@ -23,8 +18,10 @@ import { useRecordFormState } from './records/hooks/useRecordFormState'
 import { buildUpdateRecordPayload, validateRecordForm } from './records/utils/recordForm'
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
+import { useRecordDetail } from './records/hooks/useRecordDetail'
 import { getRecordLabel } from '../domain/businessTypeConfig'
 import { useAuthStore } from '../store/authStore'
+import { calculateAge } from '../utils/dog'
 
 const RecordDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -53,33 +50,7 @@ const RecordDetail = () => {
   // UI state
   const [saving, setSaving] = useState(false)
   const [collapsed, setCollapsed] = useState({ condition: true, health: true })
-
-  // Fetch record
-  const { data: record, isLoading, mutate } = useSWR<RecordItem>(
-    id ? `/records/${id}` : null,
-    fetcher
-  )
-
-  const { data: weightRecords } = useSWR<PaginatedResponse<RecordItem>>(
-    record?.dog_id && record.record_type === 'grooming'
-      ? `/records?dog_id=${record.dog_id}&record_type=grooming&limit=6`
-      : null,
-    fetcher,
-  )
-
-  const weightHistory = useMemo(() => {
-    if (!weightRecords?.data) return []
-    return weightRecords.data
-      .filter((item) => item.health_check?.weight !== undefined && item.health_check?.weight !== null)
-      .map((item) => {
-        const d = new Date(item.record_date)
-        return {
-          date: `${d.getMonth() + 1}/${d.getDate()}`,
-          weight: Number(item.health_check?.weight),
-        }
-      })
-      .reverse()
-  }, [weightRecords?.data])
+  const [activeTab, setActiveTab] = useState<'record' | 'report'>('record')
 
   const {
     aiSettings,
@@ -89,23 +60,17 @@ const RecordDetail = () => {
     saveAISettings,
   } = useAISettings()
 
-  // Populate form with record data
-  useEffect(() => {
-    if (!record) return
-    if (record.daycare_data) setDaycareData(record.daycare_data)
-    if (record.grooming_data) setGroomingData(record.grooming_data)
-    if (record.hotel_data) setHotelData(record.hotel_data)
-    setPhotos(normalizePhotosData(record.photos || { regular: [], concerns: [] }))
-    if (record.notes) setNotes(record.notes)
-    if (record.condition) {
-      setCondition(record.condition)
-      setCollapsed((s) => ({ ...s, condition: false }))
-    }
-    if (record.health_check) {
-      setHealthCheck(record.health_check)
-      setCollapsed((s) => ({ ...s, health: false }))
-    }
-  }, [record])
+  const { record, isLoading, mutate, weightHistory } = useRecordDetail({
+    recordId: id,
+    setDaycareData,
+    setGroomingData,
+    setHotelData,
+    setPhotos,
+    setNotes,
+    setCondition,
+    setHealthCheck,
+    setCollapsed,
+  })
 
   const aiContext = useMemo(() => ({
     recordType: record?.record_type ?? 'daycare',
@@ -121,6 +86,8 @@ const RecordDetail = () => {
 
   const {
     aiSuggestions: recordAISuggestions,
+    reportInputTrace,
+    setReportTone,
     handleAISuggestionAction,
     handleAISuggestionDismiss,
     analyzePhotoConcern,
@@ -133,15 +100,6 @@ const RecordDetail = () => {
     recordId: record?.id,
     onReportDraftError: () => showToast('報告文の生成に失敗しました', 'error'),
   })
-
-  const calculateAge = (birthDate: string): string => {
-    const birth = new Date(birthDate)
-    const now = new Date()
-    const years = now.getFullYear() - birth.getFullYear()
-    const months = now.getMonth() - birth.getMonth()
-    if (years > 0) return `${years}歳${months >= 0 ? months : 12 + months}ヶ月`
-    return `${months >= 0 ? months : 12 + months}ヶ月`
-  }
 
   // Auto-save data aggregate
   const autoSaveData = useMemo(() => ({
@@ -294,6 +252,16 @@ const RecordDetail = () => {
     }
   }, [id, navigate, showToast])
 
+  const handleJumpToField = (fieldKey: string) => {
+    setActiveTab('record')
+    if (fieldKey === 'condition') {
+      setCollapsed((s) => ({ ...s, condition: false }))
+    }
+    if (fieldKey === 'health_check') {
+      setCollapsed((s) => ({ ...s, health: false }))
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -338,63 +306,102 @@ const RecordDetail = () => {
         recordType={record.record_type}
       />
 
-      {/* Business-type specific form */}
-      <RecordTypeSection
-        recordType={record.record_type}
-        daycareData={daycareData}
-        groomingData={groomingData}
-        hotelData={hotelData}
-        onDaycareChange={setDaycareData}
-        onGroomingChange={setGroomingData}
-        onHotelChange={setHotelData}
-      />
+      <div className="mx-4 mt-4">
+        <div className="flex bg-muted rounded-xl p-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('record')}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+              activeTab === 'record' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+            }`}
+            aria-pressed={activeTab === 'record'}
+          >
+            記録
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('report')}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+              activeTab === 'report' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+            }`}
+            aria-pressed={activeTab === 'report'}
+          >
+            報告
+          </button>
+        </div>
+      </div>
 
-      <RequiredSection title="写真">
-        <PhotosForm
-          data={photos}
-          onChange={setPhotos}
-          recordType={record.record_type}
-          showConcerns={record.record_type === 'grooming'}
-          aiSuggestion={recordAISuggestions['photo-concern']}
-          onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
-          onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
-          onPhotoAdded={handlePhotoAdded}
-        />
-      </RequiredSection>
+      {activeTab === 'record' && (
+        <>
+          {/* Business-type specific form */}
+          <RecordTypeSection
+            recordType={record.record_type}
+            daycareData={daycareData}
+            groomingData={groomingData}
+            hotelData={hotelData}
+            onDaycareChange={setDaycareData}
+            onGroomingChange={setGroomingData}
+            onHotelChange={setHotelData}
+          />
 
-      <RequiredSection title="報告文">
-        <NotesForm
-          data={notes}
-          onChange={setNotes}
-          aiSuggestion={recordAISuggestions['report-draft']}
-          onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
-          onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
-        />
-      </RequiredSection>
+          <RequiredSection title="写真">
+            <PhotosForm
+              data={photos}
+              onChange={setPhotos}
+              recordType={record.record_type}
+              showConcerns={record.record_type === 'grooming'}
+              aiSuggestion={recordAISuggestions['photo-concern']}
+              onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
+              onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
+              onPhotoAdded={handlePhotoAdded}
+            />
+          </RequiredSection>
 
-      <OptionalSection
-        title="体調・様子"
-        collapsed={collapsed.condition}
-        onToggle={() => setCollapsed((s) => ({ ...s, condition: !s.condition }))}
-      >
-        <ConditionForm data={condition} onChange={setCondition} />
-      </OptionalSection>
+          <OptionalSection
+            title="体調・様子"
+            collapsed={collapsed.condition}
+            onToggle={() => setCollapsed((s) => ({ ...s, condition: !s.condition }))}
+          >
+            <ConditionForm data={condition} onChange={setCondition} />
+          </OptionalSection>
 
-      <OptionalSection
-        title="健康チェック"
-        collapsed={collapsed.health}
-        onToggle={() => setCollapsed((s) => ({ ...s, health: !s.health }))}
-      >
-        <HealthCheckForm
-          data={healthCheck}
-          onChange={setHealthCheck}
-          showWeightGraph={record.record_type === 'grooming'}
-          weightHistory={weightHistory}
-          aiSuggestion={recordAISuggestions['health-history']}
-          onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
-          onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
-        />
-      </OptionalSection>
+          <OptionalSection
+            title="健康チェック"
+            collapsed={collapsed.health}
+            onToggle={() => setCollapsed((s) => ({ ...s, health: !s.health }))}
+          >
+            <HealthCheckForm
+              data={healthCheck}
+              onChange={setHealthCheck}
+              showWeightGraph={record.record_type === 'grooming'}
+              weightHistory={weightHistory}
+              aiSuggestion={recordAISuggestions['health-history']}
+              onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
+              onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
+            />
+          </OptionalSection>
+        </>
+      )}
+
+      {activeTab === 'report' && (
+        <RequiredSection title="報告文">
+          <NotesForm
+            data={notes}
+            onChange={setNotes}
+            aiSuggestion={recordAISuggestions['report-draft']}
+            inputTrace={aiSettings.aiAssistantEnabled ? reportInputTrace : []}
+            generatedFrom={aiSettings.aiAssistantEnabled ? (recordAISuggestions['report-draft']?.generated_from || []) : []}
+            onRegenerate={() => handleAISuggestionAction('report-draft', undefined, { regenerate: true })}
+            onToneChange={(tone) => {
+              setReportTone(tone)
+              handleAISuggestionAction('report-draft', undefined, { regenerate: true, tone })
+            }}
+            onJumpToField={handleJumpToField}
+            onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
+            onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
+          />
+        </RequiredSection>
+      )}
 
       {/* Delete button */}
       <div className="mx-4 mt-8 mb-4">

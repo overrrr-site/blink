@@ -6,10 +6,9 @@ import AlertsModal from '../components/AlertsModal'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { getAvatarUrl } from '../utils/image'
-import { getDashboardEmptyStateMessage, getDashboardStatusLabels, getRecordLabel } from '../domain/businessTypeConfig'
+import { getDashboardStatusLabels } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
-import { useAuthStore } from '../store/authStore'
-import { useBusinessTypeStore } from '../store/businessTypeStore'
+import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 
@@ -369,18 +368,21 @@ function Dashboard(): JSX.Element {
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const navigate = useNavigate()
-  const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
-  const { selectedBusinessType } = useBusinessTypeStore()
-  const currentBusinessType = selectedBusinessType || primaryBusinessType || null
-  const recordLabel = getRecordLabel(currentBusinessType)
-  const dashboardEmptyState = getDashboardEmptyStateMessage(currentBusinessType)
+  const {
+    selectedBusinessType,
+    effectiveBusinessType,
+    recordLabel,
+    dashboardEmptyState,
+    serviceTypeParam,
+  } = useBusinessTypeFilter()
+  const currentBusinessType = effectiveBusinessType ?? null
 
   // 業種に応じたフィルターオプション
   const filterOptions = useMemo(() => getFilterOptions(currentBusinessType), [currentBusinessType])
 
   // 業種フィルタを含むSWRキー
-  const dashboardKey = selectedBusinessType
-    ? `/dashboard?service_type=${selectedBusinessType}`
+  const dashboardKey = serviceTypeParam
+    ? `/dashboard?${serviceTypeParam}`
     : '/dashboard'
 
   const { data, isLoading, mutate } = useSWR<DashboardData>(dashboardKey, fetcher, {

@@ -140,12 +140,6 @@ export const EMPTY_STATE_ALL: EmptyStateConfig = {
   actionLabel: '予約を追加',
 }
 
-export const DASHBOARD_EMPTY_STATE: EmptyStateConfig = {
-  title: '今日の予約はありません',
-  description: '新しい予約を追加してスケジュールを管理しましょう',
-  actionLabel: '新規予約を追加',
-}
-
 export const RECORD_TYPE_FILTERS: Array<{ value: string; label: string }> = [
   { value: '', label: 'すべて' },
   ...BUSINESS_TYPE_ORDER.map((type) => ({
@@ -192,7 +186,7 @@ export function getEmptyStateMessage(businessType: RecordType | null): EmptyStat
 }
 
 export function getDashboardEmptyStateMessage(businessType: RecordType | null): EmptyStateConfig {
-  return businessType ? DASHBOARD_EMPTY_STATE : DASHBOARD_EMPTY_STATE
+  return businessType ? BUSINESS_TYPE_CONFIG[businessType].emptyState : EMPTY_STATE_ALL
 }
 
 export function getStatusLabel(businessType: RecordType | null, status: string): string {

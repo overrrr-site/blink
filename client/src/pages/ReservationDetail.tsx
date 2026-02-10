@@ -13,8 +13,11 @@ interface ReservationDetailData {
   owner_name: string
   reservation_date: string
   reservation_time?: string | null
+  end_datetime?: string | null
   status?: string | null
   service_type?: 'daycare' | 'grooming' | 'hotel'
+  room_name?: string | null
+  room_size?: string | null
   morning_urination?: boolean
   morning_defecation?: boolean
   afternoon_urination?: boolean
@@ -29,12 +32,17 @@ interface ReservationDetailData {
 }
 
 interface GroomingPreVisitData {
-  style_preference?: string
-  style_notes?: string
-  concern_areas?: string[]
-  concern_notes?: string
-  changes_since_last?: string
-  skin_issues?: boolean
+  counseling?: {
+    style_request?: string
+    caution_notes?: string
+    condition_notes?: string
+    consent_confirmed?: boolean
+  }
+  pre_visit?: {
+    pickup_time?: string
+    completion_contact?: 'line' | 'phone' | 'none'
+    day_of_notes?: string
+  }
 }
 
 interface HotelPreVisitData {
@@ -61,15 +69,6 @@ function getErrorMessage(error: unknown): string {
   return '予約の取得に失敗しました'
 }
 
-const GROOMING_CONCERN_LABELS: Record<string, string> = {
-  ears: '耳',
-  skin: '皮膚',
-  nails: '爪',
-  teeth: '歯',
-  eyes: '目',
-  other: 'その他',
-}
-
 const ReservationDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -91,6 +90,16 @@ const ReservationDetail = () => {
   const handleRetry = useCallback(() => {
     mutate()
   }, [mutate])
+
+  const handlePrint = useCallback(() => {
+    if (!id) return
+    api.post('/exports/log', {
+      export_type: 'reservations',
+      output_format: 'print',
+      filters: { reservation_id: Number(id) },
+    }).catch(() => undefined)
+    window.print()
+  }, [id])
 
   if (isLoading) {
     return (
@@ -147,6 +156,12 @@ const ReservationDetail = () => {
 
   return (
     <div className="space-y-4 pb-6">
+      <div className="hidden print:block print:mb-4 print:border-b print:border-gray-300 print:pb-4 px-5">
+        <h1 className="text-xl font-bold">予約詳細</h1>
+        <p className="text-sm text-gray-600">
+          {reservation.dog_name} / {new Date(reservation.reservation_date).toLocaleDateString('ja-JP')}
+        </p>
+      </div>
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between safe-area-pt">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/reservations')} className="p-2 -ml-2 text-foreground">
@@ -154,6 +169,13 @@ const ReservationDetail = () => {
           </button>
           <h1 className="text-lg font-bold font-heading">予約詳細</h1>
         </div>
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-2.5 rounded-lg text-sm font-medium min-h-[44px] print:hidden"
+        >
+          <Icon icon="solar:printer-bold" width="18" height="18" />
+          印刷
+        </button>
       </header>
 
       <main className="px-5 space-y-4">
@@ -185,6 +207,25 @@ const ReservationDetail = () => {
                 {reservation.reservation_time?.substring(0, 5)}
               </p>
             </div>
+            {reservation.service_type === 'hotel' && reservation.end_datetime && (
+              <div>
+                <label className="text-xs text-muted-foreground">チェックアウト予定</label>
+                <p className="text-base font-medium">
+                  {new Date(reservation.end_datetime).toLocaleDateString('ja-JP')}{' '}
+                  {new Date(reservation.end_datetime).toTimeString().slice(0, 5)}
+                </p>
+              </div>
+            )}
+            {reservation.service_type === 'hotel' && (
+              <div>
+                <label className="text-xs text-muted-foreground">割当部屋</label>
+                <p className="text-base font-medium">
+                  {reservation.room_name
+                    ? `${reservation.room_name}${reservation.room_size ? ` (${reservation.room_size})` : ''}`
+                    : '未設定'}
+                </p>
+              </div>
+            )}
             <div>
               <label className="text-xs text-muted-foreground">ステータス</label>
               <p className="text-base font-medium">{reservation.status || '予定'}</p>
@@ -293,46 +334,52 @@ const ReservationDetail = () => {
 
             {serviceType === 'grooming' && (
               <div className="space-y-3">
-                {reservation.grooming_data?.style_preference && (
+                {reservation.grooming_data?.counseling?.style_request && (
                   <div>
-                    <label className="text-xs text-muted-foreground">スタイル希望</label>
-                    <p className="text-base font-medium">{reservation.grooming_data.style_preference}</p>
+                    <label className="text-xs text-muted-foreground">希望スタイル</label>
+                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.style_request}</p>
                   </div>
                 )}
-                {reservation.grooming_data?.style_notes && (
+                {reservation.grooming_data?.counseling?.caution_notes && (
                   <div>
-                    <label className="text-xs text-muted-foreground">具体的な要望</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.style_notes}</p>
+                    <label className="text-xs text-muted-foreground">注意事項</label>
+                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.caution_notes}</p>
                   </div>
                 )}
-                {reservation.grooming_data?.concern_areas && reservation.grooming_data.concern_areas.length > 0 && (
+                {reservation.grooming_data?.counseling?.condition_notes && (
                   <div>
-                    <label className="text-xs text-muted-foreground">気になる箇所</label>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {reservation.grooming_data.concern_areas.map((area) => (
-                        <span key={area} className="text-xs bg-chart-4/10 text-chart-4 px-2 py-1 rounded">
-                          {GROOMING_CONCERN_LABELS[area] || area}
-                        </span>
-                      ))}
-                    </div>
+                    <label className="text-xs text-muted-foreground">当日の体調・変化</label>
+                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.condition_notes}</p>
                   </div>
                 )}
-                {reservation.grooming_data?.concern_notes && (
+                {reservation.grooming_data?.pre_visit?.pickup_time && (
                   <div>
-                    <label className="text-xs text-muted-foreground">気になる点の詳細</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.concern_notes}</p>
+                    <label className="text-xs text-muted-foreground">お迎え予定時刻</label>
+                    <p className="text-base font-medium">{reservation.grooming_data.pre_visit.pickup_time}</p>
                   </div>
                 )}
-                {reservation.grooming_data?.changes_since_last && (
+                {reservation.grooming_data?.pre_visit?.completion_contact && (
                   <div>
-                    <label className="text-xs text-muted-foreground">前回からの変化</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.changes_since_last}</p>
+                    <label className="text-xs text-muted-foreground">仕上がり連絡の希望</label>
+                    <p className="text-base font-medium">
+                      {reservation.grooming_data.pre_visit.completion_contact === 'line'
+                        ? 'LINEで連絡'
+                        : reservation.grooming_data.pre_visit.completion_contact === 'phone'
+                          ? '電話で連絡'
+                          : '連絡不要'}
+                    </p>
                   </div>
                 )}
-                {reservation.grooming_data?.skin_issues !== undefined && (
+                {reservation.grooming_data?.pre_visit?.day_of_notes && (
                   <div>
-                    <label className="text-xs text-muted-foreground">皮膚トラブル</label>
-                    <p className="text-base font-medium">{reservation.grooming_data.skin_issues ? 'あり' : 'なし'}</p>
+                    <label className="text-xs text-muted-foreground">当日メモ</label>
+                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.pre_visit.day_of_notes}</p>
+                  </div>
+                )}
+                {reservation.grooming_data?.counseling?.consent_confirmed && (
+                  <div>
+                    <label className="text-xs text-muted-foreground">確認状況</label>
+                    <p className="text-base font-medium">内容確認済み</p>
                   </div>
                 )}
               </div>
@@ -403,7 +450,7 @@ const ReservationDetail = () => {
         )}
 
         <button
-          onClick={() => navigate(`/journals/create/${id}`)}
+          onClick={() => navigate(`/records/create/${id}`)}
           className="w-full bg-chart-3 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-3/90 transition-colors"
         >
           日誌を作成する

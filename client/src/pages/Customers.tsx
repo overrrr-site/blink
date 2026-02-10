@@ -8,7 +8,7 @@ import { fetcher } from '../lib/swr'
 import type { PaginatedResponse } from '../types/api'
 import { Pagination } from '../components/Pagination'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { useBusinessTypeStore } from '../store/businessTypeStore'
+import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
 
 interface Owner {
@@ -138,7 +138,7 @@ const Customers = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'owners' | 'dogs'>('owners')
   const [page, setPage] = useState(1)
-  const { selectedBusinessType } = useBusinessTypeStore()
+  const { selectedBusinessType, serviceTypeParam } = useBusinessTypeFilter()
 
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
 
@@ -147,8 +147,8 @@ const Customers = () => {
   }, [debouncedSearchQuery, selectedBusinessType])
 
   // 業種フィルタを含むSWRキー
-  const serviceTypeParam = selectedBusinessType ? `&service_type=${selectedBusinessType}` : ''
-  const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}${serviceTypeParam}`
+  const serviceTypeQuery = serviceTypeParam ? `&${serviceTypeParam}` : ''
+  const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}${serviceTypeQuery}`
   const { data, isLoading } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher, {
     revalidateOnFocus: false,
   })

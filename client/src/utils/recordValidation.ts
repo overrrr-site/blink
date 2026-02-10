@@ -26,6 +26,19 @@ export const validateRecord = (input: ValidationInput, mode: 'save' | 'share'): 
     if (parts.length === 0) {
       errors.push('カット部位を1つ以上選択してください')
     }
+
+    if (mode === 'share') {
+      const counseling = input.groomingData?.counseling
+      if (!counseling?.style_request?.trim()) {
+        errors.push('希望スタイルを入力してください')
+      }
+      if (!counseling?.condition_notes?.trim()) {
+        errors.push('当日の体調確認を入力してください')
+      }
+      if (!counseling?.consent_confirmed) {
+        errors.push('カウンセリング確認チェックをオンにしてください')
+      }
+    }
   }
 
   if (input.recordType === 'daycare') {

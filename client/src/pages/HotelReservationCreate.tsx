@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useEffect } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useReservationCreateData } from '../hooks/useReservationCreateData'
@@ -16,6 +17,15 @@ type HotelForm = {
   checkout_date: string
   checkout_time: string
   notes: string
+}
+
+type HotelRoomAvailability = {
+  id: number
+  room_name: string
+  room_size: '小型' | '中型' | '大型'
+  capacity: number
+  is_available: boolean
+  conflict_reservation_id?: number | null
 }
 
 const TIME_OPTIONS = [
@@ -42,7 +52,11 @@ const HotelReservationCreate = () => {
   const [showRecentOnly, setShowRecentOnly] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+  const [availableRooms, setAvailableRooms] = useState<HotelRoomAvailability[]>([])
+  const [loadingRooms, setLoadingRooms] = useState(false)
+  const [roomError, setRoomError] = useState('')
 
   const tomorrow = useMemo(() => {
     const d = new Date()
@@ -67,6 +81,61 @@ const HotelReservationCreate = () => {
   })
 
   const selectedDog = dogs.find((d) => d.id === selectedDogId)
+  const selectedRoom = availableRooms.find((room) => room.id === selectedRoomId)
+
+  useEffect(() => {
+    const canSearchRooms = Boolean(form.checkin_date && form.checkin_time && form.checkout_date && form.checkout_time && nights > 0)
+    if (!canSearchRooms) {
+      setAvailableRooms([])
+      setSelectedRoomId(null)
+      setRoomError('')
+      return
+    }
+
+    const fetchAvailability = async () => {
+      setLoadingRooms(true)
+      setRoomError('')
+      try {
+        const response = await api.get<HotelRoomAvailability[]>('/reservations/hotel-availability', {
+          params: {
+            checkin_datetime: `${form.checkin_date}T${form.checkin_time}`,
+            checkout_datetime: `${form.checkout_date}T${form.checkout_time}`,
+          },
+        })
+        const rooms = response.data || []
+        setAvailableRooms(rooms)
+
+        if (rooms.length === 0) {
+          setSelectedRoomId(null)
+          setRoomError('利用可能な部屋が登録されていません')
+          return
+        }
+
+        const availableIds = rooms.filter((room) => room.is_available).map((room) => room.id)
+        if (availableIds.length === 0) {
+          setSelectedRoomId(null)
+          setRoomError('この期間は満室です。日程を変更してください')
+          return
+        }
+
+        setSelectedRoomId((prev) => (prev && availableIds.includes(prev) ? prev : availableIds[0]))
+      } catch {
+        setAvailableRooms([])
+        setSelectedRoomId(null)
+        setRoomError('部屋の空き状況取得に失敗しました')
+      } finally {
+        setLoadingRooms(false)
+      }
+    }
+
+    fetchAvailability()
+  }, [
+    form.checkin_date,
+    form.checkin_time,
+    form.checkout_date,
+    form.checkout_time,
+    nights,
+  ])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -92,6 +161,10 @@ const HotelReservationCreate = () => {
       alert('チェックアウト日はチェックイン日より後にしてください')
       return
     }
+    if (!selectedRoomId) {
+      alert('部屋を選択してください')
+      return
+    }
 
     setSaving(true)
     try {
@@ -102,6 +175,7 @@ const HotelReservationCreate = () => {
         end_datetime: `${form.checkout_date}T${form.checkout_time || '18:00'}`,
         memo: form.notes,
         service_type: 'hotel',
+        room_id: selectedRoomId,
       })
 
       invalidate()
@@ -138,7 +212,7 @@ const HotelReservationCreate = () => {
 
       <StepIndicator
         currentStep={currentStep}
-        canGoToStep2={Boolean(form.checkin_date && form.checkout_date && nights > 0)}
+        canGoToStep2={Boolean(form.checkin_date && form.checkout_date && nights > 0 && selectedRoomId)}
         canGoToStep3={Boolean(selectedDogId)}
         onStepChange={setCurrentStep}
       />
@@ -149,6 +223,11 @@ const HotelReservationCreate = () => {
           <HotelDateStep
             form={form}
             nights={nights}
+            rooms={availableRooms}
+            loadingRooms={loadingRooms}
+            roomError={roomError}
+            selectedRoomId={selectedRoomId}
+            onSelectRoom={setSelectedRoomId}
             onChange={handleChange}
             onNext={() => setCurrentStep(2)}
           />
@@ -157,6 +236,7 @@ const HotelReservationCreate = () => {
         {/* Step 2: Dog selection */}
         {currentStep === 2 && (
           <DogSelectStep
+            title="宿泊するワンちゃん"
             recentDogs={recentDogs}
             filteredDogs={filteredDogs}
             recentReservations={recentReservations}
@@ -180,6 +260,7 @@ const HotelReservationCreate = () => {
             form={form}
             nights={nights}
             selectedDogName={selectedDog?.name || ''}
+            selectedRoomName={selectedRoom ? `${selectedRoom.room_name} (${selectedRoom.room_size})` : ''}
             onChange={handleChange}
             onBack={() => setCurrentStep(2)}
           />
@@ -188,7 +269,7 @@ const HotelReservationCreate = () => {
 
       <ReservationFooter
         isSaving={saving}
-        isDisabled={!selectedDogId || nights <= 0}
+        isDisabled={!selectedDogId || nights <= 0 || !selectedRoomId}
         summaryName={selectedDog?.name}
         summaryOwner={selectedDog?.owner_name}
         reservationDate={form.checkin_date}
@@ -205,11 +286,21 @@ const HotelReservationCreate = () => {
 function HotelDateStep({
   form,
   nights,
+  rooms,
+  loadingRooms,
+  roomError,
+  selectedRoomId,
+  onSelectRoom,
   onChange,
   onNext,
 }: {
   form: HotelForm
   nights: number
+  rooms: HotelRoomAvailability[]
+  loadingRooms: boolean
+  roomError: string
+  selectedRoomId: number | null
+  onSelectRoom: (roomId: number) => void
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void
   onNext: () => void
 }) {
@@ -222,6 +313,10 @@ function HotelDateStep({
     }
     if (nights <= 0) {
       setError('チェックアウト日はチェックイン日より後にしてください')
+      return
+    }
+    if (!selectedRoomId) {
+      setError('空いている部屋を選択してください')
       return
     }
     setError('')
@@ -300,6 +395,53 @@ function HotelDateStep({
             </span>
           </div>
         )}
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-2">部屋割り</label>
+          {loadingRooms ? (
+            <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-xl">
+              空室を確認中...
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {rooms.map((room) => {
+                const selected = selectedRoomId === room.id
+                const disabled = !room.is_available
+                return (
+                  <button
+                    key={room.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onSelectRoom(room.id)}
+                    className={`w-full px-3 py-2 rounded-xl border text-left transition-colors ${
+                      selected
+                        ? 'border-primary bg-primary/5'
+                        : disabled
+                          ? 'border-border bg-muted/30 text-muted-foreground cursor-not-allowed'
+                          : 'border-border hover:bg-muted/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium">{room.room_name}</span>
+                      <span className="text-xs text-muted-foreground">{room.room_size} / 定員{room.capacity}</span>
+                    </div>
+                    {!room.is_available && (
+                      <p className="text-xs text-destructive mt-1">同時間帯で利用中</p>
+                    )}
+                  </button>
+                )
+              })}
+              {rooms.length === 0 && !roomError && (
+                <p className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-xl">
+                  部屋が登録されていません
+                </p>
+              )}
+            </div>
+          )}
+          {roomError && (
+            <p className="text-xs text-destructive mt-2">{roomError}</p>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -326,12 +468,14 @@ function HotelConfirmStep({
   form,
   nights,
   selectedDogName,
+  selectedRoomName,
   onChange,
   onBack,
 }: {
   form: HotelForm
   nights: number
   selectedDogName: string
+  selectedRoomName: string
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   onBack: () => void
 }) {
@@ -373,6 +517,10 @@ function HotelConfirmStep({
           <div className="flex justify-between">
             <span className="text-muted-foreground">ワンちゃん</span>
             <span className="font-medium">{selectedDogName || '未選択'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">部屋</span>
+            <span className="font-medium">{selectedRoomName || '未選択'}</span>
           </div>
         </div>
         <div className="mt-4 flex justify-between">

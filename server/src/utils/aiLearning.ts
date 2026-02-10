@@ -18,6 +18,7 @@ export interface AILearningInput {
 }
 
 export interface AIFeedbackInput {
+  storeId: number;
   learningDataId: number;
   wasUsed: boolean;
   wasEdited: boolean;
@@ -161,8 +162,8 @@ export async function recordAIFeedback(input: AIFeedbackInput): Promise<void> {
   await pool.query(
     `UPDATE ai_learning_data
      SET was_used = $1, was_edited = $2, final_text = $3, quality_score = $4
-     WHERE id = $5`,
-    [input.wasUsed, input.wasEdited, anonymizedFinalText, qualityScore, input.learningDataId]
+     WHERE id = $5 AND store_id = $6`,
+    [input.wasUsed, input.wasEdited, anonymizedFinalText, qualityScore, input.learningDataId, input.storeId]
   );
 }
 

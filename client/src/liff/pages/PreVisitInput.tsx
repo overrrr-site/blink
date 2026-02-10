@@ -28,12 +28,17 @@ interface PreVisitReservation {
 }
 
 interface GroomingPreVisitData {
-  style_preference?: string;
-  style_notes?: string;
-  concern_areas?: string[];
-  concern_notes?: string;
-  changes_since_last?: string;
-  skin_issues?: boolean;
+  counseling?: {
+    style_request?: string;
+    caution_notes?: string;
+    condition_notes?: string;
+    consent_confirmed?: boolean;
+  };
+  pre_visit?: {
+    pickup_time?: string;
+    completion_contact?: 'line' | 'phone' | 'none';
+    day_of_notes?: string;
+  };
 }
 
 interface HotelPreVisitData {
@@ -64,12 +69,17 @@ const DEFAULT_DAYCARE_DATA = {
 };
 
 const DEFAULT_GROOMING_DATA: GroomingPreVisitData = {
-  style_preference: '',
-  style_notes: '',
-  concern_areas: [],
-  concern_notes: '',
-  changes_since_last: '',
-  skin_issues: false,
+  counseling: {
+    style_request: '',
+    caution_notes: '',
+    condition_notes: '',
+    consent_confirmed: false,
+  },
+  pre_visit: {
+    pickup_time: '',
+    completion_contact: 'line',
+    day_of_notes: '',
+  },
 };
 
 const DEFAULT_HOTEL_DATA: HotelPreVisitData = {
@@ -81,14 +91,27 @@ const DEFAULT_HOTEL_DATA: HotelPreVisitData = {
   emergency_contact_confirmed: false,
 };
 
-const GROOMING_CONCERN_OPTIONS = [
-  { value: 'ears', label: '耳' },
-  { value: 'skin', label: '皮膚' },
-  { value: 'nails', label: '爪' },
-  { value: 'teeth', label: '歯' },
-  { value: 'eyes', label: '目' },
-  { value: 'other', label: 'その他' },
-];
+function normalizeGroomingPreVisitData(raw: unknown): GroomingPreVisitData {
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_GROOMING_DATA;
+  }
+
+  const source = raw as GroomingPreVisitData;
+
+  return {
+    counseling: {
+      style_request: source.counseling?.style_request || '',
+      caution_notes: source.counseling?.caution_notes || '',
+      condition_notes: source.counseling?.condition_notes || '',
+      consent_confirmed: source.counseling?.consent_confirmed || false,
+    },
+    pre_visit: {
+      pickup_time: source.pre_visit?.pickup_time || '',
+      completion_contact: source.pre_visit?.completion_contact || 'line',
+      day_of_notes: source.pre_visit?.day_of_notes || '',
+    },
+  };
+}
 
 // チェックボックスコンポーネント
 function CheckboxItem({
@@ -176,10 +199,7 @@ export default function PreVisitInput() {
               });
             }
             if (serviceType === 'grooming') {
-              setGroomingData({
-                ...DEFAULT_GROOMING_DATA,
-                ...(res.grooming_data || {}),
-              });
+              setGroomingData(normalizeGroomingPreVisitData(res.grooming_data));
             }
             if (serviceType === 'hotel') {
               setHotelData({
@@ -225,7 +245,19 @@ export default function PreVisitInput() {
 
       if (serviceType === 'grooming') {
         Object.assign(payload, {
-          grooming_data: groomingData,
+          grooming_data: {
+            counseling: {
+              style_request: groomingData.counseling?.style_request || '',
+              caution_notes: groomingData.counseling?.caution_notes || '',
+              condition_notes: groomingData.counseling?.condition_notes || '',
+              consent_confirmed: groomingData.counseling?.consent_confirmed || false,
+            },
+            pre_visit: {
+              pickup_time: groomingData.pre_visit?.pickup_time || '',
+              completion_contact: groomingData.pre_visit?.completion_contact || 'line',
+              day_of_notes: groomingData.pre_visit?.day_of_notes || '',
+            },
+          },
         });
       }
 
@@ -267,18 +299,6 @@ export default function PreVisitInput() {
       ...prev,
       meal_data: prev.meal_data.filter((_, i) => i !== index),
     }));
-  };
-
-  const toggleGroomingConcern = (area: string, checked: boolean) => {
-    setGroomingData(prev => {
-      const current = new Set(prev.concern_areas || []);
-      if (checked) {
-        current.add(area);
-      } else {
-        current.delete(area);
-      }
-      return { ...prev, concern_areas: Array.from(current) };
-    });
   };
 
   const updateHotelFeeding = (field: 'morning' | 'evening' | 'snack', value: string) => {
@@ -323,10 +343,7 @@ export default function PreVisitInput() {
         });
       }
       if (serviceType === 'grooming') {
-        setGroomingData({
-          ...DEFAULT_GROOMING_DATA,
-          ...(lastRecord.grooming_data || {}),
-        });
+        setGroomingData(normalizeGroomingPreVisitData(lastRecord.grooming_data));
       }
       if (serviceType === 'hotel') {
         setHotelData({
@@ -606,90 +623,142 @@ export default function PreVisitInput() {
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
               <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
                 <Icon icon="solar:scissors-bold" width="20" height="20" className="text-violet-500" />
-                ご希望のスタイル
+                来店時カウンセリング
               </h2>
-              <label htmlFor="style_preference" className="block text-sm font-medium mb-2">
-                スタイルの希望
+              <label htmlFor="style_request" className="block text-sm font-medium mb-2">
+                希望スタイル <span className="text-muted-foreground font-normal">(任意)</span>
               </label>
-              <select
-                id="style_preference"
-                value={groomingData.style_preference ?? ''}
-                onChange={(e) => setGroomingData({ ...groomingData, style_preference: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
-                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              >
-                <option value="">選択してください</option>
-                <option value="前回と同じ">前回と同じ</option>
-                <option value="おまかせ">おまかせ</option>
-                <option value="具体的なリクエストあり">具体的なリクエストあり</option>
-              </select>
-              {groomingData.style_preference === '具体的なリクエストあり' && (
-                <textarea
-                  value={groomingData.style_notes ?? ''}
-                  onChange={(e) => setGroomingData({ ...groomingData, style_notes: e.target.value })}
-                  rows={3}
-                  className="w-full mt-3 px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
-                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  placeholder="具体的なご要望を入力してください"
-                />
-              )}
-            </section>
-
-            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-                <Icon icon="solar:eye-bold" width="20" height="20" className="text-chart-4" />
-                気になる箇所
-              </h2>
-              <p className="text-xs text-muted-foreground mb-3">
-                気になる点があれば選択してください
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {GROOMING_CONCERN_OPTIONS.map((option) => (
-                  <CheckboxItem
-                    key={option.value}
-                    id={`concern_${option.value}`}
-                    label={option.label}
-                    checked={(groomingData.concern_areas || []).includes(option.value)}
-                    onChange={(checked) => toggleGroomingConcern(option.value, checked)}
-                  />
-                ))}
-              </div>
               <textarea
-                value={groomingData.concern_notes ?? ''}
-                onChange={(e) => setGroomingData({ ...groomingData, concern_notes: e.target.value })}
-                rows={3}
-                className="w-full mt-3 px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
-                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                placeholder="詳細を教えてください（任意）"
-              />
-            </section>
-
-            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-                <Icon icon="solar:refresh-bold" width="20" height="20" className="text-chart-1" />
-                前回からの変化
-              </h2>
-              <textarea
-                value={groomingData.changes_since_last ?? ''}
-                onChange={(e) => setGroomingData({ ...groomingData, changes_since_last: e.target.value })}
+                id="style_request"
+                value={groomingData.counseling?.style_request ?? ''}
+                onChange={(e) => setGroomingData({
+                  ...groomingData,
+                  counseling: {
+                    ...(groomingData.counseling || {}),
+                    style_request: e.target.value,
+                  },
+                })}
                 rows={3}
                 className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
                          focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                placeholder="例: 最近かゆがっている、薬を飲み始めた等"
+                placeholder="例: 体は6mm、顔は丸めでお願いします"
               />
-            </section>
 
-            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-                <Icon icon="solar:heart-pulse-bold" width="20" height="20" className="text-destructive" />
-                皮膚トラブル
-              </h2>
-              <CheckboxItem
-                id="skin_issues"
-                label="皮膚トラブルがあります"
-                checked={!!groomingData.skin_issues}
-                onChange={(checked) => setGroomingData({ ...groomingData, skin_issues: checked })}
+              <label htmlFor="caution_notes" className="block text-sm font-medium mt-4 mb-2">
+                注意事項 <span className="text-muted-foreground font-normal">(任意)</span>
+              </label>
+              <textarea
+                id="caution_notes"
+                value={groomingData.counseling?.caution_notes ?? ''}
+                onChange={(e) => setGroomingData({
+                  ...groomingData,
+                  counseling: {
+                    ...(groomingData.counseling || {}),
+                    caution_notes: e.target.value,
+                  },
+                })}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="例: 耳まわりは敏感、前足は苦手です"
               />
+
+              <label htmlFor="condition_notes" className="block text-sm font-medium mt-4 mb-2">
+                当日の体調・変化 <span className="text-muted-foreground font-normal">(任意)</span>
+              </label>
+              <textarea
+                id="condition_notes"
+                value={groomingData.counseling?.condition_notes ?? ''}
+                onChange={(e) => setGroomingData({
+                  ...groomingData,
+                  counseling: {
+                    ...(groomingData.counseling || {}),
+                    condition_notes: e.target.value,
+                  },
+                })}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="例: かゆみが少しあります。投薬を始めました"
+              />
+
+              <CheckboxItem
+                id="consent_confirmed"
+                label="内容を確認済み（任意）"
+                checked={!!groomingData.counseling?.consent_confirmed}
+                onChange={(checked) => setGroomingData({
+                  ...groomingData,
+                  counseling: {
+                    ...(groomingData.counseling || {}),
+                    consent_confirmed: checked,
+                  },
+                })}
+              />
+
+              <div className="mt-5 pt-5 border-t border-border/80">
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Icon icon="solar:clock-circle-bold" width="18" height="18" className="text-chart-2" />
+                  当日運用メモ（LIFF事前入力向け）
+                </h3>
+
+                <label htmlFor="pickup_time" className="block text-sm font-medium mb-2">
+                  お迎え予定時刻 <span className="text-muted-foreground font-normal">(任意)</span>
+                </label>
+                <input
+                  id="pickup_time"
+                  type="time"
+                  value={groomingData.pre_visit?.pickup_time ?? ''}
+                  onChange={(e) => setGroomingData({
+                    ...groomingData,
+                    pre_visit: {
+                      ...(groomingData.pre_visit || {}),
+                      pickup_time: e.target.value,
+                    },
+                  })}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+
+                <label htmlFor="completion_contact" className="block text-sm font-medium mt-4 mb-2">
+                  仕上がり連絡の希望 <span className="text-muted-foreground font-normal">(任意)</span>
+                </label>
+                <select
+                  id="completion_contact"
+                  value={groomingData.pre_visit?.completion_contact ?? 'line'}
+                  onChange={(e) => setGroomingData({
+                    ...groomingData,
+                    pre_visit: {
+                      ...(groomingData.pre_visit || {}),
+                      completion_contact: e.target.value as 'line' | 'phone' | 'none',
+                    },
+                  })}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                >
+                  <option value="line">LINEで連絡</option>
+                  <option value="phone">電話で連絡</option>
+                  <option value="none">連絡不要</option>
+                </select>
+
+                <label htmlFor="day_of_notes" className="block text-sm font-medium mt-4 mb-2">
+                  当日メモ <span className="text-muted-foreground font-normal">(任意)</span>
+                </label>
+                <textarea
+                  id="day_of_notes"
+                  value={groomingData.pre_visit?.day_of_notes ?? ''}
+                  onChange={(e) => setGroomingData({
+                    ...groomingData,
+                    pre_visit: {
+                      ...(groomingData.pre_visit || {}),
+                      day_of_notes: e.target.value,
+                    },
+                  })}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  placeholder="例: 今日は帰宅後すぐ散歩予定です"
+                />
+              </div>
             </section>
           </>
         )}

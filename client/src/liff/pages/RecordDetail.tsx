@@ -24,7 +24,19 @@ interface RecordData {
   staff_name: string
   grooming_data: { selectedParts: string[]; partNotes: Record<string, string> } | null
   daycare_data: { activities: string[] } | null
-  hotel_data: { check_in: string; check_out_scheduled: string; nights: number; special_care?: string; daily_notes?: Record<string, string> } | null
+  hotel_data: {
+    check_in: string
+    check_out_scheduled: string
+    nights: number
+    special_care?: string
+    daily_notes?: Record<string, string>
+    care_logs?: Array<{
+      at: string
+      category: 'feeding' | 'medication' | 'toilet' | 'walk'
+      note: string
+      staff?: string
+    }>
+  } | null
   photos: PhotosData | null
   notes: { internal_notes: string | null; report_text: string | null } | null
   condition: { overall: string } | null
@@ -52,6 +64,13 @@ const ACTIVITY_LABELS: Record<string, { label: string; emoji: string }> = {
   walk: { label: 'お散歩', emoji: '🚶' },
   nap: { label: 'お昼寝', emoji: '😴' },
   socialization: { label: '社会化', emoji: '🐕' },
+}
+
+const HOTEL_CARE_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
+  feeding: { label: '食事', icon: 'mdi:food-drumstick' },
+  medication: { label: '投薬', icon: 'mdi:pill' },
+  toilet: { label: '排泄', icon: 'mdi:toilet' },
+  walk: { label: '散歩', icon: 'mdi:walk' },
 }
 
 export default function RecordDetail() {
@@ -100,6 +119,10 @@ export default function RecordDetail() {
   const hotelDailyNotes = record.hotel_data?.daily_notes
     ? Object.entries(record.hotel_data.daily_notes).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
     : []
+  const hotelCareLogs = (record.hotel_data?.care_logs || [])
+    .filter((log) => log?.at && log?.category)
+    .slice()
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
   const groomingParts = record.grooming_data?.selectedParts || []
   const groomingNotes = record.grooming_data?.partNotes || {}
   const [viewerState, setViewerState] = useState<{
@@ -248,6 +271,36 @@ export default function RecordDetail() {
                     <p className="text-sm mt-1">{note}</p>
                   </div>
                 ))}
+              </div>
+            </section>
+          )}
+
+          {hotelCareLogs.length > 0 && (
+            <section className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+              <h3 className="text-sm font-bold mb-3">滞在ログ</h3>
+              <div className="space-y-2">
+                {hotelCareLogs.map((log, index) => {
+                  const category = HOTEL_CARE_CATEGORY_LABELS[log.category]
+                  return (
+                    <div key={`${log.at}-${index}`} className="rounded-xl border border-border p-3 bg-muted/20">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                          <Icon icon={category?.icon || 'solar:clipboard-list-bold'} width="14" height="14" />
+                          {category?.label || log.category}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(log.at), 'M月d日(E) HH:mm', { locale: ja })}
+                        </span>
+                      </div>
+                      {log.note && (
+                        <p className="text-sm mt-1.5">{log.note}</p>
+                      )}
+                      {log.staff && (
+                        <p className="text-xs text-muted-foreground mt-1">担当: {log.staff}</p>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </section>
           )}

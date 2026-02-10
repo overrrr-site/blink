@@ -139,7 +139,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                   <button
                     type="button"
                     onClick={() => toggleToilet(key, 'urination')}
-                    className="py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
+                    className="py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5"
                     style={{
                       background: slotData.urination ? '#DBEAFE' : '#FFFFFF',
                       border: slotData.urination ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
@@ -153,7 +153,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                   <button
                     type="button"
                     onClick={() => toggleToilet(key, 'defecation')}
-                    className="py-2.5 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1.5"
+                    className="py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5"
                     style={{
                       background: slotData.defecation ? '#FEF3C7' : '#FFFFFF',
                       border: slotData.defecation ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',

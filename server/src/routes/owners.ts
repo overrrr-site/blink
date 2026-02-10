@@ -46,7 +46,11 @@ function buildOwnersListQuery(params: {
 
   // 業種フィルタ：owners.business_typesで直接フィルタ
   if (serviceType) {
-    query += ` AND ($${queryParams.length + 1} = ANY(o.business_types))`;
+    query += ` AND (
+      o.business_types IS NULL
+      OR cardinality(o.business_types) = 0
+      OR $${queryParams.length + 1} = ANY(o.business_types)
+    )`;
     queryParams.push(serviceType);
   }
 

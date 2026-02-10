@@ -5,8 +5,8 @@ import { fetcher } from '../lib/swr'
 import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
 import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../utils/businessTypeColors'
-import { useAuthStore } from '../store/authStore'
-import { useBusinessTypeStore } from '../store/businessTypeStore'
+import { BUSINESS_TYPE_ORDER } from '../domain/businessTypeConfig'
+import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import type { RecordType } from '../types/record'
 import RecordHeader from './records/components/RecordHeader'
 import PetInfoCard from './records/components/PetInfoCard'
@@ -22,13 +22,14 @@ import { useRecordFormState } from './records/hooks/useRecordFormState'
 import { buildCreateRecordPayload, validateRecordForm } from './records/utils/recordForm'
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
+import { calculateAge } from '../utils/dog'
 
 function RecordTypeSelector({ recordType, onSelect, recordLabel }: { recordType: RecordType; onSelect: (t: RecordType) => void; recordLabel: string }) {
   return (
     <div className="mx-4 mt-4">
       <p className="text-sm font-medium text-slate-500 mb-2">{recordLabel}種別</p>
       <div className="flex gap-2">
-        {(['daycare', 'grooming', 'hotel'] as const).map((type) => {
+        {BUSINESS_TYPE_ORDER.map((type) => {
           const colors = getBusinessTypeColors(type)
           const label = getBusinessTypeLabel(type)
           const selected = recordType === type
@@ -61,13 +62,44 @@ interface Dog {
   owner_name: string
 }
 
+interface ReservationSource {
+  dog_id?: number
+  service_type?: RecordType
+  reservation_date?: string
+  reservation_time?: string | null
+  end_datetime?: string | null
+  service_details?: {
+    special_care?: string
+  } | null
+  memo?: string | null
+  notes?: string | null
+}
+
+function formatToDatetimeLocal(value?: string | null): string {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+function combineDateAndTime(date?: string, time?: string | null): string {
+  if (!date) return ''
+  const timeValue = time && /^\d{2}:\d{2}$/.test(time) ? time : '00:00'
+  return `${date}T${timeValue}`
+}
+
 const RecordCreate = () => {
   const navigate = useNavigate()
   const { reservationId } = useParams()
   const { showToast } = useToast()
-  const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
-  const { selectedBusinessType } = useBusinessTypeStore()
-  const effectiveType = selectedBusinessType || primaryBusinessType as RecordType || 'daycare'
+  const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
+  const effectiveType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
   const recordLabel = getRecordLabel(effectiveType)
 
   // Dog selection
@@ -102,6 +134,7 @@ const RecordCreate = () => {
   const [saving, setSaving] = useState(false)
   const [copyLoading, setCopyLoading] = useState(false)
   const [collapsed, setCollapsed] = useState({ condition: true, health: true })
+  const [activeTab, setActiveTab] = useState<'record' | 'report'>('record')
 
   // Fetch dogs list
   const { data: dogs = [] } = useSWR<Dog[]>('/dogs?limit=200', fetcher)
@@ -120,40 +153,35 @@ const RecordCreate = () => {
     reservationId ? `/reservations/${reservationId}` : null,
     fetcher,
     {
-      onSuccess: (data) => {
+      onSuccess: (data: ReservationSource) => {
         if (data?.dog_id && !selectedDogId) {
           setSelectedDogId(data.dog_id)
         }
         // ホテルカルテの自動入力
-        if (recordType === 'hotel' && data?.service_type === 'hotel') {
+        if (data?.service_type === 'hotel') {
+          setRecordType('hotel')
           setHotelData((prev) => {
-            if (prev.check_in) return prev
-            const checkinDate = data.reservation_date || ''
-            const checkoutDate = data.end_datetime?.split('T')[0] || ''
-            const diffMs = checkinDate && checkoutDate
-              ? new Date(checkoutDate).getTime() - new Date(checkinDate).getTime()
+            if (prev.check_in || prev.check_out_scheduled) return prev
+
+            const checkIn = formatToDatetimeLocal(combineDateAndTime(data.reservation_date, data.reservation_time))
+            const checkOut = formatToDatetimeLocal(data.end_datetime)
+            const diffMs = checkIn && checkOut
+              ? new Date(checkOut).getTime() - new Date(checkIn).getTime()
               : 0
+            const computedNights = diffMs > 0 ? Math.ceil(diffMs / 86_400_000) : 1
+
             return {
               ...prev,
-              check_in: checkinDate,
-              check_out_scheduled: checkoutDate,
-              nights: Math.max(0, Math.ceil(diffMs / 86_400_000)),
-              special_care: data.service_details?.special_care || data.notes || prev.special_care || '',
+              check_in: checkIn,
+              check_out_scheduled: checkOut,
+              nights: Math.max(1, computedNights),
+              special_care: data.service_details?.special_care || data.memo || data.notes || prev.special_care || '',
             }
           })
         }
       },
     }
   )
-
-  const calculateAge = (birthDate: string): string => {
-    const birth = new Date(birthDate)
-    const now = new Date()
-    const years = now.getFullYear() - birth.getFullYear()
-    const months = now.getMonth() - birth.getMonth()
-    if (years > 0) return `${years}歳${months >= 0 ? months : 12 + months}ヶ月`
-    return `${months >= 0 ? months : 12 + months}ヶ月`
-  }
 
   const handleCopyPrevious = useCallback(async () => {
     if (!selectedDogId) return
@@ -188,6 +216,8 @@ const RecordCreate = () => {
 
   const {
     aiSuggestions: recordAISuggestions,
+    reportInputTrace,
+    setReportTone,
     handleAISuggestionAction,
     handleAISuggestionDismiss,
     analyzePhotoConcern,
@@ -268,6 +298,16 @@ const RecordCreate = () => {
     await analyzePhotoConcern(photoUrl)
   }
 
+  const handleJumpToField = (fieldKey: string) => {
+    setActiveTab('record')
+    if (fieldKey === 'condition') {
+      setCollapsed((s) => ({ ...s, condition: false }))
+    }
+    if (fieldKey === 'health_check') {
+      setCollapsed((s) => ({ ...s, health: false }))
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 pb-32">
       <RecordHeader
@@ -326,68 +366,107 @@ const RecordCreate = () => {
             copyLoading={copyLoading}
           />
 
-          {/* 業種が未選択（すべて）の場合のみ業種セレクターを表示 */}
-          {!selectedBusinessType && (
-            <RecordTypeSelector recordType={recordType} onSelect={setRecordType} recordLabel={recordLabel} />
+          <div className="mx-4 mt-4">
+            <div className="flex bg-muted rounded-xl p-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('record')}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                  activeTab === 'record' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+                }`}
+                aria-pressed={activeTab === 'record'}
+              >
+                記録
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('report')}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                  activeTab === 'report' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+                }`}
+                aria-pressed={activeTab === 'report'}
+              >
+                報告
+              </button>
+            </div>
+          </div>
+
+          {activeTab === 'record' && (
+            <>
+              {/* 業種が未選択（すべて）の場合のみ業種セレクターを表示 */}
+              {!selectedBusinessType && (
+                <RecordTypeSelector recordType={recordType} onSelect={setRecordType} recordLabel={recordLabel} />
+              )}
+
+              {/* Business-type specific form */}
+              <RecordTypeSection
+                recordType={recordType}
+                daycareData={daycareData}
+                groomingData={groomingData}
+                hotelData={hotelData}
+                onDaycareChange={setDaycareData}
+                onGroomingChange={setGroomingData}
+                onHotelChange={setHotelData}
+              />
+
+              <RequiredSection title="写真">
+                <PhotosForm
+                  data={photos}
+                  onChange={setPhotos}
+                  recordType={recordType}
+                  showConcerns={recordType === 'grooming'}
+                  aiSuggestion={recordAISuggestions['photo-concern']}
+                  onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
+                  onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
+                  onPhotoAdded={handlePhotoAdded}
+                />
+              </RequiredSection>
+
+              <OptionalSection
+                title="体調・様子"
+                collapsed={collapsed.condition}
+                onToggle={() => setCollapsed((s) => ({ ...s, condition: !s.condition }))}
+              >
+                <ConditionForm data={condition} onChange={setCondition} />
+              </OptionalSection>
+
+              <OptionalSection
+                title="健康チェック"
+                collapsed={collapsed.health}
+                onToggle={() => setCollapsed((s) => ({ ...s, health: !s.health }))}
+              >
+                <HealthCheckForm
+                  data={healthCheck}
+                  onChange={setHealthCheck}
+                  showWeightGraph={recordType === 'grooming'}
+                  weightHistory={[]}
+                  aiSuggestion={recordAISuggestions['health-history']}
+                  onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
+                  onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
+                />
+              </OptionalSection>
+            </>
           )}
 
-          {/* Business-type specific form */}
-          <RecordTypeSection
-            recordType={recordType}
-            daycareData={daycareData}
-            groomingData={groomingData}
-            hotelData={hotelData}
-            onDaycareChange={setDaycareData}
-            onGroomingChange={setGroomingData}
-            onHotelChange={setHotelData}
-          />
-
-          <RequiredSection title="写真">
-            <PhotosForm
-              data={photos}
-              onChange={setPhotos}
-              recordType={recordType}
-              showConcerns={recordType === 'grooming'}
-              aiSuggestion={recordAISuggestions['photo-concern']}
-              onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
-              onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
-              onPhotoAdded={handlePhotoAdded}
-            />
-          </RequiredSection>
-
-          <RequiredSection title="報告文">
-            <NotesForm
-              data={notes}
-              onChange={setNotes}
-              aiSuggestion={recordAISuggestions['report-draft']}
-              onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
-              onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
-            />
-          </RequiredSection>
-
-          <OptionalSection
-            title="体調・様子"
-            collapsed={collapsed.condition}
-            onToggle={() => setCollapsed((s) => ({ ...s, condition: !s.condition }))}
-          >
-            <ConditionForm data={condition} onChange={setCondition} />
-          </OptionalSection>
-
-          <OptionalSection
-            title="健康チェック"
-            collapsed={collapsed.health}
-            onToggle={() => setCollapsed((s) => ({ ...s, health: !s.health }))}
-          >
-            <HealthCheckForm
-              data={healthCheck}
-              onChange={setHealthCheck}
-              showWeightGraph={recordType === 'grooming'}
-              weightHistory={[]}
-              aiSuggestion={recordAISuggestions['health-history']}
-              onAISuggestionAction={(editedText) => handleAISuggestionAction('health-history', editedText)}
-              onAISuggestionDismiss={() => handleAISuggestionDismiss('health-history')}
-            />
-          </OptionalSection>
+          {activeTab === 'report' && (
+            <RequiredSection title="報告文">
+              <NotesForm
+                data={notes}
+                onChange={setNotes}
+                aiSuggestion={recordAISuggestions['report-draft']}
+                inputTrace={aiSettings.aiAssistantEnabled ? reportInputTrace : []}
+                generatedFrom={aiSettings.aiAssistantEnabled ? (recordAISuggestions['report-draft']?.generated_from || []) : []}
+                onRegenerate={() => handleAISuggestionAction('report-draft', undefined, { regenerate: true })}
+                onToneChange={(tone) => {
+                  setReportTone(tone)
+                  handleAISuggestionAction('report-draft', undefined, { regenerate: true, tone })
+                }}
+                onJumpToField={handleJumpToField}
+                onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
+                onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
+              />
+            </RequiredSection>
+          )}
         </>
       )}
 

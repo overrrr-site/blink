@@ -3,6 +3,7 @@ import { Icon } from '../Icon'
 import type { RecentReservation, ReservationDog } from '../../hooks/useReservationCreateData'
 
 type DogSelectStepProps = {
+  title: string
   recentDogs: ReservationDog[]
   filteredDogs: ReservationDog[]
   recentReservations: RecentReservation[]
@@ -17,6 +18,7 @@ type DogSelectStepProps = {
 }
 
 export default function DogSelectStep({
+  title,
   recentDogs,
   filteredDogs,
   recentReservations,
@@ -46,7 +48,7 @@ export default function DogSelectStep({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold font-heading flex items-center gap-2">
           <Icon icon="solar:paw-print-bold" className="text-primary size-4" />
-          登園するワンちゃん
+          {title}
         </h3>
         {recentDogs.length > 0 && (
           <button

@@ -133,9 +133,13 @@ export function buildReportPrompt(
     condition?: { overall?: string };
     health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
     notes?: { internal_notes?: string };
-  },
+  } ,
+  tone: 'formal' | 'casual' = 'formal',
   styleHint: string = ''
 ): string {
+  const toneHint = tone === 'casual'
+    ? '\n文体は親しみやすく、やわらかい表現にしてください。'
+    : '\n文体は丁寧で落ち着いた表現にしてください。'
   const partLabels: Record<string, string> = {
     head: '頭', face: '顔', ears: '耳', body: '体',
     tail: 'しっぽ', front_legs: '前足', back_legs: '後足', hip: 'お尻',
@@ -166,7 +170,7 @@ ${memo}
 - カットの仕上がり
 - 健康面で気づいたこと
 - ご自宅でのケアアドバイス
-温かみのある丁寧な日本語でお願いします。${styleHint}`;
+温かみのある丁寧な日本語でお願いします。${toneHint}${styleHint}`;
   }
 
   if (recordType === 'hotel') {
@@ -184,7 +188,7 @@ ${memo}
 - 滞在中の様子・リラックス度
 - お食事やお散歩の様子
 - 飼い主さんへの安心メッセージ
-温かみのある丁寧な日本語でお願いします。${styleHint}`;
+温かみのある丁寧な日本語でお願いします。${toneHint}${styleHint}`;
   }
 
   // daycare (default)
@@ -201,5 +205,5 @@ ${memo}
 - 今日の活動と楽しんでいた様子
 - 成長が見られた点
 - 次回への期待
-温かみのある丁寧な日本語でお願いします。${styleHint}`;
+温かみのある丁寧な日本語でお願いします。${toneHint}${styleHint}`;
 }

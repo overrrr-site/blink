@@ -16,6 +16,15 @@ export interface AISuggestionData {
   actionLabel?: string
   variant?: 'default' | 'warning' | 'success'
   payload?: Record<string, unknown>
+  input_trace?: AIInputTraceItem[]
+  generated_from?: string[]
   dismissed?: boolean
   applied?: boolean
+}
+
+export interface AIInputTraceItem {
+  key: string
+  label: string
+  status: 'present' | 'missing'
+  count?: number
 }

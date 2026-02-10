@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '@/components/Icon'
+import type { AIInputTraceItem } from '@/types/ai'
 
 type Variant = 'default' | 'warning' | 'success'
 
@@ -14,6 +15,10 @@ interface AISuggestionProps {
   preview?: string
   variant?: Variant
   actionLabel?: string
+  inputTrace?: AIInputTraceItem[]
+  generatedFrom?: string[]
+  onRegenerate?: () => void
+  onToneChange?: (tone: 'formal' | 'casual') => void
   onApply: (editedText?: string) => void
   onDismiss: () => void
 }
@@ -23,6 +28,10 @@ export default function AISuggestion({
   preview,
   variant = 'default',
   actionLabel = '使う',
+  inputTrace,
+  generatedFrom,
+  onRegenerate,
+  onToneChange,
   onApply,
   onDismiss,
 }: AISuggestionProps) {
@@ -77,6 +86,28 @@ export default function AISuggestion({
         >
           <p className="text-sm leading-relaxed text-slate-700 mb-3">{message}</p>
 
+          {inputTrace && inputTrace.length > 0 && (
+            <div className="mb-3 p-3 bg-white rounded-xl border border-slate-200">
+              <p className="text-xs font-semibold text-slate-600 mb-2">AIが参照する情報</p>
+              <div className="space-y-1.5">
+                {inputTrace.map((item) => (
+                  <div key={item.key} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-slate-600">{item.label}</span>
+                    <span className={item.status === 'present' ? 'text-emerald-600' : 'text-amber-600'}>
+                      {item.status === 'present' ? `入力あり${typeof item.count === 'number' ? ` (${item.count})` : ''}` : '未入力'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {generatedFrom && generatedFrom.length > 0 && (
+            <div className="mb-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+              <p className="text-[11px] text-slate-500">この出力で使用した情報: {generatedFrom.join(' / ')}</p>
+            </div>
+          )}
+
           {/* Preview */}
           {preview && !editing && (
             <div className="mb-3 p-3 bg-white rounded-xl border border-slate-200 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
@@ -127,6 +158,33 @@ export default function AISuggestion({
                     <Icon icon="solar:pen-bold" width="14" height="14" className="inline mr-1" />
                     編集する
                   </button>
+                )}
+                {onRegenerate && (
+                  <button
+                    type="button"
+                    onClick={onRegenerate}
+                    className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    再生成
+                  </button>
+                )}
+                {onToneChange && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onToneChange('formal')}
+                      className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      丁寧
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onToneChange('casual')}
+                      className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      カジュアル
+                    </button>
+                  </>
                 )}
                 <button
                   type="button"

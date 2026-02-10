@@ -131,6 +131,10 @@ pet-carte/
 npm run dev              # フロント+バックエンド同時起動
 npm run build            # 本番ビルド
 npm run install:all      # 全パッケージインストール
+npm run test             # client/serverのテスト
+npm run test:watch       # テストをwatch実行
+npm run test:coverage    # カバレッジ計測
+npm run lint             # クライアントlint
 
 # サーバー (cd server)
 npm run dev              # 開発サーバー（tsx watch）

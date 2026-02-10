@@ -1,5 +1,6 @@
 import pool from '../db/connection.js';
 import { fetchTrainingLabels } from './aiService.js';
+import type { RecordContext } from '../types/recordContext.js';
 
 export type AISuggestionType =
   | 'photo-concern'
@@ -52,6 +53,14 @@ const HEALTH_ITEM_LABELS: Record<string, string> = {
   teeth: '歯',
 };
 
+function asNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
 function findConsistentTrainingItems(
   historyRows: Array<{ daycare_data?: { training_data?: Record<string, string> } }>,
   labels: Record<string, string>
@@ -97,7 +106,7 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
     return { record: null, suggestions: [] };
   }
 
-  const record = recordResult.rows[0];
+  const record = recordResult.rows[0] as RecordContext;
   const suggestions: AISuggestion[] = [];
 
   const dogResult = await pool.query(
@@ -105,6 +114,7 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
     [record.dog_id]
   );
   const dog = dogResult.rows[0];
+  const context: RecordContext = { ...record, dog_name: dog?.name };
 
   const prevRecordResult = await pool.query(
     `SELECT id, record_date, notes, health_check, photos
@@ -117,7 +127,7 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
   );
   const prevRecord = prevRecordResult.rows[0];
 
-  const reportText = record.notes?.report_text || '';
+  const reportText = context.notes?.report_text || '';
   if (!reportText || reportText.trim().length === 0) {
     suggestions.push({
       type: 'report-draft',
@@ -152,7 +162,7 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
   }
 
   if (prevRecord) {
-    const currentDate = new Date(record.record_date);
+    const currentDate = new Date(context.record_date || '');
     const prevDate = new Date(prevRecord.record_date);
     const daysSince = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -177,7 +187,7 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
     });
   }
 
-  if (record.record_type === 'grooming') {
+  if (context.record_type === 'grooming') {
     const historyResult = await pool.query(
       `SELECT health_check
        FROM records
@@ -188,9 +198,9 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
       [record.dog_id, storeId, recordId]
     );
 
-    const currentWeight = record.health_check?.weight;
-    const prevWeight = prevRecord?.health_check?.weight;
-    if (currentWeight && prevWeight && prevWeight > 0) {
+    const currentWeight = asNumber(context.health_check?.weight);
+    const prevWeight = asNumber(prevRecord?.health_check?.weight);
+    if (currentWeight !== null && prevWeight !== null && prevWeight > 0) {
       const change = ((currentWeight - prevWeight) / prevWeight) * 100;
       if (Math.abs(change) >= 10) {
         suggestions.push({
@@ -206,11 +216,12 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
     const abnormalValues = ['汚れ', '伸びている', '異常あり', '要注意', '汚れあり'];
 
     for (const item of healthItems) {
-      const currentValue = record.health_check?.[item];
+      const currentValue = asString(context.health_check?.[item]);
       if (currentValue && abnormalValues.includes(currentValue)) {
-        const count = historyResult.rows.filter((row: any) =>
-          row.health_check?.[item] && abnormalValues.includes(row.health_check[item])
-        ).length;
+        const count = historyResult.rows.filter((row: any) => {
+          const historyValue = asString(row.health_check?.[item]);
+          return !!historyValue && abnormalValues.includes(historyValue);
+        }).length;
 
         if (count >= 1) {
           const itemLabel = HEALTH_ITEM_LABELS[item] || item;
@@ -226,7 +237,7 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
     }
   }
 
-  if (record.record_type === 'daycare') {
+  if (context.record_type === 'daycare') {
     const trainingHistoryResult = await pool.query(
       `SELECT daycare_data
        FROM records
@@ -250,9 +261,9 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
     }
   }
 
-  if (record.record_type === 'hotel') {
-    const nights = record.hotel_data?.nights;
-    if (nights && nights >= 2) {
+  if (context.record_type === 'hotel') {
+    const nights = asNumber(context.hotel_data?.nights);
+    if (nights !== null && nights >= 2) {
       suggestions.push({
         type: 'long-stay',
         message: `${nights}泊の長期滞在です`,

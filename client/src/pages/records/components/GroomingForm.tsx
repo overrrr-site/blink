@@ -37,6 +37,26 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
     onChange({ ...data, selectedParts: nextParts, partNotes: nextNotes })
   }
 
+  const counseling = data.counseling || {
+    style_request: '',
+    caution_notes: '',
+    condition_notes: '',
+    consent_confirmed: false,
+  }
+
+  const handleCounselingChange = (
+    key: 'style_request' | 'caution_notes' | 'condition_notes' | 'consent_confirmed',
+    value: string | boolean
+  ) => {
+    onChange({
+      ...data,
+      counseling: {
+        ...counseling,
+        [key]: value,
+      },
+    })
+  }
+
   const PART_LABELS: Record<string, string> = {
     head: '頭',
     face: '顔',
@@ -95,6 +115,56 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
           ))}
         </div>
       )}
+
+      <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Icon icon="solar:clipboard-text-bold" width="16" height="16" className="text-violet-600" />
+          <p className="text-sm font-medium text-violet-700">来店時カウンセリング</p>
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">希望スタイル（必須）</label>
+          <input
+            type="text"
+            value={counseling.style_request || ''}
+            onChange={(e) => handleCounselingChange('style_request', e.target.value)}
+            placeholder="例: 体は6mm、顔は丸く"
+            className="w-full px-3 py-2 bg-white rounded-lg text-sm border border-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-200"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">注意事項（任意）</label>
+          <textarea
+            value={counseling.caution_notes || ''}
+            onChange={(e) => handleCounselingChange('caution_notes', e.target.value)}
+            rows={2}
+            placeholder="例: 耳まわりは敏感、爪切りは短め希望"
+            className="w-full px-3 py-2 bg-white rounded-lg text-sm border border-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-200 resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">当日の体調確認（必須）</label>
+          <textarea
+            value={counseling.condition_notes || ''}
+            onChange={(e) => handleCounselingChange('condition_notes', e.target.value)}
+            rows={2}
+            placeholder="例: 食欲あり、皮膚赤みなし、耳汚れ少しあり"
+            className="w-full px-3 py-2 bg-white rounded-lg text-sm border border-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-200 resize-none"
+          />
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={Boolean(counseling.consent_confirmed)}
+            onChange={(e) => handleCounselingChange('consent_confirmed', e.target.checked)}
+            className="size-4 accent-violet-600"
+          />
+          カウンセリング内容を飼い主と確認済み（必須）
+        </label>
+      </div>
     </div>
   )
 }

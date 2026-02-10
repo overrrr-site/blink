@@ -21,8 +21,17 @@ export interface RecordFormState {
 
 export const createInitialRecordFormState = (overrides: Partial<RecordFormState> = {}): RecordFormState => ({
   daycareData: overrides.daycareData ?? { activities: [] },
-  groomingData: overrides.groomingData ?? { selectedParts: [], partNotes: {} },
-  hotelData: overrides.hotelData ?? { check_in: '', check_out_scheduled: '', nights: 1 },
+  groomingData: overrides.groomingData ?? {
+    selectedParts: [],
+    partNotes: {},
+    counseling: {
+      style_request: '',
+      caution_notes: '',
+      condition_notes: '',
+      consent_confirmed: false,
+    },
+  },
+  hotelData: overrides.hotelData ?? { check_in: '', check_out_scheduled: '', nights: 1, care_logs: [] },
   photos: overrides.photos ?? { regular: [], concerns: [] },
   notes: overrides.notes ?? { internal_notes: null, report_text: null },
   condition: overrides.condition ?? null,

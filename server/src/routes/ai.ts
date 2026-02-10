@@ -19,9 +19,6 @@ router.use(authenticate);
 
 // 日誌コメント生成
 router.post('/generate-comment', async (req: AuthRequest, res) => {
-  console.log('🤖 /generate-comment エンドポイント到達');
-  console.log('🤖 GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
-
   try {
     const comment = await generateDaycareComment(req.body);
     res.json({ comment });
@@ -81,10 +78,11 @@ router.post('/generate-report', async (req: AuthRequest, res) => {
       return;
     }
 
-    const { report, learningDataId } = await generateReport(req.body, req.storeId);
+    const { report, learningDataId, usedInputs } = await generateReport(req.body, req.storeId);
     res.json({
       report,
       learning_data_id: learningDataId,
+      used_inputs: usedInputs,
     });
   } catch (error) {
     sendServerError(res, 'レポート生成に失敗しました', error);
@@ -120,6 +118,7 @@ router.post('/feedback', async (req: AuthRequest, res) => {
 
     if (learning_data_id && req.storeId) {
       await recordAIFeedback({
+        storeId: req.storeId,
         learningDataId: learning_data_id,
         wasUsed: was_used ?? false,
         wasEdited: was_edited ?? false,

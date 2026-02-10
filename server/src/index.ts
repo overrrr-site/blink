@@ -33,6 +33,7 @@ import courseMastersRoutes from './routes/courseMasters.js';
 import trainingMastersRoutes from './routes/trainingMasters.js';
 import groomingMenusRoutes from './routes/groomingMenus.js';
 import hotelPricesRoutes from './routes/hotelPrices.js';
+import hotelRoomsRoutes from './routes/hotelRooms.js';
 
 // Routes - LIFF (LINE Front-end Framework)
 import liffRoutes from './routes/liff/index.js';
@@ -45,6 +46,7 @@ import uploadsRoutes from './routes/uploads.js';
 import notificationsRoutes from './routes/notifications.js';
 import billingRoutes from './routes/billing.js';
 import announcementsRoutes from './routes/announcements.js';
+import exportsRoutes from './routes/exports.js';
 
 // Routes - Cron (Vercel Cron Jobs)
 import cronRoutes from './routes/cron.js';
@@ -140,6 +142,7 @@ app.use('/api/course-masters', courseMastersRoutes);
 app.use('/api/training-masters', trainingMastersRoutes);
 app.use('/api/grooming-menus', groomingMenusRoutes);
 app.use('/api/hotel-prices', hotelPricesRoutes);
+app.use('/api/hotel-rooms', hotelRoomsRoutes);
 
 // ---------------------------------------------------------------------------
 // API Routes - LIFF (LINE Front-end Framework)
@@ -156,6 +159,7 @@ app.use('/api/uploads', uploadsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/announcements', announcementsRoutes);
+app.use('/api/exports', exportsRoutes);
 
 // ---------------------------------------------------------------------------
 // API Routes - Cron (独自認証のためauthenticateミドルウェア不要)

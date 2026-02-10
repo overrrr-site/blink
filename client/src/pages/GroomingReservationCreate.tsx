@@ -147,6 +147,7 @@ const GroomingReservationCreate = () => {
         {/* Step 2: Dog selection */}
         {currentStep === 2 && (
           <DogSelectStep
+            title="来店するワンちゃん"
             recentDogs={recentDogs}
             filteredDogs={filteredDogs}
             recentReservations={recentReservations}

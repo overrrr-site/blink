@@ -29,6 +29,7 @@ interface FormErrors {
   name?: string
   phone?: string
   email?: string
+  business_types?: string
 }
 
 const ERROR_INPUT_CLASS = 'border-destructive focus:border-destructive focus:ring-destructive/20'
@@ -63,6 +64,17 @@ function OwnerForm({
       }))
     }
   }, [initialValues])
+
+  const businessTypes = availableBusinessTypes || (['daycare', 'grooming', 'hotel'] as RecordType[])
+
+  useEffect(() => {
+    if (businessTypes.length === 1 && form.business_types.length === 0) {
+      setForm((prev) => ({
+        ...prev,
+        business_types: [businessTypes[0]],
+      }))
+    }
+  }, [businessTypes, form.business_types.length])
 
   function validateField(name: string, value: string): string | undefined {
     switch (name) {
@@ -103,12 +115,18 @@ function OwnerForm({
   }
 
   function toggleBusinessType(type: string): void {
+    const nextBusinessTypes = form.business_types.includes(type)
+      ? form.business_types.filter((t) => t !== type)
+      : [...form.business_types, type]
+
     setForm((prev) => ({
       ...prev,
-      business_types: prev.business_types.includes(type)
-        ? prev.business_types.filter((t) => t !== type)
-        : [...prev.business_types, type],
+      business_types: nextBusinessTypes,
     }))
+
+    if (nextBusinessTypes.length > 0) {
+      setErrors((prev) => ({ ...prev, business_types: undefined }))
+    }
   }
 
   function handleSubmit(e: React.FormEvent): void {
@@ -119,18 +137,17 @@ function OwnerForm({
     newErrors.name = validateField('name', form.name)
     newErrors.phone = validateField('phone', form.phone)
     newErrors.email = validateField('email', form.email)
+    newErrors.business_types = form.business_types.length > 0 ? undefined : '利用サービスを1つ以上選択してください'
 
     const hasErrors = Object.values(newErrors).some((err) => err)
     if (hasErrors) {
       setErrors(newErrors)
-      setTouched({ name: true, phone: true, email: true })
+      setTouched({ name: true, phone: true, email: true, business_types: true })
       return
     }
 
     onSubmit(form)
   }
-
-  const businessTypes = availableBusinessTypes || (['daycare', 'grooming', 'hotel'] as RecordType[])
 
   return (
     <form onSubmit={handleSubmit} className="px-5 pt-4 space-y-4">
@@ -245,11 +262,11 @@ function OwnerForm({
       </section>
 
       {/* 利用サービス */}
-      {businessTypes.length > 1 && (
+      {businessTypes.length > 0 && (
         <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
             <Icon icon="solar:buildings-2-bold" className="text-primary size-4" />
-            利用サービス
+            利用サービス <span className="text-destructive">*</span>
           </h3>
           <div className="flex flex-wrap gap-2">
             {businessTypes.map((type) => {
@@ -279,7 +296,13 @@ function OwnerForm({
               )
             })}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">未選択の場合はすべてのサービスに表示されます</p>
+          {errors.business_types && (
+            <p className="text-xs text-destructive mt-2 flex items-center gap-1">
+              <Icon icon="solar:danger-circle-bold" width="12" height="12" />
+              {errors.business_types}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground mt-2">1つ以上選択してください（複数選択可）</p>
         </section>
       )}
 

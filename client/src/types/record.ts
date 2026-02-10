@@ -4,6 +4,14 @@ export type RecordStatus = 'draft' | 'saved' | 'shared'
 export interface GroomingData {
   selectedParts: string[]
   partNotes: Record<string, string>
+  counseling?: GroomingCounseling
+}
+
+export interface GroomingCounseling {
+  style_request?: string
+  caution_notes?: string
+  condition_notes?: string
+  consent_confirmed?: boolean
 }
 
 export interface DaycareData {
@@ -25,6 +33,16 @@ export interface HotelData {
   nights: number
   special_care?: string
   daily_notes?: Record<string, string>
+  care_logs?: HotelCareLog[]
+}
+
+export type HotelCareLogCategory = 'feeding' | 'medication' | 'toilet' | 'walk'
+
+export interface HotelCareLog {
+  at: string
+  category: HotelCareLogCategory
+  note: string
+  staff?: string
 }
 
 export interface PhotosData {

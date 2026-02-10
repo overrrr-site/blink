@@ -30,7 +30,7 @@ interface StoreInfo {
 
 const ALL_TABS: TabConfig[] = [
   { id: 'store', label: '店舗設定', icon: 'solar:shop-bold', ownerOnly: true },
-  { id: 'pricing', label: '契約', icon: 'solar:tag-price-bold', ownerOnly: true },
+  { id: 'pricing', label: '料金', icon: 'solar:tag-price-bold', ownerOnly: true },
   { id: 'integration', label: '連携', icon: 'solar:link-bold' },
   { id: 'other', label: 'その他', icon: 'solar:settings-bold' },
 ]

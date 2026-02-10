@@ -1,4 +1,5 @@
 import { useEffect, useState, memo } from 'react';
+import axios from 'axios';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
@@ -126,6 +127,20 @@ export default function Home() {
     }
   };
 
+  function getQrActionErrorMessage(error: unknown, fallback: string): string {
+    if (axios.isAxiosError(error)) {
+      const data = error.response?.data as { code?: string; error?: string } | undefined;
+      if (data?.code === 'QR_STORE_MISMATCH') {
+        return 'このQRコードは別の店舗のものです。店舗掲示のQRコードをご利用ください。';
+      }
+      if (data?.code === 'QR_INVALID') {
+        return 'QRコードが無効または期限切れです。店舗で再発行されたQRコードをお試しください。';
+      }
+      return data?.error || fallback;
+    }
+    return getAxiosErrorMessage(error, fallback);
+  }
+
   function enrichQrErrorMessage(message: string): string {
     if (message.includes('カメラへのアクセスが許可されていません')) {
       return 'カメラへのアクセスが許可されていません。\n\n【iPhoneの場合】\n設定アプリ → LINE → カメラをオンにしてください\n\n【Androidの場合】\n設定 → アプリ → LINE → 権限 → カメラを許可';
@@ -174,7 +189,7 @@ export default function Home() {
       alert(successMsg);
       mutate();
     } catch (error) {
-      alert(getAxiosErrorMessage(error, errorMsg));
+      alert(getQrActionErrorMessage(error, errorMsg));
     } finally {
       setLoading(false);
     }

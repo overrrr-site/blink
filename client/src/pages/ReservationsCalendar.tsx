@@ -3,7 +3,7 @@ import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
 import api from '../api/client'
-import { useBusinessTypeStore } from '../store/businessTypeStore'
+import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
 
 const ReservationsCalendar = () => {
@@ -15,8 +15,9 @@ const ReservationsCalendar = () => {
   const [draggedReservation, setDraggedReservation] = useState<number | null>(null)
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
+  const [exportingCsv, setExportingCsv] = useState(false)
   const navigate = useNavigate()
-  const { selectedBusinessType } = useBusinessTypeStore()
+  const { selectedBusinessType } = useBusinessTypeFilter()
 
   const getCreateUrl = () => {
     switch (selectedBusinessType) {
@@ -149,6 +150,48 @@ const ReservationsCalendar = () => {
     }
   }
 
+  const handleExportCsv = async () => {
+    setExportingCsv(true)
+    try {
+      const monthStart = format(startOfMonth(currentDate), 'yyyy-MM-dd')
+      const monthEnd = format(endOfMonth(currentDate), 'yyyy-MM-dd')
+      const response = await api.get('/reservations/export.csv', {
+        params: {
+          date_from: monthStart,
+          date_to: monthEnd,
+          service_type: selectedBusinessType || undefined,
+        },
+        responseType: 'blob',
+      })
+
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `reservations-${format(currentDate, 'yyyy-MM')}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('予約CSVの出力に失敗しました')
+    } finally {
+      setExportingCsv(false)
+    }
+  }
+
+  const handlePrint = () => {
+    api.post('/exports/log', {
+      export_type: 'reservations',
+      output_format: 'print',
+      filters: {
+        month: format(currentDate, 'yyyy-MM'),
+        service_type: selectedBusinessType || null,
+      },
+    }).catch(() => undefined)
+    window.print()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -159,11 +202,31 @@ const ReservationsCalendar = () => {
 
   return (
     <div className="space-y-4 pb-6">
+      <div className="hidden print:block print:mb-4 print:border-b print:border-gray-300 print:pb-4 px-5">
+        <h1 className="text-xl font-bold">予約一覧</h1>
+        <p className="text-sm text-gray-600">{format(currentDate, 'yyyy年MM月')}</p>
+      </div>
       <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">予約管理</h1>
           <div className="flex items-center gap-3">
-            <BusinessTypeSwitcher />
+            <button
+              onClick={handlePrint}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors print:hidden"
+              aria-label="印刷"
+              title="印刷"
+            >
+              <Icon icon="solar:printer-bold" className="size-5" />
+            </button>
+            <button
+              onClick={handleExportCsv}
+              disabled={exportingCsv}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors disabled:opacity-60 print:hidden"
+              aria-label="CSV出力"
+              title="CSV形式で出力"
+            >
+              <Icon icon="solar:download-bold" className="size-5" />
+            </button>
             <button
               onClick={() => {
                 const monthStr = format(currentDate, 'yyyy-MM')
@@ -196,11 +259,14 @@ const ReservationsCalendar = () => {
             </button>
             <button
               onClick={() => navigate(getCreateUrl())}
-              className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors min-h-[44px]"
+              className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors min-h-[44px] print:hidden"
             >
               <Icon icon="solar:add-circle-bold" className="size-4" />
               新規予約
             </button>
+            <div className="print:hidden">
+              <BusinessTypeSwitcher />
+            </div>
           </div>
         </div>
 
@@ -356,6 +422,11 @@ const ReservationsCalendar = () => {
                         <p className="text-xs text-muted-foreground">
                           {reservation.owner_name} 様
                         </p>
+                        {reservation.service_type === 'hotel' && reservation.room_name && (
+                          <p className="text-xs text-primary mt-0.5">
+                            部屋: {reservation.room_name}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-bold text-primary">

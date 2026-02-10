@@ -15,6 +15,7 @@ import {
   buildActivityPhotoPrompt,
   buildReportPrompt,
 } from './ai/prompts.js';
+import type { RecordContext } from '../types/recordContext.js';
 
 const TRAINING_LABELS: Record<string, string> = {
   voice_cue: '声かけでプログラム',
@@ -263,17 +264,54 @@ export async function analyzePhotoForActivity(input: {
   };
 }
 
-export async function generateReport(input: {
-  record_type: string;
-  dog_name: string;
-  grooming_data?: { selectedParts?: string[]; partNotes?: Record<string, string> };
-  daycare_data?: { activities?: string[] };
-  hotel_data?: { nights?: number; special_care?: string };
-  condition?: { overall?: string };
-  health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
-  notes?: { internal_notes?: string };
-}, storeId?: number): Promise<{ report: string; learningDataId: number | null }>{
+export async function generateReport(
+  input: RecordContext & {
+    dog_name: string;
+    grooming_data?: { selectedParts?: string[]; partNotes?: Record<string, string> };
+    daycare_data?: { activities?: string[] };
+    hotel_data?: { nights?: number; special_care?: string };
+    condition?: { overall?: string };
+    health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
+    notes?: { internal_notes?: string };
+    tone?: 'formal' | 'casual';
+  },
+  storeId?: number
+): Promise<{ report: string; learningDataId: number | null; usedInputs: string[] }>{
+  const usedInputs: string[] = [];
   let styleHint = '';
+  const regularPhotos =
+    input.photos &&
+    typeof input.photos === 'object' &&
+    'regular' in input.photos &&
+    Array.isArray((input.photos as { regular?: unknown }).regular)
+      ? (input.photos as { regular: unknown[] }).regular
+      : [];
+
+  if (regularPhotos.length > 0) {
+    usedInputs.push('photos');
+  }
+  if (input.condition?.overall) {
+    usedInputs.push('condition');
+  }
+  if (input.health_check && Object.values(input.health_check).some((value) => value !== undefined && value !== null && value !== '')) {
+    usedInputs.push('health_check');
+  }
+  if (input.notes?.internal_notes?.trim()) {
+    usedInputs.push('internal_notes');
+  }
+  if (input.record_type === 'daycare' && input.daycare_data?.activities && input.daycare_data.activities.length > 0) {
+    usedInputs.push('daycare_activities');
+  }
+  if (input.record_type === 'grooming' && input.grooming_data?.selectedParts && input.grooming_data.selectedParts.length > 0) {
+    usedInputs.push('grooming_parts');
+  }
+  if (
+    input.record_type === 'hotel' &&
+    input.hotel_data &&
+    (input.hotel_data.nights || input.hotel_data.special_care)
+  ) {
+    usedInputs.push('hotel_stay');
+  }
 
   if (storeId) {
     const writingStyle = await analyzeWritingStyle(storeId, input.record_type);
@@ -315,7 +353,7 @@ export async function generateReport(input: {
     condition: input.condition,
     health_check: input.health_check,
     notes: input.notes,
-  }, styleHint);
+  }, input.tone || 'formal', styleHint);
 
   try {
     const reportText = await callGeminiText({
@@ -344,13 +382,13 @@ export async function generateReport(input: {
         });
       }
 
-      return { report: reportText, learningDataId };
+      return { report: reportText, learningDataId, usedInputs };
     }
   } catch (apiError) {
     console.error('Gemini API error for generate-report:', apiError);
   }
 
-  return { report: generateReportFallback(input.record_type, input.dog_name), learningDataId: null };
+  return { report: generateReportFallback(input.record_type, input.dog_name), learningDataId: null, usedInputs };
 }
 
 function generateTemplateComment(
