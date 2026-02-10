@@ -5,6 +5,7 @@ import api from '../api/client'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { formatDateWithWeekday } from '../utils/date'
+import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 
 interface Reservation {
   id: number
@@ -22,14 +23,16 @@ function JournalNew(): JSX.Element {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [reservations, setReservations] = useState<Reservation[]>([])
+  const { recordLabel, serviceTypeParam } = useBusinessTypeFilter()
 
   useEffect(() => {
     fetchReservationsWithoutJournal()
-  }, [])
+  }, [serviceTypeParam])
 
   async function fetchReservationsWithoutJournal(): Promise<void> {
+    setLoading(true)
     try {
-      const response = await api.get('/dashboard')
+      const response = await api.get(serviceTypeParam ? `/dashboard?${serviceTypeParam}` : '/dashboard')
       const incompleteJournals = response.data.incompleteJournals || []
       setReservations(incompleteJournals)
     } catch {
@@ -55,11 +58,11 @@ function JournalNew(): JSX.Element {
 
   return (
     <div className="pb-6">
-      <PageHeader title="日誌を作成" backPath="/journals" />
+      <PageHeader title={`未入力の${recordLabel}`} backPath="/dashboard" />
 
       <main className="px-5 pt-4 space-y-4">
         <p className="text-sm text-muted-foreground">
-          日誌を作成する予約を選択してください
+          作成する予約を選択してください
         </p>
 
         {validReservations.length === 0 ? (
@@ -67,8 +70,8 @@ function JournalNew(): JSX.Element {
             <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
               <Icon icon="solar:check-circle-bold" width="40" height="40" className="text-chart-2" />
             </div>
-            <p className="text-lg font-medium text-foreground mb-2">すべての日誌が入力済みです</p>
-            <p className="text-sm text-muted-foreground mb-6">未入力の日誌はありません</p>
+            <p className="text-lg font-medium text-foreground mb-2">すべての{recordLabel}が入力済みです</p>
+            <p className="text-sm text-muted-foreground mb-6">未入力の{recordLabel}はありません</p>
             <button
               onClick={() => navigate('/reservations')}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium active:bg-primary/90 transition-colors"
@@ -82,7 +85,7 @@ function JournalNew(): JSX.Element {
             {validReservations.map((reservation) => (
               <button
                 key={getReservationId(reservation)!}
-                onClick={() => navigate(`/journals/create/${getReservationId(reservation)}`)}
+                onClick={() => navigate(`/records/create/${getReservationId(reservation)}`)}
                 className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-3">

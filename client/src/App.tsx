@@ -16,6 +16,7 @@ const ReservationsCalendar = lazy(() => import('./pages/ReservationsCalendar'))
 const ReservationDetail = lazy(() => import('./pages/ReservationDetail'))
 const JournalCreate = lazy(() => import('./pages/JournalCreate'))
 const JournalDetail = lazy(() => import('./pages/JournalDetail'))
+const JournalNew = lazy(() => import('./pages/JournalNew'))
 // journals routes are redirected to records; lazy imports kept only for direct journal detail/create
 
 const RecordList = lazy(() => import('./pages/RecordList'))
@@ -133,12 +134,13 @@ function App() {
                 <Route path="/reservations/hotel/create" element={<HotelReservationCreate />} />
                 <Route path="/reservations/:id" element={<ReservationDetail />} />
                 <Route path="/records" element={<RecordList />} />
+                <Route path="/records/incomplete" element={<JournalNew />} />
                 <Route path="/records/new" element={<RecordCreate />} />
                 <Route path="/records/:id" element={<RecordDetail />} />
                 <Route path="/records/create/:reservationId" element={<RecordCreate />} />
                 {/* 旧日誌URLからカルテへのリダイレクト */}
                 <Route path="/journals" element={<Navigate to="/records" replace />} />
-                <Route path="/journals/new" element={<Navigate to="/records/new" replace />} />
+                <Route path="/journals/new" element={<Navigate to="/records/incomplete" replace />} />
                 <Route path="/journals/:id" element={<JournalDetail />} />
                 <Route path="/journals/create/:reservationId" element={<JournalCreate />} />
                 <Route path="/inspection-records" element={<InspectionRecordList />} />
