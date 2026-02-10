@@ -5,6 +5,8 @@ import axios from 'axios'
 import useSWR from 'swr'
 import api from '../api/client'
 import { fetcher } from '../lib/swr'
+import { getDashboardStatusLabels, getStatusLabel } from '../domain/businessTypeConfig'
+import type { RecordType } from '../types/record'
 
 interface ReservationDetailData {
   id: number
@@ -142,6 +144,8 @@ const ReservationDetail = () => {
 
   const serviceType = reservation.service_type || 'daycare'
   const createRecordLabel = serviceType === 'daycare' ? '連絡帳を作成する' : 'カルテを作成する'
+  const statusLabels = getDashboardStatusLabels(serviceType as RecordType)
+  const statusLabel = getStatusLabel(serviceType as RecordType, reservation.status || '予定')
   const hasPreVisitInput = Boolean(
     reservation.grooming_data ||
       reservation.hotel_data ||
@@ -229,7 +233,7 @@ const ReservationDetail = () => {
             )}
             <div>
               <label className="text-xs text-muted-foreground">ステータス</label>
-              <p className="text-base font-medium">{reservation.status || '予定'}</p>
+              <p className="text-base font-medium">{statusLabel}</p>
             </div>
           </div>
 
@@ -241,7 +245,7 @@ const ReservationDetail = () => {
                 className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
               >
                 <Icon icon="solar:login-3-bold" className="size-5" />
-                登園
+                {statusLabels.checkIn}
               </button>
             )}
             {reservation.status === '登園済' && (
@@ -250,7 +254,7 @@ const ReservationDetail = () => {
                 className="w-full bg-chart-3 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-3/90 transition-colors flex items-center justify-center gap-2"
               >
                 <Icon icon="solar:logout-3-bold" className="size-5" />
-                降園
+                {statusLabels.checkOut}
               </button>
             )}
             {(reservation.status === '登園済' || reservation.status === '降園済') && (
@@ -452,7 +456,7 @@ const ReservationDetail = () => {
 
         <button
           onClick={() => navigate(`/records/create/${reservation.id}`)}
-          className="w-full bg-chart-3 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-3/90 transition-colors"
+          className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
         >
           {createRecordLabel}
         </button>

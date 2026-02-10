@@ -53,8 +53,8 @@ const OwnerCard = React.memo(function OwnerCard({
           <h3 className="font-bold text-base">{owner.name}</h3>
           <p className="text-xs text-muted-foreground">{owner.phone}</p>
         </div>
-        <div className="flex items-center gap-1">
-          {owner.dogs?.slice(0, 3).map((dog) => (
+          <div className="flex items-center gap-1">
+          {(owner.dogs ?? []).slice(0, 3).map((dog) => (
             <div
               key={dog.id}
               className="size-8 rounded-full bg-muted overflow-hidden border-2 border-background -ml-2 first:ml-0"
@@ -149,7 +149,7 @@ const Customers = () => {
   // 業種フィルタを含むSWRキー
   const serviceTypeQuery = serviceTypeParam ? `&${serviceTypeParam}` : ''
   const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}${serviceTypeQuery}`
-  const { data, isLoading } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher, {
+  const { data, isLoading, error, mutate } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher, {
     revalidateOnFocus: false,
   })
   const owners = data?.data ?? []
@@ -183,6 +183,28 @@ const Customers = () => {
         <div className="px-5 pt-4">
           <div className="h-12 bg-muted rounded-xl mb-4 animate-pulse" />
           <SkeletonList count={5} type="card" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="pb-6">
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
+          <h1 className="text-lg font-bold font-heading">顧客管理</h1>
+        </header>
+        <div className="px-5 pt-10">
+          <EmptyState
+            icon="solar:danger-triangle-bold"
+            title="顧客データの取得に失敗しました"
+            description="時間をおいて再読み込みしてください"
+            action={{
+              label: '再読み込み',
+              onClick: () => mutate(),
+              icon: 'solar:refresh-bold',
+            }}
+          />
         </div>
       </div>
     )

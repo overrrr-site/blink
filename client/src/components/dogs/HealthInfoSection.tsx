@@ -78,6 +78,8 @@ function VaccineRow({ label, date }: VaccineRowProps): JSX.Element | null {
 }
 
 export default function HealthInfoSection({ health }: HealthInfoSectionProps): JSX.Element {
+  const hasVaccineData = Boolean(health.mixed_vaccine_date || health.rabies_vaccine_date)
+
   return (
     <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
       <h3 className="text-lg font-bold mb-4">健康情報</h3>
@@ -87,6 +89,9 @@ export default function HealthInfoSection({ health }: HealthInfoSectionProps): J
         )}
         {health.rabies_vaccine_date && (
           <VaccineRow label="狂犬病予防接種日" date={health.rabies_vaccine_date} />
+        )}
+        {!hasVaccineData && (
+          <p className="text-sm text-muted-foreground">健康情報は未登録です。編集画面から登録できます。</p>
         )}
       </div>
     </div>

@@ -51,6 +51,7 @@ export const BUSINESS_TYPE_CONFIG: Record<RecordType, BusinessTypeConfig> = {
     onboardingDescription: '日帰りでのお預かりとトレーニング',
     onboardingIcon: 'solar:book-2-bold',
     statusLabels: {
+      '予定': '登園前',
       '来店前': '登園前',
       '来店中': '登園中',
       '登園済': '登園中',
@@ -84,8 +85,11 @@ export const BUSINESS_TYPE_CONFIG: Record<RecordType, BusinessTypeConfig> = {
     onboardingDescription: 'カット・シャンプーなどのトリミング',
     onboardingIcon: 'solar:scissors-bold',
     statusLabels: {
+      '予定': '来店前',
       '来店前': '来店前',
       '来店中': '来店済',
+      '登園済': '来店済',
+      '降園済': '帰宅済',
       '完了': '来店済',
     },
     dashboardStatusLabels: {
@@ -115,8 +119,11 @@ export const BUSINESS_TYPE_CONFIG: Record<RecordType, BusinessTypeConfig> = {
     onboardingDescription: '宿泊でのお預かり',
     onboardingIcon: 'solar:moon-bold',
     statusLabels: {
+      '予定': 'チェックイン前',
       '来店前': 'チェックイン前',
       '来店中': 'お預かり中',
+      '登園済': 'お預かり中',
+      '降園済': 'チェックアウト済',
       '完了': 'チェックアウト済',
     },
     dashboardStatusLabels: {

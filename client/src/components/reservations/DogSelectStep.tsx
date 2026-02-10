@@ -17,6 +17,10 @@ type DogSelectStepProps = {
   onNext: () => void
 }
 
+function isMeaningfulText(value: string | undefined): boolean {
+  return Boolean(value && value.trim() && !/^\d+$/.test(value.trim()))
+}
+
 export default function DogSelectStep({
   title,
   recentDogs,
@@ -83,6 +87,8 @@ export default function DogSelectStep({
       <div role="radiogroup" aria-label="ワンちゃんを選択" className="space-y-2 max-h-60 overflow-y-auto">
         {list.map((dog) => {
           const recentReservation = recentReservations.find((r) => r.dog_id === dog.id)
+          const breedText = isMeaningfulText(dog.breed) ? dog.breed : '犬種未登録'
+          const ownerText = isMeaningfulText(dog.owner_name) ? `${dog.owner_name}様` : '飼い主未登録'
           return (
             <label
               key={dog.id}
@@ -119,7 +125,7 @@ export default function DogSelectStep({
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  {dog.breed} / {dog.owner_name}様
+                  {breedText} / {ownerText}
                   {recentReservation && (
                     <span className="ml-2 text-[9px]">
                       前回:{' '}

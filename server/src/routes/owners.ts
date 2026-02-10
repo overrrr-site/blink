@@ -44,12 +44,27 @@ function buildOwnersListQuery(params: {
     `;
   const queryParams: Array<string | number> = [storeId];
 
-  // 業種フィルタ：owners.business_typesで直接フィルタ
+  // 業種フィルタ:
+  // 既存データは business_types=['daycare'] に一括移行されたケースがあり、
+  // そのまま厳密判定すると grooming/hotel で0件になりやすいため、
+  // 予約実績と legacy 値（['daycare']）を救済条件に含める。
   if (serviceType) {
     query += ` AND (
       o.business_types IS NULL
       OR cardinality(o.business_types) = 0
       OR $${queryParams.length + 1} = ANY(o.business_types)
+      OR o.business_types = ARRAY['daycare']::text[]
+      OR EXISTS (
+        SELECT 1
+        FROM dogs d_filter
+        JOIN reservations r_filter ON r_filter.dog_id = d_filter.id
+        WHERE d_filter.owner_id = o.id
+          AND d_filter.deleted_at IS NULL
+          AND r_filter.store_id = o.store_id
+          AND r_filter.deleted_at IS NULL
+          AND r_filter.status != 'キャンセル'
+          AND r_filter.service_type = $${queryParams.length + 1}
+      )
     )`;
     queryParams.push(serviceType);
   }

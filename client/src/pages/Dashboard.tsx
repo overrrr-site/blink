@@ -78,7 +78,7 @@ interface FilterConfig {
   id: StatusFilter
   label: string
   icon: string
-  borderColor: string
+  accentColor: string
 }
 
 function getFilterOptions(businessType: RecordType | null): FilterConfig[] {
@@ -87,18 +87,18 @@ function getFilterOptions(businessType: RecordType | null): FilterConfig[] {
   // トリミングは2ステータスのみ（来店前・完了）
   if (businessType === 'grooming') {
     return [
-      { id: 'all', label: 'すべて', icon: 'solar:list-bold', borderColor: 'border-primary' },
-      { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', borderColor: 'border-chart-4' },
-      { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', borderColor: 'border-chart-3' },
+      { id: 'all', label: 'すべて', icon: 'solar:list-bold', accentColor: 'bg-primary' },
+      { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', accentColor: 'bg-chart-4' },
+      { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', accentColor: 'bg-chart-3' },
     ]
   }
 
   // daycare, hotel は3ステータス
   return [
-    { id: 'all', label: 'すべて', icon: 'solar:list-bold', borderColor: 'border-primary' },
-    { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', borderColor: 'border-chart-4' },
-    { id: '在園中', label: l.active, icon: 'solar:home-smile-bold', borderColor: 'border-chart-2' },
-    { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', borderColor: 'border-chart-3' },
+    { id: 'all', label: 'すべて', icon: 'solar:list-bold', accentColor: 'bg-primary' },
+    { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', accentColor: 'bg-chart-4' },
+    { id: '在園中', label: l.active, icon: 'solar:home-smile-bold', accentColor: 'bg-chart-2' },
+    { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', accentColor: 'bg-chart-3' },
   ]
 }
 
@@ -439,8 +439,12 @@ function Dashboard(): JSX.Element {
   }, [navigate])
 
   const handleNavigateIncompleteRecord = useCallback(() => {
+    if (currentBusinessType) {
+      navigate(`/records/incomplete?service_type=${currentBusinessType}`)
+      return
+    }
     navigate('/records/incomplete')
-  }, [navigate])
+  }, [currentBusinessType, navigate])
 
   const handleNavigateNewReservation = useCallback(() => {
     navigate('/reservations/new')
@@ -528,9 +532,9 @@ function Dashboard(): JSX.Element {
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`flex-none min-w-[84px] py-2.5 px-2 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-1 relative min-h-[44px] ${
+                className={`flex-none min-w-[84px] py-2.5 px-2 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-1 relative min-h-[44px] overflow-hidden ${
                   statusFilter === filter.id
-                    ? `bg-background text-foreground shadow-sm border-b-2 ${filter.borderColor}`
+                    ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground font-normal'
                 }`}
                 aria-label={`${filter.label}の予約を表示`}
@@ -539,6 +543,9 @@ function Dashboard(): JSX.Element {
                 <Icon icon={filter.icon} width="16" height="16" />
                 <span className="whitespace-nowrap">{filter.label}</span>
                 {count > 0 && <span className="text-[10px] opacity-70 hidden sm:inline">({count})</span>}
+                {statusFilter === filter.id && (
+                  <span className={`absolute bottom-0 left-2 right-2 h-0.5 rounded-full ${filter.accentColor}`} />
+                )}
               </button>
             )
           })}

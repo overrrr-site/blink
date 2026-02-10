@@ -104,6 +104,11 @@ const RecordCreate = () => {
   const [copyLoading, setCopyLoading] = useState(false)
   const [collapsed, setCollapsed] = useState({ condition: true, health: true })
   const [activeTab, setActiveTab] = useState<'record' | 'report'>('record')
+  const [reservationLookupDone, setReservationLookupDone] = useState(!isCreatingFromReservation)
+
+  useEffect(() => {
+    setReservationLookupDone(!isCreatingFromReservation)
+  }, [isCreatingFromReservation, reservationId])
 
   // Fetch dogs list
   const { data: dogs = [] } = useSWR<Dog[]>('/dogs?limit=200', fetcher)
@@ -128,14 +133,13 @@ const RecordCreate = () => {
 
   // Fetch reservation data if creating from reservation
   const {
-    isLoading: loadingReservationSource,
     error: reservationSourceError,
   } = useSWR<ReservationSource>(
     reservationId ? `/reservations/${reservationId}` : null,
     fetcher,
     {
       onSuccess: (data: ReservationSource) => {
-        if (data?.dog_id) {
+        if (typeof data?.dog_id === 'number' && data.dog_id > 0) {
           setSelectedDogId(data.dog_id)
         }
         // ホテルカルテの自動入力
@@ -159,10 +163,14 @@ const RecordCreate = () => {
             }
           })
         }
+        setReservationLookupDone(true)
+      },
+      onError: () => {
+        setReservationLookupDone(true)
       },
     }
   )
-  const waitingReservationSource = isCreatingFromReservation && loadingReservationSource && !selectedDogId
+  const waitingReservationSource = isCreatingFromReservation && !reservationLookupDone
 
   const handleCopyPrevious = useCallback(async () => {
     if (!selectedDogId) return

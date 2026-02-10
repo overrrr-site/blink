@@ -64,7 +64,7 @@ export default function BusinessTypeSwitcher(): JSX.Element {
             <Icon icon={getBusinessTypeIcon(singleType)} width="20" height="20" />
           </div>
         </div>
-        <span className="text-[9px] font-bold leading-none" style={{ color: colors.primary }}>
+        <span className="text-[9px] font-bold leading-none whitespace-nowrap" style={{ color: colors.primary }}>
           {getBusinessTypeLabel(singleType)}
         </span>
       </div>

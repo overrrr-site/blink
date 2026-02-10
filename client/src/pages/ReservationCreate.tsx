@@ -115,16 +115,18 @@ const ReservationCreate = () => {
         )}
       </form>
 
-      <ReservationFooter
-        isSaving={saving}
-        isDisabled={!selectedDogId}
-        summaryName={selectedDog?.name}
-        summaryOwner={selectedDog?.owner_name}
-        reservationDate={form.reservation_date}
-        reservationTime={form.reservation_time}
-        pickupTime={form.pickup_time}
-        onSubmit={handleSubmit}
-      />
+      {currentStep === 3 && (
+        <ReservationFooter
+          isSaving={saving}
+          isDisabled={!selectedDogId}
+          summaryName={selectedDog?.name}
+          summaryOwner={selectedDog?.owner_name}
+          reservationDate={form.reservation_date}
+          reservationTime={form.reservation_time}
+          pickupTime={form.pickup_time}
+          onSubmit={handleSubmit}
+        />
+      )}
     </div>
   )
 }

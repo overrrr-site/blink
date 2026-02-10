@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api/client'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { formatDateWithWeekday } from '../utils/date'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
+import type { RecordType } from '../types/record'
 
 interface Reservation {
   id: number
@@ -21,18 +22,26 @@ interface Reservation {
 
 function JournalNew(): JSX.Element {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [reservations, setReservations] = useState<Reservation[]>([])
   const { recordLabel, serviceTypeParam } = useBusinessTypeFilter()
+  const requestedServiceType = searchParams.get('service_type')
+  const serviceTypeOverride = ['daycare', 'grooming', 'hotel'].includes(requestedServiceType || '')
+    ? (requestedServiceType as RecordType)
+    : null
+  const effectiveServiceTypeParam = serviceTypeOverride
+    ? `service_type=${serviceTypeOverride}`
+    : serviceTypeParam
 
   useEffect(() => {
     fetchReservationsWithoutJournal()
-  }, [serviceTypeParam])
+  }, [effectiveServiceTypeParam])
 
   async function fetchReservationsWithoutJournal(): Promise<void> {
     setLoading(true)
     try {
-      const response = await api.get(serviceTypeParam ? `/dashboard?${serviceTypeParam}` : '/dashboard')
+      const response = await api.get(effectiveServiceTypeParam ? `/dashboard?${effectiveServiceTypeParam}` : '/dashboard')
       const incompleteJournals = response.data.incompleteJournals || []
       setReservations(incompleteJournals)
     } catch {
@@ -47,6 +56,11 @@ function JournalNew(): JSX.Element {
 
   function getReservationDate(reservation: Reservation): string {
     return reservation.reservation_date || reservation.journal_date || ''
+  }
+
+  function formatReservationTime(time?: string): string {
+    if (!time) return ''
+    return time.slice(0, 5)
   }
 
   // 有効な予約のみをフィルタリング（reservation_idがnullでないもの）
@@ -111,7 +125,7 @@ function JournalNew(): JSX.Element {
                       {formatDateWithWeekday(getReservationDate(reservation))}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {reservation.reservation_time || ''}
+                      {formatReservationTime(reservation.reservation_time)}
                     </p>
                   </div>
                   <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground shrink-0" />

@@ -1,7 +1,7 @@
 import { Icon } from '../Icon'
 import { formatDateFullWithWeekday } from '../../utils/date'
 import { getBusinessTypeColors } from '../../utils/businessTypeColors'
-import { getBusinessTypeConfig } from '../../domain/businessTypeConfig'
+import { getBusinessTypeConfig, getStatusLabel } from '../../domain/businessTypeConfig'
 import type { RecordType } from '../../types/record'
 
 type ReservationItem = {
@@ -89,6 +89,9 @@ export default function HistoryTabs({
                 const serviceTypeConfig = reservation.service_type
                   ? getBusinessTypeConfig(reservation.service_type as RecordType)
                   : null
+                const businessTypeForStatus = (reservation.service_type as RecordType | undefined) || selectedBusinessType || null
+                const statusLabel = getStatusLabel(businessTypeForStatus, reservation.status)
+                const reservationTime = reservation.reservation_time?.slice(0, 5) || reservation.reservation_time
                 return (
                   <div
                     key={reservation.id}
@@ -113,11 +116,11 @@ export default function HistoryTabs({
                             statusColors[reservation.status] || 'bg-muted text-muted-foreground'
                           }`}
                         >
-                          {reservation.status}
+                          {statusLabel}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {reservation.reservation_time} / {reservation.owner_name}様
+                        {reservationTime} / {reservation.owner_name}様
                       </p>
                     </div>
                     <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground" />
