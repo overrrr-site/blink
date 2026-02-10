@@ -16,9 +16,10 @@ function buildOwnersListQuery(params: {
   storeId: number;
   search?: string;
   serviceType?: BusinessType;
+  hasOwnerBusinessTypes: boolean;
   pagination: PaginationParams;
 }): { query: string; params: Array<string | number> } {
-  const { storeId, search, serviceType, pagination } = params;
+  const { storeId, search, serviceType, hasOwnerBusinessTypes, pagination } = params;
   let query = `
       SELECT o.*,
              json_agg(json_build_object(
@@ -45,28 +46,55 @@ function buildOwnersListQuery(params: {
   const queryParams: Array<string | number> = [storeId];
 
   // 業種フィルタ:
-  // 既存データは business_types=['daycare'] に一括移行されたケースがあり、
-  // そのまま厳密判定すると grooming/hotel で0件になりやすいため、
-  // 予約実績と legacy 値（['daycare']）を救済条件に含める。
+  // - owners.business_types カラムが存在する環境では、カラム値＋予約実績で判定
+  // - カラム未適用の環境では、予約実績のみで後方互換フィルタ
   if (serviceType) {
-    query += ` AND (
-      o.business_types IS NULL
-      OR cardinality(o.business_types) = 0
-      OR $${queryParams.length + 1} = ANY(o.business_types)
-      OR o.business_types = ARRAY['daycare']::text[]
-      OR EXISTS (
-        SELECT 1
-        FROM dogs d_filter
-        JOIN reservations r_filter ON r_filter.dog_id = d_filter.id
-        WHERE d_filter.owner_id = o.id
-          AND d_filter.deleted_at IS NULL
-          AND r_filter.store_id = o.store_id
-          AND r_filter.deleted_at IS NULL
-          AND r_filter.status != 'キャンセル'
-          AND r_filter.service_type = $${queryParams.length + 1}
-      )
-    )`;
     queryParams.push(serviceType);
+    const serviceTypeParam = `$${queryParams.length}`;
+
+    if (hasOwnerBusinessTypes) {
+      query += ` AND (
+        o.business_types IS NULL
+        OR cardinality(o.business_types) = 0
+        OR ${serviceTypeParam} = ANY(o.business_types)
+        OR o.business_types = ARRAY['daycare']::text[]
+        OR EXISTS (
+          SELECT 1
+          FROM dogs d_filter
+          JOIN reservations r_filter ON r_filter.dog_id = d_filter.id
+          WHERE d_filter.owner_id = o.id
+            AND d_filter.deleted_at IS NULL
+            AND r_filter.store_id = o.store_id
+            AND r_filter.deleted_at IS NULL
+            AND r_filter.status != 'キャンセル'
+            AND r_filter.service_type = ${serviceTypeParam}
+        )
+      )`;
+    } else {
+      query += ` AND (
+        NOT EXISTS (
+          SELECT 1
+          FROM dogs d_any
+          JOIN reservations r_any ON r_any.dog_id = d_any.id
+          WHERE d_any.owner_id = o.id
+            AND d_any.deleted_at IS NULL
+            AND r_any.store_id = o.store_id
+            AND r_any.deleted_at IS NULL
+            AND r_any.status != 'キャンセル'
+        )
+        OR EXISTS (
+          SELECT 1
+          FROM dogs d_filter
+          JOIN reservations r_filter ON r_filter.dog_id = d_filter.id
+          WHERE d_filter.owner_id = o.id
+            AND d_filter.deleted_at IS NULL
+            AND r_filter.store_id = o.store_id
+            AND r_filter.deleted_at IS NULL
+            AND r_filter.status != 'キャンセル'
+            AND r_filter.service_type = ${serviceTypeParam}
+        )
+      )`;
+    }
   }
 
   if (search) {
@@ -87,6 +115,19 @@ function buildOwnersListQuery(params: {
 const router = express.Router();
 router.use(authenticate);
 
+async function hasOwnersBusinessTypesColumn(): Promise<boolean> {
+  const result = await pool.query(
+    `SELECT EXISTS (
+       SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'owners'
+         AND column_name = 'business_types'
+     ) AS has_column`
+  );
+  return Boolean(result.rows[0]?.has_column);
+}
+
 // 飼い主一覧取得
 router.get('/', async function(req: AuthRequest, res): Promise<void> {
   try {
@@ -98,6 +139,7 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
     const { search, service_type } = queryParams;
     const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
     const searchValue = Array.isArray(search) ? search[0] : search;
+    const hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
     const { value: serviceTypeValue, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
     if (serviceTypeError) {
       sendBadRequest(res, serviceTypeError);
@@ -107,6 +149,7 @@ router.get('/', async function(req: AuthRequest, res): Promise<void> {
       storeId: req.storeId,
       search: searchValue,
       serviceType: serviceTypeValue,
+      hasOwnerBusinessTypes,
       pagination,
     });
     const result = await pool.query(query, params);
