@@ -93,7 +93,7 @@ export default function AISuggestion({
                 {inputTrace.map((item) => (
                   <div key={item.key} className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-muted-foreground">{item.label}</span>
-                    <span className={item.status === 'present' ? 'text-chart-2' : 'text-amber-600'}>
+                    <span className={item.status === 'present' ? 'text-chart-2' : 'text-chart-4'}>
                       {item.status === 'present' ? `入力あり${typeof item.count === 'number' ? ` (${item.count})` : ''}` : '未入力'}
                     </span>
                   </div>

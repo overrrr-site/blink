@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground active:scale-[0.98] transition-all"
           >
             <Icon icon="solar:arrow-left-linear" width="20" height="20" />
             <span className="text-sm">戻る</span>

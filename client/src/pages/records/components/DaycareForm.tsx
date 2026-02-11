@@ -86,13 +86,8 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                 type="button"
                 onClick={() => toggleActivity(value)}
                 className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center gap-2 ${
-                  !selected ? 'border border-border text-muted-foreground' : ''
+                  selected ? 'bg-primary/10 border-[1.5px] border-primary text-primary' : 'border border-border text-muted-foreground bg-white'
                 }`}
-                style={{
-                  background: selected ? '#FFF7ED' : '#FFFFFF',
-                  border: selected ? '1.5px solid #F97316' : undefined,
-                  color: selected ? '#F97316' : undefined,
-                }}
                 aria-pressed={selected}
               >
                 <Icon icon={icon} width="18" height="18" />
@@ -142,13 +137,8 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                     type="button"
                     onClick={() => toggleToilet(key, 'urination')}
                     className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center justify-start gap-1.5 ${
-                      !slotData.urination ? 'border border-border text-muted-foreground' : ''
+                      slotData.urination ? 'bg-blue-100 border-[1.5px] border-blue-500 text-blue-500' : 'border border-border text-muted-foreground bg-white'
                     }`}
-                    style={{
-                      background: slotData.urination ? '#DBEAFE' : '#FFFFFF',
-                      border: slotData.urination ? '1.5px solid #3B82F6' : undefined,
-                      color: slotData.urination ? '#3B82F6' : undefined,
-                    }}
                     aria-pressed={slotData.urination}
                   >
                     <Icon icon="mdi:water" width="16" height="16" />
@@ -158,13 +148,8 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                     type="button"
                     onClick={() => toggleToilet(key, 'defecation')}
                     className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center justify-start gap-1.5 ${
-                      !slotData.defecation ? 'border border-border text-muted-foreground' : ''
+                      slotData.defecation ? 'bg-chart-4/10 border-[1.5px] border-chart-4 text-chart-4' : 'border border-border text-muted-foreground bg-white'
                     }`}
-                    style={{
-                      background: slotData.defecation ? '#FEF3C7' : '#FFFFFF',
-                      border: slotData.defecation ? '1.5px solid #F59E0B' : undefined,
-                      color: slotData.defecation ? '#D97706' : undefined,
-                    }}
                     aria-pressed={slotData.defecation}
                   >
                     <Icon icon="fa-solid:poop" width="16" height="16" />

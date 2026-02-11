@@ -113,7 +113,7 @@ export default function ReservationEdit(): JSX.Element {
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-2 safe-area-pt">
         <button
           onClick={function() { navigate('/home/reservations'); }}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
@@ -217,7 +217,7 @@ export default function ReservationEdit(): JSX.Element {
             <button
               type="button"
               onClick={function() { navigate(`/home/pre-visit/${reservation.id}`); }}
-              className={`w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
                 reservation.has_pre_visit_input
                   ? 'bg-chart-2/10 text-chart-2 border border-chart-2/20 hover:bg-chart-2/20'
                   : 'bg-chart-3/10 text-chart-3 border border-chart-3/20 hover:bg-chart-3/20'
@@ -243,7 +243,7 @@ export default function ReservationEdit(): JSX.Element {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? (
               <>

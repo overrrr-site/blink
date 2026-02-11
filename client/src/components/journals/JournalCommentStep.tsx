@@ -72,7 +72,7 @@ const JournalCommentStep = memo(function JournalCommentStep({
         type="button"
         onClick={onGenerateComment}
         disabled={generating}
-        className="w-full py-3 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full py-3 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium shadow-md hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {generating ? (
           <>

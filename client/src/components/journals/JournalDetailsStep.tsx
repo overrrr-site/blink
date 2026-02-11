@@ -48,7 +48,7 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
           onClick={onFillFromLastRecord}
           disabled={loadingLastRecord}
           className="w-full py-3 rounded-xl border-2 border-primary/30 text-primary text-sm font-bold
-                     flex items-center justify-center gap-2 active:bg-primary/5 transition-colors
+                     flex items-center justify-center gap-2 active:bg-primary/5 active:scale-[0.98] transition-all
                      disabled:opacity-50"
         >
           {loadingLastRecord ? (
@@ -70,7 +70,7 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
         <button
           type="button"
           onClick={onToggleDetails}
-          className="w-full px-4 py-3 flex items-center justify-between"
+          className="w-full px-4 py-3 flex items-center justify-between active:scale-[0.98] transition-all"
         >
           <div className="flex items-center gap-2">
             <Icon icon="solar:box-bold" className="size-5 text-chart-1" />
@@ -153,7 +153,7 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
               <button
                 type="button"
                 onClick={() => onRemoveMeal(index)}
-                className="text-destructive text-xs font-medium min-h-[32px] px-2"
+                className="text-destructive text-xs font-medium min-h-[32px] px-2 active:scale-90 transition-all"
               >
                 削除
               </button>
@@ -187,7 +187,7 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
         <button
           type="button"
           onClick={onAddMeal}
-          className="w-full py-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground font-medium flex items-center justify-center gap-1"
+          className="w-full py-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground font-medium flex items-center justify-center gap-1 active:scale-[0.98] transition-all"
         >
           <Icon icon="solar:add-circle-linear" className="size-4" />
           追加
@@ -211,7 +211,7 @@ const JournalDetailsStep = memo(function JournalDetailsStep({
                       key={option.value}
                       type="button"
                       onClick={() => onTrainingChange(item.id, option.value)}
-                      className={`size-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                      className={`size-10 rounded-full flex items-center justify-center text-sm font-bold active:scale-95 transition-all ${
                         formData.training_data[item.id] === option.value
                           ? option.color + ' ring-2 ring-primary'
                           : 'text-muted-foreground/30 hover:bg-muted active:bg-muted'

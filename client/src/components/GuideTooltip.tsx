@@ -181,7 +181,7 @@ function GuideTooltip({
           {onSkip && (
             <button
               onClick={onSkip}
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
             >
               スキップ
             </button>
@@ -189,14 +189,14 @@ function GuideTooltip({
           {isLast ? (
             <button
               onClick={onComplete}
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all"
             >
               完了
             </button>
           ) : (
             <button
               onClick={onNext}
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all"
             >
               次へ
             </button>

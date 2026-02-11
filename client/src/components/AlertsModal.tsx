@@ -116,7 +116,7 @@ function AlertsModal({ isOpen, onClose }: AlertsModalProps): JSX.Element | null 
           </h2>
           <button
             onClick={onClose}
-            className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-full hover:bg-muted active:scale-95 transition-all"
             aria-label="閉じる"
           >
             <Icon icon="solar:close-circle-bold" className="size-6 text-muted-foreground" />

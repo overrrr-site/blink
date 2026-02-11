@@ -24,7 +24,7 @@ function EmptyState({ icon, title, description, action }: EmptyStateProps): JSX.
       {action && (
         <button
           onClick={action.onClick}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm"
         >
           {action.icon && (
             <Icon icon={action.icon} width="20" height="20" />

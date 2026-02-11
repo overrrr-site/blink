@@ -99,7 +99,7 @@ export default function ReservationDetailsStep({
           <button
             type="button"
             onClick={onBack}
-            className="px-6 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+            className="px-6 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
           >
             戻る
           </button>

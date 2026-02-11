@@ -67,7 +67,7 @@ export default function ContractsSection({
           <Icon icon="solar:document-bold" className="text-chart-4 size-5" />
           契約情報
         </h3>
-        <button onClick={onCreate} className="text-xs font-bold text-primary flex items-center gap-1">
+        <button onClick={onCreate} className="text-xs font-bold text-primary flex items-center gap-1 active:scale-[0.98] transition-all">
           <Icon icon="solar:add-circle-bold" className="size-3.5" />
           新規契約
         </button>
@@ -152,7 +152,7 @@ export default function ContractsSection({
             <p className="text-xs text-muted-foreground mb-4">契約を登録して管理を開始しましょう</p>
             <button
               onClick={onCreate}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 mx-auto hover:bg-primary/90 transition-colors"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 mx-auto hover:bg-primary/90 active:scale-[0.98] transition-all"
               aria-label="新規契約を追加"
             >
               <Icon icon="solar:add-circle-bold" className="size-5" />

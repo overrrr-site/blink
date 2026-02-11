@@ -46,7 +46,7 @@ export default function PhotoViewer({ photos, initialIndex = 0, title, onClose }
           <button
             type="button"
             onClick={onClose}
-            className="size-10 rounded-full bg-white/10 flex items-center justify-center"
+            className="size-10 rounded-full bg-white/10 flex items-center justify-center active:scale-95 transition-all"
             aria-label="閉じる"
           >
             <Icon icon="solar:close-circle-bold" width="22" height="22" className="text-white" />

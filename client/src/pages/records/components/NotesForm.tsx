@@ -38,7 +38,7 @@ export default function NotesForm({
             {inputTrace.map((item) => (
               <div key={item.key} className="flex items-center justify-between text-xs gap-2">
                 <span className="text-muted-foreground">{item.label}</span>
-                <span className={item.status === 'present' ? 'text-chart-2' : 'text-amber-600'}>
+                <span className={item.status === 'present' ? 'text-chart-2' : 'text-chart-4'}>
                   {item.status === 'present'
                     ? `入力あり${typeof item.count === 'number' ? ` (${item.count})` : ''}`
                     : '未入力'}
@@ -48,14 +48,14 @@ export default function NotesForm({
           </div>
           {missingItems.length > 0 && (
             <div className="mt-3 border-t border-border pt-2">
-              <p className="text-[11px] text-amber-700 mb-2">入力を補うと精度が上がります</p>
+              <p className="text-[11px] text-chart-4 mb-2">入力を補うと精度が上がります</p>
               <div className="flex flex-wrap gap-1.5">
                 {missingItems.map((item) => (
                   <button
                     key={item.key}
                     type="button"
                     onClick={() => onJumpToField?.(item.key)}
-                    className="px-2 py-1 rounded-md text-[11px] bg-white border border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors"
+                    className="px-2 py-1 rounded-lg text-[11px] bg-white border border-chart-4/30 text-chart-4 hover:bg-chart-4/10 transition-colors"
                   >
                     {item.label}を入力
                   </button>

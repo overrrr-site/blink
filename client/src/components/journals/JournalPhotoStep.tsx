@@ -68,7 +68,7 @@ const JournalPhotoStep = memo(function JournalPhotoStep({
             <button
               type="button"
               onClick={() => onRemovePhoto(index)}
-              className="absolute top-2 left-2 size-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 transition-opacity"
+              className="absolute top-2 left-2 size-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 active:scale-90 transition-all"
               aria-label="写真を削除"
             >
               <Icon icon="solar:close-circle-bold" className="size-5" />
@@ -77,7 +77,7 @@ const JournalPhotoStep = memo(function JournalPhotoStep({
               <button
                 type="button"
                 onClick={() => onApplyAnalysis(index)}
-                className="absolute top-2 right-2 size-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 size-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg opacity-90 hover:opacity-100 active:scale-90 transition-all"
                 title="解析結果をコメントに追加"
                 aria-label="解析結果をコメントに追加"
               >
@@ -91,7 +91,7 @@ const JournalPhotoStep = memo(function JournalPhotoStep({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="aspect-square bg-muted rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            className="aspect-square bg-muted rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all"
           >
             <Icon icon="solar:camera-add-bold" width="40" height="40" />
             <span className="text-sm font-medium">写真を追加</span>

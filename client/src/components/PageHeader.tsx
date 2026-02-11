@@ -27,7 +27,7 @@ function PageHeader({ title, backPath, onBack, rightContent }: PageHeaderProps):
         <button
           onClick={handleBack}
           aria-label="戻る"
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>

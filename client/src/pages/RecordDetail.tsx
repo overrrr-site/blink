@@ -24,6 +24,7 @@ import { useRecordDetail } from './records/hooks/useRecordDetail'
 import { getRecordLabel } from '../domain/businessTypeConfig'
 import { useAuthStore } from '../store/authStore'
 import { calculateAge } from '../utils/dog'
+import { normalizePhotosData } from '../utils/recordPhotos'
 import { BTN_PRIMARY, BTN_SECONDARY } from '../utils/styles'
 import { getBusinessTypeColors } from '../utils/businessTypeColors'
 

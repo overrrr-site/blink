@@ -88,7 +88,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
   return (
     <button
       onClick={() => onSelect(date)}
-      className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center transition-all min-w-[40px] min-h-[40px]
+      className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center transition-all min-w-[48px] min-h-[48px]
         active:scale-95 ${
           isSelected
             ? 'bg-primary text-primary-foreground shadow-md'
@@ -212,7 +212,7 @@ export default function ReservationsCalendar(): JSX.Element {
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => navigate(-1)}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
           aria-label="戻る"
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
@@ -243,7 +243,7 @@ export default function ReservationsCalendar(): JSX.Element {
                 showToast('カレンダーのエクスポートに失敗しました', 'error');
               });
           }}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center text-primary rounded-full active:bg-primary/10 transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center text-primary rounded-full active:bg-primary/10 active:scale-95 transition-all"
           aria-label="カレンダーをエクスポート"
           title="iCS形式でエクスポート"
         >
@@ -438,7 +438,7 @@ export default function ReservationsCalendar(): JSX.Element {
                     {(isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (
                       <button
                         onClick={() => navigate(`/home/pre-visit/${reservation.id}`)}
-                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all ${
                           reservation.has_pre_visit_input
                             ? 'border border-chart-2/30 bg-chart-2/5 text-chart-2 active:bg-chart-2/10'
                             : 'border border-chart-3/30 bg-chart-3/5 text-chart-3 active:bg-chart-3/10'
@@ -451,7 +451,7 @@ export default function ReservationsCalendar(): JSX.Element {
                     <div className="flex gap-2">
                       <button
                         onClick={() => navigate(`/home/reservations/${reservation.id}/edit`)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold active:bg-primary/10 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold active:bg-primary/10 active:scale-[0.98] transition-all"
                       >
                         <Icon icon="solar:pen-bold" width="18" height="18" />
                         変更
@@ -460,7 +460,7 @@ export default function ReservationsCalendar(): JSX.Element {
                       {isFuture(parseISO(reservation.reservation_date)) && (
                         <button
                           onClick={function() { handleCancelReservation(reservation.id); }}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 transition-colors"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive text-sm font-bold active:bg-destructive/10 active:scale-[0.98] transition-all"
                         >
                           <Icon icon="solar:trash-bin-trash-bold" width="18" height="18" />
                           キャンセル
@@ -478,7 +478,7 @@ export default function ReservationsCalendar(): JSX.Element {
             <p className="text-muted-foreground mb-3">この日の予約はありません</p>
             <button
               onClick={() => navigate('/home/reservations/new')}
-              className="text-primary text-sm font-bold hover:underline"
+              className="text-primary text-sm font-bold hover:underline active:scale-[0.98] transition-all"
             >
               予約を作成する →
             </button>

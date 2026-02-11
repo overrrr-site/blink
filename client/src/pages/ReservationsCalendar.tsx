@@ -183,7 +183,7 @@ const ReservationsCalendar = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors print:hidden"
+              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted active:scale-95 transition-all print:hidden"
               aria-label="印刷"
               title="印刷"
             >
@@ -214,7 +214,7 @@ const ReservationsCalendar = () => {
                     showToast('カレンダーのエクスポートに失敗しました', 'error')
                   })
               }}
-              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors"
+              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted active:scale-95 transition-all"
               aria-label="カレンダーをiCS形式でダウンロード"
               title="iCS形式でダウンロード"
             >
@@ -223,7 +223,7 @@ const ReservationsCalendar = () => {
             </button>
             <button
               onClick={() => navigate(getCreateUrl())}
-              className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors min-h-[44px] print:hidden"
+              className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[44px] print:hidden"
             >
               <Icon icon="solar:add-circle-bold" className="size-4" />
               新規予約
@@ -303,7 +303,7 @@ const ReservationsCalendar = () => {
                     e.stopPropagation()
                     setSelectedDate(day)
                   }}
-                  className="w-full h-full flex flex-col items-center justify-start min-h-[48px]"
+                  className="w-full h-full flex flex-col items-center justify-start min-h-[48px] active:scale-[0.98] transition-all"
                   aria-label={`${format(day, 'M月d日')}の予約を表示`}
                 >
                   <span className={`text-xs ${isSelected ? 'font-bold' : isToday(day) ? 'font-bold' : ''}`}>
@@ -349,7 +349,7 @@ const ReservationsCalendar = () => {
                 <p className="text-xs text-muted-foreground mb-4">新しい予約を追加してスケジュールを管理しましょう</p>
                 <button
                   onClick={() => navigate(getCreateUrl())}
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all"
                   aria-label="新規予約を追加"
                 >
                   <Icon icon="solar:add-circle-bold" className="size-5" />

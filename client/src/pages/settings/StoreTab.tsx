@@ -489,7 +489,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
         </div>
         <button
           onClick={() => setShowStoreInfoModal(true)}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-all active:scale-[0.98] border-b border-border"
         >
           <div className="flex items-center gap-3">
             <Icon icon="solar:buildings-bold" width="20" height="20" className="text-muted-foreground" />
@@ -502,7 +502,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
         </button>
         <button
           onClick={() => setShowBusinessHoursModal(true)}
-          className={`w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors ${isDaycareEnabled ? 'border-b border-border' : ''}`}
+          className={`w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-all active:scale-[0.98] ${isDaycareEnabled ? 'border-b border-border' : ''}`}
         >
           <div className="flex items-center gap-3">
             <Icon icon="solar:calendar-bold" width="20" height="20" className="text-muted-foreground" />
@@ -557,7 +557,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
           <button
             onClick={() => setQrExpanded(!qrExpanded)}
-            className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+            className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-all active:scale-[0.99]"
           >
             <h2 className="text-sm font-bold font-heading flex items-center gap-2">
               <Icon icon="solar:qr-code-bold" width="16" height="16" className="text-primary" />
@@ -586,14 +586,14 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                   </div>
                   <button
                     onClick={handlePrintQrCode}
-                    className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                    className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-all active:scale-[0.98] text-sm font-bold hover:bg-primary/90"
                   >
                     <Icon icon="solar:printer-bold" width="16" height="16" />
                     QRコードを印刷
                   </button>
                   <button
                     onClick={() => setShowQrModal(true)}
-                    className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
+                    className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-all active:scale-[0.98] text-sm font-medium"
                   >
                     <Icon icon="solar:eye-bold" width="16" height="16" />
                     大きく表示
@@ -607,7 +607,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                   <button
                     onClick={fetchQrCode}
                     disabled={isQrLoading}
-                    className="text-xs text-primary hover:underline disabled:opacity-50"
+                    className="text-xs text-primary hover:underline disabled:opacity-50 transition-all active:scale-[0.98]"
                   >
                     再試行
                   </button>
@@ -627,7 +627,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
           </h2>
           <button
             onClick={() => setShowStaffInviteModal(true)}
-            className="text-xs font-bold text-primary flex items-center gap-1"
+            className="text-xs font-bold text-primary flex items-center gap-1 transition-all active:scale-[0.98]"
           >
             <Icon icon="solar:add-circle-bold" width="14" height="14" />
             追加
@@ -668,14 +668,14 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                 )}
                 <button
                   onClick={() => navigate(`/settings/staff/${staff.id}`)}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                  className="p-2 rounded-full hover:bg-muted transition-all active:scale-95"
                   aria-label={`${staff.name}の詳細`}
                 >
                   <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
                 </button>
                 <button
                   onClick={(e) => handleDeleteStaff(staff.id, e)}
-                  className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
+                  className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-all active:scale-95"
                   aria-label={`${staff.name}を削除`}
                 >
                   <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
@@ -696,7 +696,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
             </h2>
             <button
               onClick={() => navigate('/settings/training/new')}
-              className="text-xs font-bold text-primary flex items-center gap-1"
+              className="text-xs font-bold text-primary flex items-center gap-1 transition-all active:scale-[0.98]"
             >
               <Icon icon="solar:add-circle-bold" width="14" height="14" />
               追加
@@ -730,7 +730,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                           <button
                             onClick={(e) => handleReorderTrainingItem(category, item.id, 'up', e)}
                             disabled={index === 0}
-                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed min-w-[40px] min-h-[40px] flex items-center justify-center"
+                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] flex items-center justify-center"
                             aria-label={`${item.item_label}を上に移動`}
                           >
                             <Icon icon="solar:alt-arrow-up-linear" width="16" height="16" />
@@ -738,21 +738,21 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                           <button
                             onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
                             disabled={index === items.length - 1}
-                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed min-w-[40px] min-h-[40px] flex items-center justify-center"
+                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] flex items-center justify-center"
                             aria-label={`${item.item_label}を下に移動`}
                           >
                             <Icon icon="solar:alt-arrow-down-linear" width="16" height="16" />
                           </button>
                           <button
                             onClick={() => navigate(`/settings/training/${item.id}`)}
-                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 min-w-[48px] min-h-[48px] flex items-center justify-center"
                             aria-label={`${item.item_label}を編集`}
                           >
                             <Icon icon="solar:pen-bold" width="16" height="16" />
                           </button>
                           <button
                             onClick={(e) => handleDeleteTrainingItem(item.id, e)}
-                            className="p-2 text-destructive rounded hover:bg-destructive/10 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                            className="p-2 text-destructive rounded hover:bg-destructive/10 transition-all active:scale-90 min-w-[48px] min-h-[48px] flex items-center justify-center"
                             aria-label={`${item.item_label}を削除`}
                           >
                             <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
@@ -980,13 +980,13 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleSaveRoom(room)}
-                          className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[40px]"
+                          className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] min-h-[48px]"
                         >
                           保存
                         </button>
                         <button
                           onClick={() => handleDeleteRoom(room.id)}
-                          className="px-3 py-2 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors min-h-[40px]"
+                          className="px-3 py-2 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all active:scale-[0.98] min-h-[48px]"
                         >
                           削除
                         </button>
@@ -1056,7 +1056,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                     </div>
                     <button
                       onClick={handleCreateRoom}
-                      className="w-full py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
+                      className="w-full py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-all active:scale-[0.98]"
                     >
                       部屋を追加
                     </button>
@@ -1076,7 +1076,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               <h2 className="text-lg font-bold">店舗基本情報</h2>
               <button
                 onClick={() => setShowStoreInfoModal(false)}
-                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-all active:scale-95"
                 aria-label="閉じる"
               >
                 <Icon icon="solar:close-bold" width="24" height="24" />
@@ -1113,7 +1113,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowStoreInfoModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-all active:scale-[0.98]"
                 >
                   キャンセル
                 </button>
@@ -1124,7 +1124,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                     const phone = (document.getElementById('store-phone') as HTMLInputElement)?.value
                     handleSaveStoreInfo({ name, address, phone })
                   }}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98]"
                 >
                   保存
                 </button>
@@ -1142,7 +1142,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               <h2 className="text-lg font-bold">営業日・定休日</h2>
               <button
                 onClick={() => setShowBusinessHoursModal(false)}
-                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-all active:scale-95"
                 aria-label="閉じる"
               >
                 <Icon icon="solar:close-bold" width="24" height="24" />
@@ -1166,7 +1166,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                             : [...currentClosed, dayKey]
                           setStoreInfo((prev) => ({ ...(prev ?? {}), closed_days: newClosed }))
                         }}
-                        className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                        className={`py-2 rounded-lg text-xs font-medium transition-all active:scale-[0.98] ${
                           isClosed
                             ? 'bg-destructive/10 text-destructive border border-destructive/30'
                             : 'bg-muted/50 text-muted-foreground border border-border'
@@ -1201,7 +1201,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowBusinessHoursModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-all active:scale-[0.98]"
                 >
                   キャンセル
                 </button>
@@ -1212,7 +1212,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                     const closedDays = storeInfo?.closed_days || []
                     handleSaveBusinessHours({ open, close }, Array.isArray(closedDays) ? closedDays : [])
                   }}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98]"
                 >
                   保存
                 </button>
@@ -1236,7 +1236,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                   setInviteIsOwner(false)
                   setInviteBusinessTypes([])
                 }}
-                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-all active:scale-95"
                 aria-label="閉じる"
               >
                 <Icon icon="solar:close-bold" width="24" height="24" />
@@ -1275,7 +1275,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                   <button
                     type="button"
                     onClick={() => setInviteIsOwner(false)}
-                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors border ${
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.98] border ${
                       !inviteIsOwner
                         ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/50'
@@ -1286,7 +1286,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                   <button
                     type="button"
                     onClick={() => setInviteIsOwner(true)}
-                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors border ${
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.98] border ${
                       inviteIsOwner
                         ? 'bg-chart-2 text-white border-chart-2'
                         : 'bg-muted/50 text-muted-foreground border-border hover:border-chart-2/50'
@@ -1316,7 +1316,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                               isSelected ? prev.filter(t => t !== type) : [...prev, type]
                             )
                           }}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors border ${
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all active:scale-[0.98] border ${
                             isSelected
                               ? 'border-2'
                               : 'border-border hover:border-primary/30'
@@ -1349,14 +1349,14 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                     setInviteIsOwner(false)
                     setInviteBusinessTypes([])
                   }}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-all active:scale-[0.98]"
                 >
                   キャンセル
                 </button>
                 <button
                   onClick={handleInviteStaff}
                   disabled={inviting || !inviteEmail || !inviteName}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   {inviting ? '送信中...' : '招待メールを送信'}
                 </button>
@@ -1374,7 +1374,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               <h2 className="text-lg font-bold">登園用QRコード</h2>
               <button
                 onClick={() => setShowQrModal(false)}
-                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-all active:scale-95"
                 aria-label="閉じる"
               >
                 <Icon icon="solar:close-bold" width="24" height="24" />
@@ -1389,7 +1389,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               </p>
               <button
                 onClick={handlePrintQrCode}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-all active:scale-[0.98] text-sm font-bold hover:bg-primary/90"
               >
                 <Icon icon="solar:printer-bold" width="16" height="16" />
                 印刷

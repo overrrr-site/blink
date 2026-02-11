@@ -71,7 +71,7 @@ const DogEditHealth = memo(function DogEditHealth({
                   <button
                     type="button"
                     onClick={() => onRemoveFile('mixed')}
-                    className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                    className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
                   >
                     <Icon icon="solar:trash-bin-trash-bold" width="20" height="20" />
                   </button>
@@ -81,7 +81,7 @@ const DogEditHealth = memo(function DogEditHealth({
                   type="button"
                   onClick={() => mixedVaccineInputRef.current?.click()}
                   disabled={uploading === 'mixed'}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {uploading === 'mixed' ? (
                     <>
@@ -139,7 +139,7 @@ const DogEditHealth = memo(function DogEditHealth({
                   <button
                     type="button"
                     onClick={() => onRemoveFile('rabies')}
-                    className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                    className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
                   >
                     <Icon icon="solar:trash-bin-trash-bold" width="20" height="20" />
                   </button>
@@ -149,7 +149,7 @@ const DogEditHealth = memo(function DogEditHealth({
                   type="button"
                   onClick={() => rabiesVaccineInputRef.current?.click()}
                   disabled={uploading === 'rabies'}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {uploading === 'rabies' ? (
                     <>

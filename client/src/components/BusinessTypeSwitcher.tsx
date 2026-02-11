@@ -135,7 +135,7 @@ export default function BusinessTypeSwitcher(): JSX.Element {
           {/* すべての業種 */}
           <button
             onClick={() => handleSelect(null)}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-4 py-3 text-left active:scale-[0.98] transition-all ${
               selectedBusinessType === null ? 'bg-muted' : 'hover:bg-muted/50'
             }`}
             role="option"
@@ -160,7 +160,7 @@ export default function BusinessTypeSwitcher(): JSX.Element {
               <button
                 key={type}
                 onClick={() => handleSelect(type)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left active:scale-[0.98] transition-all ${
                   isSelected ? 'bg-muted' : 'hover:bg-muted/50'
                 }`}
                 role="option"

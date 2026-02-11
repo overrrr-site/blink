@@ -58,7 +58,7 @@ export default function DogSelectStep({
           <button
             type="button"
             onClick={onToggleRecent}
-            className={`text-xs font-bold px-3 py-1.5 rounded-full transition-colors ${
+            className={`text-xs font-bold px-3 py-1.5 rounded-full active:scale-[0.98] transition-all ${
               showRecentOnly
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -160,14 +160,14 @@ export default function DogSelectStep({
         <button
           type="button"
           onClick={onBack}
-          className="px-6 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors min-h-[48px]"
+          className="px-6 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all min-h-[48px]"
         >
           戻る
         </button>
         <button
           type="button"
           onClick={handleNext}
-          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors min-h-[48px]"
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[48px]"
         >
           次へ
         </button>

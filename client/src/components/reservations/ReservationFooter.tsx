@@ -37,7 +37,7 @@ export default function ReservationFooter({
       <button
         onClick={onSubmit}
         disabled={isSaving || isDisabled}
-        className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+        className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
       >
         {isSaving ? (
           '登録中...'

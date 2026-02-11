@@ -18,7 +18,7 @@ function ToggleSwitch({ checked, onChange }: ToggleSwitchProps) {
   return (
     <button
       onClick={onChange}
-      className={`w-14 h-8 rounded-full relative transition-colors min-w-[56px] ${
+      className={`w-14 h-8 rounded-full relative transition-all active:scale-[0.98] min-w-[56px] ${
         checked ? 'bg-primary' : 'bg-muted'
       }`}
       role="switch"
@@ -276,7 +276,7 @@ function IntegrationTab() {
               </div>
               <button
                 onClick={handleGoogleCalendarDisconnect}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium text-destructive"
+                className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-all active:scale-[0.98] text-sm font-medium text-destructive"
               >
                 <Icon icon="solar:unlink-bold" width="16" height="16" />
                 連携を解除
@@ -292,7 +292,7 @@ function IntegrationTab() {
               </div>
               <button
                 onClick={handleGoogleCalendarConnect}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-all active:scale-[0.98] text-sm font-bold hover:bg-primary/90"
               >
                 <Icon icon="solar:calendar-bold" width="16" height="16" />
                 Googleカレンダーと連携
@@ -348,7 +348,7 @@ function IntegrationTab() {
               <button
                 onClick={handleTestLineMessage}
                 disabled={testingLine}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-accent hover:bg-accent/80 rounded-xl transition-colors text-sm font-bold disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all active:scale-[0.98] text-sm font-bold disabled:opacity-50"
               >
                 {testingLine ? (
                   <>
@@ -380,14 +380,14 @@ function IntegrationTab() {
 
               <button
                 onClick={handleLineConnect}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium"
+                className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-all active:scale-[0.98] text-sm font-medium"
               >
                 <Icon icon="solar:settings-bold" width="16" height="16" />
                 設定を変更
               </button>
               <button
                 onClick={handleLineDisconnect}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors text-sm font-medium text-destructive"
+                className="w-full flex items-center justify-center gap-2 p-3 bg-muted/50 hover:bg-muted rounded-xl transition-all active:scale-[0.98] text-sm font-medium text-destructive"
               >
                 <Icon icon="solar:unlink-bold" width="16" height="16" />
                 連携を解除
@@ -403,7 +403,7 @@ function IntegrationTab() {
               </div>
               <button
                 onClick={handleLineConnect}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-colors text-sm font-bold hover:bg-primary/90"
+                className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-xl transition-all active:scale-[0.98] text-sm font-bold hover:bg-primary/90"
               >
                 <Icon icon="solar:chat-round-bold" width="16" height="16" />
                 LINE公式アカウントと連携
@@ -443,7 +443,7 @@ function IntegrationTab() {
                       navigator.clipboard.writeText(webhookUrl);
                       showToast('Webhook URLをコピーしました', 'info');
                     }}
-                    className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+                    className="mt-2 text-xs text-primary hover:underline flex items-center gap-1 transition-all active:scale-[0.98]"
                   >
                     <Icon icon="solar:copy-bold" width="12" height="12" />
                     URLをコピー
@@ -532,7 +532,7 @@ function IntegrationTab() {
               <h2 className="text-lg font-bold">LINE公式アカウント連携</h2>
               <button
                 onClick={closeLineModal}
-                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="size-12 flex items-center justify-center rounded-full hover:bg-muted transition-all active:scale-95"
                 aria-label="閉じる"
               >
                 <Icon icon="solar:close-bold" width="24" height="24" />
@@ -587,14 +587,14 @@ function IntegrationTab() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={closeLineModal}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-all active:scale-[0.98]"
                 >
                   キャンセル
                 </button>
                 <button
                   onClick={handleLineSave}
                   disabled={savingLine || !lineSettings.channelId || !lineSettings.channelSecret || !lineSettings.channelAccessToken}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   {savingLine ? '保存中...' : '保存'}
                 </button>

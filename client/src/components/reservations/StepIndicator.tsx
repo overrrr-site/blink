@@ -55,7 +55,7 @@ export default function StepIndicator({
                     onStepChange(stepNumber)
                   }
                 }}
-                className={`flex-1 flex items-center gap-1.5 py-2 px-2 rounded-lg text-xs font-medium transition-colors ${getStepButtonClass(stepNumber, currentStep)}`}
+                className={`flex-1 flex items-center gap-1.5 py-2 px-2 rounded-lg text-xs font-medium active:scale-[0.98] transition-all ${getStepButtonClass(stepNumber, currentStep)}`}
                 disabled={isDisabled}
               >
                 <span

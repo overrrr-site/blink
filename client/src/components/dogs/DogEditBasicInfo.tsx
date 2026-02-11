@@ -46,7 +46,7 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
                 <button
                   type="button"
                   onClick={onRemovePhoto}
-                  className="absolute -top-2 -right-2 size-8 rounded-full bg-destructive text-white flex items-center justify-center shadow-lg"
+                  className="absolute -top-2 -right-2 size-8 rounded-full bg-destructive text-white flex items-center justify-center shadow-lg active:scale-90 transition-all"
                 >
                   <Icon icon="solar:close-circle-bold" width="20" height="20" />
                 </button>
@@ -72,7 +72,7 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
               type="button"
               onClick={() => photoInputRef.current?.click()}
               disabled={uploading === 'photo'}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-primary bg-primary/10 text-sm text-primary font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-primary bg-primary/10 text-sm text-primary font-medium hover:bg-primary/20 active:scale-[0.98] transition-all disabled:opacity-50"
             >
               {uploading === 'photo' ? (
                 <>
@@ -89,7 +89,7 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
             <button
               type="button"
               onClick={onOpenPhotoModal}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border bg-muted/30 text-sm text-foreground font-medium hover:bg-muted transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border bg-muted/30 text-sm text-foreground font-medium hover:bg-muted active:scale-[0.98] transition-all"
             >
               <Icon icon="solar:gallery-bold" width="20" height="20" />
               日誌から選択

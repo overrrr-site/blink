@@ -36,7 +36,7 @@ export function SkeletonReservationCard(): JSX.Element {
         </div>
       </div>
       <Skeleton className="h-8 w-full rounded-lg mb-2" />
-      <Skeleton className="h-6 w-full rounded-md" />
+      <Skeleton className="h-6 w-full rounded-lg" />
     </div>
   )
 }

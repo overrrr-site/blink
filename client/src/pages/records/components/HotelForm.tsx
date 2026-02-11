@@ -107,7 +107,7 @@ export default function HotelForm({ data, onChange, mode = 'full' }: HotelFormPr
                 <button
                   type="button"
                   onClick={() => handleFieldChange('nights', Math.max(1, nights - 1))}
-                  className="size-11 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 transition-colors"
+                  className="size-11 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 active:scale-95 transition-all"
                 >
                   <Icon icon="solar:minus-circle-bold" width="16" height="16" />
                 </button>
@@ -115,7 +115,7 @@ export default function HotelForm({ data, onChange, mode = 'full' }: HotelFormPr
                 <button
                   type="button"
                   onClick={() => handleFieldChange('nights', nights + 1)}
-                  className="size-11 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 transition-colors"
+                  className="size-11 rounded-lg border border-cyan-200 bg-white flex items-center justify-center text-cyan-600 hover:bg-cyan-50 active:scale-95 transition-all"
                 >
                   <Icon icon="solar:add-circle-bold" width="16" height="16" />
                 </button>
@@ -147,7 +147,7 @@ export default function HotelForm({ data, onChange, mode = 'full' }: HotelFormPr
             <button
               type="button"
               onClick={handleAddCareLog}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-border text-xs font-bold text-foreground hover:bg-background min-h-[40px]"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-border text-xs font-bold text-foreground hover:bg-background active:scale-[0.98] transition-all min-h-[48px]"
             >
               <Icon icon="solar:add-circle-bold" width="14" height="14" />
               追加
@@ -211,7 +211,7 @@ export default function HotelForm({ data, onChange, mode = 'full' }: HotelFormPr
                     <button
                       type="button"
                       onClick={() => handleRemoveCareLog(index)}
-                      className="mt-5 inline-flex items-center justify-center size-10 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10"
+                      className="mt-5 inline-flex items-center justify-center size-10 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
                       aria-label="滞在ログを削除"
                     >
                       <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />

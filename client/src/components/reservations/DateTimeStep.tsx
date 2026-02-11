@@ -98,7 +98,7 @@ export default function DateTimeStep({ form, onChange, onNext }: DateTimeStepPro
         <button
           type="button"
           onClick={handleNext}
-          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors min-h-[48px]"
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[48px]"
         >
           次へ
         </button>

@@ -208,7 +208,7 @@ const ReservationCard = React.memo(function ReservationCard({
                 ? onCheckOut(reservation.id)  // トリミングは直接完了へ
                 : onCheckIn(reservation.id)}
               disabled={checkingIn === reservation.id}
-              className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2.5 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[44px] whitespace-nowrap"
+              className="flex items-center gap-1 bg-chart-4 text-white px-3 py-2.5 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[44px] whitespace-nowrap active:scale-[0.98] transition-all"
             >
               {checkingIn === reservation.id ? (
                 <Icon icon="solar:spinner-bold" className="size-4 animate-spin" />
@@ -221,7 +221,7 @@ const ReservationCard = React.memo(function ReservationCard({
           {isPresent && !reservation.has_journal && (
             <button
               onClick={() => onNavigateJournal(reservation.id)}
-              className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[40px] whitespace-nowrap"
+              className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[44px] whitespace-nowrap active:scale-[0.98] transition-all"
               aria-label={`${recordLabel}を作成`}
             >
               <Icon icon="solar:clipboard-add-bold" className="size-4" />
@@ -232,7 +232,7 @@ const ReservationCard = React.memo(function ReservationCard({
             <button
               onClick={() => onCheckOut(reservation.id)}
               disabled={checkingIn === reservation.id}
-              className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[40px] whitespace-nowrap"
+              className="flex items-center gap-1 bg-chart-3 text-white px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50 min-h-[44px] whitespace-nowrap active:scale-[0.98] transition-all"
               aria-label={labels.checkOut}
             >
               {checkingIn === reservation.id ? (
@@ -304,7 +304,7 @@ const ReservationCard = React.memo(function ReservationCard({
           <div className="flex border-t border-border">
             <button
               onClick={() => onNavigateReservation(reservation.id)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted active:scale-[0.98] transition-all"
             >
               <Icon icon="solar:calendar-bold" className="size-4" />
               予約詳細
@@ -312,7 +312,7 @@ const ReservationCard = React.memo(function ReservationCard({
             <div className="w-px bg-border" />
             <button
               onClick={() => onNavigateRecord(reservation.id)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted active:scale-[0.98] transition-all"
             >
               <Icon icon="solar:document-text-bold" className="size-4" />
               {recordLabel}
@@ -346,7 +346,7 @@ const QuickActionCard = React.memo(function QuickActionCard({
   return (
     <button
       onClick={onClick}
-      className={`w-full border rounded-xl p-3 flex items-center gap-3 transition-colors ${containerClassName}`}
+      className={`w-full border rounded-xl p-3 flex items-center gap-3 transition-all active:scale-[0.98] ${containerClassName}`}
     >
       <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${iconClassName}`}>
         <Icon icon={icon} className="size-5" />
@@ -373,7 +373,6 @@ function Dashboard(): JSX.Element {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const {
-    selectedBusinessType,
     effectiveBusinessType,
     recordLabel,
     dashboardEmptyState,
@@ -536,7 +535,7 @@ function Dashboard(): JSX.Element {
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`flex-none min-w-[84px] py-2.5 px-2 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-1 relative min-h-[44px] overflow-hidden ${
+                className={`flex-none min-w-[84px] py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 relative min-h-[44px] overflow-hidden active:scale-[0.98] ${
                   statusFilter === filter.id
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground font-normal'

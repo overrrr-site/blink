@@ -51,14 +51,14 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="flex gap-3">
             <button
               onClick={this.handleGoBack}
-              className="px-5 py-3 bg-muted text-foreground rounded-xl font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors min-h-[48px]"
+              className="px-5 py-3 bg-muted text-foreground rounded-xl font-medium flex items-center gap-2 hover:bg-muted/80 active:scale-[0.98] transition-all min-h-[48px]"
             >
               <Icon icon="solar:arrow-left-linear" width="20" height="20" />
               戻る
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="px-5 py-3 bg-primary text-primary-foreground rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors min-h-[48px]"
+              className="px-5 py-3 bg-primary text-primary-foreground rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[48px]"
             >
               <Icon icon="solar:refresh-bold" width="20" height="20" />
               再読み込み

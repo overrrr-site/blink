@@ -278,7 +278,7 @@ function OwnerForm({
                   key={type}
                   type="button"
                   onClick={() => toggleBusinessType(type)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px]"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium active:scale-[0.98] transition-all min-h-[44px]"
                   style={{
                     background: checked ? colors.pale : '#FFFFFF',
                     border: checked ? `1.5px solid ${colors.primary}` : '1px solid #E2E8F0',
@@ -361,7 +361,7 @@ function OwnerForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {loading ? (
             '処理中...'

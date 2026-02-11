@@ -41,7 +41,7 @@ function DogDetail(): JSX.Element {
         rightContent={
           <button
             onClick={() => navigate(`/dogs/${id}/edit`)}
-            className="flex items-center gap-2 px-4 py-2 text-primary font-bold rounded-xl active:bg-primary/10 transition-colors min-h-[44px]"
+            className="flex items-center gap-2 px-4 py-2 text-primary font-bold rounded-xl active:bg-primary/10 active:scale-[0.98] transition-all min-h-[44px]"
             aria-label="編集"
           >
             <Icon icon="solar:pen-bold" width="20" height="20" />

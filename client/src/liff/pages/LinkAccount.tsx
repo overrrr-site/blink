@@ -242,7 +242,7 @@ export default function LinkAccount() {
                   setError(null);
                 }}
                 disabled={loading}
-                className="w-full text-sm text-muted-foreground py-3
+                className="w-full text-sm text-muted-foreground py-3 active:scale-[0.98] transition-all
                            disabled:opacity-50"
               >
                 電話番号を変更

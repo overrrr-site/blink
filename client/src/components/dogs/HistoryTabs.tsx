@@ -50,7 +50,7 @@ export default function HistoryTabs({
         <div className="flex">
           <button
             onClick={() => onTabChange('reservations')}
-            className={`flex-1 py-3 text-sm font-bold transition-colors ${
+            className={`flex-1 py-3 text-sm font-bold active:scale-[0.98] transition-all ${
               activeTab === 'reservations'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-muted-foreground'
@@ -60,7 +60,7 @@ export default function HistoryTabs({
           </button>
           <button
             onClick={() => onTabChange('journals')}
-            className={`flex-1 py-3 text-sm font-bold transition-colors ${
+            className={`flex-1 py-3 text-sm font-bold active:scale-[0.98] transition-all ${
               activeTab === 'journals'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-muted-foreground'

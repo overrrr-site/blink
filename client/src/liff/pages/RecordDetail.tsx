@@ -97,7 +97,7 @@ export default function RecordDetail() {
       <div className="px-5 pt-6 pb-28 text-center">
         <Icon icon="solar:clipboard-remove-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground mb-4">{recordLabel}が見つかりません</p>
-        <button onClick={() => navigate(-1)} className="text-primary text-sm font-medium">
+        <button onClick={() => navigate(-1)} className="text-primary text-sm font-medium active:scale-[0.98] transition-all">
           戻る
         </button>
       </div>
@@ -137,7 +137,7 @@ export default function RecordDetail() {
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => navigate(-1)}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
           aria-label="戻る"
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
@@ -208,6 +208,7 @@ export default function RecordDetail() {
                 <button
                   type="button"
                   onClick={() => setViewerState({ photos: viewerPhotos, initialIndex: 0, title: 'ビフォーアフター' })}
+                  className="active:scale-[0.98] transition-all"
                 >
                   <p className="text-xs text-center text-muted-foreground mb-1">Before</p>
                   <LazyImage src={viewerPhotos[0].url} alt="Before" className="rounded-xl aspect-square object-cover" />
@@ -215,6 +216,7 @@ export default function RecordDetail() {
                 <button
                   type="button"
                   onClick={() => setViewerState({ photos: viewerPhotos, initialIndex: 1, title: 'ビフォーアフター' })}
+                  className="active:scale-[0.98] transition-all"
                 >
                   <p className="text-xs text-center text-muted-foreground mb-1">After</p>
                   <LazyImage src={viewerPhotos[1].url} alt="After" className="rounded-xl aspect-square object-cover" />
@@ -338,6 +340,7 @@ export default function RecordDetail() {
                 type="button"
                 key={idx}
                 onClick={() => setViewerState({ photos: viewerPhotos, initialIndex: idx, title: '写真' })}
+                className="active:scale-[0.98] transition-all"
               >
                 <LazyImage
                   src={viewerPhotos[idx].url}
@@ -362,7 +365,7 @@ export default function RecordDetail() {
                 type="button"
                 key={idx}
                 onClick={() => setViewerState({ photos: viewerConcerns, initialIndex: idx, title: '気になる箇所' })}
-                className="relative"
+                className="relative active:scale-[0.98] transition-all"
               >
                 <LazyImage
                   src={viewerConcerns[idx].url}

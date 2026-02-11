@@ -279,7 +279,7 @@ const DogEdit = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(`/dogs/${id}`)}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
           >
             <Icon icon="solar:close-circle-linear" width="24" height="24" />
           </button>
@@ -320,7 +320,7 @@ const DogEdit = () => {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? (
               '保存中...'
@@ -346,7 +346,7 @@ const DogEdit = () => {
               <h3 className="text-lg font-bold">日誌の写真から選択</h3>
               <button
                 onClick={() => setShowPhotoModal(false)}
-                className="size-10 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted"
+                className="size-10 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted active:scale-95 transition-all"
               >
                 <Icon icon="solar:close-circle-linear" width="24" height="24" />
               </button>
@@ -370,7 +370,7 @@ const DogEdit = () => {
                       key={index}
                       type="button"
                       onClick={() => handleSelectJournalPhoto(photo.url)}
-                      className="aspect-square rounded-xl overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
+                      className="aspect-square rounded-xl overflow-hidden border-2 border-transparent hover:border-primary active:scale-[0.98] transition-all"
                     >
                       <img
                         src={getFileUrl(photo.url)}

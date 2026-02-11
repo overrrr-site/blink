@@ -67,7 +67,7 @@ function ShareBadge({ sharedAt, status }: { sharedAt?: string | null; status: st
   }
   if (status === 'saved') {
     return (
-      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-amber-600 bg-amber-50">
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-chart-4 bg-chart-4/10">
         未送信
       </span>
     )
@@ -191,7 +191,7 @@ const RecordList = () => {
             <BusinessTypeSwitcher />
             <button
               onClick={() => navigate('/records/new')}
-              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium active:bg-primary/90 transition-colors min-h-[44px] print:hidden"
+              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium active:bg-primary/90 active:scale-[0.98] transition-all min-h-[44px] print:hidden"
             >
               <Icon icon="solar:pen-new-square-bold" width="18" height="18" />
               {recordLabel}作成
@@ -220,7 +220,7 @@ const RecordList = () => {
               <button
                 onClick={() => setSearchQuery('')}
                 aria-label="検索をクリア"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground active:scale-90 transition-all"
               >
                 <Icon icon="solar:close-circle-bold" width="20" height="20" />
               </button>
@@ -233,7 +233,7 @@ const RecordList = () => {
               <button
                 key={value}
                 onClick={() => setSelectedType(value)}
-                className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-colors min-h-[44px] ${
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all active:scale-[0.98] min-h-[44px] ${
                   selectedType === value
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground hover:bg-muted/80 font-normal'
@@ -300,7 +300,7 @@ const RecordList = () => {
             <p className="text-sm text-muted-foreground mb-6">新規{recordLabel}を作成してください</p>
             <button
               onClick={() => navigate('/records/new')}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium active:bg-primary/90 transition-colors"
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium active:bg-primary/90 active:scale-[0.98] transition-all"
             >
               <Icon icon="solar:pen-new-square-bold" width="20" height="20" />
               {recordLabel}を作成

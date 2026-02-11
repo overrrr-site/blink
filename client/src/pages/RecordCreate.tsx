@@ -563,7 +563,7 @@ const RecordCreate = () => {
                     onClick={() => {
                       if (firstMissingField) handleJumpToField(firstMissingField)
                     }}
-                    className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100 active:scale-95 transition-all"
+                    className="shrink-0 rounded-full bg-chart-4/10 px-2.5 py-1 text-[11px] font-bold text-chart-4 hover:bg-chart-4/20 active:scale-95 transition-all"
                   >
                     未入力 {missingInputCount}項目
                   </button>
@@ -574,7 +574,7 @@ const RecordCreate = () => {
                 <button
                   type="button"
                   onClick={() => handleGenerateReport()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 active:scale-[0.98] transition-all"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary/90 active:scale-[0.98] transition-all"
                 >
                   <Icon icon="solar:magic-stick-3-bold" width="14" height="14" />
                   作成する
@@ -603,7 +603,7 @@ const RecordCreate = () => {
                     <button
                       type="button"
                       onClick={() => handleAISuggestionAction('report-draft', reportSuggestion.preview)}
-                      className="rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 active:scale-[0.98] transition-all"
+                      className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary/90 active:scale-[0.98] transition-all"
                     >
                       この内容を反映
                     </button>

@@ -106,7 +106,7 @@ export default function PhotosForm({
               />
               <button
                 onClick={() => removeRegularPhoto(index)}
-                className="absolute -top-2 -right-2 size-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
+                className="absolute -top-2 -right-2 size-8 rounded-full bg-destructive text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
                 aria-label="写真を削除"
               >
                 <Icon icon="solar:close-circle-bold" width="16" height="16" />
@@ -175,7 +175,7 @@ export default function PhotosForm({
                 </div>
                 <button
                   onClick={() => removeConcernPhoto(index)}
-                  className="absolute -top-2 -right-2 size-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
+                  className="absolute -top-2 -right-2 size-8 rounded-full bg-destructive text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
                   aria-label="写真を削除"
                 >
                   <Icon icon="solar:close-circle-bold" width="16" height="16" />

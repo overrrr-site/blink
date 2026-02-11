@@ -578,7 +578,7 @@ export default function Home() {
               </h2>
               <button
                 onClick={closeQrModal}
-                className="size-10 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+                className="size-10 rounded-full flex items-center justify-center hover:bg-muted active:scale-95 transition-all"
                 aria-label="閉じる"
               >
                 <Icon icon="solar:close-circle-bold" width="24" height="24" className="text-muted-foreground" />

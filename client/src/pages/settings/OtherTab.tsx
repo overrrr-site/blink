@@ -134,7 +134,7 @@ function OtherTab() {
               key={type}
               onClick={() => exportData(type)}
               disabled={exporting !== null}
-              className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted rounded-xl transition-all active:scale-[0.98] disabled:opacity-50"
             >
               <div className="flex items-center gap-3">
                 <Icon icon={icon} width="20" height="20" className="text-muted-foreground" />
@@ -173,7 +173,7 @@ function OtherTab() {
             </div>
             <button
               onClick={() => navigate('/billing')}
-              className="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors"
+              className="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-all active:scale-[0.98]"
             >
               <span className="text-sm font-medium">プラン・お支払い管理</span>
               <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
@@ -186,7 +186,7 @@ function OtherTab() {
       <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <button
           onClick={() => navigate('/help')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-all active:scale-[0.98] border-b border-border"
         >
           <div className="flex items-center gap-3">
             <Icon icon="solar:question-circle-bold" width="20" height="20" className="text-muted-foreground" />
@@ -196,7 +196,7 @@ function OtherTab() {
         </button>
         <button
           onClick={() => navigate('/terms')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-all active:scale-[0.98] border-b border-border"
         >
           <div className="flex items-center gap-3">
             <Icon icon="solar:document-text-bold" width="20" height="20" className="text-muted-foreground" />
@@ -206,7 +206,7 @@ function OtherTab() {
         </button>
         <button
           onClick={() => navigate('/privacy')}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-all active:scale-[0.98]"
         >
           <div className="flex items-center gap-3">
             <Icon icon="solar:shield-check-bold" width="20" height="20" className="text-muted-foreground" />
@@ -219,7 +219,7 @@ function OtherTab() {
       {/* ログアウト */}
       <button
         onClick={handleLogout}
-        className="w-full bg-card rounded-2xl border border-border shadow-sm flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+        className="w-full bg-card rounded-2xl border border-border shadow-sm flex items-center justify-between p-4 hover:bg-muted/50 transition-all active:scale-[0.98]"
         aria-label="ログアウト"
       >
         <div className="flex items-center gap-3">

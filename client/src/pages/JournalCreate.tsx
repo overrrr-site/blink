@@ -404,7 +404,7 @@ const JournalCreate = () => {
       {/* ヘッダー */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-foreground">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-foreground active:scale-95 transition-all">
             <Icon icon="solar:arrow-left-linear" className="size-6" />
           </button>
           <div className="flex-1">
@@ -423,7 +423,7 @@ const JournalCreate = () => {
             <div key={step} className="flex items-center flex-1">
               <button
                 onClick={() => setCurrentStep(step)}
-                className={`flex-1 flex items-center gap-1.5 py-2.5 px-2 rounded-lg text-xs font-bold transition-colors min-h-[48px] ${
+                className={`flex-1 flex items-center gap-1.5 py-2.5 px-2 rounded-lg text-xs font-bold transition-all active:scale-[0.98] min-h-[48px] ${
                   currentStep === step
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground font-normal'
@@ -496,7 +496,7 @@ const JournalCreate = () => {
             <button
               type="button"
               onClick={goToPrevStep}
-              className="flex-1 py-3 px-4 bg-muted text-foreground rounded-xl font-bold text-sm"
+              className="flex-1 py-3 px-4 bg-muted text-foreground rounded-xl font-bold text-sm active:scale-[0.98] transition-all"
             >
               戻る
             </button>
@@ -507,7 +507,7 @@ const JournalCreate = () => {
               type="button"
               onClick={handleSubmit}
               disabled={submitting || !formData.comment.trim()}
-              className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
             >
               {submitting ? (
                 <>
@@ -525,7 +525,7 @@ const JournalCreate = () => {
             <button
               type="button"
               onClick={goToNextStep}
-              className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
             >
               次へ
               <Icon icon="solar:arrow-right-linear" className="size-5" />
@@ -539,7 +539,7 @@ const JournalCreate = () => {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full mt-2 py-3 text-sm text-primary font-bold min-h-[48px] active:bg-primary/10 rounded-xl transition-colors"
+            className="w-full mt-2 py-3 text-sm text-primary font-bold min-h-[48px] active:bg-primary/10 active:scale-[0.98] rounded-xl transition-all"
           >
             コメントをスキップして送信
           </button>

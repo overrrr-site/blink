@@ -400,7 +400,7 @@ export default function PreVisitInput() {
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => navigate(-1)}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
           aria-label="戻る"
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
@@ -432,7 +432,7 @@ export default function PreVisitInput() {
         onClick={handleFillFromLastRecord}
         disabled={loadingLastRecord}
         className="w-full py-3 rounded-xl border-2 border-primary/30 text-primary text-sm font-bold
-                   flex items-center justify-center gap-2 active:bg-primary/5 transition-colors
+                   flex items-center justify-center gap-2 active:bg-primary/5 active:scale-[0.98] transition-all
                    disabled:opacity-50 mb-6"
       >
         {loadingLastRecord ? (
@@ -530,7 +530,7 @@ export default function PreVisitInput() {
                       <button
                         type="button"
                         onClick={() => removeMealEntry(index)}
-                        className="text-destructive text-xs font-medium min-h-[32px] px-2"
+                        className="text-destructive text-xs font-medium min-h-[32px] px-2 active:scale-90 transition-all"
                       >
                         削除
                       </button>
@@ -566,7 +566,7 @@ export default function PreVisitInput() {
                   type="button"
                   onClick={addMealEntry}
                   className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground font-medium
-                         flex items-center justify-center gap-1.5 active:bg-muted transition-colors"
+                         flex items-center justify-center gap-1.5 active:bg-muted active:scale-[0.98] transition-all"
                 >
                   <Icon icon="solar:add-circle-linear" width="18" height="18" />
                   ごはんを追加

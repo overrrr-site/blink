@@ -168,7 +168,7 @@ function PricingTab() {
             </h2>
             <button
               onClick={() => navigate('/settings/courses/new')}
-              className="text-xs font-bold text-primary flex items-center gap-1"
+              className="text-xs font-bold text-primary flex items-center gap-1 transition-all active:scale-[0.98]"
             >
               <Icon icon="solar:add-circle-bold" width="14" height="14" />
               追加
@@ -214,14 +214,14 @@ function PricingTab() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => navigate(`/settings/courses/${course.id}`)}
-                      className="p-2 rounded-full hover:bg-muted transition-colors"
+                      className="p-2 rounded-full hover:bg-muted transition-all active:scale-95"
                       aria-label={`${course.course_name}の詳細`}
                     >
                       <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
                     </button>
                     <button
                       onClick={(e) => handleDeleteCourse(course.id, e)}
-                      className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
+                      className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-all active:scale-95"
                       aria-label={`${course.course_name}を削除`}
                     >
                       <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
@@ -243,7 +243,7 @@ function PricingTab() {
             </h2>
             <button
               onClick={() => navigate('/settings/grooming-menu/new')}
-              className="text-xs font-bold text-primary flex items-center gap-1"
+              className="text-xs font-bold text-primary flex items-center gap-1 transition-all active:scale-[0.98]"
             >
               <Icon icon="solar:add-circle-bold" width="14" height="14" />
               追加
@@ -287,14 +287,14 @@ function PricingTab() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => navigate(`/settings/grooming-menu/${menu.id}`)}
-                        className="p-2 text-muted-foreground rounded-full hover:bg-muted transition-colors"
+                        className="p-2 text-muted-foreground rounded-full hover:bg-muted transition-all active:scale-95"
                         aria-label={`${menu.menu_name}を編集`}
                       >
                         <Icon icon="solar:pen-bold" width="16" height="16" />
                       </button>
                       <button
                         onClick={(e) => handleDeleteGroomingMenu(menu.id, e)}
-                        className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-colors"
+                        className="p-2 text-destructive rounded-full hover:bg-destructive/10 transition-all active:scale-95"
                         aria-label={`${menu.menu_name}を削除`}
                       >
                         <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
@@ -349,7 +349,7 @@ function PricingTab() {
                 ))}
                 <button
                   onClick={handleSaveHotelPrices}
-                  className="w-full mt-3 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+                  className="w-full mt-3 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-all active:scale-[0.98]"
                 >
                   料金を保存
                 </button>

@@ -84,7 +84,7 @@ function MenuButton({ onClick, icon, label, badge, destructive, isLast }: MenuBu
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between p-4 ${baseClass} transition-colors ${borderClass} min-h-[56px]`}
+      className={`w-full flex items-center justify-between p-4 ${baseClass} active:scale-[0.98] transition-all ${borderClass} min-h-[56px]`}
       aria-label={label}
     >
       <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export default function MyPage() {
       <div className="flex items-center gap-2">
         <button
           onClick={() => navigate(-1)}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
           aria-label="戻る"
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />

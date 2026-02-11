@@ -125,7 +125,7 @@ function Settings() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2 px-1.5 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center justify-center gap-0.5 min-h-[52px] whitespace-nowrap ${
+              className={`flex-1 py-2 px-1.5 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center justify-center gap-0.5 min-h-[52px] whitespace-nowrap active:scale-[0.98] ${
                 activeTab === tab.id
                   ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
                   : 'text-muted-foreground font-normal'
