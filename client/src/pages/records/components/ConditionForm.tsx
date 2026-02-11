@@ -16,7 +16,7 @@ interface ConditionFormProps {
 export default function ConditionForm({ data, onChange }: ConditionFormProps) {
   return (
     <div>
-      <p className="text-sm font-medium text-slate-700 mb-3">体調・様子</p>
+      <p className="text-sm font-medium text-foreground mb-3">体調・様子</p>
       <div className="flex flex-wrap gap-2">
         {CONDITIONS.map(({ value, label, emoji }) => {
           const selected = data?.overall === value
@@ -27,9 +27,9 @@ export default function ConditionForm({ data, onChange }: ConditionFormProps) {
               onClick={() => onChange({ overall: value })}
               className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px]"
               style={{
-                background: selected ? '#EFF6FF' : '#FFFFFF',
-                border: selected ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
-                color: selected ? '#3B82F6' : '#475569',
+                background: selected ? 'hsl(var(--primary) / 0.05)' : '#FFFFFF',
+                border: selected ? '1.5px solid hsl(var(--primary))' : '1px solid hsl(var(--border))',
+                color: selected ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
               }}
               aria-pressed={selected}
             >

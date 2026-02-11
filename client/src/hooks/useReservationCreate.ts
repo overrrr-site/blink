@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import api from '../api/client'
+import { useToast } from '../components/Toast'
 import type { StaffReservationForm } from '../types/reservation'
 import { formatDateISO } from '../utils/date'
 
@@ -9,6 +10,7 @@ type UseReservationCreateOptions = {
 }
 
 export function useReservationCreate({ dateParam, onSuccess }: UseReservationCreateOptions) {
+  const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
@@ -28,7 +30,7 @@ export function useReservationCreate({ dateParam, onSuccess }: UseReservationCre
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedDogId) {
-      alert('犬を選択してください')
+      showToast('犬を選択してください', 'warning')
       return
     }
 
@@ -43,7 +45,7 @@ export function useReservationCreate({ dateParam, onSuccess }: UseReservationCre
       onSuccess()
     } catch (error) {
       console.error('Error creating reservation:', error)
-      alert('予約登録に失敗しました')
+      showToast('予約登録に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

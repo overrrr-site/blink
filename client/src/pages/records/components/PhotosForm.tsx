@@ -95,7 +95,7 @@ export default function PhotosForm({
       )}
       {/* 写真 */}
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">{recordType === 'grooming' ? '仕上がり' : '写真'}</p>
+        <p className="text-sm font-medium text-foreground mb-2">{recordType === 'grooming' ? '仕上がり' : '写真'}</p>
         <div className="flex flex-wrap gap-2">
           {(data.regular || []).map((photo, index) => (
             <div key={index} className="relative">
@@ -115,10 +115,10 @@ export default function PhotosForm({
           ))}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="size-20 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+            className="size-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center hover:bg-background transition-colors"
             aria-label="写真を追加"
           >
-            <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-slate-400" />
+            <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-muted-foreground" />
           </button>
           <input
             ref={fileInputRef}
@@ -133,8 +133,8 @@ export default function PhotosForm({
 
       {/* 気になる箇所（トリミングのみ） */}
       {showConcerns && (
-        <div className="bg-red-50 rounded-xl p-3 mt-3">
-          <p className="text-sm font-medium text-red-600 mb-2">気になる箇所</p>
+        <div className="bg-destructive/10 rounded-xl p-3 mt-3">
+          <p className="text-sm font-medium text-destructive mb-2">気になる箇所</p>
           <div className="flex flex-wrap gap-2">
             {(data.concerns || []).map((concern, index) => (
               <div key={index} className="relative">
@@ -184,10 +184,10 @@ export default function PhotosForm({
             ))}
             <button
               onClick={() => concernFileInputRef.current?.click()}
-              className="size-[90px] rounded-xl border-2 border-dashed border-red-200 flex items-center justify-center hover:bg-red-100/50 transition-colors"
+              className="size-[90px] rounded-xl border-2 border-dashed border-destructive/20 flex items-center justify-center hover:bg-destructive/10 transition-colors"
               aria-label="気になる箇所の写真を追加"
             >
-              <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-red-400" />
+              <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-destructive" />
             </button>
             <input
               ref={concernFileInputRef}

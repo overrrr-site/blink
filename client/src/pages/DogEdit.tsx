@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api/client'
+import { useToast } from '../components/Toast'
 import DogEditBasicInfo from '../components/dogs/DogEditBasicInfo'
 import DogEditHealth from '../components/dogs/DogEditHealth'
 import DogEditPersonality from '../components/dogs/DogEditPersonality'
@@ -15,6 +16,7 @@ interface JournalPhoto {
 const DogEdit = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
@@ -97,7 +99,7 @@ const DogEdit = () => {
         })
       }
     } catch {
-      alert('ワンちゃん情報の取得に失敗しました')
+      showToast('ワンちゃん情報の取得に失敗しました', 'error')
     } finally {
       setLoading(false)
     }
@@ -133,7 +135,7 @@ const DogEdit = () => {
         setForm(prev => ({ ...prev, photo_url: response.data.url }))
       }
     } catch {
-      alert('写真のアップロードに失敗しました')
+      showToast('写真のアップロードに失敗しました', 'error')
     } finally {
       setUploading(null)
     }
@@ -197,7 +199,7 @@ const DogEdit = () => {
         }
       }
     } catch {
-      alert('ファイルのアップロードに失敗しました')
+      showToast('ファイルのアップロードに失敗しました', 'error')
     } finally {
       setUploading(null)
     }
@@ -230,7 +232,7 @@ const DogEdit = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name || !form.breed) {
-      alert('名前と犬種は必須です')
+      showToast('名前と犬種は必須です', 'warning')
       return
     }
 
@@ -250,7 +252,7 @@ const DogEdit = () => {
       })
       navigate(`/dogs/${id}`)
     } catch {
-      alert('更新に失敗しました')
+      showToast('更新に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

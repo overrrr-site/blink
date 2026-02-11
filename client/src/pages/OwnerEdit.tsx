@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api/client'
+import { useToast } from '../components/Toast'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
 import { useAuthStore } from '../store/authStore'
 import type { RecordType } from '../types/record'
@@ -9,6 +10,7 @@ import type { RecordType } from '../types/record'
 const OwnerEdit = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [initialValues, setInitialValues] = useState<Partial<OwnerFormValues>>({})
@@ -36,7 +38,7 @@ const OwnerEdit = () => {
         business_types: owner.business_types || [],
       })
     } catch {
-      alert('飼い主情報の取得に失敗しました')
+      showToast('飼い主情報の取得に失敗しました', 'error')
     } finally {
       setLoading(false)
     }
@@ -44,7 +46,7 @@ const OwnerEdit = () => {
 
   const handleSubmit = async (values: OwnerFormValues) => {
     if (!values.name || !values.phone) {
-      alert('氏名と電話番号は必須です')
+      showToast('氏名と電話番号は必須です', 'warning')
       return
     }
 
@@ -53,7 +55,7 @@ const OwnerEdit = () => {
       await api.put(`/owners/${id}`, values)
       navigate(`/owners/${id}`)
     } catch {
-      alert('更新に失敗しました')
+      showToast('更新に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

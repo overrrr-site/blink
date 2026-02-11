@@ -50,7 +50,7 @@ function ToastItem({ toast, onRemove }: { toast: ToastData; onRemove: () => void
       <span className="text-sm font-medium">{toast.message}</span>
       <button
         onClick={onRemove}
-        className="ml-auto p-1 hover:opacity-80 transition-opacity"
+        className="ml-auto min-h-[48px] min-w-[48px] flex items-center justify-center hover:opacity-80 transition-opacity"
         aria-label="閉じる"
       >
         <Icon icon="solar:close-circle-linear" width="18" height="18" aria-hidden="true" />

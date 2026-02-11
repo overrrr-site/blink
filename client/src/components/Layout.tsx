@@ -126,6 +126,13 @@ function Layout(): JSX.Element {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-xl focus:text-sm focus:font-bold"
+      >
+        メインコンテンツへスキップ
+      </a>
+
       {isHomePage && (
         <header className="px-5 pt-4 pb-3 flex items-center justify-between bg-background sticky top-0 z-10 border-b border-border safe-area-pt">
           <div>
@@ -146,7 +153,7 @@ function Layout(): JSX.Element {
         </header>
       )}
 
-      <main className="flex-1 overflow-y-auto pb-24">
+      <main id="main-content" className="flex-1 overflow-y-auto pb-24">
         <Outlet />
       </main>
 
@@ -170,7 +177,7 @@ function Layout(): JSX.Element {
               e.stopPropagation()
               handleFabAction(action.path)
             }}
-            className={`flex items-center gap-3 ${action.color} text-white pl-4 pr-5 py-3 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform min-h-[44px]`}
+            className={`flex items-center gap-3 ${action.color} text-white pl-4 pr-5 py-3 rounded-full shadow-lg hover:scale-105 active:scale-[0.98] transition-transform min-h-[48px]`}
             style={{
               transitionDelay: fabOpen ? `${index * 50}ms` : '0ms',
             }}

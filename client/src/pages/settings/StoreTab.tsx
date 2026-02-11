@@ -11,6 +11,9 @@ import { useAuthStore } from '../../store/authStore'
 import { useBusinessTypeStore } from '../../store/businessTypeStore'
 import { getBusinessTypeLabel, getBusinessTypeIcon, getBusinessTypeColors } from '../../utils/businessTypeColors'
 import { getAvailableBusinessTypes, isBusinessTypeVisible } from '../../utils/businessTypeAccess'
+import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import type { RecordType } from '../../types/record'
 
 interface StoreTabProps {
@@ -90,6 +93,8 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { selectedBusinessType } = useBusinessTypeStore()
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({ max_capacity: 15 })
   const [showStoreInfoModal, setShowStoreInfoModal] = useState(false)
   const [showBusinessHoursModal, setShowBusinessHoursModal] = useState(false)
@@ -178,7 +183,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || '設定の保存に失敗しました')
+      showToast(message || '設定の保存に失敗しました', 'error')
     }
   }
 
@@ -197,9 +202,14 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
 
   const handleDeleteStaff = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('このスタッフを削除しますか？')) {
-      return
-    }
+    const ok = await confirm({
+      title: '削除確認',
+      message: 'このスタッフを削除しますか？',
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.delete(`/staff/${id}`)
@@ -208,13 +218,13 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || 'スタッフの削除に失敗しました')
+      showToast(message || 'スタッフの削除に失敗しました', 'error')
     }
   }
 
   const handleInviteStaff = async () => {
     if (!inviteEmail || !inviteName) {
-      alert('メールアドレスと名前を入力してください')
+      showToast('メールアドレスと名前を入力してください', 'error')
       return
     }
 
@@ -230,7 +240,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
         is_owner: inviteIsOwner,
         assigned_business_types: assignedBusinessTypes,
       })
-      alert(`${inviteEmail} に招待メールを送信しました`)
+      showToast(`${inviteEmail} に招待メールを送信しました`, 'success')
       setShowStaffInviteModal(false)
       setInviteEmail('')
       setInviteName('')
@@ -241,7 +251,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || 'スタッフの招待に失敗しました')
+      showToast(message || 'スタッフの招待に失敗しました', 'error')
     } finally {
       setInviting(false)
     }
@@ -249,9 +259,14 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
 
   const handleDeleteTrainingItem = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('このトレーニング項目を削除しますか？')) {
-      return
-    }
+    const ok = await confirm({
+      title: '削除確認',
+      message: 'このトレーニング項目を削除しますか？',
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.delete(`/training-masters/${id}`)
@@ -260,7 +275,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || 'トレーニング項目の削除に失敗しました')
+      showToast(message || 'トレーニング項目の削除に失敗しました', 'error')
     }
   }
 
@@ -286,13 +301,13 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       ])
       mutateTrainingMasters()
     } catch {
-      alert('トレーニング項目の並び替えに失敗しました')
+      showToast('トレーニング項目の並び替えに失敗しました', 'error')
     }
   }
 
   const handleCreateRoom = async () => {
     if (!newRoom.room_name.trim()) {
-      alert('部屋名を入力してください')
+      showToast('部屋名を入力してください', 'error')
       return
     }
 
@@ -309,7 +324,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || '部屋の追加に失敗しました')
+      showToast(message || '部屋の追加に失敗しました', 'error')
     }
   }
 
@@ -327,14 +342,19 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || '部屋の更新に失敗しました')
+      showToast(message || '部屋の更新に失敗しました', 'error')
     }
   }
 
   const handleDeleteRoom = async (roomId: number) => {
-    if (!confirm('この部屋を削除しますか？')) {
-      return
-    }
+    const ok = await confirm({
+      title: '削除確認',
+      message: 'この部屋を削除しますか？',
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
     try {
       await api.delete(`/hotel-rooms/${roomId}`)
       mutateHotelRooms()
@@ -342,7 +362,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || '部屋の削除に失敗しました')
+      showToast(message || '部屋の削除に失敗しました', 'error')
     }
   }
 
@@ -365,13 +385,13 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
 
     const qrSvg = document.querySelector('#qr-display-modal svg') || document.querySelector('#qr-display svg')
     if (!qrSvg) {
-      alert('QRコードが見つかりません')
+      showToast('QRコードが見つかりません', 'error')
       return
     }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
-      alert('ポップアップがブロックされています。ブラウザの設定を確認してください。')
+      showToast('ポップアップがブロックされています。ブラウザの設定を確認してください。', 'error')
       return
     }
 
@@ -431,12 +451,12 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       await api.put('/stores', data)
       fetchStoreInfo()
       setShowStoreInfoModal(false)
-      alert('店舗情報を保存しました')
+      showToast('店舗情報を保存しました', 'success')
     } catch (error: unknown) {
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || '店舗情報の保存に失敗しました')
+      showToast(message || '店舗情報の保存に失敗しました', 'error')
     }
   }
 
@@ -448,12 +468,12 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
       })
       fetchStoreInfo()
       setShowBusinessHoursModal(false)
-      alert('営業日・定休日を保存しました')
+      showToast('営業日・定休日を保存しました', 'success')
     } catch (error: unknown) {
       const message = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(message || '営業日・定休日の保存に失敗しました')
+      showToast(message || '営業日・定休日の保存に失敗しました', 'error')
     }
   }
 
@@ -1378,6 +1398,8 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
           </div>
         </div>
       )}
+
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </>
   )
 }

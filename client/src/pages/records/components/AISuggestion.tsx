@@ -42,11 +42,11 @@ export default function AISuggestion({
 
   if (applied) {
     return (
-      <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#ECFDF5' }}>
-        <div className="size-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+      <div className="flex items-center gap-2 p-3 rounded-xl bg-chart-2/10">
+        <div className="size-5 rounded-full bg-chart-2 flex items-center justify-center shrink-0">
           <Icon icon="solar:check-circle-bold" width="12" height="12" className="text-white" />
         </div>
-        <span className="text-[13px] font-semibold" style={{ color: '#10B981' }}>
+        <span className="text-[13px] font-bold text-chart-2">
           適用しました
         </span>
       </div>
@@ -84,16 +84,16 @@ export default function AISuggestion({
             border: `1px solid ${style.border}`,
           }}
         >
-          <p className="text-sm leading-relaxed text-slate-700 mb-3">{message}</p>
+          <p className="text-sm leading-relaxed text-foreground mb-3">{message}</p>
 
           {inputTrace && inputTrace.length > 0 && (
-            <div className="mb-3 p-3 bg-white rounded-xl border border-slate-200">
-              <p className="text-xs font-semibold text-slate-600 mb-2">AIが参照する情報</p>
+            <div className="mb-3 p-3 bg-white rounded-xl border border-border">
+              <p className="text-xs font-bold text-muted-foreground mb-2">AIが参照する情報</p>
               <div className="space-y-1.5">
                 {inputTrace.map((item) => (
                   <div key={item.key} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-slate-600">{item.label}</span>
-                    <span className={item.status === 'present' ? 'text-emerald-600' : 'text-amber-600'}>
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <span className={item.status === 'present' ? 'text-chart-2' : 'text-amber-600'}>
                       {item.status === 'present' ? `入力あり${typeof item.count === 'number' ? ` (${item.count})` : ''}` : '未入力'}
                     </span>
                   </div>
@@ -103,14 +103,14 @@ export default function AISuggestion({
           )}
 
           {generatedFrom && generatedFrom.length > 0 && (
-            <div className="mb-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-              <p className="text-[11px] text-slate-500">この出力で使用した情報: {generatedFrom.join(' / ')}</p>
+            <div className="mb-3 p-2.5 bg-background rounded-lg border border-border">
+              <p className="text-[11px] text-muted-foreground">この出力で使用した情報: {generatedFrom.join(' / ')}</p>
             </div>
           )}
 
           {/* Preview */}
           {preview && !editing && (
-            <div className="mb-3 p-3 bg-white rounded-xl border border-slate-200 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+            <div className="mb-3 p-3 bg-white rounded-xl border border-border text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {preview}
             </div>
           )}
@@ -122,7 +122,7 @@ export default function AISuggestion({
                 value={editedText}
                 onChange={(e) => setEditedText(e.target.value)}
                 rows={6}
-                className="w-full p-3 bg-white rounded-xl border border-slate-300 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full p-3 bg-white rounded-xl border border-border text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 autoFocus
               />
             </div>
@@ -152,7 +152,7 @@ export default function AISuggestion({
                       setEditing(true)
                       setEditedText(preview)
                     }}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-[13px] font-medium bg-white text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[13px] font-medium bg-white text-foreground hover:bg-background transition-colors"
                     style={{ border: `1.5px solid ${style.border}` }}
                   >
                     <Icon icon="solar:pen-bold" width="14" height="14" className="inline mr-1" />
@@ -163,7 +163,7 @@ export default function AISuggestion({
                   <button
                     type="button"
                     onClick={onRegenerate}
-                    className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                    className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-border text-muted-foreground hover:bg-background transition-colors"
                   >
                     再生成
                   </button>
@@ -173,14 +173,14 @@ export default function AISuggestion({
                     <button
                       type="button"
                       onClick={() => onToneChange('formal')}
-                      className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                      className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-border text-muted-foreground hover:bg-background transition-colors"
                     >
                       丁寧
                     </button>
                     <button
                       type="button"
                       onClick={() => onToneChange('casual')}
-                      className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                      className="px-3 py-2.5 rounded-xl text-[12px] font-medium bg-white border border-border text-muted-foreground hover:bg-background transition-colors"
                     >
                       カジュアル
                     </button>
@@ -189,7 +189,7 @@ export default function AISuggestion({
                 <button
                   type="button"
                   onClick={onDismiss}
-                  className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+                  className="p-2.5 rounded-xl bg-white border border-border text-muted-foreground hover:bg-background hover:text-muted-foreground transition-colors"
                   aria-label="閉じる"
                 >
                   <Icon icon="solar:close-bold" width="14" height="14" />
@@ -216,7 +216,7 @@ export default function AISuggestion({
                     setEditing(false)
                     setEditedText(preview || '')
                   }}
-                  className="px-4 py-2.5 rounded-xl text-[13px] font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2.5 rounded-xl text-[13px] font-medium bg-white border border-border text-muted-foreground hover:bg-background transition-colors"
                 >
                   キャンセル
                 </button>

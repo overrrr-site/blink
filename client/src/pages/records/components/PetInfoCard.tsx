@@ -44,7 +44,7 @@ export default function PetInfoCard({
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-lg font-bold">{petName}</h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             {[breed, age].filter(Boolean).join(' / ')}
           </p>
         </div>
@@ -52,7 +52,7 @@ export default function PetInfoCard({
           <button
             onClick={onCopyPrevious}
             disabled={copyLoading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-border hover:bg-slate-50 transition-colors disabled:opacity-50 min-h-[36px]"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-border hover:bg-background transition-colors disabled:opacity-50 min-h-[36px]"
           >
             <Icon icon="solar:copy-linear" width="16" height="16" />
             {copyLoading ? '読込中...' : '前回コピー'}

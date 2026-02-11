@@ -39,6 +39,29 @@ export default function BusinessTypeSwitcher(): JSX.Element {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
 
+  // キーボードナビゲーション
+  useEffect(() => {
+    if (!isOpen) return
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setIsOpen(false)
+        return
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const options = dropdownRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]')
+        if (!options) return
+        const currentIndex = Array.from(options).findIndex(el => el === document.activeElement)
+        const nextIndex = e.key === 'ArrowDown'
+          ? Math.min(currentIndex + 1, options.length - 1)
+          : Math.max(currentIndex - 1, 0)
+        options[nextIndex]?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
   function handleSelect(type: RecordType | null) {
     setSelectedBusinessType(type)
     setIsOpen(false)
@@ -118,8 +141,8 @@ export default function BusinessTypeSwitcher(): JSX.Element {
             role="option"
             aria-selected={selectedBusinessType === null}
           >
-            <div className="size-8 rounded-full bg-gray-100 flex items-center justify-center">
-              <Icon icon="solar:widget-4-bold" width="18" height="18" className="text-gray-500" />
+            <div className="size-8 rounded-full bg-muted flex items-center justify-center">
+              <Icon icon="solar:widget-4-bold" width="18" height="18" className="text-muted-foreground" />
             </div>
             <span className="font-medium text-foreground">すべての業種</span>
             {selectedBusinessType === null && (

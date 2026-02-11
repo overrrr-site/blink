@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
+import { useToast } from '../components/Toast'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
 import { useAuthStore } from '../store/authStore'
 import type { RecordType } from '../types/record'
 
 const OwnerCreate = () => {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const businessTypes = useAuthStore((s) => s.user?.businessTypes) as RecordType[] | undefined
   const [dogInfo, setDogInfo] = useState({
@@ -25,12 +27,12 @@ const OwnerCreate = () => {
 
   const handleSubmit = async (values: OwnerFormValues) => {
     if (!values.name || !values.phone) {
-      alert('氏名と電話番号は必須です')
+      showToast('氏名と電話番号は必須です', 'warning')
       return
     }
 
     if (includeDog && (!dogInfo.name || !dogInfo.breed || !dogInfo.birth_date)) {
-      alert('ワンちゃんを登録する場合は、名前、犬種、生年月日は必須です')
+      showToast('ワンちゃんを登録する場合は、名前、犬種、生年月日は必須です', 'warning')
       return
     }
 
@@ -50,13 +52,13 @@ const OwnerCreate = () => {
             gender: dogInfo.gender,
           })
         } catch {
-          alert('飼い主は登録されましたが、ワンちゃんの登録に失敗しました。飼い主詳細ページから再度登録してください。')
+          showToast('飼い主は登録されましたが、ワンちゃんの登録に失敗しました。飼い主詳細ページから再度登録してください。', 'warning')
         }
       }
 
       navigate(`/owners/${ownerId}`)
     } catch {
-      alert('登録に失敗しました')
+      showToast('登録に失敗しました', 'error')
     } finally {
       setLoading(false)
     }

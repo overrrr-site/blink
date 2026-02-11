@@ -5,6 +5,7 @@ import api from '../api/client'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SaveButton from '../components/SaveButton'
+import { useToast } from '../components/Toast'
 
 interface StaffForm {
   name: string
@@ -15,6 +16,7 @@ interface StaffForm {
 function StaffEdit(): JSX.Element {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<StaffForm>({
@@ -71,7 +73,7 @@ function StaffEdit(): JSX.Element {
       navigate('/settings')
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } }
-      alert(err.response?.data?.error || 'スタッフの保存に失敗しました')
+      showToast(err.response?.data?.error || 'スタッフの保存に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

@@ -250,7 +250,7 @@ const JournalList = () => {
         ) : (
           Object.entries(groupedJournals).map(([date, dateJournals]) => (
             <div key={date}>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
                 <Icon icon="solar:calendar-linear" width="16" height="16" />
                 {new Date(date).toLocaleDateString('ja-JP', {
                   year: 'numeric',

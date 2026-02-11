@@ -4,6 +4,9 @@ import PageHeader from '../components/PageHeader'
 import api from '../api/client'
 import PayjpForm from '../components/PayjpForm'
 import { getAxiosErrorMessage } from '../utils/error'
+import { useToast } from '../components/Toast'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 interface Plan {
   id: number
@@ -69,6 +72,8 @@ function getSubscriptionStatusBadge(status: string): { label: string; className:
 }
 
 export default function Billing() {
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const [activeTab, setActiveTab] = useState<BillingTab>('plan')
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentPlan, setCurrentPlan] = useState<CurrentPlan | null>(null)
@@ -110,8 +115,9 @@ export default function Billing() {
     }
   }
 
-  const handlePlanChange = (planId: number) => {
-    if (!confirm('プランを変更しますか？')) return
+  const handlePlanChange = async (planId: number) => {
+    const ok = await confirm({ title: '確認', message: 'プランを変更しますか？', confirmLabel: '変更する', cancelLabel: 'キャンセル', variant: 'default' })
+    if (!ok) return
     setSelectedPlan(planId)
     setCardAction('subscribe')
     setShowCardForm(true)
@@ -127,7 +133,7 @@ export default function Billing() {
 
   const handleTokenCreated = async (token: string) => {
     if (cardAction !== 'update' && !selectedPlan) {
-      alert('プランが選択されていません')
+      showToast('プランが選択されていません', 'warning')
       return
     }
 
@@ -137,40 +143,41 @@ export default function Billing() {
         await api.post('/billing/update-card', {
           payjp_token: token,
         })
-        alert('カード情報を更新しました')
+        showToast('カード情報を更新しました', 'success')
       } else {
         if (!selectedPlan) return
         await api.post('/billing/subscribe', {
           plan_id: selectedPlan,
           payjp_token: token,
         })
-        alert('プランを変更しました')
+        showToast('プランを変更しました', 'success')
       }
       setShowCardForm(false)
       setSelectedPlan(null)
       setCardAction(null)
       fetchData()
     } catch (err) {
-      alert(getAxiosErrorMessage(err, cardAction === 'update' ? 'カード情報の更新に失敗しました' : 'プラン変更に失敗しました'))
+      showToast(getAxiosErrorMessage(err, cardAction === 'update' ? 'カード情報の更新に失敗しました' : 'プラン変更に失敗しました'), 'error')
     } finally {
       setProcessing(false)
     }
   }
 
   const handleTokenError = (err: Error) => {
-    alert(err.message || 'カード情報の処理に失敗しました')
+    showToast(err.message || 'カード情報の処理に失敗しました', 'error')
     setProcessing(false)
   }
 
   const handleCancelSubscription = async () => {
-    if (!confirm('サブスクリプションをキャンセルしますか？')) return
+    const ok = await confirm({ title: '確認', message: 'サブスクリプションをキャンセルしますか？', confirmLabel: 'キャンセルする', cancelLabel: '戻る', variant: 'destructive' })
+    if (!ok) return
 
     try {
       await api.post('/billing/cancel')
-      alert('サブスクリプションをキャンセルしました')
+      showToast('サブスクリプションをキャンセルしました', 'success')
       fetchData()
     } catch (err) {
-      alert(getAxiosErrorMessage(err, 'キャンセルに失敗しました'))
+      showToast(getAxiosErrorMessage(err, 'キャンセルに失敗しました'), 'error')
     }
   }
 
@@ -203,6 +210,7 @@ export default function Billing() {
 
   return (
     <div className="pb-6">
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
       <PageHeader title="プラン・お支払い" backPath="/settings" />
 
       {/* タブ */}

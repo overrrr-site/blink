@@ -3,6 +3,7 @@ import { Icon } from '../components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useReservationCreateData } from '../hooks/useReservationCreateData'
 import { useDogFilter } from '../hooks/useDogFilter'
+import { useToast } from '../components/Toast'
 import { INPUT_CLASS } from '../utils/styles'
 import { formatDateISO, formatDateFullWithWeekday } from '../utils/date'
 import StepIndicator from '../components/reservations/StepIndicator'
@@ -38,6 +39,7 @@ const GroomingReservationCreate = () => {
   const dateParam = searchParams.get('date')
 
   const { loading, dogs, recentReservations, invalidate } = useReservationCreateData()
+  const { showToast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [showRecentOnly, setShowRecentOnly] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -70,7 +72,7 @@ const GroomingReservationCreate = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedDogId) {
-      alert('犬を選択してください')
+      showToast('犬を選択してください', 'warning')
       return
     }
 
@@ -89,7 +91,7 @@ const GroomingReservationCreate = () => {
       navigate('/reservations')
     } catch (error) {
       console.error('Error creating grooming reservation:', error)
-      alert('予約登録に失敗しました')
+      showToast('予約登録に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

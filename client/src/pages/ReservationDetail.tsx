@@ -161,9 +161,9 @@ const ReservationDetail = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      <div className="hidden print:block print:mb-4 print:border-b print:border-gray-300 print:pb-4 px-5">
+      <div className="hidden print:block print:mb-4 print:border-b print:border-border print:pb-4 px-5">
         <h1 className="text-xl font-bold">予約詳細</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           {reservation.dog_name} / {new Date(reservation.reservation_date).toLocaleDateString('ja-JP')}
         </p>
       </div>

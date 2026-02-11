@@ -5,6 +5,7 @@ import { format, isFuture, isToday, parseISO } from 'date-fns';
 import liffClient from '../api/client';
 import { getAvatarUrl } from '../../utils/image';
 import { getAxiosErrorMessage } from '../../utils/error';
+import { useToast } from '../../components/Toast'
 import type { LiffReservationForm } from '../../types/reservation';
 import type { LiffDog } from '../types/dog';
 
@@ -37,6 +38,7 @@ function canShowPreVisitInput(reservation: Reservation): boolean {
 
 export default function ReservationEdit(): JSX.Element {
   const navigate = useNavigate();
+  const { showToast } = useToast()
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,7 +61,7 @@ export default function ReservationEdit(): JSX.Element {
       const meRes = await liffClient.get('/me');
       setDogs(meRes.data.dogs || []);
     } catch {
-      alert('データの取得に失敗しました');
+      showToast('データの取得に失敗しました', 'error');
       navigate('/home/reservations');
     } finally {
       setLoading(false);
@@ -73,7 +75,7 @@ export default function ReservationEdit(): JSX.Element {
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     if (!form.reservation_date) {
-      alert('予約日を選択してください');
+      showToast('予約日を選択してください', 'warning');
       return;
     }
 
@@ -82,7 +84,7 @@ export default function ReservationEdit(): JSX.Element {
       await liffClient.put(`/reservations/${id}`, form);
       navigate('/home/reservations');
     } catch (error) {
-      alert(getAxiosErrorMessage(error, '予約の更新に失敗しました'));
+      showToast(getAxiosErrorMessage(error, '予約の更新に失敗しました'), 'error');
     } finally {
       setSaving(false);
     }

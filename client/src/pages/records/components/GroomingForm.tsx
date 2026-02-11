@@ -72,7 +72,7 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm font-medium text-slate-700">カット部位を選択</p>
+      <p className="text-sm font-medium text-foreground">カット部位を選択</p>
 
       <DogSilhouette
         selectedParts={data.selectedParts || []}
@@ -82,7 +82,7 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
       {/* Part detail inputs */}
       {(data.selectedParts || []).length > 0 && (
         <div className="space-y-2 pt-2">
-          <p className="text-xs font-medium text-slate-500">部位ごとのカット内容</p>
+          <p className="text-xs font-medium text-muted-foreground">部位ごとのカット内容</p>
           {(data.selectedParts || []).map((part) => (
             <div key={part} className="flex items-center gap-2">
               <span
@@ -101,15 +101,15 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
                 value={data.partNotes?.[part] || ''}
                 onChange={(e) => handlePartNote(part, e.target.value)}
                 placeholder="10mm、テディベアなど"
-                className="flex-1 px-3 py-2 bg-slate-50 rounded-lg text-sm border-none focus:outline-none focus:ring-2 focus:ring-violet-200"
+                className="flex-1 px-3 py-2 bg-background rounded-lg text-sm border-none focus:outline-none focus:ring-2 focus:ring-violet-200"
               />
               <button
                 type="button"
                 onClick={() => handleRemovePart(part)}
-                className="size-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors shrink-0"
+                className="size-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors shrink-0"
                 aria-label={`${PART_LABELS[part] || part}を削除`}
               >
-                <Icon icon="solar:close-bold" width="14" height="14" className="text-slate-400" />
+                <Icon icon="solar:close-bold" width="14" height="14" className="text-muted-foreground" />
               </button>
             </div>
           ))}
@@ -123,7 +123,7 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
         </div>
 
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">希望スタイル（必須）</label>
+          <label className="text-xs text-muted-foreground mb-1 block">希望スタイル（必須）</label>
           <input
             type="text"
             value={counseling.style_request || ''}
@@ -134,7 +134,7 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
         </div>
 
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">注意事項（任意）</label>
+          <label className="text-xs text-muted-foreground mb-1 block">注意事項（任意）</label>
           <textarea
             value={counseling.caution_notes || ''}
             onChange={(e) => handleCounselingChange('caution_notes', e.target.value)}
@@ -145,7 +145,7 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
         </div>
 
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">当日の体調確認（必須）</label>
+          <label className="text-xs text-muted-foreground mb-1 block">当日の体調確認（必須）</label>
           <textarea
             value={counseling.condition_notes || ''}
             onChange={(e) => handleCounselingChange('condition_notes', e.target.value)}
@@ -155,7 +155,7 @@ export default function GroomingForm({ data, onChange }: GroomingFormProps) {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={Boolean(counseling.consent_confirmed)}

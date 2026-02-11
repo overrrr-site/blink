@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'da
 import api from '../api/client'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
+import { useToast } from '../components/Toast'
 
 const ReservationsCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -16,6 +17,7 @@ const ReservationsCalendar = () => {
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const { selectedBusinessType } = useBusinessTypeFilter()
 
   const getCreateUrl = () => {
@@ -142,7 +144,7 @@ const ReservationsCalendar = () => {
       await fetchReservations()
       setSelectedDate(targetDate)
     } catch {
-      alert('予約の変更に失敗しました')
+      showToast('予約の変更に失敗しました', 'error')
     } finally {
       setUpdating(null)
       setDraggedReservation(null)
@@ -171,9 +173,9 @@ const ReservationsCalendar = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      <div className="hidden print:block print:mb-4 print:border-b print:border-gray-300 print:pb-4 px-5">
+      <div className="hidden print:block print:mb-4 print:border-b print:border-border print:pb-4 px-5">
         <h1 className="text-xl font-bold">予約一覧</h1>
-        <p className="text-sm text-gray-600">{format(currentDate, 'yyyy年MM月')}</p>
+        <p className="text-sm text-muted-foreground">{format(currentDate, 'yyyy年MM月')}</p>
       </div>
       <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
@@ -209,7 +211,7 @@ const ReservationsCalendar = () => {
                     URL.revokeObjectURL(blobUrl)
                   })
                   .catch(() => {
-                    alert('カレンダーのエクスポートに失敗しました')
+                    showToast('カレンダーのエクスポートに失敗しました', 'error')
                   })
               }}
               className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors"
@@ -304,7 +306,7 @@ const ReservationsCalendar = () => {
                   className="w-full h-full flex flex-col items-center justify-start min-h-[48px]"
                   aria-label={`${format(day, 'M月d日')}の予約を表示`}
                 >
-                  <span className={`text-xs ${isSelected ? 'font-bold' : isToday(day) ? 'font-semibold' : ''}`}>
+                  <span className={`text-xs ${isSelected ? 'font-bold' : isToday(day) ? 'font-bold' : ''}`}>
                     {format(day, 'd')}
                   </span>
                   {dayReservations.length > 0 && (

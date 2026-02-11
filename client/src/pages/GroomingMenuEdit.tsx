@@ -5,6 +5,7 @@ import api from '../api/client'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SaveButton from '../components/SaveButton'
+import { useToast } from '../components/Toast'
 
 const DOG_SIZES = ['全サイズ', '小型', '中型', '大型'] as const
 
@@ -20,6 +21,7 @@ interface GroomingMenuForm {
 function GroomingMenuEdit(): JSX.Element {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<GroomingMenuForm>({
@@ -52,7 +54,7 @@ function GroomingMenuEdit(): JSX.Element {
         enabled: response.data.enabled !== false,
       })
     } catch {
-      alert('メニューの取得に失敗しました')
+      showToast('メニューの取得に失敗しました', 'error')
       navigate('/settings')
     } finally {
       setLoading(false)
@@ -93,7 +95,7 @@ function GroomingMenuEdit(): JSX.Element {
       navigate('/settings')
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } }
-      alert(err.response?.data?.error || 'メニューの保存に失敗しました')
+      showToast(err.response?.data?.error || 'メニューの保存に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

@@ -63,7 +63,7 @@ function Login(): JSX.Element {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 py-3 px-4 rounded-xl text-sm font-bold border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 mb-6 min-h-[48px]"
+            className="w-full flex items-center justify-center gap-3 bg-white text-foreground py-3 px-4 rounded-xl text-sm font-bold border border-border hover:bg-muted transition-colors disabled:opacity-50 mb-6 min-h-[48px]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path

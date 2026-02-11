@@ -4,6 +4,8 @@ import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
@@ -84,6 +86,7 @@ const RecordCreate = () => {
   const navigate = useNavigate()
   const { reservationId } = useParams()
   const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const isCreatingFromReservation = Boolean(reservationId)
   const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
   const activeBusinessType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
@@ -317,8 +320,15 @@ const RecordCreate = () => {
     }
   }
 
-  const handleShare = () => {
-    if (confirm('飼い主に送信しますか？')) {
+  const handleShare = async () => {
+    const ok = await confirm({
+      title: '送信確認',
+      message: '飼い主に送信しますか？',
+      confirmLabel: '送信',
+      cancelLabel: 'キャンセル',
+      variant: 'default',
+    })
+    if (ok) {
       handleSave(true)
     }
   }
@@ -380,7 +390,7 @@ const RecordCreate = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32">
+    <div className="min-h-screen bg-background pb-32">
       <RecordHeader
         petName={selectedDog?.name}
         recordType={recordType}
@@ -392,7 +402,7 @@ const RecordCreate = () => {
       />
 
       {waitingReservationSource && (
-        <div className="mx-4 mt-4 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
+        <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 text-sm text-muted-foreground">
           予約情報を読み込み中です...
         </div>
       )}
@@ -400,20 +410,20 @@ const RecordCreate = () => {
       {/* Dog Selection */}
       {!selectedDogId && !waitingReservationSource && (
         <div className="mx-4 mt-4">
-          <h3 className="text-sm font-bold text-slate-700 mb-2">ワンちゃんを選択</h3>
+          <h3 className="text-sm font-bold text-foreground mb-2">ワンちゃんを選択</h3>
           {reservationSourceError && (
             <p className="mb-2 text-xs text-destructive">予約情報の取得に失敗したため、ワンちゃんを手動で選択してください。</p>
           )}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
             {dogs.length === 0 ? (
-              <p className="p-4 text-sm text-slate-400 text-center">登録されたワンちゃんがいません</p>
+              <p className="p-4 text-sm text-muted-foreground text-center">登録されたワンちゃんがいません</p>
             ) : (
-              <div className="max-h-64 overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-64 overflow-y-auto divide-y divide-border">
                 {dogs.map((dog) => (
                   <button
                     key={dog.id}
                     onClick={() => setSelectedDogId(dog.id)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-3 hover:bg-background transition-colors text-left"
                   >
                     {dog.photo_url ? (
                       <img src={dog.photo_url} alt={dog.name} className="size-10 rounded-full object-cover" />
@@ -424,7 +434,7 @@ const RecordCreate = () => {
                     )}
                     <div>
                       <p className="text-sm font-bold">{dog.name}</p>
-                      <p className="text-xs text-slate-400">{dog.breed}</p>
+                      <p className="text-xs text-muted-foreground">{dog.breed}</p>
                     </div>
                   </button>
                 ))}
@@ -435,7 +445,7 @@ const RecordCreate = () => {
       )}
 
       {selectedDogId && !selectedDog && (
-        <div className="mx-4 mt-4 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
+        <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 text-sm text-muted-foreground">
           {loadingSelectedDogFallback ? 'ワンちゃん情報を読み込み中です...' : 'ワンちゃん情報を取得できませんでした。'}
         </div>
       )}
@@ -543,11 +553,11 @@ const RecordCreate = () => {
           </div>
 
           {aiSettings.aiAssistantEnabled ? (
-            <div className="mx-4 mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-bold text-slate-900">AIで報告文を作成</p>
-                  <p className="text-xs text-slate-500 mt-1">上の入力内容をもとに生成します</p>
+                  <p className="text-sm font-bold text-foreground">AIで報告文を作成</p>
+                  <p className="text-xs text-muted-foreground mt-1">上の入力内容をもとに生成します</p>
                 </div>
                 {missingInputCount > 0 && (
                   <button
@@ -555,7 +565,7 @@ const RecordCreate = () => {
                     onClick={() => {
                       if (firstMissingField) handleJumpToField(firstMissingField)
                     }}
-                    className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                    className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100 transition-colors"
                   >
                     未入力 {missingInputCount}項目
                   </button>
@@ -574,23 +584,23 @@ const RecordCreate = () => {
                 <button
                   type="button"
                   onClick={() => handleGenerateReport('formal')}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
                 >
                   丁寧
                 </button>
                 <button
                   type="button"
                   onClick={() => handleGenerateReport('casual')}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
                 >
                   カジュアル
                 </button>
               </div>
 
               {reportSuggestion?.preview && !reportSuggestion.dismissed && !reportSuggestion.applied && (
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs font-semibold text-slate-600 mb-2">生成プレビュー</p>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{reportSuggestion.preview}</p>
+                <div className="mt-3 rounded-xl border border-border bg-background p-3">
+                  <p className="text-xs font-bold text-muted-foreground mb-2">生成プレビュー</p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{reportSuggestion.preview}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -602,7 +612,7 @@ const RecordCreate = () => {
                     <button
                       type="button"
                       onClick={() => handleAISuggestionDismiss('report-draft')}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                      className="rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
                     >
                       閉じる
                     </button>
@@ -611,7 +621,7 @@ const RecordCreate = () => {
               )}
             </div>
           ) : (
-            <div className="mx-4 mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-600">
+            <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 text-xs text-muted-foreground">
               AIアシスタントはオフです。ヘッダー右上の設定から有効化できます。
             </div>
           )}
@@ -622,22 +632,22 @@ const RecordCreate = () => {
                 value={notes.report_text || ''}
                 onChange={(e) => setNotes((prev) => ({ ...prev, report_text: e.target.value }))}
                 placeholder="今日の様子を飼い主さんにお伝えする文章を入力してください"
-                className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-slate-200 resize-y focus:outline-none focus:ring-2 focus:ring-orange-200"
+                className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-border resize-y focus:outline-none focus:ring-2 focus:ring-orange-200"
                 style={{ minHeight: 120 }}
               />
             </RequiredSection>
           </div>
 
-          <div ref={internalMemoSectionRef} className="mx-4 mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div ref={internalMemoSectionRef} className="mx-4 mt-4 rounded-2xl border border-border bg-background p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Icon icon="solar:lock-keyhole-bold" width="16" height="16" className="text-slate-500" />
-              <h3 className="text-sm font-bold text-slate-700">内部メモ（飼い主に非公開）</h3>
+              <Icon icon="solar:lock-keyhole-bold" width="16" height="16" className="text-muted-foreground" />
+              <h3 className="text-sm font-bold text-foreground">内部メモ（飼い主に非公開）</h3>
             </div>
             <textarea
               value={notes.internal_notes || ''}
               onChange={(e) => setNotes((prev) => ({ ...prev, internal_notes: e.target.value }))}
               placeholder="スタッフ間の申し送りなど"
-              className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-slate-200 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-border resize-none focus:outline-none focus:ring-2 focus:ring-border"
               style={{ minHeight: 88 }}
             />
           </div>
@@ -657,6 +667,8 @@ const RecordCreate = () => {
           }
         }}
       />
+
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </div>
   )
 }

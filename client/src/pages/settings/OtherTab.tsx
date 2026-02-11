@@ -3,6 +3,9 @@ import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import api from '../../api/client'
+import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 type ExportType = 'owners' | 'dogs' | 'journals'
 
@@ -17,11 +20,18 @@ function OtherTab() {
   const { user, logout } = useAuthStore()
   const isOwner = user?.isOwner || false
   const [exporting, setExporting] = useState<ExportType | null>(null)
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
 
-  function handleLogout() {
-    if (!confirm('ログアウトしますか？')) {
-      return
-    }
+  async function handleLogout() {
+    const ok = await confirm({
+      title: 'ログアウト',
+      message: 'ログアウトしますか？',
+      confirmLabel: 'ログアウト',
+      cancelLabel: 'キャンセル',
+      variant: 'default',
+    })
+    if (!ok) return
     logout()
     navigate('/login')
   }
@@ -102,7 +112,7 @@ function OtherTab() {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
     } catch {
-      alert('エクスポートに失敗しました')
+      showToast('エクスポートに失敗しました', 'error')
     } finally {
       setExporting(null)
     }
@@ -223,6 +233,8 @@ function OtherTab() {
       <p className="text-center text-[10px] text-muted-foreground py-4">
         Blink 管理画面 v1.0.0
       </p>
+
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </>
   )
 }

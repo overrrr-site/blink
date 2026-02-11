@@ -1,6 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import {
   addMonths,
   eachDayOfInterval,
@@ -114,6 +117,8 @@ const CalendarDayCell = memo(function CalendarDayCell({
 
 export default function ReservationsCalendar(): JSX.Element {
   const navigate = useNavigate();
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const touchStartX = useRef<number | null>(null);
@@ -138,13 +143,14 @@ export default function ReservationsCalendar(): JSX.Element {
   }, []);
 
   async function handleCancelReservation(reservationId: number): Promise<void> {
-    if (!confirm('この予約をキャンセルしますか？')) return;
+    const ok = await confirm({ title: '確認', message: 'この予約をキャンセルしますか？', confirmLabel: 'キャンセルする', cancelLabel: '戻る', variant: 'destructive' })
+    if (!ok) return;
 
     try {
       await liffClient.put(`/reservations/${reservationId}/cancel`);
       mutate();
     } catch {
-      alert('予約のキャンセルに失敗しました');
+      showToast('予約のキャンセルに失敗しました', 'error');
     }
   }
 
@@ -201,6 +207,7 @@ export default function ReservationsCalendar(): JSX.Element {
 
   return (
     <div className="px-5 pt-6 pb-28">
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
       {/* ヘッダー（戻るボタン付き） */}
       <div className="flex items-center gap-2 mb-6">
         <button
@@ -233,7 +240,7 @@ export default function ReservationsCalendar(): JSX.Element {
                 URL.revokeObjectURL(blobUrl);
               })
               .catch(function() {
-                alert('カレンダーのエクスポートに失敗しました');
+                showToast('カレンダーのエクスポートに失敗しました', 'error');
               });
           }}
           className="min-w-[48px] min-h-[48px] flex items-center justify-center text-primary rounded-full active:bg-primary/10 transition-colors"

@@ -2,10 +2,12 @@ import { useState, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api/client'
+import { useToast } from '../components/Toast'
 
 const DogCreate = () => {
   const { ownerId } = useParams<{ ownerId: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -49,7 +51,7 @@ const DogCreate = () => {
         setForm(prev => ({ ...prev, photo_url: response.data.url }))
       }
     } catch {
-      alert('写真のアップロードに失敗しました')
+      showToast('写真のアップロードに失敗しました', 'error')
     } finally {
       setUploading(null)
     }
@@ -92,7 +94,7 @@ const DogCreate = () => {
         }
       }
     } catch {
-      alert('ファイルのアップロードに失敗しました')
+      showToast('ファイルのアップロードに失敗しました', 'error')
     } finally {
       setUploading(null)
     }
@@ -108,12 +110,12 @@ const DogCreate = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name || !form.breed || !form.birth_date || !form.gender) {
-      alert('名前、犬種、生年月日、性別は必須です')
+      showToast('名前、犬種、生年月日、性別は必須です', 'warning')
       return
     }
 
     if (!ownerId) {
-      alert('飼い主IDが取得できませんでした')
+      showToast('飼い主IDが取得できませんでした', 'error')
       return
     }
 
@@ -133,7 +135,7 @@ const DogCreate = () => {
       })
       navigate(`/owners/${ownerId}`)
     } catch {
-      alert('登録に失敗しました')
+      showToast('登録に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

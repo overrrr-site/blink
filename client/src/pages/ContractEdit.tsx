@@ -5,6 +5,7 @@ import api from '../api/client'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SaveButton from '../components/SaveButton'
+import { useToast } from '../components/Toast'
 
 const CONTRACT_TYPES = ['月謝制', 'チケット制', '単発'] as const
 
@@ -31,6 +32,7 @@ interface ContractForm {
 function ContractEdit(): JSX.Element {
   const { dogId, id } = useParams<{ dogId: string; id?: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [courseMasters, setCourseMasters] = useState<CourseMaster[]>([])
@@ -146,7 +148,7 @@ function ContractEdit(): JSX.Element {
       navigate(`/dogs/${dogId}`)
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } }
-      alert(err.response?.data?.error || '契約の保存に失敗しました')
+      showToast(err.response?.data?.error || '契約の保存に失敗しました', 'error')
     } finally {
       setSaving(false)
     }

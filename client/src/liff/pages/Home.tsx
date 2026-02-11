@@ -2,6 +2,7 @@ import { useEffect, useState, memo } from 'react';
 import axios from 'axios';
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../components/Toast'
 import liffClient from '../api/client';
 import { format, differenceInDays, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -89,6 +90,7 @@ const MenuCard = memo(function MenuCard({
 
 export default function Home() {
   const navigate = useNavigate();
+  const { showToast } = useToast()
   const { owner, setAuth, token } = useLiffAuthStore();
   const { data, error, isLoading, mutate } = useSWR<OwnerData>('/me', liffFetcher, {
     dedupingInterval: 60_000,
@@ -186,10 +188,10 @@ export default function Home() {
         reservationId: data.nextReservation.id,
       });
       closeQrModal();
-      alert(successMsg);
+      showToast(successMsg, 'success');
       mutate();
     } catch (error) {
-      alert(getQrActionErrorMessage(error, errorMsg));
+      showToast(getQrActionErrorMessage(error, errorMsg), 'error');
     } finally {
       setLoading(false);
     }
@@ -197,7 +199,7 @@ export default function Home() {
 
   const handleCheckIn = async () => {
     if (!data?.nextReservation) {
-      alert('予約が見つかりません');
+      showToast('予約が見つかりません', 'warning');
       return;
     }
 
@@ -207,7 +209,7 @@ export default function Home() {
     reservationDate.setHours(0, 0, 0, 0);
 
     if (reservationDate < today) {
-      alert('この予約は過去の予約です');
+      showToast('この予約は過去の予約です', 'warning');
       return;
     }
 
@@ -223,17 +225,17 @@ export default function Home() {
 
   const handleCheckOut = async () => {
     if (!data?.nextReservation) {
-      alert('予約が見つかりません');
+      showToast('予約が見つかりません', 'warning');
       return;
     }
 
     if (data.nextReservation.status !== '登園済') {
-      alert('まだ登園していません');
+      showToast('まだ登園していません', 'warning');
       return;
     }
 
     if (data.nextReservation.checked_out_at) {
-      alert('既に降園済みです');
+      showToast('既に降園済みです', 'warning');
       return;
     }
 
@@ -249,7 +251,7 @@ export default function Home() {
 
   const handleManualCheckIn = () => {
     if (!qrInput.trim()) {
-      alert('QRコードの内容を入力してください');
+      showToast('QRコードの内容を入力してください', 'warning');
       return;
     }
     processQrAction(qrInput.trim(), qrModalMode);

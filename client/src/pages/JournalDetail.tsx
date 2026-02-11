@@ -5,6 +5,7 @@ import api from '../api/client'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import type { Staff } from '../types/staff'
+import { useToast } from '../components/Toast'
 
 // カテゴリのアイコンマッピング
 const CATEGORY_ICONS: Record<string, string> = {
@@ -54,6 +55,7 @@ interface TrainingCategory {
 const JournalDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [journal, setJournal] = useState<any>(null)
   const [saving, setSaving] = useState(false)
@@ -176,7 +178,7 @@ const JournalDetail = () => {
     const maxNewPhotos = Math.min(files.length, 5 - (existingPhotos.length - photosToDelete.length + photos.length))
     
     if (maxNewPhotos <= 0) {
-      alert('写真は最大5枚までです')
+      showToast('写真は最大5枚までです', 'warning')
       return
     }
 
@@ -238,7 +240,7 @@ const JournalDetail = () => {
       setPhotosToDelete([])
       await mutate()
     } catch {
-      alert('日誌の更新に失敗しました')
+      showToast('日誌の更新に失敗しました', 'error')
     } finally {
       setSaving(false)
     }
@@ -313,9 +315,9 @@ const JournalDetail = () => {
   return (
     <div className="pb-6">
       {/* 印刷用ヘッダー（画面では非表示、印刷時のみ表示） */}
-      <div className="hidden print:block print:mb-4 print:border-b print:border-gray-300 print:pb-4">
+      <div className="hidden print:block print:mb-4 print:border-b print:border-border print:pb-4">
         <h1 className="text-xl font-bold">{storeInfo?.name || '店舗名'}</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           日誌 - {new Date(journal.journal_date).toLocaleDateString('ja-JP', {
             year: 'numeric',
             month: 'long',
@@ -388,7 +390,7 @@ const JournalDetail = () => {
 
       <main className="px-5 pt-4 space-y-6 print:px-0 print:pt-0">
         {/* 犬情報 */}
-        <div className="bg-card rounded-2xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300">
+        <div className="bg-card rounded-2xl p-4 border border-border shadow-sm print:shadow-none print:border-border">
           <div className="flex items-center gap-4">
             {journal.dog_photo ? (
               <img
@@ -417,7 +419,7 @@ const JournalDetail = () => {
               </p>
             </div>
             <div className="text-right">
-              <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium print:bg-gray-100 print:text-gray-700">
+              <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium print:bg-muted print:text-foreground">
                 {journal.visit_count}回目
               </span>
               {journal.staff_name && (
@@ -549,7 +551,7 @@ const JournalDetail = () => {
             <Icon icon="solar:pen-new-square-bold" width="20" height="20" className="text-primary" />
             今日の様子
           </h3>
-          <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300">
+          <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-border">
             {isEditing ? (
               <textarea
                 value={formData.comment}
@@ -572,8 +574,8 @@ const JournalDetail = () => {
             トイレ記録
           </h3>
           <div className="grid grid-cols-2 gap-3 print:gap-2">
-            <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300 print:p-2">
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2">午前 (AM)</h4>
+            <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-border print:p-2">
+              <h4 className="text-xs font-bold text-muted-foreground mb-2">午前 (AM)</h4>
               {isEditing ? (
                 <div className="space-y-2">
                   <select
@@ -612,8 +614,8 @@ const JournalDetail = () => {
                 </>
               )}
             </div>
-            <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300 print:p-2">
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2">午後 (PM)</h4>
+            <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-border print:p-2">
+              <h4 className="text-xs font-bold text-muted-foreground mb-2">午後 (PM)</h4>
               {isEditing ? (
                 <div className="space-y-2">
                   <select
@@ -700,7 +702,7 @@ const JournalDetail = () => {
           ) : (
             <>
               {journal.training_data && Object.keys(journal.training_data).length > 0 ? (
-                <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300 print:p-2">
+                <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-border print:p-2">
                   <div className="flex flex-wrap gap-2 print:gap-1">
                     {Object.entries(journal.training_data).map(([itemId, value]) => {
                       const { label, color } = getAchievementLabel(value as string)
@@ -755,7 +757,7 @@ const JournalDetail = () => {
               <Icon icon="solar:calendar-bold" width="20" height="20" className="text-chart-5" />
               次回訪問予定日
             </h3>
-            <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-gray-300">
+            <div className="bg-card rounded-xl p-4 border border-border shadow-sm print:shadow-none print:border-border">
               {isEditing ? (
                 <input
                   type="date"

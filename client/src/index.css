@@ -21,6 +21,7 @@ body {
   background-color: #FAFAF9;
   color: #292524;
   font-size: 14px; /* ベースフォントサイズを14pxに */
+  line-height: 1.5;
 }
 
 * {
@@ -32,9 +33,13 @@ label {
   font-size: 14px;
 }
 
-/* カード間の余白を広げる */
-.space-y-4 > * + * {
-  margin-top: 1.25rem; /* 20px */
+/* フォーカス表示（キーボードナビゲーション時のみ） */
+:focus-visible {
+  outline: 2px solid #EA580C;
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* スクロールバーのスタイル */

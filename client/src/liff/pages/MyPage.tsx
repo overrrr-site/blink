@@ -1,6 +1,9 @@
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
+import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { getAvatarUrl } from '../../utils/image';
@@ -99,12 +102,15 @@ function MenuButton({ onClick, icon, label, badge, destructive, isLast }: MenuBu
 export default function MyPage() {
   const navigate = useNavigate();
   const { clearAuth } = useLiffAuthStore();
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const { data, isLoading: loading } = useSWR<OwnerData>('/me', liffFetcher, {
     revalidateOnFocus: false,
   });
 
-  const handleLogout = () => {
-    if (confirm('ログアウトしますか？')) {
+  const handleLogout = async () => {
+    const ok = await confirm({ title: '確認', message: 'ログアウトしますか？', confirmLabel: 'ログアウト', cancelLabel: 'キャンセル', variant: 'destructive' })
+    if (ok) {
       clearAuth();
       navigate('/');
     }
@@ -140,6 +146,7 @@ export default function MyPage() {
 
   return (
     <div className="px-5 pt-6 pb-28 space-y-6">
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
       {/* ヘッダー */}
       <div className="flex items-center gap-2">
         <button
@@ -228,7 +235,7 @@ export default function MyPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                       <h3 className="font-bold text-base">{dog.name}</h3>
-                      <span className="text-[10px] bg-chart-5/10 text-chart-5 px-1.5 py-0.5 rounded font-semibold">
+                      <span className="text-[10px] bg-chart-5/10 text-chart-5 px-1.5 py-0.5 rounded font-bold">
                         {dog.gender === 'メス' ? '♀' : '♂'} {dog.spayed_neutered ? '避妊済' : ''}
                       </span>
                     </div>
@@ -248,7 +255,7 @@ export default function MyPage() {
                   <div className="mt-3 pt-3 border-t border-border">
                     <div className="flex items-center gap-2 mb-2">
                       <Icon icon="solar:shield-check-bold" width="16" height="16" className="text-chart-2" />
-                      <span className="text-[10px] font-semibold text-muted-foreground">ワクチン接種状況</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">ワクチン接種状況</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {dog.rabies_vaccine_date && (
@@ -351,9 +358,9 @@ export default function MyPage() {
       {/* メニュー */}
       <section className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
         <h3 className="sr-only">メニュー</h3>
-        <MenuButton onClick={() => alert('通知設定機能は準備中です')} icon="solar:bell-bold" label="通知設定" badge="準備中" />
-        <MenuButton onClick={() => alert('よくある質問ページは準備中です')} icon="solar:question-circle-bold" label="よくある質問" badge="準備中" />
-        <MenuButton onClick={() => alert('お問い合わせ機能は準備中です')} icon="solar:chat-round-dots-bold" label="お問い合わせ" badge="準備中" />
+        <MenuButton onClick={() => showToast('通知設定機能は準備中です', 'info')} icon="solar:bell-bold" label="通知設定" badge="準備中" />
+        <MenuButton onClick={() => showToast('よくある質問ページは準備中です', 'info')} icon="solar:question-circle-bold" label="よくある質問" badge="準備中" />
+        <MenuButton onClick={() => showToast('お問い合わせ機能は準備中です', 'info')} icon="solar:chat-round-dots-bold" label="お問い合わせ" badge="準備中" />
         <MenuButton onClick={() => navigate('/privacy')} icon="solar:shield-check-bold" label="プライバシーポリシー" />
         <MenuButton onClick={() => navigate('/terms')} icon="solar:document-text-bold" label="利用規約" />
         <MenuButton onClick={handleLogout} icon="solar:logout-2-bold" label="ログアウト" destructive isLast />

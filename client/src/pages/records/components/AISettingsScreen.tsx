@@ -60,7 +60,7 @@ export default function AISettingsScreen({
       >
         {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-300" />
+          <div className="w-10 h-1 rounded-full bg-border" />
         </div>
 
         {/* Header */}
@@ -82,10 +82,10 @@ export default function AISettingsScreen({
           </div>
           <button
             onClick={onClose}
-            className="size-11 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+            className="size-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             aria-label="閉じる"
           >
-            <Icon icon="solar:close-bold" width="18" height="18" className="text-slate-400" />
+            <Icon icon="solar:close-bold" width="18" height="18" className="text-muted-foreground" />
           </button>
         </div>
 
@@ -101,11 +101,11 @@ export default function AISettingsScreen({
           />
 
           {/* Divider */}
-          <div className="border-t border-slate-100" />
+          <div className="border-t border-border" />
 
           {/* Data contribution section */}
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-3 tracking-wider">データ活用設定</p>
+            <p className="text-xs font-bold text-muted-foreground mb-3 tracking-wider">データ活用設定</p>
 
             <div className="space-y-3">
               <SettingItem
@@ -136,15 +136,15 @@ export default function AISettingsScreen({
             <div className="shrink-0 mt-px" style={{ color: AI_COLOR }}>
               <Icon icon="solar:info-circle-bold" width="18" height="18" />
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               AIアシスタントを無効にしても、既存のカルテデータには影響しません。
               データ活用設定はいつでも変更できます。
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3.5">
-            <p className="text-xs font-semibold text-slate-600 mb-1">使用しない範囲</p>
-            <ul className="text-xs text-slate-500 leading-relaxed">
+          <div className="rounded-xl border border-border bg-white p-3.5">
+            <p className="text-xs font-bold text-muted-foreground mb-1">使用しない範囲</p>
+            <ul className="text-xs text-muted-foreground leading-relaxed">
               <li>外部AI（OpenAI等）のモデル学習</li>
               <li>第三者への提供・販売</li>
               <li>広告・マーケティング目的</li>
@@ -154,12 +154,12 @@ export default function AISettingsScreen({
 
         {/* Footer - セーフエリア対応 */}
         <div
-          className="px-5 pt-2 border-t border-slate-100 flex gap-3"
+          className="px-5 pt-2 border-t border-border flex gap-3"
           style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
         >
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-muted text-muted-foreground hover:bg-secondary transition-colors"
           >
             キャンセル
           </button>
@@ -207,19 +207,19 @@ function SettingItem({
     >
       <div
         className="size-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-        style={{ background: enabled && !disabled ? `${AI_COLOR}15` : '#F1F5F9' }}
+        style={{ background: enabled && !disabled ? `${AI_COLOR}15` : 'hsl(var(--muted))' }}
       >
         <div style={enabled && !disabled ? { color: AI_COLOR } : undefined}>
           <Icon
             icon={icon}
             width="18"
             height="18"
-            className={enabled && !disabled ? undefined : 'text-slate-400'}
+            className={enabled && !disabled ? undefined : 'text-muted-foreground'}
           />
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-sm font-bold text-foreground">{title}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
       </div>
       <span

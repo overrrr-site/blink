@@ -76,7 +76,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
     <div className="space-y-6">
       {/* 今日の活動 */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-slate-700">今日の活動</p>
+        <p className="text-sm font-medium text-foreground">今日の活動</p>
         <div className="flex flex-wrap gap-2">
           {ACTIVITIES.map(({ value, label, icon }) => {
             const selected = (data.activities || []).includes(value)
@@ -85,11 +85,13 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                 key={value}
                 type="button"
                 onClick={() => toggleActivity(value)}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] flex items-center gap-2"
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] flex items-center gap-2 ${
+                  !selected ? 'border border-border text-muted-foreground' : ''
+                }`}
                 style={{
                   background: selected ? '#FFF7ED' : '#FFFFFF',
-                  border: selected ? '1.5px solid #F97316' : '1px solid #E2E8F0',
-                  color: selected ? '#F97316' : '#475569',
+                  border: selected ? '1.5px solid #F97316' : undefined,
+                  color: selected ? '#F97316' : undefined,
                 }}
                 aria-pressed={selected}
               >
@@ -103,7 +105,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
 
       {/* ごはん */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
+        <p className="text-sm font-medium text-foreground flex items-center gap-2">
           <Icon icon="mdi:silverware-fork-knife" width="18" height="18" />
           ごはん
         </p>
@@ -125,7 +127,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
 
       {/* トイレ */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
+        <p className="text-sm font-medium text-foreground flex items-center gap-2">
           <Icon icon="mdi:toilet" width="18" height="18" />
           トイレ
         </p>
@@ -139,11 +141,13 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                   <button
                     type="button"
                     onClick={() => toggleToilet(key, 'urination')}
-                    className="py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5"
+                    className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5 ${
+                      !slotData.urination ? 'border border-border text-muted-foreground' : ''
+                    }`}
                     style={{
                       background: slotData.urination ? '#DBEAFE' : '#FFFFFF',
-                      border: slotData.urination ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
-                      color: slotData.urination ? '#3B82F6' : '#475569',
+                      border: slotData.urination ? '1.5px solid #3B82F6' : undefined,
+                      color: slotData.urination ? '#3B82F6' : undefined,
                     }}
                     aria-pressed={slotData.urination}
                   >
@@ -153,11 +157,13 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                   <button
                     type="button"
                     onClick={() => toggleToilet(key, 'defecation')}
-                    className="py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5"
+                    className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5 ${
+                      !slotData.defecation ? 'border border-border text-muted-foreground' : ''
+                    }`}
                     style={{
                       background: slotData.defecation ? '#FEF3C7' : '#FFFFFF',
-                      border: slotData.defecation ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
-                      color: slotData.defecation ? '#D97706' : '#475569',
+                      border: slotData.defecation ? '1.5px solid #F59E0B' : undefined,
+                      color: slotData.defecation ? '#D97706' : undefined,
                     }}
                     aria-pressed={slotData.defecation}
                   >

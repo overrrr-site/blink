@@ -32,13 +32,13 @@ export default function NotesForm({
   return (
     <div className="space-y-4">
       {inputTrace.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs font-semibold text-slate-600 mb-2">AIが参照する情報</p>
+        <div className="rounded-xl border border-border bg-background p-3">
+          <p className="text-xs font-bold text-muted-foreground mb-2">AIが参照する情報</p>
           <div className="space-y-1.5">
             {inputTrace.map((item) => (
               <div key={item.key} className="flex items-center justify-between text-xs gap-2">
-                <span className="text-slate-600">{item.label}</span>
-                <span className={item.status === 'present' ? 'text-emerald-600' : 'text-amber-600'}>
+                <span className="text-muted-foreground">{item.label}</span>
+                <span className={item.status === 'present' ? 'text-chart-2' : 'text-amber-600'}>
                   {item.status === 'present'
                     ? `入力あり${typeof item.count === 'number' ? ` (${item.count})` : ''}`
                     : '未入力'}
@@ -47,7 +47,7 @@ export default function NotesForm({
             ))}
           </div>
           {missingItems.length > 0 && (
-            <div className="mt-3 border-t border-slate-200 pt-2">
+            <div className="mt-3 border-t border-border pt-2">
               <p className="text-[11px] text-amber-700 mb-2">入力を補うと精度が上がります</p>
               <div className="flex flex-wrap gap-1.5">
                 {missingItems.map((item) => (
@@ -82,28 +82,28 @@ export default function NotesForm({
       )}
       {/* 内部メモ */}
       <div>
-        <label className="text-sm font-medium text-slate-700 mb-1 block">
-          内部メモ <span className="text-xs text-slate-400 font-normal">（飼い主に非公開）</span>
+        <label className="text-sm font-medium text-foreground mb-1 block">
+          内部メモ <span className="text-xs text-muted-foreground font-normal">（飼い主に非公開）</span>
         </label>
         <textarea
           value={data.internal_notes || ''}
           onChange={(e) => onChange({ ...data, internal_notes: e.target.value })}
           placeholder="スタッフ間の申し送りなど"
-          className="w-full px-3 py-2 bg-slate-50 rounded-xl text-sm border-none resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
+          className="w-full px-3 py-2 bg-background rounded-xl text-sm border-none resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
           style={{ minHeight: 72 }}
         />
       </div>
 
       {/* 飼い主への報告文 */}
       <div>
-        <label className="text-sm font-medium text-slate-700 mb-1 block">
+        <label className="text-sm font-medium text-foreground mb-1 block">
           飼い主への報告文
         </label>
         <textarea
           value={data.report_text || ''}
           onChange={(e) => onChange({ ...data, report_text: e.target.value })}
           placeholder="今日の様子を飼い主さんにお伝えする文章を入力してください"
-          className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-slate-200 resize-y focus:outline-none focus:ring-2 focus:ring-blue-200"
+          className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-border resize-y focus:outline-none focus:ring-2 focus:ring-blue-200"
           style={{ minHeight: 100 }}
         />
       </div>

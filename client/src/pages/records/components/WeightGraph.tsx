@@ -39,7 +39,7 @@ export default function WeightGraph({ history, currentWeight }: WeightGraphProps
         <span className="text-[26px] font-bold" style={{ color: 'var(--foreground)' }}>
           {displayWeight.toFixed(1)}
         </span>
-        <span className="text-sm text-slate-500">kg</span>
+        <span className="text-sm text-muted-foreground">kg</span>
         {changeStyle !== 'none' && (
           <span
             className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold"
@@ -55,7 +55,7 @@ export default function WeightGraph({ history, currentWeight }: WeightGraphProps
 
       {/* Graph */}
       {weights.length >= 2 && (
-        <div className="rounded-xl p-2" style={{ height: 56, background: '#F1F5F9' }}>
+        <div className="rounded-xl p-2" style={{ height: 56, background: 'hsl(var(--muted))' }}>
           <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="w-full h-full">
             <polyline
               points={points}

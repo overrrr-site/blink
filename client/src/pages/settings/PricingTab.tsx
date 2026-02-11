@@ -8,6 +8,9 @@ import { fetcher } from '../../lib/swr'
 import { useAuthStore } from '../../store/authStore'
 import { useBusinessTypeStore } from '../../store/businessTypeStore'
 import { getAvailableBusinessTypes, isBusinessTypeVisible } from '../../utils/businessTypeAccess'
+import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import type { RecordType } from '../../types/record'
 
 interface CourseMaster {
@@ -49,6 +52,8 @@ function PricingTab() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { selectedBusinessType } = useBusinessTypeStore()
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
 
   const storeBusinessTypes = (user?.businessTypes || []) as RecordType[]
   const availableBusinessTypes = getAvailableBusinessTypes({
@@ -96,9 +101,14 @@ function PricingTab() {
 
   const handleDeleteCourse = useCallback(async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('このコースを削除しますか？')) {
-      return
-    }
+    const ok = await confirm({
+      title: '削除確認',
+      message: 'このコースを削除しますか？',
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.delete(`/course-masters/${id}`)
@@ -107,15 +117,20 @@ function PricingTab() {
       const errorMessage = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(errorMessage || 'コースの削除に失敗しました')
+      showToast(errorMessage || 'コースの削除に失敗しました', 'error')
     }
-  }, [mutate])
+  }, [mutate, confirm, showToast])
 
   const handleDeleteGroomingMenu = useCallback(async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('このメニューを削除しますか？')) {
-      return
-    }
+    const ok = await confirm({
+      title: '削除確認',
+      message: 'このメニューを削除しますか？',
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.delete(`/grooming-menus/${id}`)
@@ -124,24 +139,25 @@ function PricingTab() {
       const errorMessage = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(errorMessage || 'メニューの削除に失敗しました')
+      showToast(errorMessage || 'メニューの削除に失敗しました', 'error')
     }
-  }, [mutateGroomingMenus])
+  }, [mutateGroomingMenus, confirm, showToast])
 
   const handleSaveHotelPrices = useCallback(async () => {
     try {
       await api.put('/hotel-prices', { prices: localHotelPrices })
       mutateHotelPrices()
-      alert('ホテル料金を保存しました')
+      showToast('ホテル料金を保存しました', 'success')
     } catch (error: unknown) {
       const errorMessage = axios.isAxiosError(error)
         ? (error.response?.data as { error?: string } | undefined)?.error
         : null
-      alert(errorMessage || 'ホテル料金の保存に失敗しました')
+      showToast(errorMessage || 'ホテル料金の保存に失敗しました', 'error')
     }
-  }, [localHotelPrices, mutateHotelPrices])
+  }, [localHotelPrices, mutateHotelPrices, showToast])
 
   return (
+    <>
     <div className="space-y-4">
       {isDaycareEnabled && (
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -343,6 +359,8 @@ function PricingTab() {
         </section>
       )}
     </div>
+    <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
+    </>
   )
 }
 

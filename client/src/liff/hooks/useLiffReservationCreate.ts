@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import liffClient from '../api/client'
 import { getAxiosErrorMessage } from '../../utils/error'
+import { useToast } from '../../components/Toast'
 import type { LiffDog } from '../types/dog'
 import type { LiffReservationForm } from '../../types/reservation'
 
@@ -10,6 +11,7 @@ type LiffReservationCreateForm = LiffReservationForm & {
 }
 
 export function useLiffReservationCreate() {
+  const { showToast } = useToast()
   const [dogs, setDogs] = useState<LiffDog[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -44,7 +46,7 @@ export function useLiffReservationCreate() {
 
   const handleSubmit = async () => {
     if (!formData.dog_id) {
-      alert('ワンちゃんを選択してください')
+      showToast('ワンちゃんを選択してください', 'warning')
       return false
     }
 
@@ -59,7 +61,7 @@ export function useLiffReservationCreate() {
       return true
     } catch (error) {
       console.error('Error creating reservation:', error)
-      alert(getAxiosErrorMessage(error, '予約の作成に失敗しました'))
+      showToast(getAxiosErrorMessage(error, '予約の作成に失敗しました'), 'error')
       return false
     } finally {
       setSaving(false)

@@ -5,6 +5,9 @@ import axios from 'axios'
 import useSWR from 'swr'
 import api from '../../api/client'
 import { fetcher } from '../../lib/swr'
+import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 interface ToggleSwitchProps {
   checked: boolean
@@ -60,6 +63,8 @@ const defaultNotificationSettings: NotificationSettings = {
 function IntegrationTab() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const [testingLine, setTestingLine] = useState(false)
   const [lineTestResult, setLineTestResult] = useState<{
     success: boolean
@@ -136,14 +141,19 @@ function IntegrationTab() {
       const response = await api.get('/google-calendar/auth')
       window.location.href = response.data.authUrl
     } catch {
-      alert('Googleカレンダー連携の開始に失敗しました')
+      showToast('Googleカレンダー連携の開始に失敗しました', 'error')
     }
   }
 
   async function handleGoogleCalendarDisconnect() {
-    if (!confirm('Googleカレンダー連携を解除しますか？')) {
-      return
-    }
+    const ok = await confirm({
+      title: '連携解除',
+      message: 'Googleカレンダー連携を解除しますか？',
+      confirmLabel: '解除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.post('/google-calendar/disconnect')
@@ -152,9 +162,9 @@ function IntegrationTab() {
         { revalidate: false }
       )
       mutateGoogleCalendarStatus()
-      alert('Googleカレンダー連携を解除しました')
+      showToast('Googleカレンダー連携を解除しました', 'success')
     } catch {
-      alert('連携の解除に失敗しました')
+      showToast('連携の解除に失敗しました', 'error')
     }
   }
 
@@ -169,7 +179,7 @@ function IntegrationTab() {
 
   async function handleLineSave() {
     if (!lineSettings.channelId || !lineSettings.channelSecret || !lineSettings.channelAccessToken) {
-      alert('すべての項目を入力してください')
+      showToast('すべての項目を入力してください', 'error')
       return
     }
 
@@ -182,18 +192,23 @@ function IntegrationTab() {
       })
       setShowLineModal(false)
       mutateStore()
-      alert('LINE公式アカウント連携を設定しました')
+      showToast('LINE公式アカウント連携を設定しました', 'success')
     } catch {
-      alert('LINE連携の設定に失敗しました')
+      showToast('LINE連携の設定に失敗しました', 'error')
     } finally {
       setSavingLine(false)
     }
   }
 
   async function handleLineDisconnect() {
-    if (!confirm('LINE公式アカウント連携を解除しますか？')) {
-      return
-    }
+    const ok = await confirm({
+      title: '連携解除',
+      message: 'LINE公式アカウント連携を解除しますか？',
+      confirmLabel: '解除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.put('/stores', {
@@ -202,9 +217,9 @@ function IntegrationTab() {
         line_channel_access_token: null,
       })
       mutateStore()
-      alert('LINE公式アカウント連携を解除しました')
+      showToast('LINE公式アカウント連携を解除しました', 'success')
     } catch {
-      alert('連携の解除に失敗しました')
+      showToast('連携の解除に失敗しました', 'error')
     }
   }
 
@@ -426,7 +441,7 @@ function IntegrationTab() {
                     onClick={() => {
                       const webhookUrl = `${import.meta.env.VITE_FRONTEND_URL || window.location.origin}/api/line/webhook`;
                       navigator.clipboard.writeText(webhookUrl);
-                      alert('Webhook URLをコピーしました');
+                      showToast('Webhook URLをコピーしました', 'info');
                     }}
                     className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
                   >
@@ -588,6 +603,8 @@ function IntegrationTab() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </>
   )
 }

@@ -3,6 +3,7 @@ import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom';
 import liffClient from '../api/client';
 import { getAxiosErrorMessage } from '../../utils/error';
+import { useToast } from '../../components/Toast'
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import type { MealEntry } from '../../types/meal';
@@ -157,6 +158,7 @@ function CheckboxItem({
 export default function PreVisitInput() {
   const { reservationId } = useParams<{ reservationId: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadingLastRecord, setLoadingLastRecord] = useState(false);
@@ -272,7 +274,7 @@ export default function PreVisitInput() {
       });
       navigate('/home');
     } catch (error) {
-      alert(getAxiosErrorMessage(error, '事前入力の保存に失敗しました'));
+      showToast(getAxiosErrorMessage(error, '事前入力の保存に失敗しました'), 'error');
     } finally {
       setSaving(false);
     }

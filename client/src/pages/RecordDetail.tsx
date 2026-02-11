@@ -2,6 +2,8 @@ import { useState, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { useAutoSave } from '../hooks/useAutoSave'
 import RecordHeader from './records/components/RecordHeader'
@@ -27,6 +29,7 @@ const RecordDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
   const recordLabel = getRecordLabel(primaryBusinessType)
 
@@ -195,7 +198,14 @@ const RecordDetail = () => {
       showToast(validation.errors[0], 'error')
       return
     }
-    if (!confirm('飼い主に送信しますか？')) return
+    const ok = await confirm({
+      title: '送信確認',
+      message: '飼い主に送信しますか？',
+      confirmLabel: '送信',
+      cancelLabel: 'キャンセル',
+      variant: 'default',
+    })
+    if (!ok) return
 
     setSaving(true)
     try {
@@ -220,7 +230,7 @@ const RecordDetail = () => {
     } finally {
       setSaving(false)
     }
-  }, [id, record, daycareData, groomingData, hotelData, photos, notes, condition, healthCheck, mutate, showToast])
+  }, [id, record, daycareData, groomingData, hotelData, photos, notes, condition, healthCheck, mutate, showToast, confirm])
 
   const handlePhotoAdded = async (photoUrl: string, type: 'regular' | 'concern') => {
     if (!record) return
@@ -242,7 +252,14 @@ const RecordDetail = () => {
 
   const handleDelete = useCallback(async () => {
     if (!id) return
-    if (!confirm(`この${recordLabel}を削除しますか？`)) return
+    const ok = await confirm({
+      title: '削除確認',
+      message: `この${recordLabel}を削除しますか？`,
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      variant: 'destructive',
+    })
+    if (!ok) return
     try {
       await recordsApi.delete(id)
       showToast(`${recordLabel}を削除しました`, 'success')
@@ -250,7 +267,7 @@ const RecordDetail = () => {
     } catch {
       showToast('削除に失敗しました', 'error')
     }
-  }, [id, navigate, showToast])
+  }, [id, navigate, showToast, confirm, recordLabel])
 
   const handleJumpToField = (fieldKey: string) => {
     setActiveTab('record')
@@ -264,7 +281,7 @@ const RecordDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">読み込み中...</p>
       </div>
     )
@@ -272,7 +289,7 @@ const RecordDetail = () => {
 
   if (!record) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <Icon icon="solar:clipboard-remove-bold" width="48" height="48" className="text-muted-foreground mb-4" />
         <p className="text-lg font-medium text-foreground mb-2">{recordLabel}が見つかりません</p>
         <button
@@ -286,7 +303,7 @@ const RecordDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32">
+    <div className="min-h-screen bg-background pb-32">
       <RecordHeader
         petName={record.dog_name}
         recordType={record.record_type}
@@ -407,7 +424,7 @@ const RecordDetail = () => {
       <div className="mx-4 mt-8 mb-4">
         <button
           onClick={handleDelete}
-          className="w-full py-3 text-sm text-red-500 font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-colors"
+          className="w-full py-3 text-sm text-destructive font-medium rounded-xl border border-destructive/20 hover:bg-destructive/10 transition-colors"
         >
           {recordLabel}を削除
         </button>
@@ -427,6 +444,8 @@ const RecordDetail = () => {
           }
         }}
       />
+
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </div>
   )
 }

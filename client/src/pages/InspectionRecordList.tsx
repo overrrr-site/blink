@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import PageHeader from '../components/PageHeader'
 import api from '../api/client'
+import { useToast } from '../components/Toast'
 import type { Staff } from '../types/staff'
 
 interface InspectionRecord {
@@ -165,7 +166,7 @@ function DayCard({
       {isExpanded && (
         <div className="p-4 space-y-3">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">点検時間</label>
+            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">点検時間</label>
             <input
               type="time"
               value={record?.inspection_time || ''}
@@ -175,7 +176,7 @@ function DayCard({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">飼養施設の点検</label>
+            <label className="text-xs font-bold text-muted-foreground mb-2 block">飼養施設の点検</label>
             <div className="space-y-2">
               <ToggleButtonPair label="清掃" field="cleaning_done" date={date} value={record?.cleaning_done} record={record} positiveLabel="済" negativeLabel="否" positiveIsGood onFieldChange={onFieldChange} />
               <ToggleButtonPair label="消毒" field="disinfection_done" date={date} value={record?.disinfection_done} record={record} positiveLabel="済" negativeLabel="否" positiveIsGood onFieldChange={onFieldChange} />
@@ -184,7 +185,7 @@ function DayCard({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">動物の点検</label>
+            <label className="text-xs font-bold text-muted-foreground mb-2 block">動物の点検</label>
             <div className="space-y-2">
               <ToggleButtonPair label="数の異常" field="animal_count_abnormal" date={date} value={record?.animal_count_abnormal} record={record} positiveLabel="有" negativeLabel="無" positiveIsGood={false} onFieldChange={onFieldChange} />
               <ToggleButtonPair label="状態の異常" field="animal_state_abnormal" date={date} value={record?.animal_state_abnormal} record={record} positiveLabel="有" negativeLabel="無" positiveIsGood={false} onFieldChange={onFieldChange} />
@@ -192,7 +193,7 @@ function DayCard({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">点検担当者</label>
+            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">点検担当者</label>
             <select
               value={record?.inspector_name || ''}
               onChange={(e) => onFieldChange(date, 'inspector_name', e.target.value)}
@@ -207,7 +208,7 @@ function DayCard({
 
           {(hasAbnormal || record) && (
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">備考</label>
+              <label className="text-xs font-bold text-muted-foreground mb-1.5 block">備考</label>
               <textarea
                 value={record?.notes || ''}
                 onChange={(e) => onFieldChange(date, 'notes', e.target.value)}
@@ -380,6 +381,7 @@ function toggleSetItem(setter: React.Dispatch<React.SetStateAction<Set<string>>>
 }
 
 function InspectionRecordList(): JSX.Element {
+  const { showToast } = useToast()
   const [records, setRecords] = useState<InspectionRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [staffList, setStaffList] = useState<Staff[]>([])
@@ -466,7 +468,7 @@ function InspectionRecordList(): JSX.Element {
           }
         }
       } catch {
-        alert('点検記録の保存に失敗しました')
+        showToast('点検記録の保存に失敗しました', 'error')
         await fetchData()
       } finally {
         setSavingDates((prev) => {
@@ -524,7 +526,7 @@ function InspectionRecordList(): JSX.Element {
         printWindow.print()
       }, 250)
     } catch {
-      alert('印刷データの取得に失敗しました')
+      showToast('印刷データの取得に失敗しました', 'error')
     }
   }
 

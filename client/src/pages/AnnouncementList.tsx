@@ -6,6 +6,9 @@ import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import api from '../api/client'
 import { fetcher } from '../lib/swr'
+import { useToast } from '../components/Toast'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 interface Announcement {
   id: number
@@ -70,6 +73,8 @@ interface AnnouncementModalProps {
 }
 
 function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: AnnouncementModalProps): JSX.Element {
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -98,7 +103,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
       })
       setFormData((prev) => ({ ...prev, image_url: response.data.url }))
     } catch {
-      alert('画像のアップロードに失敗しました')
+      showToast('画像のアップロードに失敗しました', 'error')
     } finally {
       setUploading(false)
     }
@@ -107,7 +112,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.title || !formData.content) {
-      alert('タイトルと本文は必須です')
+      showToast('タイトルと本文は必須です', 'warning')
       return
     }
 
@@ -131,7 +136,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
 
       onSaved()
     } catch {
-      alert('お知らせの保存に失敗しました')
+      showToast('お知らせの保存に失敗しました', 'error')
     } finally {
       setSaving(false)
     }
@@ -139,14 +144,15 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
 
   const handleDelete = async () => {
     if (!editingAnnouncement) return
-    if (!confirm('このお知らせを削除しますか？')) return
+    const ok = await confirm({ title: '確認', message: 'このお知らせを削除しますか？', confirmLabel: '削除', cancelLabel: 'キャンセル', variant: 'destructive' })
+    if (!ok) return
 
     setDeleting(true)
     try {
       await api.delete(`/announcements/${editingAnnouncement.id}`)
       onSaved()
     } catch {
-      alert('お知らせの削除に失敗しました')
+      showToast('お知らせの削除に失敗しました', 'error')
     } finally {
       setDeleting(false)
     }
@@ -164,6 +170,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
       <div className="relative bg-background w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between safe-area-pt">
           <h2 className="text-lg font-bold">
@@ -179,7 +186,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
 
         <form id="announcement-form" onSubmit={handleSubmit} className="p-5 pb-8 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
               タイトル <span className="text-destructive">*</span>
             </label>
             <input
@@ -193,7 +200,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
               本文 <span className="text-destructive">*</span>
             </label>
             <textarea
@@ -206,7 +213,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
               画像（任意）
             </label>
             <input
@@ -268,7 +275,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
               公開開始日時
             </label>
             <div className="flex gap-2">
@@ -292,7 +299,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
               公開終了日時（任意）
             </label>
             <input

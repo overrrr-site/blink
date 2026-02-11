@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
+import { useToast } from '../components/Toast'
 import JournalPhotoStep from '../components/journals/JournalPhotoStep'
 import JournalCommentStep from '../components/journals/JournalCommentStep'
 import JournalDetailsStep from '../components/journals/JournalDetailsStep'
@@ -44,6 +45,7 @@ const STEP_INFO: Record<Step, { title: string }> = {
 const JournalCreate = () => {
   const { reservationId } = useParams<{ reservationId: string }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [reservation, setReservation] = useState<ReservationSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -310,7 +312,7 @@ const JournalCreate = () => {
       })
       navigate('/journals')
     } catch {
-      alert('日誌の作成に失敗しました')
+      showToast('日誌の作成に失敗しました', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -361,7 +363,7 @@ const JournalCreate = () => {
         comment: response.data.comment,
       }))
     } catch {
-      alert('コメントの生成に失敗しました')
+      showToast('コメントの生成に失敗しました', 'error')
     } finally {
       setGenerating(false)
     }

@@ -20,7 +20,7 @@ export default {
         },
         muted: {
           DEFAULT: "#F5F5F4",
-          foreground: "#78716C",
+          foreground: "#57534E",
         },
         accent: {
           DEFAULT: "#FEF3C7",
@@ -44,7 +44,10 @@ export default {
         heading: ["Nunito Sans", "sans-serif"],
       },
       borderRadius: {
+        DEFAULT: "0.5rem",
         lg: "0.75rem",
+        xl: "1rem",
+        "2xl": "1.25rem",
       },
     },
   },

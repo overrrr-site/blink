@@ -42,9 +42,9 @@ function RecordTypeBadge({ type }: { type: RecordType }) {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string; label: string }> = {
-    draft: { bg: '#F1F5F9', text: '#64748B', label: '下書き' },
+    draft: { bg: 'hsl(var(--muted))', text: 'hsl(var(--muted-foreground))', label: '下書き' },
     saved: { bg: '#FEF3C7', text: '#D97706', label: '保存済み' },
-    shared: { bg: '#ECFDF5', text: '#059669', label: '共有済み' },
+    shared: { bg: 'hsl(var(--chart-2) / 0.1)', text: 'hsl(var(--chart-2))', label: '共有済み' },
   }
   const s = styles[status] || styles.draft
   return (
@@ -60,7 +60,7 @@ function StatusBadge({ status }: { status: string }) {
 function ShareBadge({ sharedAt, status }: { sharedAt?: string | null; status: string }) {
   if (sharedAt) {
     return (
-      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-emerald-600 bg-emerald-50">
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-chart-2 bg-chart-2/10">
         送信済
       </span>
     )
@@ -178,9 +178,9 @@ const RecordList = () => {
 
   return (
     <div className="pb-6">
-      <div className="hidden print:block print:mb-4 print:border-b print:border-gray-300 print:pb-4 px-5">
+      <div className="hidden print:block print:mb-4 print:border-b print:border-border print:pb-4 px-5">
         <h1 className="text-xl font-bold">{recordLabel}一覧</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           出力日時: {new Date().toLocaleString('ja-JP')}
         </p>
       </div>
@@ -309,7 +309,7 @@ const RecordList = () => {
         ) : (
           Object.entries(groupedRecords).map(([date, dateRecords]) => (
             <div key={date}>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
                 <Icon icon="solar:calendar-linear" width="16" height="16" />
                 {new Date(date).toLocaleDateString('ja-JP', {
                   year: 'numeric',

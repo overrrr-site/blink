@@ -38,7 +38,7 @@ export default function RecordHeader({
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="size-10 rounded-xl bg-slate-100 flex items-center justify-center"
+            className="size-10 rounded-xl bg-muted flex items-center justify-center"
             aria-label="戻る"
           >
             <Icon icon="solar:alt-arrow-left-linear" width="20" height="20" />
@@ -48,13 +48,13 @@ export default function RecordHeader({
             <div className="flex items-center gap-1.5">
               <p className="text-xs" style={{ color: colors.primary }}>{label}</p>
               {autoSaveStatus === 'saving' && (
-                <span className="text-[10px] text-slate-400">保存中...</span>
+                <span className="text-[10px] text-muted-foreground">保存中...</span>
               )}
               {autoSaveStatus === 'saved' && (
-                <span className="text-[10px] text-emerald-500">✓ 保存済み</span>
+                <span className="text-[10px] text-chart-2">✓ 保存済み</span>
               )}
               {autoSaveStatus === 'error' && (
-                <span className="text-[10px] text-red-400">保存失敗</span>
+                <span className="text-[10px] text-destructive">保存失敗</span>
               )}
             </div>
           </div>
@@ -64,7 +64,7 @@ export default function RecordHeader({
           {onSettings && (
             <button
               onClick={onSettings}
-              className="size-10 rounded-xl bg-slate-100 flex items-center justify-center"
+              className="size-10 rounded-xl bg-muted flex items-center justify-center"
               aria-label="設定"
             >
               <Icon icon="solar:settings-linear" width="20" height="20" />
@@ -73,7 +73,7 @@ export default function RecordHeader({
           <button
             onClick={onSave}
             disabled={saving}
-            className="px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 min-h-[44px]"
+            className="px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-background transition-colors disabled:opacity-50 min-h-[44px]"
           >
             {saving ? '保存中...' : '保存'}
           </button>

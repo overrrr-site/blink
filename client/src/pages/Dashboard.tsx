@@ -9,6 +9,7 @@ import { getAvatarUrl } from '../utils/image'
 import { getDashboardStatusLabels } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
+import { useToast } from '../components/Toast'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 
@@ -368,6 +369,7 @@ function Dashboard(): JSX.Element {
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const {
     selectedBusinessType,
     effectiveBusinessType,
@@ -398,11 +400,11 @@ function Dashboard(): JSX.Element {
       })
       await mutate()
     } catch {
-      alert('登園処理に失敗しました')
+      showToast('登園処理に失敗しました', 'error')
     } finally {
       setCheckingIn(null)
     }
-  }, [mutate])
+  }, [mutate, showToast])
 
   const handleCheckOut = useCallback(async function(reservationId: number): Promise<void> {
     setCheckingIn(reservationId)
@@ -412,11 +414,11 @@ function Dashboard(): JSX.Element {
       })
       await mutate()
     } catch {
-      alert('降園処理に失敗しました')
+      showToast('降園処理に失敗しました', 'error')
     } finally {
       setCheckingIn(null)
     }
-  }, [mutate])
+  }, [mutate, showToast])
 
   const handleNavigateReservation = useCallback((id: number) => {
     navigate(`/reservations/${id}`)
