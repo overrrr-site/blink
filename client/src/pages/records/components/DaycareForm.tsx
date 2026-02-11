@@ -85,7 +85,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                 key={value}
                 type="button"
                 onClick={() => toggleActivity(value)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] flex items-center gap-2 ${
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center gap-2 ${
                   !selected ? 'border border-border text-muted-foreground' : ''
                 }`}
                 style={{
@@ -141,7 +141,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                   <button
                     type="button"
                     onClick={() => toggleToilet(key, 'urination')}
-                    className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5 ${
+                    className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center justify-start gap-1.5 ${
                       !slotData.urination ? 'border border-border text-muted-foreground' : ''
                     }`}
                     style={{
@@ -157,7 +157,7 @@ export default function DaycareForm({ data, onChange }: DaycareFormProps) {
                   <button
                     type="button"
                     onClick={() => toggleToilet(key, 'defecation')}
-                    className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center justify-start gap-1.5 ${
+                    className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center justify-start gap-1.5 ${
                       !slotData.defecation ? 'border border-border text-muted-foreground' : ''
                     }`}
                     style={{

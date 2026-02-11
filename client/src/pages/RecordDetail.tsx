@@ -24,6 +24,8 @@ import { useRecordDetail } from './records/hooks/useRecordDetail'
 import { getRecordLabel } from '../domain/businessTypeConfig'
 import { useAuthStore } from '../store/authStore'
 import { calculateAge } from '../utils/dog'
+import { BTN_PRIMARY, BTN_SECONDARY } from '../utils/styles'
+import { getBusinessTypeColors } from '../utils/businessTypeColors'
 
 const RecordDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -307,11 +309,7 @@ const RecordDetail = () => {
       <RecordHeader
         petName={record.dog_name}
         recordType={record.record_type}
-        status={record.status}
-        saving={saving}
         autoSaveStatus={autoSaveStatus}
-        onSave={handleSave}
-        onShare={handleShare}
         onSettings={openAISettings}
       />
 
@@ -424,10 +422,36 @@ const RecordDetail = () => {
       <div className="mx-4 mt-8 mb-4">
         <button
           onClick={handleDelete}
-          className="w-full py-3 text-sm text-destructive font-medium rounded-xl border border-destructive/20 hover:bg-destructive/10 transition-colors"
+          className="w-full py-3 text-sm text-destructive font-medium rounded-xl border border-destructive/20 hover:bg-destructive/10 active:scale-[0.98] transition-all"
         >
           {recordLabel}を削除
         </button>
+      </div>
+
+      {/* Fixed footer with save/share buttons */}
+      <div className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb">
+        <div className="flex gap-3 max-w-lg mx-auto">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={`flex-1 ${BTN_SECONDARY}`}
+          >
+            {saving ? '保存中...' : '保存'}
+          </button>
+          <button
+            onClick={handleShare}
+            disabled={saving || record.status === 'shared'}
+            className={`flex-1 ${BTN_PRIMARY}`}
+            style={{
+              background: record.status === 'shared'
+                ? '#94A3B8'
+                : `linear-gradient(135deg, ${getBusinessTypeColors(record.record_type).primary} 0%, ${getBusinessTypeColors(record.record_type).primary}DD 100%)`,
+              boxShadow: record.status === 'shared' ? 'none' : `0 2px 8px ${getBusinessTypeColors(record.record_type).primary}40`,
+            }}
+          >
+            {record.status === 'shared' ? '共有済み' : '共有'}
+          </button>
+        </div>
       </div>
 
       {/* AI Settings Drawer */}

@@ -25,6 +25,8 @@ import { buildCreateRecordPayload, validateRecordForm } from './records/utils/re
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
 import { calculateAge } from '../utils/dog'
+import { BTN_PRIMARY, BTN_SECONDARY } from '../utils/styles'
+import { getBusinessTypeColors } from '../utils/businessTypeColors'
 
 interface Dog {
   id: number
@@ -394,11 +396,7 @@ const RecordCreate = () => {
       <RecordHeader
         petName={selectedDog?.name}
         recordType={recordType}
-        saving={saving}
-        onSave={() => handleSave(false)}
-        onShare={handleShare}
         onSettings={openAISettings}
-        shareLabel="保存して送信"
       />
 
       {waitingReservationSource && (
@@ -423,7 +421,7 @@ const RecordCreate = () => {
                   <button
                     key={dog.id}
                     onClick={() => setSelectedDogId(dog.id)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-background transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-3 hover:bg-background active:scale-[0.98] transition-all text-left"
                   >
                     {dog.photo_url ? (
                       <img src={dog.photo_url} alt={dog.name} className="size-10 rounded-full object-cover" />
@@ -469,7 +467,7 @@ const RecordCreate = () => {
           <div ref={recordMainSectionRef}>
             {recordType === 'hotel' ? (
               <div ref={hotelStaySectionRef}>
-                <RequiredSection title="宿泊情報">
+                <RequiredSection title="宿泊情報" completed={!!(hotelData.check_in && hotelData.check_out_scheduled)}>
                   <HotelForm
                     data={hotelData}
                     onChange={setHotelData}
@@ -491,7 +489,7 @@ const RecordCreate = () => {
           </div>
 
           <div ref={photosSectionRef}>
-            <RequiredSection title="写真">
+            <RequiredSection title="写真" completed={(photos.regular || []).length > 0}>
               <PhotosForm
                 data={photos}
                 onChange={setPhotos}
@@ -565,7 +563,7 @@ const RecordCreate = () => {
                     onClick={() => {
                       if (firstMissingField) handleJumpToField(firstMissingField)
                     }}
-                    className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100 transition-colors"
+                    className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100 active:scale-95 transition-all"
                   >
                     未入力 {missingInputCount}項目
                   </button>
@@ -576,7 +574,7 @@ const RecordCreate = () => {
                 <button
                   type="button"
                   onClick={() => handleGenerateReport()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 active:scale-[0.98] transition-all"
                 >
                   <Icon icon="solar:magic-stick-3-bold" width="14" height="14" />
                   作成する
@@ -584,14 +582,14 @@ const RecordCreate = () => {
                 <button
                   type="button"
                   onClick={() => handleGenerateReport('formal')}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
                 >
                   丁寧
                 </button>
                 <button
                   type="button"
                   onClick={() => handleGenerateReport('casual')}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
                 >
                   カジュアル
                 </button>
@@ -605,14 +603,14 @@ const RecordCreate = () => {
                     <button
                       type="button"
                       onClick={() => handleAISuggestionAction('report-draft', reportSuggestion.preview)}
-                      className="rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-colors"
+                      className="rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 active:scale-[0.98] transition-all"
                     >
                       この内容を反映
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAISuggestionDismiss('report-draft')}
-                      className="rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted transition-colors"
+                      className="rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
                     >
                       閉じる
                     </button>
@@ -627,7 +625,7 @@ const RecordCreate = () => {
           )}
 
           <div ref={reportSectionRef}>
-            <RequiredSection title="飼い主への報告文">
+            <RequiredSection title="飼い主への報告文" completed={!!notes.report_text?.trim()}>
               <textarea
                 value={notes.report_text || ''}
                 onChange={(e) => setNotes((prev) => ({ ...prev, report_text: e.target.value }))}
@@ -650,6 +648,30 @@ const RecordCreate = () => {
               className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-border resize-none focus:outline-none focus:ring-2 focus:ring-border"
               style={{ minHeight: 88 }}
             />
+          </div>
+
+          {/* Fixed footer with save/share buttons */}
+          <div className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb">
+            <div className="flex gap-3 max-w-lg mx-auto">
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                className={`flex-1 ${BTN_SECONDARY}`}
+              >
+                {saving ? '保存中...' : '保存'}
+              </button>
+              <button
+                onClick={handleShare}
+                disabled={saving}
+                className={`flex-1 ${BTN_PRIMARY}`}
+                style={{
+                  background: `linear-gradient(135deg, ${getBusinessTypeColors(recordType).primary} 0%, ${getBusinessTypeColors(recordType).primary}DD 100%)`,
+                  boxShadow: `0 2px 8px ${getBusinessTypeColors(recordType).primary}40`,
+                }}
+              >
+                保存して送信
+              </button>
+            </div>
           </div>
         </>
       )}

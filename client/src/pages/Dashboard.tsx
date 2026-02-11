@@ -191,7 +191,9 @@ const ReservationCard = React.memo(function ReservationCard({
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm">{reservation.dog_name}</h3>
             {hasPreVisitInput(reservation) && (
-              <Icon icon="solar:clipboard-check-bold" className="size-4 text-chart-3" />
+              <span aria-label="飼い主さんからの連絡あり">
+                <Icon icon="solar:clipboard-check-bold" className="size-4 text-chart-3" />
+              </span>
             )}
           </div>
           <p className="text-xs text-muted-foreground">

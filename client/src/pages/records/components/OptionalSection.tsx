@@ -14,7 +14,8 @@ export default function OptionalSection({ title, collapsed, onToggle, summary, c
     <div className="mx-4 mt-4">
       <button
         onClick={onToggle}
-        className={`w-full flex items-center justify-between py-3 px-4 rounded-2xl transition-all min-h-[44px] border ${
+        aria-expanded={!collapsed}
+        className={`w-full flex items-center justify-between py-3 px-4 rounded-2xl transition-all active:scale-[0.99] min-h-[44px] border ${
           collapsed ? 'bg-transparent border-muted' : 'bg-white border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
         }`}
       >

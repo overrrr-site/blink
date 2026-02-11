@@ -106,7 +106,7 @@ export default function PhotosForm({
               />
               <button
                 onClick={() => removeRegularPhoto(index)}
-                className="absolute -top-2 -right-2 size-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm"
+                className="absolute -top-2 -right-2 size-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
                 aria-label="写真を削除"
               >
                 <Icon icon="solar:close-circle-bold" width="16" height="16" />
@@ -115,7 +115,7 @@ export default function PhotosForm({
           ))}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="size-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center hover:bg-background transition-colors"
+            className="size-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center hover:bg-background active:scale-95 transition-all"
             aria-label="写真を追加"
           >
             <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-muted-foreground" />
@@ -175,7 +175,7 @@ export default function PhotosForm({
                 </div>
                 <button
                   onClick={() => removeConcernPhoto(index)}
-                  className="absolute -top-2 -right-2 size-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm"
+                  className="absolute -top-2 -right-2 size-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
                   aria-label="写真を削除"
                 >
                   <Icon icon="solar:close-circle-bold" width="16" height="16" />
@@ -184,7 +184,7 @@ export default function PhotosForm({
             ))}
             <button
               onClick={() => concernFileInputRef.current?.click()}
-              className="size-[90px] rounded-xl border-2 border-dashed border-destructive/20 flex items-center justify-center hover:bg-destructive/10 transition-colors"
+              className="size-[90px] rounded-xl border-2 border-dashed border-destructive/20 flex items-center justify-center hover:bg-destructive/10 active:scale-95 transition-all"
               aria-label="気になる箇所の写真を追加"
             >
               <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-destructive" />

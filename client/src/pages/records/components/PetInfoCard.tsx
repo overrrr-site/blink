@@ -52,7 +52,7 @@ export default function PetInfoCard({
           <button
             onClick={onCopyPrevious}
             disabled={copyLoading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-border hover:bg-background transition-colors disabled:opacity-50 min-h-[36px]"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-border hover:bg-background active:scale-[0.98] transition-all disabled:opacity-50 min-h-[36px]"
           >
             <Icon icon="solar:copy-linear" width="16" height="16" />
             {copyLoading ? '読込中...' : '前回コピー'}
