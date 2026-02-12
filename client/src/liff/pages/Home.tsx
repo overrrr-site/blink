@@ -12,8 +12,6 @@ import { getAvatarUrl } from '../../utils/image';
 import { getAxiosErrorMessage } from '../../utils/error';
 import {
   getBusinessTypeColors,
-  getBusinessTypeIcon,
-  getBusinessTypeLabel,
   getDashboardStatusLabels,
   getRecordLabel,
 } from '../../domain/businessTypeConfig';
@@ -91,7 +89,8 @@ export default function Home() {
     mutate: mutateOwner,
   } = useSWR<OwnerData>('/me', liffFetcher, {
     dedupingInterval: 60_000,
-    revalidateOnFocus: false,
+    revalidateOnFocus: true,
+    refreshInterval: 60_000,
   });
 
   const effectiveBusinessType = selectedBusinessType || ownerData?.primary_business_type || 'daycare';
@@ -104,10 +103,10 @@ export default function Home() {
     mutate: mutateSummary,
   } = useSWR<DashboardSummary>(summaryKey, liffFetcher, {
     dedupingInterval: 20_000,
-    revalidateOnFocus: false,
+    revalidateOnFocus: true,
+    refreshInterval: 30_000,
   });
 
-  const [refreshing, setRefreshing] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
@@ -119,8 +118,6 @@ export default function Home() {
   const statusLabels = getDashboardStatusLabels(effectiveBusinessType);
   const preVisitLabel = `${statusLabels.checkIn}前入力`;
   const businessColors = getBusinessTypeColors(effectiveBusinessType);
-  const businessTypeLabel = getBusinessTypeLabel(effectiveBusinessType);
-  const businessTypeIcon = getBusinessTypeIcon(effectiveBusinessType);
 
   useEffect(() => {
     if (ownerData && token) {
@@ -136,15 +133,6 @@ export default function Home() {
       });
     }
   }, [ownerData, owner?.lineUserId, setAuth, token]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([mutateOwner(), mutateSummary()]);
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   function getQrActionErrorMessage(error: unknown, fallback: string): string {
     if (axios.isAxiosError(error)) {
@@ -292,7 +280,7 @@ export default function Home() {
         <Icon icon="solar:cloud-cross-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground mb-4">データの取得に失敗しました</p>
         <button
-          onClick={handleRefresh}
+          onClick={() => { Promise.all([mutateOwner(), mutateSummary()]); }}
           className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold active:scale-95 transition-transform"
         >
           再試行
@@ -312,37 +300,6 @@ export default function Home() {
   return (
     <div className="px-5 pt-6 pb-28 space-y-5">
       <h1 className="sr-only">ホーム</h1>
-
-      {refreshing && (
-        <div className="flex items-center justify-center py-2">
-          <Icon icon="solar:spinner-bold" width="20" height="20" className="text-primary animate-spin mr-2" />
-          <span className="text-sm text-muted-foreground">更新中...</span>
-        </div>
-      )}
-
-      <section
-        className="rounded-2xl px-4 py-3 border"
-        style={{
-          borderColor: `${businessColors.primary}33`,
-          background: `linear-gradient(120deg, ${businessColors.pale}, #FFFFFF)`,
-        }}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="size-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${businessColors.primary}1F` }}>
-              <Icon icon={businessTypeIcon} width="16" height="16" style={{ color: businessColors.primary }} />
-            </span>
-            <p className="text-sm font-bold">{businessTypeLabel}モード</p>
-          </div>
-          <button
-            onClick={handleRefresh}
-            className="text-xs font-bold px-3 py-1.5 rounded-full border active:scale-95 transition-transform"
-            style={{ borderColor: `${businessColors.primary}33`, color: businessColors.primary }}
-          >
-            更新
-          </button>
-        </div>
-      </section>
 
       {nextReservation ? (
         <div className="space-y-3">
