@@ -10,7 +10,7 @@ import {
 import { buildPaginatedResponse, extractTotalCount, parsePaginationParams, PaginationParams } from '../utils/pagination.js';
 import { isNonEmptyString } from '../utils/validation.js';
 import type { BusinessType } from '../utils/businessTypes.js';
-import { parseBusinessTypeInput } from '../utils/businessTypes.js';
+import { isBusinessType, parseBusinessTypeInput } from '../utils/businessTypes.js';
 
 function buildOwnersListQuery(params: {
   storeId: number;
@@ -115,6 +115,12 @@ function buildOwnersListQuery(params: {
 const router = express.Router();
 router.use(authenticate);
 
+function normalizeBusinessTypesInput(value: unknown): BusinessType[] | null {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.filter((item): item is BusinessType => isBusinessType(item));
+  return normalized.length > 0 ? normalized : null;
+}
+
 async function hasOwnersBusinessTypesColumn(): Promise<boolean> {
   const result = await pool.query(
     `SELECT EXISTS (
@@ -126,6 +132,13 @@ async function hasOwnersBusinessTypesColumn(): Promise<boolean> {
      ) AS has_column`
   );
   return Boolean(result.rows[0]?.has_column);
+}
+
+async function ensureOwnersBusinessTypesColumn(): Promise<void> {
+  await pool.query(
+    `ALTER TABLE owners
+     ADD COLUMN IF NOT EXISTS business_types TEXT[] DEFAULT NULL`
+  );
 }
 
 // 飼い主一覧取得
@@ -218,8 +231,12 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
-    const businessTypesValue = Array.isArray(business_types) && business_types.length > 0 ? business_types : null;
+    let hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
+    if (!hasOwnerBusinessTypes && Array.isArray(business_types)) {
+      await ensureOwnersBusinessTypesColumn();
+      hasOwnerBusinessTypes = true;
+    }
+    const businessTypesValue = hasOwnerBusinessTypes ? normalizeBusinessTypesInput(business_types) : null;
 
     const result = hasOwnerBusinessTypes
       ? await pool.query(
@@ -289,8 +306,12 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
       business_types,
     } = req.body;
 
-    const hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
-    const businessTypesValue = Array.isArray(business_types) && business_types.length > 0 ? business_types : null;
+    let hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
+    if (!hasOwnerBusinessTypes && Array.isArray(business_types)) {
+      await ensureOwnersBusinessTypesColumn();
+      hasOwnerBusinessTypes = true;
+    }
+    const businessTypesValue = hasOwnerBusinessTypes ? normalizeBusinessTypesInput(business_types) : null;
 
     const result = hasOwnerBusinessTypes
       ? await pool.query(

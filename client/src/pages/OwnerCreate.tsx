@@ -38,7 +38,17 @@ const OwnerCreate = () => {
 
     setLoading(true)
     try {
-      const response = await api.post('/owners', values)
+      const response = await api.post('/owners', {
+        name: values.name,
+        name_kana: values.name_kana || null,
+        phone: values.phone,
+        email: values.email || null,
+        address: values.address || null,
+        emergency_contact: values.emergency_contact_name || null,
+        emergency_picker: values.emergency_contact_phone || null,
+        memo: values.notes || null,
+        business_types: values.business_types,
+      })
       const ownerId = response.data.id
 
       // 犬情報も登録する場合

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
+import type { RecordType } from '../types/record'
+import { getBusinessTypeColors, getBusinessTypeLabel } from '../utils/businessTypeColors'
 
 interface OwnerDog {
   id: number
@@ -18,6 +20,7 @@ interface OwnerDetailData {
   phone: string
   email?: string
   address?: string
+  business_types?: RecordType[] | null
   dogs: OwnerDog[]
 }
 
@@ -104,6 +107,31 @@ function OwnerDetail(): JSX.Element {
                 <p className="text-sm font-medium leading-relaxed">{owner.address}</p>
               </div>
             )}
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">利用サービス</label>
+              {Array.isArray(owner.business_types) && owner.business_types.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {owner.business_types.map((type) => {
+                    const colors = getBusinessTypeColors(type)
+                    return (
+                      <span
+                        key={type}
+                        className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+                        style={{
+                          background: colors.pale,
+                          color: colors.primary,
+                          border: `1px solid ${colors.primary}33`,
+                        }}
+                      >
+                        {getBusinessTypeLabel(type)}
+                      </span>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">未設定</p>
+              )}
+            </div>
           </div>
         </div>
 

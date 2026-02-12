@@ -32,10 +32,10 @@ const OwnerEdit = () => {
         phone: owner.phone || '',
         email: owner.email || '',
         address: owner.address || '',
-        emergency_contact_name: owner.emergency_contact_name || '',
-        emergency_contact_phone: owner.emergency_contact_phone || '',
-        notes: owner.notes || '',
-        business_types: owner.business_types || [],
+        emergency_contact_name: owner.emergency_contact || owner.emergency_contact_name || '',
+        emergency_contact_phone: owner.emergency_picker || owner.emergency_contact_phone || '',
+        notes: owner.memo || owner.notes || '',
+        business_types: Array.isArray(owner.business_types) ? owner.business_types : [],
       })
     } catch {
       showToast('飼い主情報の取得に失敗しました', 'error')
@@ -52,7 +52,17 @@ const OwnerEdit = () => {
 
     setSaving(true)
     try {
-      await api.put(`/owners/${id}`, values)
+      await api.put(`/owners/${id}`, {
+        name: values.name,
+        name_kana: values.name_kana || null,
+        phone: values.phone,
+        email: values.email || null,
+        address: values.address || null,
+        emergency_contact: values.emergency_contact_name || null,
+        emergency_picker: values.emergency_contact_phone || null,
+        memo: values.notes || null,
+        business_types: values.business_types,
+      })
       navigate(`/owners/${id}`)
     } catch {
       showToast('更新に失敗しました', 'error')
