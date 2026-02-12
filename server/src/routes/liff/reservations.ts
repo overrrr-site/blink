@@ -7,6 +7,7 @@ import {
   sendServerError,
 } from '../../utils/response.js';
 import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../../utils/pagination.js';
+import { parseBusinessTypeInput } from '../../utils/businessTypes.js';
 import { requireOwnerToken } from './common.js';
 
 const router = express.Router();
@@ -17,9 +18,19 @@ router.get('/reservations', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    const queryParams = req.query as { month?: string | string[]; page?: string | string[]; limit?: string | string[] };
-    const { month } = queryParams;
+    const queryParams = req.query as {
+      month?: string | string[];
+      page?: string | string[];
+      limit?: string | string[];
+      service_type?: string | string[];
+    };
+    const { month, service_type } = queryParams;
     const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
+    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
 
     let query = `
       SELECT r.*, d.name as dog_name, d.photo_url as dog_photo,
@@ -43,6 +54,11 @@ router.get('/reservations', async function(req, res) {
       params.push(`${monthValue}-01`);
     }
 
+    if (serviceType) {
+      query += ` AND COALESCE(r.service_type, 'daycare') = $${params.length + 1}`;
+      params.push(serviceType);
+    }
+
     query += ` ORDER BY r.reservation_date DESC, r.reservation_time DESC`;
     query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(pagination.limit, pagination.offset);
@@ -61,7 +77,12 @@ router.get('/reservations/export.ics', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    const { month, reservation_id } = req.query;
+    const { month, reservation_id, service_type } = req.query;
+    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
 
     // 店舗情報を取得
     const storeResult = await pool.query(
@@ -84,6 +105,11 @@ router.get('/reservations/export.ics', async function(req, res) {
     } else if (month) {
       query += ` AND r.reservation_date >= $3::date AND r.reservation_date < ($3::date + INTERVAL '1 month')`;
       params.push(`${month}-01`);
+    }
+
+    if (serviceType) {
+      query += ` AND COALESCE(r.service_type, 'daycare') = $${params.length + 1}`;
+      params.push(serviceType);
     }
 
     query += ` ORDER BY r.reservation_date, r.reservation_time`;
@@ -265,10 +291,19 @@ router.post('/reservations', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    const { dog_id, reservation_date, reservation_time, notes } = req.body;
+    const { dog_id, reservation_date, reservation_time, notes, service_type } = req.body;
 
     if (!dog_id || !reservation_date) {
       sendBadRequest(res, '犬IDと予約日は必須です');
+      return;
+    }
+    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
+    if (serviceTypeError) {
+      sendBadRequest(res, serviceTypeError);
+      return;
+    }
+    if (!serviceType) {
+      sendBadRequest(res, 'service_typeは必須です');
       return;
     }
 
@@ -331,8 +366,8 @@ router.post('/reservations', async function(req, res) {
 
     const result = await pool.query(
       `INSERT INTO reservations (
-        store_id, dog_id, reservation_date, reservation_time, memo
-      ) VALUES ($1, $2, $3, $4, $5)
+        store_id, dog_id, reservation_date, reservation_time, memo, service_type
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *`,
       [
         decoded.storeId,
@@ -340,6 +375,7 @@ router.post('/reservations', async function(req, res) {
         reservation_date,
         reservation_time || '09:00',
         notes || null,
+        serviceType,
       ]
     );
 

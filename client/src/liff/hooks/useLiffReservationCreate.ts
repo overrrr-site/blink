@@ -5,6 +5,7 @@ import { getAxiosErrorMessage } from '../../utils/error'
 import { useToast } from '../../components/Toast'
 import type { LiffDog } from '../types/dog'
 import type { LiffReservationForm } from '../../types/reservation'
+import { useLiffAuthStore } from '../store/authStore'
 
 type LiffReservationCreateForm = LiffReservationForm & {
   dog_id: string
@@ -12,6 +13,7 @@ type LiffReservationCreateForm = LiffReservationForm & {
 
 export function useLiffReservationCreate() {
   const { showToast } = useToast()
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare')
   const [dogs, setDogs] = useState<LiffDog[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -57,6 +59,7 @@ export function useLiffReservationCreate() {
         reservation_date: formData.reservation_date,
         reservation_time: formData.reservation_time,
         notes: formData.notes || null,
+        service_type: selectedBusinessType,
       })
       return true
     } catch (error) {

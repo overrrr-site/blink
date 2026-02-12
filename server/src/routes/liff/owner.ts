@@ -2,8 +2,20 @@ import express from 'express';
 import pool from '../../db/connection.js';
 import { sendNotFound, sendServerError } from '../../utils/response.js';
 import { requireOwnerToken } from './common.js';
+import { isBusinessType, type BusinessType } from '../../utils/businessTypes.js';
 
 const router = express.Router();
+
+function normalizeBusinessTypes(value: unknown): BusinessType[] {
+  if (!Array.isArray(value)) return [];
+  const unique = new Set<BusinessType>();
+  for (const item of value) {
+    if (isBusinessType(item)) {
+      unique.add(item);
+    }
+  }
+  return Array.from(unique);
+}
 
 // 飼い主情報取得（認証済み）
 router.get('/me', async function(req, res) {
@@ -25,7 +37,7 @@ router.get('/me', async function(req, res) {
       // 飼い主情報と店舗情報を取得（業態情報含む）
       timedQuery('owner', () => pool.query(
         `SELECT o.*, s.name as store_name, s.address as store_address,
-                s.primary_business_type, s.business_types
+                s.primary_business_type, s.business_types as store_business_types
          FROM owners o
          JOIN stores s ON o.store_id = s.id
          WHERE o.id = $1 AND o.store_id = $2`,
@@ -91,11 +103,23 @@ router.get('/me', async function(req, res) {
     }
 
     const owner = ownerResult.rows[0];
+    const ownerBusinessTypes = normalizeBusinessTypes(owner.business_types);
+    const storeBusinessTypes = normalizeBusinessTypes(owner.store_business_types);
+    const fallbackPrimary = isBusinessType(owner.primary_business_type)
+      ? owner.primary_business_type
+      : 'daycare';
+    const availableBusinessTypes = ownerBusinessTypes.length > 0
+      ? ownerBusinessTypes
+      : storeBusinessTypes.length > 0
+        ? storeBusinessTypes
+        : [fallbackPrimary];
 
     const contracts = contractsResult.rows;
 
     res.json({
       ...owner,
+      primary_business_type: fallbackPrimary,
+      available_business_types: availableBusinessTypes,
       dogs: dogsResult.rows,
       contracts,
       nextReservation: nextReservationResult.rows[0] || null,

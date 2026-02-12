@@ -106,50 +106,68 @@ router.post('/pre-visit-inputs', async function(req, res) {
       return;
     }
     const reservationServiceType = reservationCheck.rows[0]?.service_type;
-    const finalServiceType = parsedServiceType ?? reservationServiceType ?? null;
+    const finalServiceType = parsedServiceType ?? reservationServiceType ?? 'daycare';
 
     const mealDataJson = meal_data ? JSON.stringify(meal_data) : null;
     const groomingDataJson = grooming_data ? JSON.stringify(grooming_data) : null;
     const hotelDataJson = hotel_data ? JSON.stringify(hotel_data) : null;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const result = await pool.query(
-      `INSERT INTO pre_visit_inputs (
-        reservation_id, morning_urination, morning_defecation,
-        afternoon_urination, afternoon_defecation,
-        breakfast_status, health_status, notes, meal_data,
-        service_type, grooming_data, hotel_data
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      ON CONFLICT (reservation_id) DO UPDATE SET
-        morning_urination = EXCLUDED.morning_urination,
-        morning_defecation = EXCLUDED.morning_defecation,
-        afternoon_urination = EXCLUDED.afternoon_urination,
-        afternoon_defecation = EXCLUDED.afternoon_defecation,
-        breakfast_status = EXCLUDED.breakfast_status,
-        health_status = EXCLUDED.health_status,
-        notes = EXCLUDED.notes,
-        meal_data = EXCLUDED.meal_data,
-        service_type = EXCLUDED.service_type,
-        grooming_data = EXCLUDED.grooming_data,
-        hotel_data = EXCLUDED.hotel_data,
-        submitted_at = CURRENT_TIMESTAMP
-      RETURNING *`,
-      [
-        reservation_id,
-        morning_urination,
-        morning_defecation,
-        afternoon_urination,
-        afternoon_defecation,
-        breakfast_status,
-        health_status,
-        notes,
-        mealDataJson,
-        finalServiceType,
-        groomingDataJson,
-        hotelDataJson,
-      ]
-    );
+      const result = await client.query(
+        `INSERT INTO pre_visit_inputs (
+          reservation_id, morning_urination, morning_defecation,
+          afternoon_urination, afternoon_defecation,
+          breakfast_status, health_status, notes, meal_data,
+          service_type, grooming_data, hotel_data
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (reservation_id) DO UPDATE SET
+          morning_urination = EXCLUDED.morning_urination,
+          morning_defecation = EXCLUDED.morning_defecation,
+          afternoon_urination = EXCLUDED.afternoon_urination,
+          afternoon_defecation = EXCLUDED.afternoon_defecation,
+          breakfast_status = EXCLUDED.breakfast_status,
+          health_status = EXCLUDED.health_status,
+          notes = EXCLUDED.notes,
+          meal_data = EXCLUDED.meal_data,
+          service_type = EXCLUDED.service_type,
+          grooming_data = EXCLUDED.grooming_data,
+          hotel_data = EXCLUDED.hotel_data,
+          submitted_at = CURRENT_TIMESTAMP
+        RETURNING *`,
+        [
+          reservation_id,
+          morning_urination,
+          morning_defecation,
+          afternoon_urination,
+          afternoon_defecation,
+          breakfast_status,
+          health_status,
+          notes,
+          mealDataJson,
+          finalServiceType,
+          groomingDataJson,
+          hotelDataJson,
+        ]
+      );
 
-    res.json(result.rows[0]);
+      await client.query(
+        `UPDATE reservations
+         SET service_type = $1,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $2`,
+        [finalServiceType, reservation_id]
+      );
+
+      await client.query('COMMIT');
+      res.json(result.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error: any) {
     sendServerError(res, '登園前入力の保存に失敗しました', error);
   }

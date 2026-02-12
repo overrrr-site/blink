@@ -27,8 +27,8 @@ interface LiffRecord {
 export default function RecordList() {
   const navigate = useNavigate()
   const [refreshing, setRefreshing] = useState(false)
-  const primaryBusinessType = useLiffAuthStore((s) => s.owner?.primaryBusinessType)
-  const recordLabel = getRecordLabel(primaryBusinessType)
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare')
+  const recordLabel = getRecordLabel(selectedBusinessType)
   const {
     data: records,
     isLoading,
@@ -39,6 +39,9 @@ export default function RecordList() {
   } = usePaginatedData<LiffRecord>({
     baseUrl: '/records',
     limit: 20,
+    params: {
+      record_type: selectedBusinessType,
+    },
   })
 
   const handleRefresh = async () => {
@@ -92,7 +95,7 @@ export default function RecordList() {
           <Icon icon="solar:clipboard-text-linear" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground mb-2">{recordLabel}がまだありません</p>
           <p className="text-xs text-muted-foreground">
-            施術・登園後にスタッフが{recordLabel}を作成・共有します
+            サービス利用後にスタッフが{recordLabel}を作成・共有します
           </p>
         </div>
       ) : (

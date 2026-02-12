@@ -76,13 +76,13 @@ const HOTEL_CARE_CATEGORY_LABELS: Record<string, { label: string; icon: string }
 export default function RecordDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const primaryBusinessType = useLiffAuthStore((s) => s.owner?.primaryBusinessType)
-  const recordLabel = getRecordLabel(primaryBusinessType)
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare')
 
   const { data: record, isLoading, error } = useSWR<RecordData>(
     id ? `/records/${id}` : null,
     liffFetcher
   )
+  const recordLabel = record ? getRecordLabel(record.record_type) : getRecordLabel(selectedBusinessType)
 
   if (isLoading) {
     return (

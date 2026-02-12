@@ -10,7 +10,7 @@ import { scanQRCode } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import { getAvatarUrl } from '../../utils/image';
 import { getAxiosErrorMessage } from '../../utils/error';
-import { getRecordLabel } from '../../utils/businessTypeColors';
+import { getDashboardStatusLabels, getRecordLabel } from '../../domain/businessTypeConfig';
 import useSWR from 'swr';
 import { liffFetcher } from '../lib/swr';
 import { LazyImage } from '../../components/LazyImage';
@@ -24,6 +24,7 @@ interface OwnerData {
   store_address: string;
   line_id: string;
   primary_business_type?: RecordType;
+  available_business_types?: RecordType[];
   dogs: Array<{
     id: number;
     name: string;
@@ -33,6 +34,7 @@ interface OwnerData {
     id: number;
     reservation_date: string;
     reservation_time: string;
+    service_type?: RecordType | null;
     dog_name: string;
     dog_photo: string;
     status: string;
@@ -91,7 +93,7 @@ const MenuCard = memo(function MenuCard({
 export default function Home() {
   const navigate = useNavigate();
   const { showToast } = useToast()
-  const { owner, setAuth, token } = useLiffAuthStore();
+  const { owner, setAuth, token, selectedBusinessType } = useLiffAuthStore();
   const { data, error, isLoading, mutate } = useSWR<OwnerData>('/me', liffFetcher, {
     dedupingInterval: 60_000,
     revalidateOnFocus: false,
@@ -104,7 +106,10 @@ export default function Home() {
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
 
-  const recordLabel = getRecordLabel(data?.primary_business_type);
+  const effectiveBusinessType = selectedBusinessType || data?.primary_business_type || 'daycare';
+  const recordLabel = getRecordLabel(effectiveBusinessType);
+  const statusLabels = getDashboardStatusLabels(effectiveBusinessType);
+  const preVisitLabel = `${statusLabels.checkIn}前入力`;
 
   useEffect(() => {
     if (data && token) {
@@ -116,6 +121,7 @@ export default function Home() {
         storeAddress: data.store_address || '',
         lineUserId: data.line_id || owner?.lineUserId || '',
         primaryBusinessType: data.primary_business_type,
+        availableBusinessTypes: data.available_business_types || [],
       });
     }
   }, [data, owner?.lineUserId, setAuth, token]);
@@ -230,12 +236,12 @@ export default function Home() {
     }
 
     if (data.nextReservation.status !== '登園済') {
-      showToast('まだ登園していません', 'warning');
+      showToast(`まだ${statusLabels.active}ではありません`, 'warning');
       return;
     }
 
     if (data.nextReservation.checked_out_at) {
-      showToast('既に降園済みです', 'warning');
+      showToast(`既に${statusLabels.done}です`, 'warning');
       return;
     }
 
@@ -283,7 +289,10 @@ export default function Home() {
     );
   }
 
-  const nextReservation = data.nextReservation;
+  const nextReservation = data.nextReservation
+    && (data.nextReservation.service_type || 'daycare') === effectiveBusinessType
+    ? data.nextReservation
+    : null;
   const daysUntil = nextReservation
     ? differenceInDays(new Date(nextReservation.reservation_date), new Date())
     : null;
@@ -298,7 +307,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 次回登園情報カード */}
+      {/* 次回予約情報カード */}
       {nextReservation ? (
         <div className="space-y-3">
           <section 
@@ -306,12 +315,12 @@ export default function Home() {
                        active:scale-[0.99] transition-transform cursor-pointer"
             onClick={() => navigate('/home/reservations')}
             role="button"
-            aria-label="次回登園予定を確認"
+            aria-label={`次回${statusLabels.checkIn}予定を確認`}
           >
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-bold font-heading flex items-center gap-2">
                 <Icon icon="solar:calendar-check-bold" width="20" height="20" className="text-primary" />
-                次回登園予定
+                次回{statusLabels.checkIn}予定
               </h2>
               {daysUntil !== null && daysUntil >= 0 && (
                 <span className="text-[10px] bg-primary text-primary-foreground px-2.5 py-1 rounded-full font-bold animate-pulse">
@@ -361,7 +370,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* 登園前入力ボタン（今日の予約で未登園の場合） */}
+          {/* 事前入力ボタン（当日予約かつ未利用開始） */}
           {isToday(new Date(nextReservation.reservation_date)) &&
            nextReservation.status === '予定' && (
             nextReservation.has_pre_visit_input ? (
@@ -373,7 +382,7 @@ export default function Home() {
                            active:scale-95 transition-transform hover:bg-chart-2/20"
               >
                 <Icon icon="solar:check-circle-bold" className="size-5" />
-                登園前情報 入力済み
+                {preVisitLabel} 入力済み
                 <Icon icon="solar:pen-linear" className="size-4 ml-1 opacity-60" />
               </button>
             ) : (
@@ -386,12 +395,12 @@ export default function Home() {
                            hover:bg-chart-3/20"
               >
                 <Icon icon="solar:clipboard-text-bold" className="size-5" />
-                登園前情報を入力する
+                {preVisitLabel}を入力する
               </button>
             )
           )}
 
-          {/* 登園/降園ボタン（今日の予約の場合のみ表示） */}
+          {/* 利用開始/完了ボタン（今日の予約のみ） */}
           {isToday(new Date(nextReservation.reservation_date)) && (
             <>
               {/* チェックアウト済みの場合 */}
@@ -399,10 +408,10 @@ export default function Home() {
                 <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
                                min-h-[56px] flex items-center justify-center gap-2">
                   <Icon icon="mdi:check-circle" className="size-5" />
-                  本日の登園完了
+                  本日の{statusLabels.done}
                 </div>
               ) : nextReservation.status === '登園済' ? (
-                /* 登園済み → 退園ボタン表示 */
+                /* 利用中 → 完了ボタン表示 */
                 <button
                   onClick={handleCheckOut}
                   disabled={checkingOut}
@@ -414,24 +423,24 @@ export default function Home() {
                   {checkingOut ? (
                     <>
                       <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
-                      退園処理中...
+                      {statusLabels.checkOut}処理中...
                     </>
                   ) : (
                     <>
                       <Icon icon="solar:qr-code-bold" className="size-5" />
-                      退園する（QRコードスキャン）
+                      {statusLabels.checkOut}する（QRコードスキャン）
                     </>
                   )}
                 </button>
               ) : nextReservation.status === '降園済' ? (
-                /* 降園済み → 完了表示 */
+                /* 完了済み */
                 <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
                                min-h-[56px] flex items-center justify-center gap-2">
                   <Icon icon="mdi:check-circle" className="size-5" />
-                  本日の登園完了
+                  本日の{statusLabels.done}
                 </div>
               ) : (
-                /* 未登園 → 登園ボタン表示 */
+                /* 予定 → 利用開始ボタン表示 */
                 <button
                   onClick={handleCheckIn}
                   disabled={checkingIn}
@@ -443,12 +452,12 @@ export default function Home() {
                   {checkingIn ? (
                     <>
                       <Icon icon="solar:spinner-bold" className="size-5 animate-spin" />
-                      チェックイン中...
+                      {statusLabels.checkIn}処理中...
                     </>
                   ) : (
                     <>
                       <Icon icon="solar:qr-code-bold" className="size-5" />
-                      登園する（QRコードスキャン）
+                      {statusLabels.checkIn}する（QRコードスキャン）
                     </>
                   )}
                 </button>
@@ -574,7 +583,7 @@ export default function Home() {
             <div className="flex items-center justify-between p-5 border-b border-border">
               <h2 className="text-base font-bold font-heading flex items-center gap-2">
                 <Icon icon="solar:qr-code-bold" width="20" height="20" className="text-primary" />
-                {qrModalMode === 'checkout' ? '降園QRコード入力' : '登園QRコード入力'}
+                {qrModalMode === 'checkout' ? `${statusLabels.checkOut}QRコード入力` : `${statusLabels.checkIn}QRコード入力`}
               </h2>
               <button
                 onClick={closeQrModal}

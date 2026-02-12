@@ -7,6 +7,8 @@ import { useToast } from '../../components/Toast'
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import type { MealEntry } from '../../types/meal';
+import { useLiffAuthStore } from '../store/authStore';
+import type { RecordType } from '../../types/record';
 
 interface PreVisitReservation {
   id: number;
@@ -15,6 +17,7 @@ interface PreVisitReservation {
   reservation_date: string;
   reservation_time: string;
   service_type?: 'daycare' | 'grooming' | 'hotel';
+  pre_visit_service_type?: 'daycare' | 'grooming' | 'hotel';
   has_pre_visit_input: boolean;
   morning_urination?: boolean;
   morning_defecation?: boolean;
@@ -159,6 +162,8 @@ export default function PreVisitInput() {
   const { reservationId } = useParams<{ reservationId: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast()
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare');
+  const serviceType: RecordType = selectedBusinessType || 'daycare';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadingLastRecord, setLoadingLastRecord] = useState(false);
@@ -176,19 +181,11 @@ export default function PreVisitInput() {
         const res = reservations.find((r) => r.id === parseInt(reservationId || '0'));
         if (res) {
           setReservation(res);
-          const serviceType = res.service_type || 'daycare';
-          if (serviceType === 'daycare') {
-            setDaycareData(DEFAULT_DAYCARE_DATA);
-          }
-          if (serviceType === 'grooming') {
-            setGroomingData(DEFAULT_GROOMING_DATA);
-          }
-          if (serviceType === 'hotel') {
-            setHotelData(DEFAULT_HOTEL_DATA);
-          }
-          // 既存の登園前入力データがあればフォームに読み込む
+
+          // 既存の事前入力データがあれば、保存されている業種に応じて読み込む
           if (res.has_pre_visit_input) {
-            if (serviceType === 'daycare') {
+            const savedServiceType: RecordType = res.pre_visit_service_type || res.service_type || 'daycare';
+            if (savedServiceType === 'daycare') {
               setDaycareData({
                 morning_urination: res.morning_urination ?? false,
                 morning_defecation: res.morning_defecation ?? false,
@@ -200,10 +197,10 @@ export default function PreVisitInput() {
                 meal_data: res.meal_data ?? [],
               });
             }
-            if (serviceType === 'grooming') {
+            if (savedServiceType === 'grooming') {
               setGroomingData(normalizeGroomingPreVisitData(res.grooming_data));
             }
-            if (serviceType === 'hotel') {
+            if (savedServiceType === 'hotel') {
               setHotelData({
                 ...DEFAULT_HOTEL_DATA,
                 ...(res.hotel_data || {}),
@@ -226,7 +223,6 @@ export default function PreVisitInput() {
 
     setSaving(true);
     try {
-      const serviceType = reservation?.service_type || 'daycare';
       const payload: Record<string, unknown> = {
         reservation_id: parseInt(reservationId),
         service_type: serviceType,
@@ -327,7 +323,6 @@ export default function PreVisitInput() {
     if (!reservation?.dog_id) return;
     setLoadingLastRecord(true);
     try {
-      const serviceType = reservation?.service_type || 'daycare';
       const response = await liffClient.get(`/pre-visit-inputs/latest/${reservation.dog_id}`, {
         params: { service_type: serviceType },
       });
@@ -386,7 +381,6 @@ export default function PreVisitInput() {
     );
   }
 
-  const serviceType = reservation?.service_type || 'daycare';
   const serviceLabel = serviceType === 'grooming'
     ? 'トリミング事前入力'
     : serviceType === 'hotel'

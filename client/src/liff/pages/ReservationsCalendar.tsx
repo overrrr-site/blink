@@ -23,6 +23,8 @@ import liffClient from '../api/client';
 import { getAvatarUrl } from '../../utils/image';
 import useSWR from 'swr';
 import { liffFetcher } from '../lib/swr';
+import { useLiffAuthStore } from '../store/authStore';
+import { getBusinessTypeLabel } from '../../utils/businessTypeColors';
 
 interface Reservation {
   id: number;
@@ -119,6 +121,8 @@ export default function ReservationsCalendar(): JSX.Element {
   const navigate = useNavigate();
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare');
+  const businessTypeLabel = getBusinessTypeLabel(selectedBusinessType);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const touchStartX = useRef<number | null>(null);
@@ -126,7 +130,7 @@ export default function ReservationsCalendar(): JSX.Element {
 
   const monthStr = useMemo(() => format(currentMonth, 'yyyy-MM'), [currentMonth])
   const { data, isLoading, mutate } = useSWR(
-    `/reservations?month=${monthStr}`,
+    `/reservations?month=${monthStr}&service_type=${selectedBusinessType}`,
     liffFetcher,
     { revalidateOnFocus: false }
   )
@@ -217,12 +221,12 @@ export default function ReservationsCalendar(): JSX.Element {
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
-        <h1 className="text-lg font-bold font-heading flex-1">予約カレンダー</h1>
+        <h1 className="text-lg font-bold font-heading flex-1">{businessTypeLabel}予約カレンダー</h1>
         <button
           onClick={function() {
             const monthStr = format(currentMonth, 'yyyy-MM');
             const token = localStorage.getItem('liff_token');
-            const url = `${import.meta.env.VITE_API_URL}/liff/reservations/export.ics?month=${monthStr}`;
+            const url = `${import.meta.env.VITE_API_URL}/liff/reservations/export.ics?month=${monthStr}&service_type=${selectedBusinessType}`;
 
             // tokenをAuthorizationヘッダーで送信するためにfetchを使用
             fetch(url, {
@@ -366,13 +370,13 @@ export default function ReservationsCalendar(): JSX.Element {
                     {reservation.status}
                   </span>
                 </div>
-                {/* 登園前入力情報（入力済みの場合のみ表示） */}
+                {/* 事前入力情報（入力済みの場合のみ表示） */}
                 {reservation.has_pre_visit_input && (
                   <div className="pt-3 border-t border-border">
                     <div className="bg-chart-3/5 rounded-xl p-3 space-y-2">
                       <h4 className="text-xs font-bold text-chart-3 flex items-center gap-1">
                         <Icon icon="solar:clipboard-text-bold" width="14" height="14" />
-                        登園前入力
+                        事前入力
                       </h4>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         {/* 排泄情報 */}
@@ -434,7 +438,7 @@ export default function ReservationsCalendar(): JSX.Element {
                 )}
                 {reservation.status !== 'キャンセル' && reservation.status !== '降園済' && reservation.status !== '登園済' && (
                   <div className="flex flex-col gap-2 pt-3 border-t border-border">
-                    {/* 登園前入力ボタン（今日または未来の予約の場合） */}
+                    {/* 事前入力ボタン（今日または未来の予約の場合） */}
                     {(isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (
                       <button
                         onClick={() => navigate(`/home/pre-visit/${reservation.id}`)}
@@ -445,7 +449,7 @@ export default function ReservationsCalendar(): JSX.Element {
                         }`}
                       >
                         <Icon icon={reservation.has_pre_visit_input ? "solar:check-circle-bold" : "solar:clipboard-text-bold"} width="18" height="18" />
-                        {reservation.has_pre_visit_input ? '登園前入力を編集' : '登園前情報を入力'}
+                        {reservation.has_pre_visit_input ? '事前入力を編集' : '事前情報を入力'}
                       </button>
                     )}
                     <div className="flex gap-2">

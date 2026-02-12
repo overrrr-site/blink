@@ -1,14 +1,25 @@
 import { Icon } from '../../components/Icon'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
-import { getRecordLabel } from '../../utils/businessTypeColors';
+import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../../utils/businessTypeColors';
 import logoImage from '../../assets/logo.png';
+import type { RecordType } from '../../types/record';
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { owner } = useLiffAuthStore();
-  const recordLabel = getRecordLabel(owner?.primaryBusinessType);
+  const owner = useLiffAuthStore((s) => s.owner);
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType);
+  const setSelectedBusinessType = useLiffAuthStore((s) => s.setSelectedBusinessType);
+  const availableBusinessTypes: RecordType[] = owner?.availableBusinessTypes?.length
+    ? owner.availableBusinessTypes
+    : owner?.primaryBusinessType
+      ? [owner.primaryBusinessType]
+      : ['daycare'];
+  const effectiveBusinessType = availableBusinessTypes.includes(selectedBusinessType)
+    ? selectedBusinessType
+    : availableBusinessTypes[0];
+  const recordLabel = getRecordLabel(effectiveBusinessType);
 
   const isActive = (path: string) => {
     if (path === '/home') {
@@ -45,6 +56,32 @@ export default function Layout() {
           </div>
         </button>
       </header>
+
+      {availableBusinessTypes.length > 1 && (
+        <div className="sticky top-[76px] z-10 border-b border-border bg-background/95 px-5 py-2 backdrop-blur-md">
+          <div className="flex gap-2 overflow-x-auto">
+            {availableBusinessTypes.map((businessType) => {
+              const checked = businessType === effectiveBusinessType;
+              const colors = getBusinessTypeColors(businessType);
+              return (
+                <button
+                  key={businessType}
+                  type="button"
+                  onClick={() => setSelectedBusinessType(businessType)}
+                  className="min-h-[40px] whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors"
+                  style={{
+                    background: checked ? colors.pale : '#FFFFFF',
+                    border: checked ? `1.5px solid ${colors.primary}` : '1px solid #E2E8F0',
+                    color: checked ? colors.primary : '#64748B',
+                  }}
+                >
+                  {getBusinessTypeLabel(businessType)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* メインコンテンツ */}
       <main className="flex-1 overflow-y-auto pb-24">
