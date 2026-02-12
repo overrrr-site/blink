@@ -25,6 +25,7 @@ import useSWR from 'swr';
 import { liffFetcher } from '../lib/swr';
 import { useLiffAuthStore } from '../store/authStore';
 import { getBusinessTypeLabel } from '../../utils/businessTypeColors';
+import { getStatusLabel } from '../../domain/businessTypeConfig';
 
 interface Reservation {
   id: number;
@@ -67,6 +68,20 @@ function getStatusBadgeClass(status: string): string {
     default:
       return 'bg-primary/10 text-primary';
   }
+}
+
+function isLockedReservationStatus(status: string): boolean {
+  return [
+    '登園済',
+    '来店済',
+    '来店中',
+    'チェックイン済',
+    'お預かり中',
+    '降園済',
+    '完了',
+    '帰宅済',
+    'チェックアウト済',
+  ].includes(status);
 }
 
 interface CalendarDayCellProps {
@@ -367,7 +382,7 @@ export default function ReservationsCalendar(): JSX.Element {
                     </p>
                   </div>
                   <span className={`text-xs px-3 py-1.5 rounded-full font-bold ${getStatusBadgeClass(reservation.status)}`}>
-                    {reservation.status}
+                    {getStatusLabel(selectedBusinessType, reservation.status)}
                   </span>
                 </div>
                 {/* 事前入力情報（入力済みの場合のみ表示） */}
@@ -436,7 +451,7 @@ export default function ReservationsCalendar(): JSX.Element {
                     </div>
                   </div>
                 )}
-                {reservation.status !== 'キャンセル' && reservation.status !== '降園済' && reservation.status !== '登園済' && (
+                {reservation.status !== 'キャンセル' && !isLockedReservationStatus(reservation.status) && (
                   <div className="flex flex-col gap-2 pt-3 border-t border-border">
                     {/* 事前入力ボタン（今日または未来の予約の場合） */}
                     {(isToday(parseISO(reservation.reservation_date)) || isFuture(parseISO(reservation.reservation_date))) && (
