@@ -88,6 +88,7 @@ router.get('/me', async function(req, res) {
            FROM reservations r
            WHERE r.dog_id = c.dog_id
              AND r.status IN ('登園済', '降園済', '予定')
+             AND COALESCE(r.service_type, 'daycare') = 'daycare'
              AND r.reservation_date >= c.created_at
              AND r.reservation_date <= COALESCE(c.valid_until, $2::date + INTERVAL '1 year')
          ) usage ON true

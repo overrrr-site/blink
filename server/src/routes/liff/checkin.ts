@@ -147,28 +147,30 @@ router.post('/check-in', async function(req, res) {
       [reservationId]
     );
 
-    // 契約残数を減算（チケット制の場合）
-    const contractResult = await pool.query(
-      `SELECT id, contract_type, remaining_sessions
-       FROM contracts
-       WHERE dog_id = $1
-         AND contract_type = 'チケット制'
-         AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
-         AND remaining_sessions > 0
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [reservation.dog_id]
-    );
-
-    if (contractResult.rows.length > 0) {
-      const contract = contractResult.rows[0];
-      await pool.query(
-        `UPDATE contracts 
-         SET remaining_sessions = remaining_sessions - 1,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $1`,
-        [contract.id]
+    // 契約残数の減算は幼稚園予約のみ適用
+    if ((reservation.service_type || 'daycare') === 'daycare') {
+      const contractResult = await pool.query(
+        `SELECT id, contract_type, remaining_sessions
+         FROM contracts
+         WHERE dog_id = $1
+           AND contract_type = 'チケット制'
+           AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+           AND remaining_sessions > 0
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [reservation.dog_id]
       );
+
+      if (contractResult.rows.length > 0) {
+        const contract = contractResult.rows[0];
+        await pool.query(
+          `UPDATE contracts 
+           SET remaining_sessions = remaining_sessions - 1,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $1`,
+          [contract.id]
+        );
+      }
     }
 
     res.json({

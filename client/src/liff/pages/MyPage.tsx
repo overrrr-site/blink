@@ -102,6 +102,7 @@ function MenuButton({ onClick, icon, label, badge, destructive, isLast }: MenuBu
 export default function MyPage() {
   const navigate = useNavigate();
   const { clearAuth } = useLiffAuthStore();
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare');
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const { data, isLoading: loading } = useSWR<OwnerData>('/me', liffFetcher, {
@@ -143,6 +144,7 @@ export default function MyPage() {
   }
 
   const currentContract = data.contracts[0] || null;
+  const shouldShowContractInfo = selectedBusinessType === 'daycare';
 
   return (
     <div className="px-5 pt-6 pb-28 space-y-6">
@@ -278,8 +280,8 @@ export default function MyPage() {
         )}
       </section>
 
-      {/* 契約情報 */}
-      {currentContract && (
+      {/* 契約情報（幼稚園のみ表示） */}
+      {shouldShowContractInfo && currentContract && (
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold font-heading flex items-center gap-2">

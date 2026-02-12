@@ -342,24 +342,26 @@ router.post('/reservations', async function(req, res) {
       });
     }
 
-    // 契約残数チェック（チケット制の場合）
-    const contractResult = await pool.query(
-      `SELECT contract_type, remaining_sessions
-       FROM contracts
-       WHERE dog_id = $1
-         AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [dog_id]
-    );
+    // 契約残数チェックは幼稚園予約のみ適用
+    if (serviceType === 'daycare') {
+      const contractResult = await pool.query(
+        `SELECT contract_type, remaining_sessions
+         FROM contracts
+         WHERE dog_id = $1
+           AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [dog_id]
+      );
 
-    if (contractResult.rows.length > 0) {
-      const contract = contractResult.rows[0];
-      if (contract.contract_type === 'チケット制') {
-        if (!contract.remaining_sessions || contract.remaining_sessions <= 0) {
-          return res.status(400).json({
-            error: 'チケットの残数がありません。追加購入が必要です。',
-          });
+      if (contractResult.rows.length > 0) {
+        const contract = contractResult.rows[0];
+        if (contract.contract_type === 'チケット制') {
+          if (!contract.remaining_sessions || contract.remaining_sessions <= 0) {
+            return res.status(400).json({
+              error: 'チケットの残数がありません。追加購入が必要です。',
+            });
+          }
         }
       }
     }
