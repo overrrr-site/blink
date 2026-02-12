@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useLiffAuthStore } from './store/authStore';
 import { initLiff } from './utils/liff';
 import Layout from './components/Layout';
+import { ToastProvider } from '../components/Toast';
 
 // ページコンポーネントを遅延ロード
 const Login = lazy(() => import('./pages/Login'));
@@ -60,38 +61,40 @@ function App() {
   }, [initialize]);
 
   return (
-    <BrowserRouter basename="/liff">
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* ルート（/liff/）がログインページ - LIFFコールバック先 */}
-          <Route path="/" element={<Login />} />
-          <Route path="/link" element={<LinkAccount />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route
-            path="/home"
-            element={
-              <PrivateRoute>
-                <Layout />
-              </PrivateRoute>
-            }
-          >
-            <Route index element={<Home />} />
-            <Route path="mypage" element={<MyPage />} />
-            <Route path="reservations" element={<ReservationsCalendar />} />
-            <Route path="reservations/new" element={<ReservationCreate />} />
-            <Route path="reservations/:id/edit" element={<ReservationEdit />} />
-            <Route path="pre-visit/:reservationId" element={<PreVisitInput />} />
-            <Route path="journals" element={<Navigate to="/home/records" replace />} />
-            <Route path="journals/:id" element={<JournalDetail />} />
-            <Route path="records" element={<RecordList />} />
-            <Route path="records/:id" element={<RecordDetail />} />
-            <Route path="announcements" element={<Announcements />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter basename="/liff">
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* ルート（/liff/）がログインページ - LIFFコールバック先 */}
+            <Route path="/" element={<Login />} />
+            <Route path="/link" element={<LinkAccount />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route
+              path="/home"
+              element={
+                <PrivateRoute>
+                  <Layout />
+                </PrivateRoute>
+              }
+            >
+              <Route index element={<Home />} />
+              <Route path="mypage" element={<MyPage />} />
+              <Route path="reservations" element={<ReservationsCalendar />} />
+              <Route path="reservations/new" element={<ReservationCreate />} />
+              <Route path="reservations/:id/edit" element={<ReservationEdit />} />
+              <Route path="pre-visit/:reservationId" element={<PreVisitInput />} />
+              <Route path="journals" element={<Navigate to="/home/records" replace />} />
+              <Route path="journals/:id" element={<JournalDetail />} />
+              <Route path="records" element={<RecordList />} />
+              <Route path="records/:id" element={<RecordDetail />} />
+              <Route path="announcements" element={<Announcements />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 
