@@ -123,6 +123,7 @@ const RecordCreate = () => {
   // UI state
   const [saving, setSaving] = useState(false)
   const [copyLoading, setCopyLoading] = useState(false)
+  const [selectedReportTone, setSelectedReportTone] = useState<'formal' | 'casual'>('formal')
   const [collapsed, setCollapsed] = useState({ condition: true, health: true, careLogs: true })
   const [reservationLookupDone, setReservationLookupDone] = useState(!isCreatingFromReservation)
   const recordMainSectionRef = useRef<HTMLDivElement>(null)
@@ -381,18 +382,15 @@ const RecordCreate = () => {
     }
   }
 
-  const handleGenerateReport = async (tone?: 'formal' | 'casual') => {
-    if (tone) {
-      setReportTone(tone)
-    }
+  const handleGenerateReport = async () => {
     await handleAISuggestionAction('report-draft', undefined, {
       regenerate: true,
-      ...(tone ? { tone } : {}),
+      tone: selectedReportTone,
     })
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-56">
       <RecordHeader
         petName={selectedDog?.name}
         recordType={recordType}
@@ -573,7 +571,7 @@ const RecordCreate = () => {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => handleGenerateReport()}
+                  onClick={handleGenerateReport}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary/90 active:scale-[0.98] transition-all"
                 >
                   <Icon icon="solar:magic-stick-3-bold" width="14" height="14" />
@@ -581,19 +579,36 @@ const RecordCreate = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleGenerateReport('formal')}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
+                  onClick={() => {
+                    setSelectedReportTone('formal')
+                    setReportTone('formal')
+                  }}
+                  className={`rounded-lg border px-3 py-2 text-xs font-bold active:scale-[0.98] transition-all ${
+                    selectedReportTone === 'formal'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                  }`}
                 >
                   丁寧
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleGenerateReport('casual')}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
+                  onClick={() => {
+                    setSelectedReportTone('casual')
+                    setReportTone('casual')
+                  }}
+                  className={`rounded-lg border px-3 py-2 text-xs font-bold active:scale-[0.98] transition-all ${
+                    selectedReportTone === 'casual'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                  }`}
                 >
                   カジュアル
                 </button>
               </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                文体を選んでから「作成する」を押すと生成します。
+              </p>
 
               {reportSuggestion?.preview && !reportSuggestion.dismissed && !reportSuggestion.applied && (
                 <div className="mt-3 rounded-xl border border-border bg-background p-3">
@@ -651,7 +666,7 @@ const RecordCreate = () => {
           </div>
 
           {/* Fixed footer with save/share buttons */}
-          <div className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb">
+          <div className="fixed bottom-[72px] inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
             <div className="flex gap-3 max-w-lg mx-auto">
               <button
                 onClick={() => handleSave(false)}

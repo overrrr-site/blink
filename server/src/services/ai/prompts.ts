@@ -137,6 +137,29 @@ export function buildReportPrompt(
   tone: 'formal' | 'casual' = 'formal',
   styleHint: string = ''
 ): string {
+  const CONDITION_LABELS: Record<string, string> = {
+    excellent: '絶好調',
+    good: '元気',
+    normal: '普通',
+    tired: '疲れ気味',
+    observe: '要観察',
+  };
+  const DAYCARE_ACTIVITY_LABELS: Record<string, string> = {
+    freeplay: 'フリープレイ',
+    training: 'トレーニング',
+    walk: 'お散歩',
+    nap: 'お昼寝',
+    socialization: '社会化',
+  };
+  const formatCondition = (value?: string): string => {
+    if (!value) return '';
+    return CONDITION_LABELS[value] || value;
+  };
+  const formatActivities = (activities?: string[]): string => {
+    if (!activities || activities.length === 0) return '';
+    return activities.map((item) => DAYCARE_ACTIVITY_LABELS[item] || item).join('、');
+  };
+
   const toneHint = tone === 'casual'
     ? '\n文体は親しみやすく、やわらかい表現にしてください。'
     : '\n文体は丁寧で落ち着いた表現にしてください。'
@@ -163,13 +186,14 @@ export function buildReportPrompt(
 
 【施術部位】${parts.join('、') || '未選択'}
 ${healthNotes.length > 0 ? '【健康チェック】' + healthNotes.join('、') : ''}
-${data.condition?.overall ? '【体調】' + data.condition.overall : ''}
+${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
 ${memo}
 
 200〜300文字程度で、以下を含めてください：
 - カットの仕上がり
 - 健康面で気づいたこと
 - ご自宅でのケアアドバイス
+英語やローマ字の表現（例: freeplay, training）は使わず、自然な日本語だけで記述してください。
 温かみのある丁寧な日本語でお願いします。${toneHint}${styleHint}`;
   }
 
@@ -181,29 +205,31 @@ ${memo}
     return `あなたはペットホテルのスタッフです。${dogName}ちゃんの${nights}泊の滞在レポートを飼い主さんに書いてください。
 
 ${specialCare ? '【特別ケア】' + specialCare : ''}
-${data.condition?.overall ? '【体調】' + data.condition.overall : ''}
+${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
 ${memo}
 
 200〜300文字程度で、以下を含めてください：
 - 滞在中の様子・リラックス度
 - お食事やお散歩の様子
 - 飼い主さんへの安心メッセージ
+英語やローマ字の表現（例: freeplay, training）は使わず、自然な日本語だけで記述してください。
 温かみのある丁寧な日本語でお願いします。${toneHint}${styleHint}`;
   }
 
   // daycare (default)
-  const activities = data.daycare_data?.activities?.join('、') || '';
+  const activities = formatActivities(data.daycare_data?.activities);
   const memo = data.notes?.internal_notes ? `\nスタッフメモ: ${data.notes.internal_notes}` : '';
 
   return `あなたは犬の幼稚園のスタッフです。${dogName}ちゃんの今日の活動レポートを飼い主さんに書いてください。
 
 【活動内容】${activities || '未記録'}
-${data.condition?.overall ? '【体調】' + data.condition.overall : ''}
+${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
 ${memo}
 
 200〜300文字程度で、以下を含めてください：
 - 今日の活動と楽しんでいた様子
 - 成長が見られた点
 - 次回への期待
+英語やローマ字の表現（例: freeplay, training, socialization, nap）は使わず、自然な日本語だけで記述してください。
 温かみのある丁寧な日本語でお願いします。${toneHint}${styleHint}`;
 }
