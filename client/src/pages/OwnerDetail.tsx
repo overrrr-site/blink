@@ -20,8 +20,18 @@ interface OwnerDetailData {
   phone: string
   email?: string
   address?: string
+  line_id?: string | null
   business_types?: RecordType[] | null
   dogs: OwnerDog[]
+}
+
+function buildOwnerLineLinkUrl(phone?: string): string {
+  const phoneQuery = phone ? `?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}` : ''
+  const liffId = import.meta.env.VITE_LIFF_ID
+  if (liffId) {
+    return `https://liff.line.me/${liffId}/link${phoneQuery}`
+  }
+  return `${window.location.origin}/liff/link${phoneQuery}`
 }
 
 function OwnerDetail(): JSX.Element {
@@ -48,6 +58,9 @@ function OwnerDetail(): JSX.Element {
       </div>
     )
   }
+
+  const isLineLinked = Boolean(owner.line_id && owner.line_id.trim())
+  const ownerLineLinkUrl = buildOwnerLineLinkUrl(owner.phone)
 
   return (
     <div className="space-y-4 pb-6">
@@ -107,6 +120,28 @@ function OwnerDetail(): JSX.Element {
                 <p className="text-sm font-medium leading-relaxed">{owner.address}</p>
               </div>
             )}
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">LINE連携</label>
+              {isLineLinked ? (
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border border-chart-2/30 bg-chart-2/10 text-chart-2">
+                  LINE連携済
+                </span>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold border border-border bg-muted text-muted-foreground">
+                    未連携
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => window.open(ownerLineLinkUrl, '_blank', 'noopener,noreferrer')}
+                    className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-[0.98] transition-all"
+                  >
+                    <Icon icon="solar:link-bold" width="14" height="14" />
+                    連携ページを開く
+                  </button>
+                </div>
+              )}
+            </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1">利用サービス</label>
               {Array.isArray(owner.business_types) && owner.business_types.length > 0 ? (

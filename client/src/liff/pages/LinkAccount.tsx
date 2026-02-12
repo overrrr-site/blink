@@ -25,6 +25,10 @@ export default function LinkAccount() {
     // URLパラメータまたはlocation stateからLINE User IDを取得
     const params = new URLSearchParams(location.search);
     const userId = params.get('lineUserId') || location.state?.lineUserId;
+    const phoneParam = params.get('phone');
+    if (phoneParam && !phone) {
+      setPhone(phoneParam.replace(/[^0-9]/g, ''));
+    }
     
     if (userId) {
       setLineUserId(userId);
@@ -54,7 +58,7 @@ export default function LinkAccount() {
       };
       fetchLineUserId();
     }
-  }, [location]);
+  }, [location, phone]);
 
   const handleRequestCode = async () => {
     if (!phone.trim()) {
