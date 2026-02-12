@@ -20,4 +20,7 @@ export interface StaffReservationForm extends ReservationFormBase {
  */
 export interface LiffReservationForm extends ReservationFormBase {
   notes: string
+  checkout_date?: string
+  checkout_time?: string
+  duration_minutes?: number
 }

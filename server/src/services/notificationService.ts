@@ -5,8 +5,10 @@ import {
   createReservationReminderFlexMessage,
   createJournalNotificationFlexMessage,
   createRecordNotificationFlexMessage,
+  getReservationReminderCopy,
   createVaccineAlertFlexMessage,
 } from './lineFlexMessages.js';
+import { type BusinessType } from '../utils/businessTypes.js';
 import type { FlexMessage } from '@line/bot-sdk';
 
 export type OwnerContact = { lineId: string | null; email: string | null };
@@ -252,8 +254,10 @@ export async function sendReservationReminders(): Promise<{ sent: number; failed
         dog_name: string;
         reservation_date: string;
         reservation_time: string;
+        service_type: BusinessType | null;
       }>(
-        `SELECT r.id, d.owner_id, d.name as dog_name, r.reservation_date, r.reservation_time
+        `SELECT r.id, d.owner_id, d.name as dog_name, r.reservation_date, r.reservation_time,
+                COALESCE(r.service_type, 'daycare') as service_type
          FROM reservations r
          JOIN dogs d ON r.dog_id = d.id
          JOIN owners o ON d.owner_id = o.id
@@ -273,13 +277,15 @@ export async function sendReservationReminders(): Promise<{ sent: number; failed
       for (const reservation of rows) {
         const contact = contactMap.get(reservation.owner_id) ?? null;
         const title = '予約リマインド';
-        const message = `${reservation.dog_name}ちゃんの予約が${daysBefore}日後（${targetDateStr}）です。`;
+        const copy = getReservationReminderCopy(reservation.service_type);
+        const message = `${reservation.dog_name}ちゃんの${copy.checkInLabel}予定が${daysBefore}日後（${targetDateStr}）です。`;
 
         const flexMessage = createReservationReminderFlexMessage({
           id: reservation.id,
           reservation_date: reservation.reservation_date,
           reservation_time: reservation.reservation_time,
           dog_name: reservation.dog_name,
+          service_type: copy.serviceType,
         });
 
         const result = await deliverNotification({
@@ -287,7 +293,7 @@ export async function sendReservationReminders(): Promise<{ sent: number; failed
           settings,
           contact,
           title,
-          message: `${message}\n\n登園前に体調や食事の情報をアプリからご入力ください。`,
+          message: `${message}\n\n${copy.guideText.replace('ご入力ください。', 'アプリからご入力ください。')}`,
           flexMessage,
         });
 

@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import type { FlexBox, FlexBubble, FlexComponent, FlexMessage, FlexText, QuickReply } from '@line/bot-sdk';
+import { isBusinessType, type BusinessType } from '../utils/businessTypes.js';
 
 // ---------------------------------------------------------------------------
 // Data interfaces
@@ -119,6 +120,45 @@ function buildLiffUrl(path: string): string {
   const liffId = process.env.LIFF_ID;
   if (!liffId) return '#';
   return `https://liff.line.me/${liffId}${path}`;
+}
+
+export type ReservationReminderCopy = {
+  serviceType: BusinessType;
+  checkInLabel: string;
+  headerText: string;
+  guideText: string;
+  buttonLabel: string;
+};
+
+export function getReservationReminderCopy(serviceType: unknown): ReservationReminderCopy {
+  const normalizedType: BusinessType = isBusinessType(serviceType) ? serviceType : 'daycare';
+  switch (normalizedType) {
+    case 'grooming':
+      return {
+        serviceType: normalizedType,
+        checkInLabel: 'ご来店',
+        headerText: '明日のご来店予定',
+        guideText: '来店前に、体調やご要望の情報をご入力ください。',
+        buttonLabel: '来店前情報を入力する',
+      };
+    case 'hotel':
+      return {
+        serviceType: normalizedType,
+        checkInLabel: 'チェックイン',
+        headerText: '明日のチェックイン予定',
+        guideText: 'チェックイン前に、体調やご要望の情報をご入力ください。',
+        buttonLabel: 'チェックイン前情報を入力する',
+      };
+    case 'daycare':
+    default:
+      return {
+        serviceType: 'daycare',
+        checkInLabel: '登園',
+        headerText: '明日の登園予定',
+        guideText: '登園前に、体調や食事の情報をご入力ください。',
+        buttonLabel: '登園前情報を入力する',
+      };
+  }
 }
 
 /**
@@ -315,19 +355,21 @@ export function createReservationReminderFlexMessage(reservation: {
   reservation_date: string;
   reservation_time: string;
   dog_name: string;
+  service_type?: BusinessType | null;
 }): FlexMessage {
   const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
   const reservationTime = reservation.reservation_time.substring(0, 5);
+  const copy = getReservationReminderCopy(reservation.service_type);
 
   const bodyItems: FlexComponent[] = [
     createLabelValueRow('日時', `${reservationDate} ${reservationTime}`, { valueBold: true }),
     createLabelValueRow('ワンちゃん', reservation.dog_name),
     { type: 'separator', margin: 'md' },
-    { type: 'text', text: '登園前に、体調や食事の情報をご入力ください。', size: 'xs', color: '#666666', wrap: true, margin: 'md' },
+    { type: 'text', text: copy.guideText, size: 'xs', color: '#666666', wrap: true, margin: 'md' },
   ];
 
   const bubble = createHeaderBubble({
-    headerText: '🔔 明日の登園予定',
+    headerText: `🔔 ${copy.headerText}`,
     headerColor: '#F59E0B',
     bodyContents: [
       { type: 'box', layout: 'vertical', spacing: 'sm', contents: bodyItems },
@@ -337,7 +379,7 @@ export function createReservationReminderFlexMessage(reservation: {
         type: 'button',
         style: 'primary',
         height: 'sm',
-        action: { type: 'uri', label: '登園前情報を入力する', uri: buildLiffUrl(`/home/pre-visit/${reservation.id}`) },
+        action: { type: 'uri', label: copy.buttonLabel, uri: buildLiffUrl(`/home/pre-visit/${reservation.id}`) },
         color: '#10B981',
       },
     ],
@@ -345,7 +387,7 @@ export function createReservationReminderFlexMessage(reservation: {
 
   return {
     type: 'flex',
-    altText: `【リマインド】${reservationDate} ${reservationTime} - ${reservation.dog_name}`,
+    altText: `【リマインド】${copy.checkInLabel}予定 ${reservationDate} ${reservationTime} - ${reservation.dog_name}`,
     contents: bubble,
     quickReply: createQuickReply(),
   };

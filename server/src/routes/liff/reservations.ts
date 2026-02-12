@@ -291,7 +291,7 @@ router.post('/reservations', async function(req, res) {
     const decoded = requireOwnerToken(req, res);
     if (!decoded) return;
 
-    const { dog_id, reservation_date, reservation_time, notes, service_type } = req.body;
+    const { dog_id, reservation_date, reservation_time, notes, service_type, end_datetime, service_details } = req.body;
 
     if (!dog_id || !reservation_date) {
       sendBadRequest(res, '犬IDと予約日は必須です');
@@ -306,6 +306,26 @@ router.post('/reservations', async function(req, res) {
       sendBadRequest(res, 'service_typeは必須です');
       return;
     }
+    const reservationTime = reservation_time || '09:00';
+
+    let normalizedEndDatetime: string | null = null;
+    if (serviceType === 'hotel') {
+      if (typeof end_datetime !== 'string' || !end_datetime) {
+        sendBadRequest(res, 'ホテル予約ではチェックアウト日時が必要です');
+        return;
+      }
+      const startAt = new Date(`${reservation_date}T${reservationTime}`);
+      const endAt = new Date(end_datetime);
+      if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt <= startAt) {
+        sendBadRequest(res, 'チェックアウト日時はチェックイン日時より後にしてください');
+        return;
+      }
+      normalizedEndDatetime = end_datetime;
+    }
+
+    const normalizedServiceDetails = serviceType === 'grooming' && service_details && typeof service_details === 'object'
+      ? service_details
+      : null;
 
     // 犬がこの飼い主のものか確認
     const dogCheck = await pool.query(
@@ -368,16 +388,18 @@ router.post('/reservations', async function(req, res) {
 
     const result = await pool.query(
       `INSERT INTO reservations (
-        store_id, dog_id, reservation_date, reservation_time, memo, service_type
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        store_id, dog_id, reservation_date, reservation_time, memo, service_type, service_details, end_datetime
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
         decoded.storeId,
         dog_id,
         reservation_date,
-        reservation_time || '09:00',
+        reservationTime,
         notes || null,
         serviceType,
+        normalizedServiceDetails ? JSON.stringify(normalizedServiceDetails) : null,
+        normalizedEndDatetime,
       ]
     );
 

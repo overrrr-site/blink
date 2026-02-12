@@ -4,9 +4,13 @@ import { Icon } from '../../components/Icon'
 import ReservationFormFields from '../components/ReservationFormFields';
 import ReservationFooter from '../components/ReservationFooter';
 import { useLiffReservationCreate } from '../hooks/useLiffReservationCreate';
+import { useLiffAuthStore } from '../store/authStore';
+import { getBusinessTypeLabel } from '../../utils/businessTypeColors';
 
 export default function ReservationCreate() {
   const navigate = useNavigate();
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare')
+  const businessTypeLabel = getBusinessTypeLabel(selectedBusinessType)
   const { dogs, loading, saving, formData, setFormData, handleSubmit } = useLiffReservationCreate();
 
   if (loading) {
@@ -31,16 +35,18 @@ export default function ReservationCreate() {
         >
           <Icon icon="solar:arrow-left-linear" width="24" height="24" />
         </button>
-        <h1 className="text-lg font-bold font-heading flex-1">新規予約</h1>
+        <h1 className="text-lg font-bold font-heading flex-1">{businessTypeLabel}新規予約</h1>
       </div>
 
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
         <DogSelectSection
           dogs={dogs}
           selectedDogId={formData.dog_id}
+          businessType={selectedBusinessType}
           onChange={(dogId) => setFormData((prev) => ({ ...prev, dog_id: dogId }))}
         />
         <ReservationFormFields
+          businessType={selectedBusinessType}
           formData={formData}
           onChange={(fields) => setFormData((prev) => ({ ...prev, ...fields }))}
         />

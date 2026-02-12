@@ -1,18 +1,26 @@
 import { Icon } from '../../components/Icon'
 import { getAvatarUrl } from '../../utils/image'
 import type { LiffDog } from '../types/dog'
+import type { RecordType } from '../../types/record'
 
 type DogSelectSectionProps = {
   dogs: LiffDog[]
   selectedDogId: string
+  businessType: RecordType
   onChange: (id: string) => void
 }
 
-export default function DogSelectSection({ dogs, selectedDogId, onChange }: DogSelectSectionProps) {
+function getDogSelectLabel(businessType: RecordType): string {
+  if (businessType === 'grooming') return '来店するワンちゃん'
+  if (businessType === 'hotel') return '宿泊するワンちゃん'
+  return '登園するワンちゃん'
+}
+
+export default function DogSelectSection({ dogs, selectedDogId, businessType, onChange }: DogSelectSectionProps) {
   return (
     <div>
       <label className="block text-sm font-bold mb-2">
-        登園するワンちゃん <span className="text-destructive">*</span>
+        {getDogSelectLabel(businessType)} <span className="text-destructive">*</span>
       </label>
       <div className="space-y-2">
         {dogs.length > 0 ? (
