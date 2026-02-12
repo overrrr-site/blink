@@ -1,7 +1,7 @@
 import { Icon } from '../../components/Icon'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
-import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel } from '../../utils/businessTypeColors';
+import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel, getBusinessTypeIcon } from '../../utils/businessTypeColors';
 import logoImage from '../../assets/logo.png';
 import type { RecordType } from '../../types/record';
 
@@ -20,6 +20,9 @@ export default function Layout() {
     ? selectedBusinessType
     : availableBusinessTypes[0];
   const recordLabel = getRecordLabel(effectiveBusinessType);
+  const activeColors = getBusinessTypeColors(effectiveBusinessType);
+  const activeBusinessLabel = getBusinessTypeLabel(effectiveBusinessType);
+  const activeBusinessIcon = getBusinessTypeIcon(effectiveBusinessType);
 
   const isActive = (path: string) => {
     if (path === '/home') {
@@ -29,9 +32,20 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground font-sans">
+    <div
+      className="flex flex-col h-screen text-foreground font-sans"
+      style={{
+        background: `linear-gradient(180deg, ${activeColors.pale} 0%, #FAFAF9 210px)`,
+      }}
+    >
       {/* ヘッダー */}
-      <header className="px-5 pt-4 pb-4 bg-background sticky top-0 z-20 flex items-center justify-between border-b border-border safe-area-pt">
+      <header
+        className="px-5 pt-4 pb-4 sticky top-0 z-20 flex items-center justify-between border-b safe-area-pt backdrop-blur-md"
+        style={{
+          backgroundColor: 'rgba(250, 250, 249, 0.92)',
+          borderBottomColor: `${activeColors.primary}26`,
+        }}
+      >
         <button 
           onClick={() => navigate('/home')}
           className="flex items-center gap-3 active:opacity-70 transition-opacity"
@@ -39,9 +53,15 @@ export default function Layout() {
         >
           <img src={logoImage} alt="Blink" className="h-10" />
           <div className="text-left">
-            <h1 className="text-[10px] font-bold text-primary tracking-wider leading-none mb-0.5">{owner?.storeName || 'BLINK'}</h1>
+            <p className="text-[10px] font-bold tracking-wider leading-none mb-0.5" style={{ color: activeColors.primary }}>
+              {owner?.storeName || 'BLINK'}
+            </p>
             <p className="text-sm font-bold font-heading text-foreground leading-none">
               {owner?.name || '飼い主'} 様
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+              <Icon icon={activeBusinessIcon} width="12" height="12" style={{ color: activeColors.primary }} />
+              {activeBusinessLabel}
             </p>
           </div>
         </button>
@@ -58,8 +78,14 @@ export default function Layout() {
       </header>
 
       {availableBusinessTypes.length > 1 && (
-        <div className="sticky top-[76px] z-10 border-b border-border bg-background/95 px-5 py-2 backdrop-blur-md">
-          <div className="flex gap-2 overflow-x-auto">
+        <div
+          className="sticky top-[76px] z-10 border-b px-5 py-2 backdrop-blur-md"
+          style={{
+            borderBottomColor: `${activeColors.primary}20`,
+            backgroundColor: 'rgba(250, 250, 249, 0.95)',
+          }}
+        >
+          <div className="flex items-center gap-2 overflow-x-auto">
             {availableBusinessTypes.map((businessType) => {
               const checked = businessType === effectiveBusinessType;
               const colors = getBusinessTypeColors(businessType);
@@ -79,6 +105,13 @@ export default function Layout() {
                 </button>
               );
             })}
+            <span
+              className="ml-auto size-8 rounded-full flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${activeColors.primary}12` }}
+              aria-hidden="true"
+            >
+              <Icon icon={activeBusinessIcon} width="16" height="16" style={{ color: activeColors.primary }} />
+            </span>
           </div>
         </div>
       )}
@@ -90,7 +123,8 @@ export default function Layout() {
 
       {/* ボトムナビゲーション */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border px-2 py-1 z-30 safe-area-pb"
+        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t px-2 py-1 z-30 safe-area-pb"
+        style={{ borderTopColor: `${activeColors.primary}20` }}
         role="navigation"
         aria-label="メインナビゲーション"
       >
@@ -100,24 +134,28 @@ export default function Layout() {
             icon="solar:home-bold"
             label="ホーム"
             isActive={isActive('/home')}
+            activeColor={activeColors.primary}
           />
           <NavButton
             onClick={() => navigate('/home/reservations')}
             icon="solar:calendar-bold"
             label="予約"
             isActive={isActive('/home/reservations')}
+            activeColor={activeColors.primary}
           />
           <NavButton
             onClick={() => navigate('/home/records')}
             icon="solar:clipboard-text-bold"
             label={recordLabel}
             isActive={isActive('/home/records')}
+            activeColor={activeColors.primary}
           />
           <NavButton
             onClick={() => navigate('/home/mypage')}
             icon="solar:user-bold"
             label="マイページ"
             isActive={isActive('/home/mypage')}
+            activeColor={activeColors.primary}
           />
         </div>
       </nav>
@@ -131,25 +169,30 @@ function NavButton({
   icon,
   label,
   isActive,
+  activeColor,
 }: {
   onClick: () => void;
   icon: string;
   label: string;
   isActive: boolean;
+  activeColor: string;
 }) {
   return (
     <button
       onClick={onClick}
       className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[56px] py-2 px-3 gap-1 transition-all rounded-lg active:scale-95 ${
-        isActive
-          ? 'text-primary'
-          : 'text-muted-foreground hover:text-foreground'
+        isActive ? '' : 'text-muted-foreground hover:text-foreground'
       }`}
+      style={isActive ? { color: activeColor } : undefined}
       aria-label={label}
       aria-current={isActive ? 'page' : undefined}
     >
       {isActive && (
-        <span className="absolute inset-x-2 top-1 h-8 bg-primary/10 rounded-lg" aria-hidden="true"></span>
+        <span
+          className="absolute inset-x-2 top-1 h-8 rounded-lg"
+          style={{ backgroundColor: `${activeColor}1A` }}
+          aria-hidden="true"
+        ></span>
       )}
       <Icon icon={icon} width="24" height="24" aria-hidden="true" className="relative z-10" />
       <span className={`text-xs relative z-10 ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>

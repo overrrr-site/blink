@@ -4,11 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { getListThumbnailUrl, getDetailThumbnailUrl } from '../../utils/image';
-import useSWR from 'swr';
+import useSWR, { mutate as mutateCache } from 'swr';
 import { liffFetcher } from '../lib/swr';
 import { LazyImage } from '../../components/LazyImage';
+import liffClient from '../api/client';
+import { useToast } from '../../components/Toast';
+import { useLiffAuthStore } from '../store/authStore';
+import type { AnnouncementReadState } from '../types/announcement';
 
-interface Announcement {
+interface Announcement extends AnnouncementReadState {
   id: number;
   title: string;
   content: string;
@@ -20,6 +24,8 @@ interface Announcement {
 
 export default function Announcements() {
   const navigate = useNavigate();
+  const { showToast } = useToast()
+  const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare');
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -29,6 +35,7 @@ export default function Announcements() {
     { revalidateOnFocus: false }
   );
   const announcements = data ?? [];
+  const unreadCount = announcements.filter((announcement) => !announcement.is_read).length;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -39,8 +46,29 @@ export default function Announcements() {
     }
   };
 
-  const toggleExpand = (id: number) => {
-    setExpandedId(expandedId === id ? null : id);
+  const markAsRead = async (announcementId: number) => {
+    await mutate((current) => {
+      if (!current) return current;
+      return current.map((item) => (
+        item.id === announcementId ? { ...item, is_read: true } : item
+      ));
+    }, { revalidate: false });
+
+    try {
+      await liffClient.post(`/announcements/${announcementId}/read`);
+      await mutateCache(`/dashboard/summary?service_type=${selectedBusinessType}`);
+    } catch {
+      await mutate();
+      showToast('既読の更新に失敗しました', 'error');
+    }
+  };
+
+  const toggleExpand = async (announcement: Announcement) => {
+    const isExpanded = expandedId === announcement.id;
+    setExpandedId(isExpanded ? null : announcement.id);
+    if (!isExpanded && !announcement.is_read) {
+      await markAsRead(announcement.id);
+    }
   };
 
   if (isLoading) {
@@ -102,7 +130,7 @@ export default function Announcements() {
         <div className="space-y-4">
           {/* 件数表示 */}
           <p className="text-xs text-muted-foreground">
-            {announcements.length}件のお知らせ
+            {announcements.length}件のお知らせ（未読 {unreadCount}件）
           </p>
 
           {announcements.map((announcement) => {
@@ -115,7 +143,7 @@ export default function Announcements() {
               >
                 {/* ヘッダー（タップで展開） */}
                 <button
-                  onClick={() => toggleExpand(announcement.id)}
+                  onClick={() => { toggleExpand(announcement); }}
                   className="w-full p-4 text-left hover:bg-muted/30 active:bg-muted transition-colors"
                 >
                   <div className="flex items-start gap-3">
@@ -141,6 +169,11 @@ export default function Announcements() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
+                        {!announcement.is_read && (
+                          <span className="px-1.5 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded">
+                            未読
+                          </span>
+                        )}
                         {announcement.is_important && (
                           <span className="px-1.5 py-0.5 bg-chart-4/10 text-chart-4 text-[10px] font-bold rounded">
                             重要

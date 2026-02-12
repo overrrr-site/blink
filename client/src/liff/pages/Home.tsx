@@ -10,11 +10,18 @@ import { scanQRCode } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import { getAvatarUrl } from '../../utils/image';
 import { getAxiosErrorMessage } from '../../utils/error';
-import { getDashboardStatusLabels, getRecordLabel } from '../../domain/businessTypeConfig';
+import {
+  getBusinessTypeColors,
+  getBusinessTypeIcon,
+  getBusinessTypeLabel,
+  getDashboardStatusLabels,
+  getRecordLabel,
+} from '../../domain/businessTypeConfig';
 import useSWR from 'swr';
 import { liffFetcher } from '../lib/swr';
 import { LazyImage } from '../../components/LazyImage';
 import type { RecordType } from '../../types/record';
+import type { DashboardSummary } from '../types/dashboard';
 
 interface OwnerData {
   id: number;
@@ -25,79 +32,81 @@ interface OwnerData {
   line_id: string;
   primary_business_type?: RecordType;
   available_business_types?: RecordType[];
-  dogs: Array<{
-    id: number;
-    name: string;
-    photo_url: string;
-  }>;
-  nextReservation: {
-    id: number;
-    reservation_date: string;
-    reservation_time: string;
-    service_type?: RecordType | null;
-    dog_name: string;
-    dog_photo: string;
-    status: string;
-    checked_in_at: string | null;
-    checked_out_at: string | null;
-    has_pre_visit_input: boolean;
-  } | null;
 }
 
-// メニューカードコンポーネント
-const MenuCard = memo(function MenuCard({
+const DashboardCard = memo(function DashboardCard({
   onClick,
   icon,
-  iconBgColor,
   iconColor,
+  iconBg,
   title,
   description,
+  actionLabel,
   badge,
-  children,
 }: {
-  onClick: () => void;
-  icon: string;
-  iconBgColor: string;
-  iconColor: string;
-  title: string;
-  description: string;
-  badge?: React.ReactNode;
-  children?: React.ReactNode;
+  onClick: () => void
+  icon: string
+  iconColor: string
+  iconBg: string
+  title: string
+  description: string
+  actionLabel: string
+  badge?: React.ReactNode
 }) {
   return (
     <button
       onClick={onClick}
-      className="bg-card p-4 rounded-3xl border border-border shadow-sm flex flex-col items-start gap-2 relative 
-                 active:scale-[0.98] active:bg-muted/50 transition-all duration-150 min-h-[140px]
-                 hover:border-primary/30 hover:shadow-md"
+      className="w-full bg-card p-4 rounded-3xl border border-border shadow-sm text-left
+                 active:scale-[0.99] transition-all hover:border-primary/30"
       aria-label={title}
     >
-      {badge}
-      <div className={`size-12 rounded-2xl ${iconBgColor} flex items-center justify-center ${iconColor} mb-1`}>
-        <Icon icon={icon} width="28" height="28" />
-      </div>
-      <div className="flex-1 w-full">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-base">{title}</h3>
-          <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
+      <div className="flex items-start gap-3">
+        <div className="size-11 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: iconBg }}>
+          <Icon icon={icon} width="24" height="24" style={{ color: iconColor }} />
         </div>
-        <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight text-left">
-          {description}
-        </p>
-        {children}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold font-heading">{title}</h2>
+            {badge}
+          </div>
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{description}</p>
+          <span className="text-xs font-bold text-primary mt-3 inline-flex items-center gap-1">
+            {actionLabel}
+            <Icon icon="solar:alt-arrow-right-linear" width="14" height="14" />
+          </span>
+        </div>
       </div>
     </button>
-  );
+  )
 });
 
 export default function Home() {
   const navigate = useNavigate();
   const { showToast } = useToast()
   const { owner, setAuth, token, selectedBusinessType } = useLiffAuthStore();
-  const { data, error, isLoading, mutate } = useSWR<OwnerData>('/me', liffFetcher, {
+
+  const {
+    data: ownerData,
+    isLoading: ownerLoading,
+    mutate: mutateOwner,
+  } = useSWR<OwnerData>('/me', liffFetcher, {
     dedupingInterval: 60_000,
     revalidateOnFocus: false,
   });
+
+  const effectiveBusinessType = selectedBusinessType || ownerData?.primary_business_type || 'daycare';
+  const summaryKey = `/dashboard/summary?service_type=${effectiveBusinessType}`;
+
+  const {
+    data: summary,
+    error: summaryError,
+    isLoading: summaryLoading,
+    mutate: mutateSummary,
+  } = useSWR<DashboardSummary>(summaryKey, liffFetcher, {
+    dedupingInterval: 20_000,
+    revalidateOnFocus: false,
+  });
+
   const [refreshing, setRefreshing] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -106,30 +115,32 @@ export default function Home() {
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
 
-  const effectiveBusinessType = selectedBusinessType || data?.primary_business_type || 'daycare';
   const recordLabel = getRecordLabel(effectiveBusinessType);
   const statusLabels = getDashboardStatusLabels(effectiveBusinessType);
   const preVisitLabel = `${statusLabels.checkIn}前入力`;
+  const businessColors = getBusinessTypeColors(effectiveBusinessType);
+  const businessTypeLabel = getBusinessTypeLabel(effectiveBusinessType);
+  const businessTypeIcon = getBusinessTypeIcon(effectiveBusinessType);
 
   useEffect(() => {
-    if (data && token) {
+    if (ownerData && token) {
       setAuth(token, {
-        id: data.id,
-        name: data.name,
-        storeId: data.store_id,
-        storeName: data.store_name || '',
-        storeAddress: data.store_address || '',
-        lineUserId: data.line_id || owner?.lineUserId || '',
-        primaryBusinessType: data.primary_business_type,
-        availableBusinessTypes: data.available_business_types || [],
+        id: ownerData.id,
+        name: ownerData.name,
+        storeId: ownerData.store_id,
+        storeName: ownerData.store_name || '',
+        storeAddress: ownerData.store_address || '',
+        lineUserId: ownerData.line_id || owner?.lineUserId || '',
+        primaryBusinessType: ownerData.primary_business_type,
+        availableBusinessTypes: ownerData.available_business_types || [],
       });
     }
-  }, [data, owner?.lineUserId, setAuth, token]);
+  }, [ownerData, owner?.lineUserId, setAuth, token]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await mutate();
+      await Promise.all([mutateOwner(), mutateSummary()]);
     } finally {
       setRefreshing(false);
     }
@@ -177,25 +188,27 @@ export default function Home() {
     qrCode: string,
     mode: 'checkin' | 'checkout',
   ) => {
-    if (!data?.nextReservation) return;
+    const nextReservation = summary?.next_reservation;
+    if (!nextReservation) return;
+
     const setLoading = mode === 'checkin' ? setCheckingIn : setCheckingOut;
     const endpoint = mode === 'checkin' ? '/check-in' : '/check-out';
     const successMsg = mode === 'checkin'
-      ? 'チェックインが完了しました！'
-      : 'チェックアウトが完了しました！お疲れさまでした。';
+      ? `${statusLabels.checkIn}が完了しました！`
+      : `${statusLabels.checkOut}が完了しました！`;
     const errorMsg = mode === 'checkin'
-      ? 'チェックインに失敗しました'
-      : 'チェックアウトに失敗しました';
+      ? `${statusLabels.checkIn}に失敗しました`
+      : `${statusLabels.checkOut}に失敗しました`;
 
     setLoading(true);
     try {
       await liffClient.post(endpoint, {
         qrCode,
-        reservationId: data.nextReservation.id,
+        reservationId: nextReservation.id,
       });
       closeQrModal();
       showToast(successMsg, 'success');
-      mutate();
+      await Promise.all([mutateSummary(), mutateOwner()]);
     } catch (error) {
       showToast(getQrActionErrorMessage(error, errorMsg), 'error');
     } finally {
@@ -204,12 +217,13 @@ export default function Home() {
   };
 
   const handleCheckIn = async () => {
-    if (!data?.nextReservation) {
+    const nextReservation = summary?.next_reservation;
+    if (!nextReservation) {
       showToast('予約が見つかりません', 'warning');
       return;
     }
 
-    const reservationDate = new Date(data.nextReservation.reservation_date);
+    const reservationDate = new Date(nextReservation.reservation_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     reservationDate.setHours(0, 0, 0, 0);
@@ -230,17 +244,18 @@ export default function Home() {
   };
 
   const handleCheckOut = async () => {
-    if (!data?.nextReservation) {
+    const nextReservation = summary?.next_reservation;
+    if (!nextReservation) {
       showToast('予約が見つかりません', 'warning');
       return;
     }
 
-    if (data.nextReservation.status !== '登園済') {
+    if (nextReservation.status !== '登園済') {
       showToast(`まだ${statusLabels.active}ではありません`, 'warning');
       return;
     }
 
-    if (data.nextReservation.checked_out_at) {
+    if (nextReservation.checked_out_at) {
       showToast(`既に${statusLabels.done}です`, 'warning');
       return;
     }
@@ -263,18 +278,15 @@ export default function Home() {
     processQrAction(qrInput.trim(), qrModalMode);
   };
 
-  if (isLoading) {
+  if ((ownerLoading && !ownerData) || (summaryLoading && !summary)) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Icon icon="solar:spinner-bold"
-          width="48"
-          height="48"
-          className="text-primary animate-spin" />
+        <Icon icon="solar:spinner-bold" width="48" height="48" className="text-primary animate-spin" />
       </div>
     );
   }
 
-  if (error || !data) {
+  if (summaryError || !summary) {
     return (
       <div className="px-5 pt-6 text-center">
         <Icon icon="solar:cloud-cross-bold" width="64" height="64" className="text-muted-foreground mx-auto mb-4" />
@@ -289,17 +301,18 @@ export default function Home() {
     );
   }
 
-  const nextReservation = data.nextReservation
-    && (data.nextReservation.service_type || 'daycare') === effectiveBusinessType
-    ? data.nextReservation
-    : null;
+  const nextReservation = summary.next_reservation;
+  const latestRecord = summary.latest_record;
+  const latestAnnouncement = summary.announcements.latest;
+
   const daysUntil = nextReservation
     ? differenceInDays(new Date(nextReservation.reservation_date), new Date())
     : null;
 
   return (
-    <div className="px-5 pt-6 pb-28 space-y-6">
-      {/* プルダウンリフレッシュのヒント */}
+    <div className="px-5 pt-6 pb-28 space-y-5">
+      <h1 className="sr-only">ホーム</h1>
+
       {refreshing && (
         <div className="flex items-center justify-center py-2">
           <Icon icon="solar:spinner-bold" width="20" height="20" className="text-primary animate-spin mr-2" />
@@ -307,12 +320,38 @@ export default function Home() {
         </div>
       )}
 
-      {/* 次回予約情報カード */}
+      <section
+        className="rounded-2xl px-4 py-3 border"
+        style={{
+          borderColor: `${businessColors.primary}33`,
+          background: `linear-gradient(120deg, ${businessColors.pale}, #FFFFFF)`,
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="size-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${businessColors.primary}1F` }}>
+              <Icon icon={businessTypeIcon} width="16" height="16" style={{ color: businessColors.primary }} />
+            </span>
+            <p className="text-sm font-bold">{businessTypeLabel}モード</p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="text-xs font-bold px-3 py-1.5 rounded-full border active:scale-95 transition-transform"
+            style={{ borderColor: `${businessColors.primary}33`, color: businessColors.primary }}
+          >
+            更新
+          </button>
+        </div>
+      </section>
+
       {nextReservation ? (
         <div className="space-y-3">
-          <section 
-            className="bg-gradient-to-r from-primary/10 to-accent/30 rounded-3xl p-5 border border-primary/20 
-                       active:scale-[0.99] transition-transform cursor-pointer"
+          <section
+            className="rounded-3xl p-5 border active:scale-[0.99] transition-transform cursor-pointer"
+            style={{
+              background: `linear-gradient(130deg, ${businessColors.pale} 0%, #FFFFFF 100%)`,
+              borderColor: `${businessColors.primary}33`,
+            }}
             onClick={() => navigate('/home/reservations')}
             role="button"
             aria-label={`次回${statusLabels.checkIn}予定を確認`}
@@ -323,39 +362,30 @@ export default function Home() {
                 次回{statusLabels.checkIn}予定
               </h2>
               {daysUntil !== null && daysUntil >= 0 && (
-                <span className="text-[10px] bg-primary text-primary-foreground px-2.5 py-1 rounded-full font-bold animate-pulse">
+                <span
+                  className="text-[10px] text-white px-2.5 py-1 rounded-full font-bold animate-pulse"
+                  style={{ backgroundColor: businessColors.primary }}
+                >
                   {daysUntil === 0 ? '本日' : daysUntil === 1 ? '明日' : `あと${daysUntil}日`}
                 </span>
               )}
             </div>
+
             <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {data.dogs.length > 0 ? (
-                  data.dogs.slice(0, 2).map((dog) => (
-                    dog.photo_url ? (
-                      <LazyImage
-                        key={dog.id}
-                        src={getAvatarUrl(dog.photo_url)}
-                        alt={dog.name}
-                        width={48}
-                        height={48}
-                        className="size-12 rounded-full border-3 border-white object-cover shadow-md"
-                      />
-                    ) : (
-                      <div
-                        key={dog.id}
-                        className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center shadow-md"
-                      >
-                        <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
-                      </div>
-                    )
-                  ))
-                ) : (
-                  <div className="size-12 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center">
-                    <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
-                  </div>
-                )}
-              </div>
+              {nextReservation.dog_photo ? (
+                <LazyImage
+                  src={getAvatarUrl(nextReservation.dog_photo)}
+                  alt={nextReservation.dog_name}
+                  width={52}
+                  height={52}
+                  className="size-13 rounded-full border-3 border-white object-cover shadow-md"
+                />
+              ) : (
+                <div className="size-13 rounded-full border-3 border-white bg-primary/10 flex items-center justify-center shadow-md">
+                  <Icon icon="solar:paw-print-bold" width="24" height="24" className="text-primary" />
+                </div>
+              )}
+
               <div className="flex-1">
                 <p className="text-lg font-bold text-foreground">
                   {format(new Date(nextReservation.reservation_date), 'M月d日 (E)', { locale: ja })}
@@ -364,17 +394,16 @@ export default function Home() {
                   {nextReservation.dog_name} {nextReservation.reservation_time?.slice(0, 5)}
                 </p>
               </div>
-              <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+
+              <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${businessColors.primary}1A`, color: businessColors.primary }}>
                 <Icon icon="solar:arrow-right-linear" width="20" height="20" />
               </div>
             </div>
           </section>
 
-          {/* 事前入力ボタン（当日予約かつ未利用開始） */}
           {isToday(new Date(nextReservation.reservation_date)) &&
            nextReservation.status === '予定' && (
             nextReservation.has_pre_visit_input ? (
-              // 入力済みの場合（タップで編集可能）
               <button
                 onClick={() => navigate(`/home/pre-visit/${nextReservation.id}`)}
                 className="w-full bg-chart-2/10 text-chart-2 py-3 rounded-xl font-medium
@@ -386,7 +415,6 @@ export default function Home() {
                 <Icon icon="solar:pen-linear" className="size-4 ml-1 opacity-60" />
               </button>
             ) : (
-              // 未入力の場合
               <button
                 onClick={() => navigate(`/home/pre-visit/${nextReservation.id}`)}
                 className="w-full bg-chart-3/10 text-chart-3 py-3 rounded-xl font-bold
@@ -400,18 +428,14 @@ export default function Home() {
             )
           )}
 
-          {/* 利用開始/完了ボタン（今日の予約のみ） */}
           {isToday(new Date(nextReservation.reservation_date)) && (
             <>
-              {/* チェックアウト済みの場合 */}
               {nextReservation.checked_out_at ? (
-                <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
-                               min-h-[56px] flex items-center justify-center gap-2">
+                <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold min-h-[56px] flex items-center justify-center gap-2">
                   <Icon icon="mdi:check-circle" className="size-5" />
                   本日の{statusLabels.done}
                 </div>
               ) : nextReservation.status === '登園済' ? (
-                /* 利用中 → 完了ボタン表示 */
                 <button
                   onClick={handleCheckOut}
                   disabled={checkingOut}
@@ -433,14 +457,11 @@ export default function Home() {
                   )}
                 </button>
               ) : nextReservation.status === '降園済' ? (
-                /* 完了済み */
-                <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold
-                               min-h-[56px] flex items-center justify-center gap-2">
+                <div className="w-full bg-chart-2/10 text-chart-2 py-4 rounded-xl font-bold min-h-[56px] flex items-center justify-center gap-2">
                   <Icon icon="mdi:check-circle" className="size-5" />
                   本日の{statusLabels.done}
                 </div>
               ) : (
-                /* 予定 → 利用開始ボタン表示 */
                 <button
                   onClick={handleCheckIn}
                   disabled={checkingIn}
@@ -471,115 +492,59 @@ export default function Home() {
           <p className="text-sm text-muted-foreground mb-3">次回の予約はありません</p>
           <button
             onClick={() => navigate('/home/reservations/new')}
-            className="bg-primary text-primary-foreground px-6 py-2 rounded-xl text-sm font-bold 
-                       active:scale-95 transition-transform"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-xl text-sm font-bold active:scale-95 transition-transform"
           >
             予約する
           </button>
         </section>
       )}
 
-      {/* メニューカード */}
-      <div className="grid grid-cols-2 gap-4">
-        <MenuCard
-          onClick={() => navigate('/home/reservations')}
-          icon="solar:calendar-bold"
-          iconBgColor="bg-primary/10"
-          iconColor="text-primary"
-          title="予約"
-          description="空き状況確認・予約変更"
-        />
-
-        <MenuCard
-          onClick={() => navigate('/home/records')}
+      <div className="space-y-3">
+        <DashboardCard
+          onClick={() => latestRecord ? navigate(`/home/records/${latestRecord.id}`) : navigate('/home/records')}
           icon="solar:clipboard-text-bold"
-          iconBgColor="bg-chart-3/10"
-          iconColor="text-chart-3"
-          title={recordLabel}
-          description={`${recordLabel}・写真を確認`}
+          iconColor={businessColors.primary}
+          iconBg={`${businessColors.primary}1A`}
+          title={`最新の${recordLabel}`}
+          description={latestRecord
+            ? `${latestRecord.dog_name} / ${format(new Date(latestRecord.record_date), 'M月d日')}\n${latestRecord.excerpt || '記録が更新されました'}`
+            : `まだ${recordLabel}はありません`}
+          actionLabel={latestRecord ? `${recordLabel}詳細へ` : `${recordLabel}一覧へ`}
+          badge={latestRecord ? (
+            <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold">
+              写真 {latestRecord.photo_count}枚
+            </span>
+          ) : undefined}
         />
 
-        <MenuCard
-          onClick={() => navigate('/home/mypage')}
-          icon="solar:user-bold"
-          iconBgColor="bg-chart-2/10"
-          iconColor="text-chart-2"
-          title="マイページ"
-          description="飼い主・ワンちゃん情報の確認"
-        >
-          {data.dogs.length > 0 && (
-            <div className="flex -space-x-2 mt-2">
-              {data.dogs.slice(0, 3).map((dog) => (
-                dog.photo_url ? (
-                  <LazyImage
-                    key={dog.id}
-                    src={getAvatarUrl(dog.photo_url)}
-                    alt={dog.name}
-                    width={24}
-                    height={24}
-                    className="size-6 rounded-full border-2 border-white object-cover"
-                  />
-                ) : (
-                  <div
-                    key={dog.id}
-                    className="size-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center"
-                  >
-                    <Icon icon="solar:paw-print-bold" width="12" height="12" className="text-primary" />
-                  </div>
-                )
-              ))}
-              {data.dogs.length > 3 && (
-                <div className="size-6 rounded-full border-2 border-white bg-muted flex items-center justify-center">
-                  <span className="text-[8px] font-bold text-muted-foreground">+{data.dogs.length - 3}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </MenuCard>
-
-        <MenuCard
+        <DashboardCard
           onClick={() => navigate('/home/announcements')}
           icon="solar:bell-bold"
-          iconBgColor="bg-accent/30"
-          iconColor="text-accent-foreground"
+          iconColor={businessColors.primary}
+          iconBg={`${businessColors.primary}1A`}
           title="お知らせ"
-          description="店舗からのお知らせ"
+          description={latestAnnouncement
+            ? `${latestAnnouncement.title}\n${summary.announcements.unread > 0 ? `未読 ${summary.announcements.unread} 件` : '未読はありません'}`
+            : '新しいお知らせはありません'}
+          actionLabel="お知らせ一覧へ"
+          badge={summary.announcements.unread > 0 ? (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-destructive text-white">
+              未読 {summary.announcements.unread}
+            </span>
+          ) : (
+            <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold">
+              {summary.announcements.total}件
+            </span>
+          )}
         />
       </div>
 
-      {/* クイックアクション */}
-      <section className="bg-card rounded-3xl p-4 border border-border shadow-sm">
-        <h2 className="text-sm font-bold text-muted-foreground mb-3">クイックアクション</h2>
-        <div className="flex gap-3">
-          <button
-            onClick={() => navigate('/home/reservations/new')}
-            className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold 
-                       flex items-center justify-center gap-2 active:scale-95 transition-transform"
-            aria-label="新規予約"
-          >
-            <Icon icon="solar:add-circle-bold" width="20" height="20" />
-            新規予約
-          </button>
-          <button
-            onClick={() => navigate('/home/records')}
-            className="flex-1 bg-muted text-foreground py-3 rounded-xl text-sm font-bold
-                       flex items-center justify-center gap-2 active:scale-95 transition-transform"
-            aria-label={`${recordLabel}を見る`}
-          >
-            <Icon icon="solar:clipboard-text-bold" width="20" height="20" />
-            {recordLabel}を見る
-          </button>
-        </div>
-      </section>
-
-      {/* QRコード手動入力モーダル */}
       {showQrModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4">
-          <div 
+          <div
             className="bg-card rounded-3xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* ヘッダー */}
             <div className="flex items-center justify-between p-5 border-b border-border">
               <h2 className="text-base font-bold font-heading flex items-center gap-2">
                 <Icon icon="solar:qr-code-bold" width="20" height="20" className="text-primary" />
@@ -594,9 +559,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* コンテンツ */}
             <div className="p-5 space-y-4">
-              {/* エラーメッセージ */}
               {qrError && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-4">
                   <div className="flex items-start gap-3">
@@ -606,14 +569,12 @@ export default function Home() {
                 </div>
               )}
 
-              {/* 説明 */}
               <div className="bg-muted/50 rounded-2xl p-4">
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   店舗に設置されているQRコードをスキャンできない場合は、スタッフにQRコードの内容をお伝えいただくか、以下に手動で入力してください。
                 </p>
               </div>
 
-              {/* 入力フィールド */}
               <div>
                 <label className="block text-xs text-muted-foreground mb-2">QRコードの内容</label>
                 <input
@@ -626,7 +587,6 @@ export default function Home() {
                 />
               </div>
 
-              {/* カメラで再試行ボタン */}
               <button
                 onClick={() => {
                   setShowQrModal(false);
@@ -642,15 +602,14 @@ export default function Home() {
                 カメラで再試行
               </button>
 
-              {/* 送信ボタン */}
               <button
                 onClick={handleManualCheckIn}
                 disabled={!qrInput.trim() || checkingIn || checkingOut}
-                className={`w-full py-4 rounded-xl text-sm font-bold 
+                className={`w-full py-4 rounded-xl text-sm font-bold
                            disabled:opacity-50 disabled:cursor-not-allowed
                            active:scale-95 transition-transform flex items-center justify-center gap-2
-                           ${qrModalMode === 'checkout' 
-                             ? 'bg-chart-5 text-white' 
+                           ${qrModalMode === 'checkout'
+                             ? 'bg-chart-5 text-white'
                              : 'bg-primary text-primary-foreground'}`}
               >
                 {(checkingIn || checkingOut) ? (

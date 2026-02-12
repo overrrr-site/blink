@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Icon as IconifyIcon, addCollection } from '@iconify/react'
 
 // 使用アイコンのみ抽出済みJSON（scripts/extract-icons.cjsで生成）
@@ -42,6 +43,7 @@ interface IconProps {
   width?: number | string
   height?: number | string
   className?: string
+  style?: CSSProperties
   'aria-hidden'?: boolean | 'true' | 'false'
 }
 

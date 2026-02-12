@@ -62,7 +62,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
     <>
       <div>
         <label htmlFor="reservation_date" className="block text-sm font-bold mb-2">
-          {businessType === 'hotel' ? 'チェックイン日' : '予約日'} <span className="text-destructive">*</span>
+          {businessType === 'hotel' ? 'チェックイン日' : '予約日'} <span className="text-destructive text-base font-extrabold leading-none align-middle">*</span>
         </label>
         <div className="relative">
           <input
@@ -103,7 +103,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
 
       <div>
         <label htmlFor="reservation_time" className="block text-sm font-bold mb-2">
-          {businessType === 'daycare' ? '登園時間' : businessType === 'grooming' ? '来店時間' : 'チェックイン時間'} <span className="text-destructive">*</span>
+          {businessType === 'daycare' ? '登園時間' : businessType === 'grooming' ? '来店時間' : 'チェックイン時間'} <span className="text-destructive text-base font-extrabold leading-none align-middle">*</span>
         </label>
         <input
           id="reservation_time"
@@ -120,7 +120,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
       {businessType === 'daycare' && (
         <div>
           <label htmlFor="pickup_time" className="block text-sm font-bold mb-2">
-            降園予定時間 <span className="text-destructive">*</span>
+            降園予定時間 <span className="text-destructive text-base font-extrabold leading-none align-middle">*</span>
           </label>
           <input
             id="pickup_time"
@@ -139,7 +139,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
         <>
           <div>
             <label htmlFor="duration_minutes" className="block text-sm font-bold mb-2">
-              施術時間 <span className="text-destructive">*</span>
+              施術時間 <span className="text-destructive text-base font-extrabold leading-none align-middle">*</span>
             </label>
             <select
               id="duration_minutes"
@@ -166,7 +166,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
         <>
           <div>
             <label htmlFor="checkout_date" className="block text-sm font-bold mb-2">
-              チェックアウト日 <span className="text-destructive">*</span>
+              チェックアウト日 <span className="text-destructive text-base font-extrabold leading-none align-middle">*</span>
             </label>
             <input
               id="checkout_date"
@@ -181,7 +181,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
           </div>
           <div>
             <label htmlFor="checkout_time" className="block text-sm font-bold mb-2">
-              チェックアウト時間 <span className="text-destructive">*</span>
+              チェックアウト時間 <span className="text-destructive text-base font-extrabold leading-none align-middle">*</span>
             </label>
             <input
               id="checkout_time"

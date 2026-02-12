@@ -60,14 +60,12 @@ function hasNoExcretionRecords(reservation: Reservation): boolean {
 }
 
 function getStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'キャンセル':
-      return 'bg-destructive/10 text-destructive';
-    case '確定':
-      return 'bg-chart-2/10 text-chart-2';
-    default:
-      return 'bg-primary/10 text-primary';
-  }
+  const activeStatuses = new Set(['登園済', '来店済', '来店中', 'お預かり中', 'チェックイン済']);
+  const doneStatuses = new Set(['降園済', '完了', '帰宅済', 'チェックアウト済']);
+  if (status === 'キャンセル') return 'bg-destructive/10 text-destructive';
+  if (doneStatuses.has(status)) return 'bg-chart-2/10 text-chart-2';
+  if (activeStatuses.has(status)) return 'bg-chart-3/10 text-chart-3';
+  return 'bg-primary/10 text-primary';
 }
 
 function isLockedReservationStatus(status: string): boolean {
@@ -105,26 +103,24 @@ const CalendarDayCell = memo(function CalendarDayCell({
   return (
     <button
       onClick={() => onSelect(date)}
-      className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center transition-all min-w-[48px] min-h-[48px]
-        active:scale-95 ${
+      className={`aspect-square rounded-lg p-1 flex flex-col items-center justify-center transition-all min-w-[40px] min-h-[40px]
+        active:scale-95 relative ${
           isSelected
-            ? 'bg-primary text-primary-foreground shadow-md'
-            : hasReservation
-            ? 'bg-primary/15 hover:bg-primary/25'
-            : isTodayDate
-            ? 'bg-accent/50 ring-2 ring-primary/30'
+            ? 'bg-primary text-primary-foreground shadow-sm'
             : isCurrentMonth
-            ? 'hover:bg-muted'
-            : 'text-muted-foreground/40 hover:bg-muted/50'
+            ? 'hover:bg-muted/70'
+            : 'text-muted-foreground/40 hover:bg-muted/40'
+        } ${
+          isTodayDate && !isSelected ? 'ring-2 ring-primary/40 ring-inset' : ''
         }`}
-      aria-label={`${format(date, 'M月d日')}${hasReservation ? `、${reservationCount}件の予約あり` : ''}`}
+      aria-label={`${format(date, 'M月d日')}${isTodayDate ? '、今日' : ''}${hasReservation ? `、${reservationCount}件の予約あり` : ''}`}
       aria-pressed={isSelected}
     >
-      <span className={`text-sm ${isSelected || isTodayDate ? 'font-bold' : ''}`}>
+      <span className={`text-sm leading-none ${isSelected || isTodayDate ? 'font-bold' : ''}`}>
         {format(date, 'd')}
       </span>
       {hasReservation && (
-        <div className={`w-2 h-2 rounded-full mt-0.5 ${
+        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${
           isSelected ? 'bg-white' : 'bg-primary'
         }`}></div>
       )}
@@ -294,11 +290,11 @@ export default function ReservationsCalendar(): JSX.Element {
       {/* カレンダー */}
       <div 
         ref={containerRef}
-        className="bg-card rounded-3xl p-4 border border-border shadow-sm mb-4"
+        className="bg-card rounded-3xl p-3 border border-border shadow-sm mb-4"
         style={{ willChange: 'transform' }}
       >
         {/* 曜日ヘッダー */}
-        <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        <div className="grid grid-cols-7 gap-0.5 text-center mb-2">
           {['日', '月', '火', '水', '木', '金', '土'].map(function(day, idx) {
             let colorClass = 'text-muted-foreground';
             if (idx === 0) colorClass = 'text-destructive';
@@ -312,7 +308,7 @@ export default function ReservationsCalendar(): JSX.Element {
         </div>
 
         {/* 日付グリッド */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5">
           {days.map(function(day) {
             const dayReservations = getReservationsForDate(reservations, day);
             return (
@@ -330,14 +326,18 @@ export default function ReservationsCalendar(): JSX.Element {
         </div>
 
         {/* 凡例 */}
-        <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-border">
+        <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-border">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-primary"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
             <span className="text-xs text-muted-foreground">予約あり</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full ring-2 ring-primary/30 bg-accent/50"></div>
+            <div className="w-3 h-3 rounded-full ring-2 ring-primary/40"></div>
             <span className="text-xs text-muted-foreground">今日</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-primary"></div>
+            <span className="text-xs text-muted-foreground">選択中</span>
           </div>
         </div>
 

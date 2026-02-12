@@ -40,6 +40,7 @@ const MIGRATIONS = [
   { file: '030_ai_learning_data.sql',                 label: 'AI学習データ' },
   { file: '031_integrity_and_indexes.sql',            label: '整合性制約・補助インデックス' },
   { file: '035_billing_webhook.sql',                  label: 'PAY.JP Webhook スキーマ' },
+  { file: '038_owner_announcement_reads.sql',         label: '飼い主お知らせ既読スキーマ' },
 ] as const;
 
 async function runMigration(file: string, label: string): Promise<void> {

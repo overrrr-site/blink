@@ -7,6 +7,7 @@ import journalsRoutes from './journals.js';
 import recordsRoutes from './records.js';
 import checkinRoutes from './checkin.js';
 import announcementsRoutes from './announcements.js';
+import dashboardRoutes from './dashboard.js';
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use(journalsRoutes);
 router.use(recordsRoutes);
 router.use(checkinRoutes);
 router.use(announcementsRoutes);
+router.use(dashboardRoutes);
 
 export default router;
