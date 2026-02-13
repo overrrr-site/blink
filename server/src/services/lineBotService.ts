@@ -643,7 +643,7 @@ async function sendJournals(
     // journals（daycare業種がある場合のみ後方互換で取得）
     const journalPromise = ctx.businessTypes.includes('daycare')
       ? pool.query(
-          `SELECT j.id, j.journal_date as date, 'journal' as source, 'daycare' as source_type,
+          `SELECT j.id, j.journal_date, j.journal_date as date, 'journal' as source, 'daycare' as source_type,
                   d.name as dog_name, j.comment,
                   d.photo_url as dog_photo, s.name as staff_name,
                   j.morning_toilet_status, j.afternoon_toilet_status
