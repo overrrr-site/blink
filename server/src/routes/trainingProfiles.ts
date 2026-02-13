@@ -87,10 +87,19 @@ async function seedDefaultAchievementLevels(storeId: number): Promise<void> {
 
 async function verifyDogBelongsToStore(dogId: number, storeId: number): Promise<boolean> {
   const result = await pool.query(
-    `SELECT id FROM dogs WHERE id = $1 AND store_id = $2`,
+    `SELECT d.id
+     FROM dogs d
+     JOIN owners o ON o.id = d.owner_id
+     WHERE d.id = $1 AND o.store_id = $2`,
     [dogId, storeId]
   );
   return result.rows.length > 0;
+}
+
+function parseDogId(value: string): number | null {
+  const dogId = Number.parseInt(value, 10);
+  if (Number.isNaN(dogId) || dogId <= 0) return null;
+  return dogId;
 }
 
 // ---------------------------------------------------------------------------
@@ -449,7 +458,10 @@ router.get('/dogs/:dogId/all', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
 
     if (!(await verifyDogBelongsToStore(dogId, storeId))) {
       return sendNotFound(res, '犬が見つかりません');
@@ -546,7 +558,10 @@ router.put('/dogs/:dogId/grid', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { category_id, training_item_id, entry_date, achievement_symbol } = req.body;
 
     if (!category_id || !training_item_id || !entry_date || !achievement_symbol) {
@@ -581,7 +596,10 @@ router.delete('/dogs/:dogId/grid/:entryId', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { entryId } = req.params;
 
     if (!(await verifyDogBelongsToStore(dogId, storeId))) {
@@ -610,7 +628,10 @@ router.post('/dogs/:dogId/logs', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { category_id, entry_date, note } = req.body;
 
     if (!category_id || !entry_date || !note) {
@@ -640,7 +661,10 @@ router.put('/dogs/:dogId/logs/:entryId', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { entryId } = req.params;
     const { entry_date, note } = req.body;
 
@@ -679,7 +703,10 @@ router.delete('/dogs/:dogId/logs/:entryId', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { entryId } = req.params;
 
     if (!(await verifyDogBelongsToStore(dogId, storeId))) {
@@ -708,7 +735,10 @@ router.post('/dogs/:dogId/concerns', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { entry_date, note } = req.body;
 
     if (!entry_date || !note) {
@@ -738,7 +768,10 @@ router.put('/dogs/:dogId/concerns/:entryId', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { entryId } = req.params;
     const { entry_date, note } = req.body;
 
@@ -777,7 +810,10 @@ router.delete('/dogs/:dogId/concerns/:entryId', async (req: AuthRequest, res) =>
   try {
     if (!requireStoreId(req, res)) return;
     const storeId = req.storeId!;
-    const dogId = parseInt(req.params.dogId);
+    const dogId = parseDogId(req.params.dogId);
+    if (!dogId) {
+      return sendBadRequest(res, '犬IDが不正です');
+    }
     const { entryId } = req.params;
 
     if (!(await verifyDogBelongsToStore(dogId, storeId))) {
