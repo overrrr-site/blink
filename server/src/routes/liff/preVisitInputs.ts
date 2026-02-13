@@ -108,6 +108,9 @@ router.post('/pre-visit-inputs', async function(req, res) {
     const reservationServiceType = reservationCheck.rows[0]?.service_type;
     const finalServiceType = parsedServiceType ?? reservationServiceType ?? 'daycare';
 
+    // 空文字列はDBのCHECK制約に違反するためnullに変換
+    const safeBreakfastStatus = breakfast_status || null;
+    const safeHealthStatus = health_status || null;
     const mealDataJson = meal_data ? JSON.stringify(meal_data) : null;
     const groomingDataJson = grooming_data ? JSON.stringify(grooming_data) : null;
     const hotelDataJson = hotel_data ? JSON.stringify(hotel_data) : null;
@@ -142,9 +145,9 @@ router.post('/pre-visit-inputs', async function(req, res) {
           morning_defecation,
           afternoon_urination,
           afternoon_defecation,
-          breakfast_status,
-          health_status,
-          notes,
+          safeBreakfastStatus,
+          safeHealthStatus,
+          notes || null,
           mealDataJson,
           finalServiceType,
           groomingDataJson,
