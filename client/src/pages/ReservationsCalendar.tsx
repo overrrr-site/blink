@@ -6,6 +6,8 @@ import api from '../api/client'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
 import { useToast } from '../components/Toast'
+import ReservationCard from '../components/ReservationCard'
+import type { ReservationCardData } from '../components/ReservationCard'
 
 const ReservationsCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -16,9 +18,12 @@ const ReservationsCalendar = () => {
   const [draggedReservation, setDraggedReservation] = useState<number | null>(null)
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
+  const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const { selectedBusinessType } = useBusinessTypeFilter()
+  const { selectedBusinessType, effectiveBusinessType, recordLabel } = useBusinessTypeFilter()
+
+  const currentBusinessType = effectiveBusinessType ?? null
 
   const getCreateUrl = () => {
     switch (selectedBusinessType) {
@@ -41,7 +46,7 @@ const ReservationsCalendar = () => {
       setSelectedDateReservations(
         reservations.filter((r) => {
           // reservation_date が ISO 形式の場合は 'yyyy-MM-dd' に変換
-          const reservationDate = r.reservation_date instanceof Date 
+          const reservationDate = r.reservation_date instanceof Date
             ? format(r.reservation_date, 'yyyy-MM-dd')
             : r.reservation_date?.split('T')[0] || r.reservation_date
           return reservationDate === dateStr
@@ -49,6 +54,11 @@ const ReservationsCalendar = () => {
       )
     }
   }, [selectedDate, reservations])
+
+  // 日付選択が変わったら展開カードをリセット
+  useEffect(() => {
+    setExpandedCard(null)
+  }, [selectedDate])
 
   const fetchReservations = async () => {
     try {
@@ -77,19 +87,19 @@ const ReservationsCalendar = () => {
   // カレンダーの前後の空白日を追加
   const firstDayOfWeek = monthStart.getDay()
   const paddingDays = []
-  
+
   for (let i = 0; i < firstDayOfWeek; i++) {
     paddingDays.push(null)
   }
-  
+
   const allDays = [...paddingDays, ...days]
-  
+
   const getReservationsForDate = (date: Date | null) => {
     if (!date) return []
     const dateStr = format(date, 'yyyy-MM-dd')
     return reservations.filter((r) => {
       // reservation_date が ISO 形式の場合は 'yyyy-MM-dd' に変換
-      const reservationDate = r.reservation_date instanceof Date 
+      const reservationDate = r.reservation_date instanceof Date
         ? format(r.reservation_date, 'yyyy-MM-dd')
         : r.reservation_date?.split('T')[0] || r.reservation_date
       return reservationDate === dateStr
@@ -163,6 +173,23 @@ const ReservationsCalendar = () => {
     window.print()
   }
 
+  // カレンダーの予約データを ReservationCardData に変換
+  const toCardData = (r: any): ReservationCardData => ({
+    id: r.id,
+    dog_id: r.dog_id,
+    dog_name: r.dog_name,
+    dog_photo: r.dog_photo,
+    owner_name: r.owner_name,
+    reservation_date: r.reservation_date,
+    reservation_time: r.reservation_time || '',
+    status: r.status || '予定',
+    checked_in_at: r.checked_in_at,
+    has_journal: r.has_journal,
+    breakfast_status: r.breakfast_status,
+    health_status: r.health_status,
+    notes: r.notes,
+  })
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -235,8 +262,8 @@ const ReservationsCalendar = () => {
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <button 
-            onClick={goToPreviousMonth} 
+          <button
+            onClick={goToPreviousMonth}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
             aria-label="前の月"
           >
@@ -244,8 +271,8 @@ const ReservationsCalendar = () => {
               className="size-6 text-muted-foreground" />
           </button>
           <h2 className="text-lg font-bold">{format(currentDate, 'yyyy年MM月')}</h2>
-          <button 
-            onClick={goToNextMonth} 
+          <button
+            onClick={goToNextMonth}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
             aria-label="次の月"
           >
@@ -279,7 +306,7 @@ const ReservationsCalendar = () => {
             const isSelected = selectedDate && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
 
             const isDragOver = dragOverDate && format(day, 'yyyy-MM-dd') === format(dragOverDate, 'yyyy-MM-dd')
-            
+
             return (
               <div
                 key={day.toISOString()}
@@ -312,8 +339,8 @@ const ReservationsCalendar = () => {
                   {dayReservations.length > 0 && (
                     <div className="flex items-center justify-center mt-1">
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        isSelected 
-                          ? 'bg-white/30 text-white' 
+                        isSelected
+                          ? 'bg-white/30 text-white'
                           : 'bg-primary text-primary-foreground'
                       }`}>
                         {dayReservations.length}件
@@ -357,50 +384,26 @@ const ReservationsCalendar = () => {
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {selectedDateReservations.map((reservation) => (
                   <div
                     key={reservation.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, reservation.id)}
-                    onClick={() => navigate(`/reservations/${reservation.id}`)}
-                    className={`bg-card rounded-2xl p-4 border border-border shadow-sm cursor-move hover:shadow-md transition-all ${
+                    className={`${
                       draggedReservation === reservation.id ? 'opacity-50' : ''
                     } ${updating === reservation.id ? 'opacity-50 pointer-events-none' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      {reservation.dog_photo ? (
-                        <img
-                          src={reservation.dog_photo}
-                          alt={reservation.dog_name}
-                          className="size-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="size-12 rounded-full bg-muted flex items-center justify-center">
-                          <Icon icon="solar:paw-print-bold"
-                            className="size-6 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-bold text-base">{reservation.dog_name}</h3>
-                        <p className="text-xs text-muted-foreground">
-                          {reservation.owner_name} 様
-                        </p>
-                        {reservation.service_type === 'hotel' && reservation.room_name && (
-                          <p className="text-xs text-primary mt-0.5">
-                            部屋: {reservation.room_name}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-primary">
-                          {reservation.reservation_time?.substring(0, 5)}
-                        </p>
-                        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">
-                          {reservation.status || '予定'}
-                        </span>
-                      </div>
-                    </div>
+                    <ReservationCard
+                      reservation={toCardData(reservation)}
+                      isExpanded={expandedCard === reservation.id}
+                      onToggle={() => setExpandedCard((prev) => prev === reservation.id ? null : reservation.id)}
+                      onNavigatePreVisit={(id) => navigate(`/reservations/${id}`)}
+                      onNavigateTraining={(dogId) => navigate(`/dogs/${dogId}/training`)}
+                      onNavigateRecord={(id) => navigate(`/records/create/${id}`)}
+                      recordLabel={recordLabel}
+                      businessType={currentBusinessType}
+                    />
                   </div>
                 ))}
               </div>

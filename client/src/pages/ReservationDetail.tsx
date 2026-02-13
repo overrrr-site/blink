@@ -5,7 +5,7 @@ import axios from 'axios'
 import useSWR from 'swr'
 import api from '../api/client'
 import { fetcher } from '../lib/swr'
-import { getDashboardStatusLabels, getStatusLabel } from '../domain/businessTypeConfig'
+import { getStatusLabel } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
 
 interface ReservationDetailData {
@@ -81,15 +81,6 @@ const ReservationDetail = () => {
     { revalidateOnFocus: true }
   )
 
-  const updateStatus = useCallback(async (status: string) => {
-    if (!id) return
-    try {
-      await api.put(`/reservations/${id}`, { status })
-      mutate()
-    } catch {
-    }
-  }, [id, mutate])
-
   const handleRetry = useCallback(() => {
     mutate()
   }, [mutate])
@@ -125,10 +116,10 @@ const ReservationDetail = () => {
         </p>
         <div className="flex gap-3">
           <button
-            onClick={() => navigate('/reservations')}
+            onClick={() => navigate(-1)}
             className="bg-muted text-foreground px-4 py-2 rounded-xl text-sm font-bold hover:bg-muted/80 transition-colors"
           >
-            予約一覧に戻る
+            戻る
           </button>
           {error && (
             <button
@@ -145,7 +136,6 @@ const ReservationDetail = () => {
 
   const serviceType = reservation.service_type || 'daycare'
   const createRecordLabel = serviceType === 'daycare' ? '連絡帳を作成する' : 'カルテを作成する'
-  const statusLabels = getDashboardStatusLabels(serviceType as RecordType)
   const statusLabel = getStatusLabel(serviceType as RecordType, reservation.status || '予定')
   const hasPreVisitInput = Boolean(
     reservation.grooming_data ||
@@ -163,17 +153,17 @@ const ReservationDetail = () => {
   return (
     <div className="space-y-4 pb-6">
       <div className="hidden print:block print:mb-4 print:border-b print:border-border print:pb-4 px-5">
-        <h1 className="text-xl font-bold">予約詳細</h1>
+        <h1 className="text-xl font-bold">事前入力</h1>
         <p className="text-sm text-muted-foreground">
           {reservation.dog_name} / {new Date(reservation.reservation_date).toLocaleDateString('ja-JP')}
         </p>
       </div>
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between safe-area-pt">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/reservations')} className="p-2 -ml-2 text-foreground">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-foreground">
             <Icon icon="solar:arrow-left-linear" className="size-6" />
           </button>
-          <h1 className="text-lg font-bold font-heading">予約詳細</h1>
+          <h1 className="text-lg font-bold font-heading">事前入力</h1>
         </div>
         <button
           onClick={handlePrint}
@@ -236,36 +226,6 @@ const ReservationDetail = () => {
               <label className="text-xs text-muted-foreground">ステータス</label>
               <p className="text-base font-medium">{statusLabel}</p>
             </div>
-          </div>
-
-          {/* ステータスに応じたアクションボタン */}
-          <div className="mt-4 space-y-2">
-            {reservation.status === '予定' && (
-              <button
-                onClick={() => updateStatus('登園済')}
-                className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-              >
-                <Icon icon="solar:login-3-bold" className="size-5" />
-                {statusLabels.checkIn}
-              </button>
-            )}
-            {reservation.status === '登園済' && (
-              <button
-                onClick={() => updateStatus('降園済')}
-                className="w-full bg-chart-3 text-white py-3 rounded-xl text-sm font-bold hover:bg-chart-3/90 transition-colors flex items-center justify-center gap-2"
-              >
-                <Icon icon="solar:logout-3-bold" className="size-5" />
-                {statusLabels.checkOut}
-              </button>
-            )}
-            {(reservation.status === '登園済' || reservation.status === '降園済') && (
-              <button
-                onClick={() => updateStatus('予定')}
-                className="w-full bg-muted text-foreground py-2 rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors"
-              >
-                ステータスを戻す
-              </button>
-            )}
           </div>
         </div>
 
@@ -455,33 +415,13 @@ const ReservationDetail = () => {
           </div>
         )}
 
-        {/* リンクボタン */}
-        <div className="space-y-3">
-          <button
-            onClick={() => navigate(`/dogs/${reservation.dog_id}/training`)}
-            className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left active:scale-[0.98] transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Icon icon="solar:clipboard-list-bold" width="20" height="20" className="text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">トレーニングプロフィール</h3>
-                  <p className="text-[11px] text-muted-foreground">コマンド達成状況・日々の記録</p>
-                </div>
-              </div>
-              <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate(`/records/create/${reservation.id}`)}
-            className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
-          >
-            {createRecordLabel}
-          </button>
-        </div>
+        {/* カルテ作成ボタン */}
+        <button
+          onClick={() => navigate(`/records/create/${reservation.id}`)}
+          className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+        >
+          {createRecordLabel}
+        </button>
       </main>
     </div>
   )
