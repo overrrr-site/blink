@@ -2,20 +2,9 @@ import express from 'express';
 import pool from '../../db/connection.js';
 import { sendNotFound, sendServerError } from '../../utils/response.js';
 import { requireOwnerToken } from './common.js';
-import { isBusinessType, type BusinessType } from '../../utils/businessTypes.js';
+import { isBusinessType, normalizeBusinessTypes, type BusinessType } from '../../utils/businessTypes.js';
 
 const router = express.Router();
-
-function normalizeBusinessTypes(value: unknown): BusinessType[] {
-  if (!Array.isArray(value)) return [];
-  const unique = new Set<BusinessType>();
-  for (const item of value) {
-    if (isBusinessType(item)) {
-      unique.add(item);
-    }
-  }
-  return Array.from(unique);
-}
 
 // 飼い主情報取得（認証済み）
 router.get('/me', async function(req, res) {

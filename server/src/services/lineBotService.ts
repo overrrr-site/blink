@@ -7,9 +7,11 @@ import {
   createReservationFlexMessage,
   createJournalFlexMessage,
   createContractFlexMessage,
+  createRecordFlexMessage,
   createHelpMessage,
   createQuickReply,
 } from './lineFlexMessages.js';
+import { normalizeBusinessTypes, isBusinessType, getChatbotConfig, type BusinessType } from '../utils/businessTypes.js';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 
@@ -26,6 +28,13 @@ interface LineEvent {
     userId?: string;
   };
   replyToken?: string;
+}
+
+interface BotContext {
+  storeId: number;
+  ownerId: number;
+  primaryBusinessType: BusinessType;
+  businessTypes: BusinessType[];
 }
 
 // ---------------------------------------------------------------------------
@@ -73,9 +82,11 @@ export async function processLineWebhookEvents(
       const lineUserId = event.source?.userId;
       if (!lineUserId) continue;
 
-      // LINE IDから店舗を特定
+      // LINE IDから店舗を特定（業種情報含む）
       const ownerResult = await pool.query(
-        `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
+        `SELECT o.id as owner_id, o.store_id, o.business_types as owner_business_types,
+                s.line_channel_id, s.line_channel_secret,
+                s.primary_business_type, s.business_types as store_business_types
          FROM owners o
          JOIN stores s ON o.store_id = s.id
          WHERE o.line_id = $1
@@ -102,9 +113,26 @@ export async function processLineWebhookEvents(
       );
       if (!(botSettingsResult.rows[0]?.line_bot_enabled ?? false)) continue;
 
+      // BotContext構築
+      const ownerBizTypes = normalizeBusinessTypes(owner.owner_business_types);
+      const storeBizTypes = normalizeBusinessTypes(owner.store_business_types);
+      const fallbackPrimary: BusinessType = isBusinessType(owner.primary_business_type)
+        ? owner.primary_business_type
+        : 'daycare';
+      const ctx: BotContext = {
+        storeId: owner.store_id,
+        ownerId: owner.owner_id,
+        primaryBusinessType: fallbackPrimary,
+        businessTypes: ownerBizTypes.length > 0
+          ? ownerBizTypes
+          : storeBizTypes.length > 0
+            ? storeBizTypes
+            : [fallbackPrimary],
+      };
+
       // メッセージ処理
       if (event.replyToken) {
-        await handleLineMessage(owner.store_id, owner.owner_id, lineUserId, event, event.replyToken);
+        await handleLineMessage(ctx, lineUserId, event, event.replyToken);
       }
     } catch (error) {
       console.error('LINE Webhook event処理エラー:', error);
@@ -116,29 +144,28 @@ export async function processLineWebhookEvents(
  * LINEメッセージを処理
  */
 export async function handleLineMessage(
-  storeId: number,
-  ownerId: number,
+  ctx: BotContext,
   lineUserId: string,
   event: LineEvent,
   replyToken: string
 ): Promise<void> {
   try {
-    const client = await getStoreLineClient(storeId);
+    const client = await getStoreLineClient(ctx.storeId);
     if (!client) {
-      console.warn(`店舗ID ${storeId} のLINEクライアントが初期化されていません`);
+      console.warn(`店舗ID ${ctx.storeId} のLINEクライアントが初期化されていません`);
       return;
     }
 
     // Postbackイベント（ボタンタップなど）
     if (event.type === 'postback' && event.postback) {
-      await handlePostback(client, storeId, ownerId, lineUserId, event.postback.data, replyToken);
+      await handlePostback(client, ctx, lineUserId, event.postback.data, replyToken);
       return;
     }
 
     // テキストメッセージ
     if (event.type === 'message' && event.message?.type === 'text') {
       const text = event.message.text.trim();
-      await handleTextMessage(client, storeId, ownerId, lineUserId, text, replyToken);
+      await handleTextMessage(client, ctx, lineUserId, text, replyToken);
       return;
     }
   } catch (error) {
@@ -168,7 +195,7 @@ const KEYWORD_ROUTES: Array<{
   },
   {
     name: 'journal',
-    keywords: ['日誌', '日報', 'にっし', 'にっぽう', 'レポート', '報告', '様子', 'ようす', '今日の'],
+    keywords: ['日誌', '日報', 'にっし', 'にっぽう', 'レポート', '報告', '様子', 'ようす', '今日の', 'カルテ', 'かるて', '記録', 'きろく', '宿泊記録'],
   },
   {
     name: 'contract',
@@ -198,8 +225,7 @@ function matchTextCommand(normalizedText: string): string {
  */
 async function handleTextMessage(
   client: Client,
-  storeId: number,
-  ownerId: number,
+  ctx: BotContext,
   lineUserId: string,
   text: string,
   replyToken: string
@@ -209,31 +235,31 @@ async function handleTextMessage(
 
   switch (command) {
     case 'create_reservation':
-      await sendReservationLink(client, lineUserId, storeId, replyToken);
+      await sendReservationLink(client, lineUserId, ctx, replyToken);
       break;
     case 'view_reservations':
-      await sendReservations(client, lineUserId, ownerId, replyToken);
+      await sendReservations(client, lineUserId, ctx, replyToken);
       break;
     case 'reservation_menu':
-      await sendReservationMenu(client, lineUserId, storeId, replyToken);
+      await sendReservationMenu(client, lineUserId, ctx, replyToken);
       break;
     case 'cancel':
-      await sendCancellableReservations(client, lineUserId, ownerId, replyToken);
+      await sendCancellableReservations(client, lineUserId, ctx, replyToken);
       break;
     case 'journal':
-      await sendJournals(client, lineUserId, ownerId, replyToken);
+      await sendJournals(client, lineUserId, ctx, replyToken);
       break;
     case 'contract':
-      await sendContracts(client, lineUserId, ownerId, replyToken);
+      await sendContracts(client, lineUserId, ctx, replyToken);
       break;
     case 'help':
-      await sendHelp(client, lineUserId, replyToken);
+      await sendHelp(client, lineUserId, ctx, replyToken);
       break;
     default:
       await client.replyMessage(replyToken, {
         type: 'text',
         text: '申し訳ございません、メッセージを理解できませんでした。\n\n「ヘルプ」と送信いただくと、使い方をご案内いたします。',
-        quickReply: createQuickReply(),
+        quickReply: createQuickReply(ctx.businessTypes),
       });
   }
 }
@@ -243,8 +269,7 @@ async function handleTextMessage(
  */
 async function handlePostback(
   client: Client,
-  storeId: number,
-  ownerId: number,
+  ctx: BotContext,
   lineUserId: string,
   data: string,
   replyToken: string
@@ -257,44 +282,44 @@ async function handlePostback(
 
     switch (action) {
       case 'cancel_reservation':
-        if (reservationId) await cancelReservation(client, lineUserId, ownerId, parseInt(reservationId), replyToken);
+        if (reservationId) await cancelReservation(client, lineUserId, ctx, parseInt(reservationId), replyToken);
         break;
       case 'confirm_cancel':
-        if (reservationId) await confirmCancelReservation(client, lineUserId, ownerId, parseInt(reservationId), replyToken);
+        if (reservationId) await confirmCancelReservation(client, lineUserId, ctx, parseInt(reservationId), replyToken);
         break;
       case 'view_journal':
-        if (journalId) await sendJournalDetail(client, lineUserId, ownerId, parseInt(journalId), replyToken);
+        if (journalId) await sendJournalDetail(client, lineUserId, ctx, parseInt(journalId), replyToken);
         break;
       case 'view_reservations':
-        await sendReservations(client, lineUserId, ownerId, replyToken);
+        await sendReservations(client, lineUserId, ctx, replyToken);
         break;
       case 'create_reservation':
-        await sendReservationLink(client, lineUserId, storeId, replyToken);
+        await sendReservationLink(client, lineUserId, ctx, replyToken);
         break;
       case 'view_journals':
-        await sendJournals(client, lineUserId, ownerId, replyToken);
+        await sendJournals(client, lineUserId, ctx, replyToken);
         break;
       case 'view_contracts':
-        await sendContracts(client, lineUserId, ownerId, replyToken);
+        await sendContracts(client, lineUserId, ctx, replyToken);
         break;
       case 'help':
-        await sendHelp(client, lineUserId, replyToken);
+        await sendHelp(client, lineUserId, ctx, replyToken);
         break;
       case 'cancel_menu':
-        await sendCancellableReservations(client, lineUserId, ownerId, replyToken);
+        await sendCancellableReservations(client, lineUserId, ctx, replyToken);
         break;
       case 'cancel':
         await client.replyMessage(replyToken, {
           type: 'text',
           text: '承知しました。また何かございましたらお気軽にどうぞ 😊',
-          quickReply: createQuickReply(),
+          quickReply: createQuickReply(ctx.businessTypes),
         });
         break;
       default:
         await client.replyMessage(replyToken, {
           type: 'text',
           text: '完了いたしました。他にご用件はございますか？',
-          quickReply: createQuickReply(),
+          quickReply: createQuickReply(ctx.businessTypes),
         });
     }
   } catch (error) {
@@ -309,7 +334,7 @@ async function handlePostback(
 async function sendReservations(
   client: Client,
   lineUserId: string,
-  ownerId: number,
+  ctx: BotContext,
   replyToken: string
 ): Promise<void> {
   try {
@@ -322,14 +347,14 @@ async function sendReservations(
          AND r.status != 'キャンセル'
        ORDER BY r.reservation_date ASC, r.reservation_time ASC
        LIMIT 10`,
-      [ownerId]
+      [ctx.ownerId]
     );
 
     if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
         text: '現在、今後のご予約はございません 📅\n\n新しくご予約される場合は「予約する」とお送りください。',
-        quickReply: createQuickReply(),
+        quickReply: createQuickReply(ctx.businessTypes),
       });
       return;
     }
@@ -346,7 +371,7 @@ async function sendReservations(
     await client.pushMessage(lineUserId, {
       type: 'text',
       text: 'キャンセルをご希望の場合は「キャンセル」とお送りください 🙋',
-      quickReply: createQuickReply(),
+      quickReply: createQuickReply(ctx.businessTypes),
     }, false);
   } catch (error) {
     console.error('Error sending reservations:', error);
@@ -360,7 +385,7 @@ async function sendReservations(
 async function sendReservationLink(
   client: Client,
   lineUserId: string,
-  storeId: number,
+  ctx: BotContext,
   replyToken: string
 ): Promise<void> {
   const liffId = process.env.LIFF_ID;
@@ -407,7 +432,7 @@ async function sendReservationLink(
 async function sendReservationMenu(
   client: Client,
   lineUserId: string,
-  storeId: number,
+  ctx: BotContext,
   replyToken: string
 ): Promise<void> {
   const liffId = process.env.LIFF_ID;
@@ -453,7 +478,7 @@ async function sendReservationMenu(
 async function sendCancellableReservations(
   client: Client,
   lineUserId: string,
-  ownerId: number,
+  ctx: BotContext,
   replyToken: string
 ): Promise<void> {
   try {
@@ -466,14 +491,14 @@ async function sendCancellableReservations(
          AND r.status IN ('予定', '登園済')
        ORDER BY r.reservation_date ASC, r.reservation_time ASC
        LIMIT 5`,
-      [ownerId]
+      [ctx.ownerId]
     );
 
     if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
         text: '現在、キャンセル可能なご予約はございません。',
-        quickReply: createQuickReply(),
+        quickReply: createQuickReply(ctx.businessTypes),
       });
       return;
     }
@@ -528,12 +553,12 @@ async function fetchOwnerReservation(reservationId: number, ownerId: number): Pr
 async function cancelReservation(
   client: Client,
   lineUserId: string,
-  ownerId: number,
+  ctx: BotContext,
   reservationId: number,
   replyToken: string
 ): Promise<void> {
   try {
-    const reservation = await fetchOwnerReservation(reservationId, ownerId);
+    const reservation = await fetchOwnerReservation(reservationId, ctx.ownerId);
     if (!reservation) {
       await client.replyMessage(replyToken, { type: 'text', text: 'ご予約が見つかりませんでした。' });
       return;
@@ -565,12 +590,12 @@ async function cancelReservation(
 async function confirmCancelReservation(
   client: Client,
   lineUserId: string,
-  ownerId: number,
+  ctx: BotContext,
   reservationId: number,
   replyToken: string
 ): Promise<void> {
   try {
-    const reservation = await fetchOwnerReservation(reservationId, ownerId);
+    const reservation = await fetchOwnerReservation(reservationId, ctx.ownerId);
     if (!reservation) {
       await client.replyMessage(replyToken, { type: 'text', text: 'ご予約が見つかりませんでした。' });
       return;
@@ -580,7 +605,7 @@ async function confirmCancelReservation(
       await client.replyMessage(replyToken, {
         type: 'text',
         text: 'こちらのご予約は既にキャンセル済みです。',
-        quickReply: createQuickReply(),
+        quickReply: createQuickReply(ctx.businessTypes),
       });
       return;
     }
@@ -595,7 +620,7 @@ async function confirmCancelReservation(
     await client.replyMessage(replyToken, {
       type: 'text',
       text: `✅ ご予約をキャンセルいたしました。\n\n${dateLabel} ${timeLabel}`,
-      quickReply: createQuickReply(),
+      quickReply: createQuickReply(ctx.businessTypes),
     });
   } catch (error) {
     console.error('Error confirming cancel:', error);
@@ -604,52 +629,86 @@ async function confirmCancelReservation(
 }
 
 /**
- * 日誌一覧を送信
+ * 記録一覧を送信（journals + records テーブルを統合）
  */
 async function sendJournals(
   client: Client,
   lineUserId: string,
-  ownerId: number,
+  ctx: BotContext,
   replyToken: string
 ): Promise<void> {
   try {
-    const result = await pool.query(
-      `SELECT j.*, d.name as dog_name, d.photo_url as dog_photo, s.name as staff_name
-       FROM journals j
-       JOIN dogs d ON j.dog_id = d.id
-       LEFT JOIN staff s ON j.staff_id = s.id
+    const config = getChatbotConfig(ctx.primaryBusinessType);
+
+    // journals（daycare業種がある場合のみ後方互換で取得）
+    const journalPromise = ctx.businessTypes.includes('daycare')
+      ? pool.query(
+          `SELECT j.id, j.journal_date as date, 'journal' as source, 'daycare' as source_type,
+                  d.name as dog_name, j.comment,
+                  d.photo_url as dog_photo, s.name as staff_name,
+                  j.morning_toilet_status, j.afternoon_toilet_status
+           FROM journals j
+           JOIN dogs d ON j.dog_id = d.id
+           LEFT JOIN staff s ON j.staff_id = s.id
+           WHERE d.owner_id = $1
+           ORDER BY j.journal_date DESC, j.created_at DESC
+           LIMIT 5`,
+          [ctx.ownerId]
+        )
+      : Promise.resolve({ rows: [] });
+
+    // records（status='shared'、飼い主の業種に合致するもの）
+    const recordPromise = pool.query(
+      `SELECT r.id, r.record_date as date, 'record' as source, r.record_type as source_type,
+              d.name as dog_name, (r.notes->>'report_text') as comment
+       FROM records r
+       JOIN dogs d ON r.dog_id = d.id
        WHERE d.owner_id = $1
-       ORDER BY j.journal_date DESC, j.created_at DESC
+         AND r.status = 'shared'
+         AND r.record_type = ANY($2::text[])
+         AND r.deleted_at IS NULL
+       ORDER BY r.record_date DESC, r.created_at DESC
        LIMIT 5`,
-      [ownerId]
+      [ctx.ownerId, ctx.businessTypes]
     );
 
-    if (result.rows.length === 0) {
+    const [journalResult, recordResult] = await Promise.all([journalPromise, recordPromise]);
+
+    // マージして日付降順、最新5件
+    const allEntries = [...journalResult.rows, ...recordResult.rows]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+
+    if (allEntries.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '📝 日誌はまだ作成されていません。',
-        quickReply: createQuickReply(),
+        text: `📝 ${config.recordLabel}はまだ作成されていません。`,
+        quickReply: createQuickReply(ctx.businessTypes),
       });
       return;
     }
 
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: `📝 日誌一覧です（最新${result.rows.length}件）`,
+      text: `📝 ${config.recordLabel}一覧です（最新${allEntries.length}件）`,
     });
 
-    for (const journal of result.rows) {
-      await client.pushMessage(lineUserId, createJournalFlexMessage(journal), false);
+    for (const entry of allEntries) {
+      if (entry.source === 'journal') {
+        await client.pushMessage(lineUserId, createJournalFlexMessage(entry), false);
+      } else {
+        await client.pushMessage(lineUserId, createRecordFlexMessage(entry), false);
+      }
     }
 
     await client.pushMessage(lineUserId, {
       type: 'text',
       text: '詳しい内容は「詳細を見る」ボタンからご確認いただけます。',
-      quickReply: createQuickReply(),
+      quickReply: createQuickReply(ctx.businessTypes),
     }, false);
   } catch (error) {
     console.error('Error sending journals:', error);
-    await sendErrorFallback(client, lineUserId, '申し訳ございません、日誌情報の取得に失敗しました。');
+    await sendErrorFallback(client, lineUserId, '申し訳ございません、記録情報の取得に失敗しました。');
   }
 }
 
@@ -659,7 +718,7 @@ async function sendJournals(
 async function sendJournalDetail(
   client: Client,
   lineUserId: string,
-  ownerId: number,
+  ctx: BotContext,
   journalId: number,
   replyToken: string
 ): Promise<void> {
@@ -670,14 +729,14 @@ async function sendJournalDetail(
        JOIN dogs d ON j.dog_id = d.id
        LEFT JOIN staff s ON j.staff_id = s.id
        WHERE j.id = $1 AND d.owner_id = $2`,
-      [journalId, ownerId]
+      [journalId, ctx.ownerId]
     );
 
     if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '日誌が見つかりませんでした。',
-        quickReply: createQuickReply(),
+        text: '記録が見つかりませんでした。',
+        quickReply: createQuickReply(ctx.businessTypes),
       });
       return;
     }
@@ -699,11 +758,11 @@ async function sendJournalDetail(
     await client.replyMessage(replyToken, {
       type: 'text',
       text: lines.join('\n'),
-      quickReply: createQuickReply(),
+      quickReply: createQuickReply(ctx.businessTypes),
     });
   } catch (error) {
     console.error('Error sending journal detail:', error);
-    await sendErrorFallback(client, lineUserId, '申し訳ございません、日誌情報の取得に失敗しました。');
+    await sendErrorFallback(client, lineUserId, '申し訳ございません、記録情報の取得に失敗しました。');
   }
 }
 
@@ -713,20 +772,20 @@ async function sendJournalDetail(
 async function sendContracts(
   client: Client,
   lineUserId: string,
-  ownerId: number,
+  ctx: BotContext,
   replyToken: string
 ): Promise<void> {
   try {
     const dogsResult = await pool.query(
       `SELECT id FROM dogs WHERE owner_id = $1`,
-      [ownerId]
+      [ctx.ownerId]
     );
 
     if (dogsResult.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
         text: '🐕 まだワンちゃんの登録がありません。',
-        quickReply: createQuickReply(),
+        quickReply: createQuickReply(ctx.businessTypes),
       });
       return;
     }
@@ -747,7 +806,7 @@ async function sendContracts(
       await client.replyMessage(replyToken, {
         type: 'text',
         text: '📋 現在、有効なご契約はございません。',
-        quickReply: createQuickReply(),
+        quickReply: createQuickReply(ctx.businessTypes),
       });
       return;
     }
@@ -765,7 +824,7 @@ async function sendContracts(
     await client.pushMessage(lineUserId, {
       type: 'text',
       text: 'ご予約は「予約する」とお送りいただければ作成できます 📅',
-      quickReply: createQuickReply(),
+      quickReply: createQuickReply(ctx.businessTypes),
     }, false);
   } catch (error) {
     console.error('Error sending contracts:', error);
@@ -798,8 +857,9 @@ async function calculateRemainingSessionsForContract(contract: any): Promise<num
 async function sendHelp(
   client: Client,
   lineUserId: string,
+  ctx: BotContext,
   replyToken: string
 ): Promise<void> {
-  const helpMessage = createHelpMessage();
+  const helpMessage = createHelpMessage(ctx.businessTypes);
   await client.replyMessage(replyToken, helpMessage);
 }

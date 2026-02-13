@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import type { FlexBox, FlexBubble, FlexComponent, FlexMessage, FlexText, QuickReply } from '@line/bot-sdk';
-import { isBusinessType, type BusinessType } from '../utils/businessTypes.js';
+import { isBusinessType, getChatbotConfig, getRecordQuickReplyLabel, type BusinessType } from '../utils/businessTypes.js';
 
 // ---------------------------------------------------------------------------
 // Data interfaces
@@ -14,6 +14,7 @@ interface ReservationData {
   dog_name: string;
   status: string;
   memo?: string | null;
+  service_type?: string | null;
 }
 
 interface JournalData {
@@ -204,11 +205,12 @@ function getStatusStyle(status: string): { emoji: string; color: string } {
 /**
  * クイックリプライボタンを作成
  */
-export function createQuickReply(): QuickReply {
+export function createQuickReply(businessTypes?: BusinessType[]): QuickReply {
+  const recordLabel = getRecordQuickReplyLabel(businessTypes ?? ['daycare']);
   return {
     items: [
       { type: 'action', action: { type: 'postback', label: '予約確認', data: 'action=view_reservations' } },
-      { type: 'action', action: { type: 'postback', label: '日誌を見る', data: 'action=view_journals' } },
+      { type: 'action', action: { type: 'postback', label: recordLabel, data: 'action=view_journals' } },
       { type: 'action', action: { type: 'postback', label: '契約情報', data: 'action=view_contracts' } },
       { type: 'action', action: { type: 'postback', label: 'ヘルプ', data: 'action=help' } },
     ],
@@ -222,6 +224,7 @@ export function createReservationFlexMessage(reservation: ReservationData): Flex
   const reservationDate = format(new Date(reservation.reservation_date), 'M月d日(E)', { locale: ja });
   const reservationTime = reservation.reservation_time.substring(0, 5);
   const { emoji: statusEmoji, color: statusColor } = getStatusStyle(reservation.status);
+  const bizConfig = getChatbotConfig(reservation.service_type);
 
   const bubble: FlexBubble = {
     type: 'bubble',
@@ -229,7 +232,7 @@ export function createReservationFlexMessage(reservation: ReservationData): Flex
       type: 'box',
       layout: 'vertical',
       contents: [
-        { type: 'text', text: `${statusEmoji} 予約`, weight: 'bold', size: 'lg', color: statusColor },
+        { type: 'text', text: `${statusEmoji} ${bizConfig.reservationLabel}`, weight: 'bold', size: 'lg', color: statusColor },
         { type: 'separator', margin: 'md' },
         {
           type: 'box',
@@ -552,14 +555,33 @@ export function createRecordNotificationFlexMessage(record: {
 /**
  * ヘルプメッセージを作成
  */
-export function createHelpMessage(): FlexMessage {
+export function createHelpMessage(businessTypes?: BusinessType[]): FlexMessage {
+  const types = businessTypes ?? ['daycare'];
   const helpCommands: Array<{ emoji: string; command: string; description: string }> = [
     { emoji: '📅', command: '「予約確認」', description: '今後の予約一覧を表示' },
     { emoji: '📝', command: '「予約する」', description: '新規予約を作成' },
     { emoji: '❌', command: '「キャンセル」', description: '予約をキャンセル' },
-    { emoji: '📖', command: '「日誌」「日報」', description: '日誌一覧を表示' },
-    { emoji: '📋', command: '「契約」「残回数」', description: '契約情報と残回数を表示' },
   ];
+
+  // 業種に応じた記録コマンドを追加
+  if (types.length === 1) {
+    const config = getChatbotConfig(types[0]);
+    helpCommands.push({
+      emoji: config.emoji,
+      command: config.recordKeywords,
+      description: `${config.recordLabel}一覧を表示`,
+    });
+  } else {
+    helpCommands.push({
+      emoji: '📋',
+      command: '「記録」「カルテ」「日誌」',
+      description: '記録一覧を表示',
+    });
+  }
+
+  helpCommands.push(
+    { emoji: '📋', command: '「契約」「残回数」', description: '契約情報と残回数を表示' },
+  );
 
   const commandItems: FlexComponent[] = helpCommands.flatMap((cmd) => [
     { type: 'text' as const, text: `${cmd.emoji} ${cmd.command}`, size: 'sm' as const, weight: 'bold' as const, margin: 'md' as const },
@@ -588,6 +610,54 @@ export function createHelpMessage(): FlexMessage {
     type: 'flex',
     altText: '使い方ガイド',
     contents: bubble,
-    quickReply: createQuickReply(),
+    quickReply: createQuickReply(types),
+  };
+}
+
+/**
+ * レコード（カルテ）カードのFlexメッセージを作成（チャットボット応答用）
+ */
+export function createRecordFlexMessage(record: {
+  id: number;
+  date: string;
+  source_type: string;
+  dog_name: string;
+  comment?: string | null;
+}): FlexMessage {
+  const config = getChatbotConfig(record.source_type);
+  const recordDate = format(new Date(record.date), 'yyyy年M月d日(E)', { locale: ja });
+  const commentPreview = record.comment ? truncateText(record.comment, 50) : 'コメントなし';
+
+  const bubble = createHeaderBubble({
+    headerText: `${config.emoji} ${config.recordLabel}`,
+    headerColor: config.color,
+    bodyContents: [
+      {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          { type: 'text', text: recordDate, weight: 'bold', size: 'md' },
+          { type: 'text', text: `🐕 ${record.dog_name}`, size: 'sm', color: '#666666' },
+          { type: 'separator', margin: 'md' },
+          { type: 'text', text: commentPreview, size: 'sm', color: '#666666', wrap: true, margin: 'md' },
+        ],
+      },
+    ],
+    footerContents: [
+      {
+        type: 'button',
+        style: 'primary',
+        height: 'sm',
+        action: { type: 'uri', label: '詳細を見る', uri: buildLiffUrl(`/home/records/${record.id}`) },
+        color: config.color,
+      },
+    ],
+  });
+
+  return {
+    type: 'flex',
+    altText: `${recordDate} - ${record.dog_name}の${config.recordLabel}`,
+    contents: bubble,
   };
 }
