@@ -71,7 +71,12 @@ export async function processLineWebhookEvents(
       if (event.type !== 'message' && event.type !== 'postback') continue;
 
       const lineUserId = event.source?.userId;
-      if (!lineUserId) continue;
+      if (!lineUserId) {
+        console.log('LINE Bot: lineUserId が取得できません');
+        continue;
+      }
+
+      console.log(`LINE Bot: lineUserId=${lineUserId.substring(0, 8)}...`);
 
       // LINE IDから店舗を特定
       const ownerResult = await pool.query(
@@ -83,10 +88,18 @@ export async function processLineWebhookEvents(
         [lineUserId]
       );
 
-      if (ownerResult.rows.length === 0) continue;
+      if (ownerResult.rows.length === 0) {
+        console.log(`LINE Bot: line_id=${lineUserId.substring(0, 8)}... に紐づく飼い主が見つかりません`);
+        continue;
+      }
 
       const owner = ownerResult.rows[0];
-      if (!owner.line_channel_secret) continue;
+      console.log(`LINE Bot: 店舗ID=${owner.store_id}, 飼い主ID=${owner.owner_id}`);
+
+      if (!owner.line_channel_secret) {
+        console.log(`LINE Bot: 店舗ID=${owner.store_id} のline_channel_secretが未設定`);
+        continue;
+      }
 
       // 署名検証
       const channelSecret = decrypt(owner.line_channel_secret);
@@ -95,16 +108,26 @@ export async function processLineWebhookEvents(
         continue;
       }
 
+      console.log(`LINE Bot: 署名検証OK`);
+
       // チャットボット有効チェック
       const botSettingsResult = await pool.query(
         `SELECT line_bot_enabled FROM notification_settings WHERE store_id = $1`,
         [owner.store_id]
       );
-      if (!(botSettingsResult.rows[0]?.line_bot_enabled ?? false)) continue;
+      const botEnabled = botSettingsResult.rows[0]?.line_bot_enabled ?? false;
+      if (!botEnabled) {
+        console.log(`LINE Bot: チャットボット無効 (店舗ID=${owner.store_id}, settings=${JSON.stringify(botSettingsResult.rows[0])})`);
+        continue;
+      }
+
+      console.log(`LINE Bot: チャットボット有効、メッセージ処理開始`);
 
       // メッセージ処理
       if (event.replyToken) {
         await handleLineMessage(owner.store_id, owner.owner_id, lineUserId, event, event.replyToken);
+      } else {
+        console.log('LINE Bot: replyToken がありません');
       }
     } catch (error) {
       console.error('LINE Webhook event処理エラー:', error);
