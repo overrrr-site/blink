@@ -76,7 +76,8 @@ export async function processLineWebhookEvents(
         continue;
       }
 
-      console.log(`LINE Bot: lineUserId=${lineUserId.substring(0, 8)}...`);
+      // TODO: デバッグ用（本番安定後に先頭8文字に戻す）
+      console.log(`LINE Bot: lineUserId=${lineUserId}`);
 
       // LINE IDから店舗を特定
       const ownerResult = await pool.query(
