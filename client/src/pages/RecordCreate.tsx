@@ -464,6 +464,21 @@ const RecordCreate = () => {
             来店中に下書き入力し、来店後に最終確認して保存/送信してください。
           </p>
 
+          <div ref={photosSectionRef}>
+            <RequiredSection title="写真" completed={(photos.regular || []).length > 0}>
+              <PhotosForm
+                data={photos}
+                onChange={setPhotos}
+                recordType={recordType}
+                showConcerns={recordType === 'grooming'}
+                aiSuggestion={recordAISuggestions['photo-concern']}
+                onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
+                onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
+                onPhotoAdded={handlePhotoAdded}
+              />
+            </RequiredSection>
+          </div>
+
           <div ref={recordMainSectionRef}>
             {recordType === 'hotel' ? (
               <div ref={hotelStaySectionRef}>
@@ -487,21 +502,6 @@ const RecordCreate = () => {
                 storeId={storeId}
               />
             )}
-          </div>
-
-          <div ref={photosSectionRef}>
-            <RequiredSection title="写真" completed={(photos.regular || []).length > 0}>
-              <PhotosForm
-                data={photos}
-                onChange={setPhotos}
-                recordType={recordType}
-                showConcerns={recordType === 'grooming'}
-                aiSuggestion={recordAISuggestions['photo-concern']}
-                onAISuggestionAction={(editedText) => handleAISuggestionAction('photo-concern', editedText)}
-                onAISuggestionDismiss={() => handleAISuggestionDismiss('photo-concern')}
-                onPhotoAdded={handlePhotoAdded}
-              />
-            </RequiredSection>
           </div>
 
           {recordType === 'hotel' && (

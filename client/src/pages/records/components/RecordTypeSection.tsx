@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import type { RecordType, DaycareData, GroomingData, HotelData } from '../../../types/record'
 import RequiredSection from './RequiredSection'
+import OptionalSection from './OptionalSection'
 import DaycareForm from './DaycareForm'
 import DaycareCareForm from './DaycareCareForm'
 import GroomingForm from './GroomingForm'
@@ -26,15 +28,21 @@ const RecordTypeSection = ({
   onHotelChange,
   storeId,
 }: RecordTypeSectionProps) => {
+  const [careCollapsed, setCareCollapsed] = useState(true)
+
   if (recordType === 'daycare') {
     return (
       <>
         <RequiredSection title="トレーニング記録">
           <DaycareForm data={daycareData} onChange={onDaycareChange} storeId={storeId} />
         </RequiredSection>
-        <RequiredSection title="ごはん・トイレ">
+        <OptionalSection
+          title="ごはん・トイレ"
+          collapsed={careCollapsed}
+          onToggle={() => setCareCollapsed((s) => !s)}
+        >
           <DaycareCareForm data={daycareData} onChange={onDaycareChange} />
-        </RequiredSection>
+        </OptionalSection>
       </>
     )
   }

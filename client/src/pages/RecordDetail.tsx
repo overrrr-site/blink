@@ -350,18 +350,6 @@ const RecordDetail = () => {
 
       {activeTab === 'record' && (
         <>
-          {/* Business-type specific form */}
-          <RecordTypeSection
-            recordType={record.record_type}
-            daycareData={daycareData}
-            groomingData={groomingData}
-            hotelData={hotelData}
-            onDaycareChange={setDaycareData}
-            onGroomingChange={setGroomingData}
-            onHotelChange={setHotelData}
-            storeId={storeId}
-          />
-
           <RequiredSection title="写真">
             <PhotosForm
               data={photos}
@@ -374,6 +362,18 @@ const RecordDetail = () => {
               onPhotoAdded={handlePhotoAdded}
             />
           </RequiredSection>
+
+          {/* Business-type specific form */}
+          <RecordTypeSection
+            recordType={record.record_type}
+            daycareData={daycareData}
+            groomingData={groomingData}
+            hotelData={hotelData}
+            onDaycareChange={setDaycareData}
+            onGroomingChange={setGroomingData}
+            onHotelChange={setHotelData}
+            storeId={storeId}
+          />
 
           <OptionalSection
             title="体調・様子"
