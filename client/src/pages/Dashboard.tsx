@@ -535,7 +535,7 @@ function Dashboard(): JSX.Element {
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`flex-none min-w-[84px] py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 relative min-h-[44px] overflow-hidden active:scale-[0.98] ${
+                className={`flex-none min-w-[84px] py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all inline-flex items-center justify-center gap-1 relative min-h-[44px] active:scale-[0.98] ${
                   statusFilter === filter.id
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground font-normal'
@@ -543,7 +543,7 @@ function Dashboard(): JSX.Element {
                 aria-label={`${filter.label}の予約を表示`}
                 aria-pressed={statusFilter === filter.id}
               >
-                <Icon icon={filter.icon} width="16" height="16" />
+                <Icon icon={filter.icon} width="16" height="16" className="shrink-0" />
                 <span className="whitespace-nowrap">{filter.label}</span>
                 {count > 0 && <span className="text-[10px] opacity-70 hidden sm:inline">({count})</span>}
                 {statusFilter === filter.id && (

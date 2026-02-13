@@ -10,6 +10,7 @@ import type { RecordType } from '../types/record'
 
 interface ReservationDetailData {
   id: number
+  dog_id: number
   dog_name: string
   dog_photo?: string | null
   owner_name: string
@@ -454,12 +455,33 @@ const ReservationDetail = () => {
           </div>
         )}
 
-        <button
-          onClick={() => navigate(`/records/create/${reservation.id}`)}
-          className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
-        >
-          {createRecordLabel}
-        </button>
+        {/* リンクボタン */}
+        <div className="space-y-3">
+          <button
+            onClick={() => navigate(`/dogs/${reservation.dog_id}/training`)}
+            className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left active:scale-[0.98] transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Icon icon="solar:clipboard-list-bold" width="20" height="20" className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">トレーニングプロフィール</h3>
+                  <p className="text-[11px] text-muted-foreground">コマンド達成状況・日々の記録</p>
+                </div>
+              </div>
+              <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate(`/records/create/${reservation.id}`)}
+            className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+          >
+            {createRecordLabel}
+          </button>
+        </div>
       </main>
     </div>
   )
