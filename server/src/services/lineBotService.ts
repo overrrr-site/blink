@@ -71,16 +71,10 @@ export async function processLineWebhookEvents(
       if (event.type !== 'message' && event.type !== 'postback') continue;
 
       const lineUserId = event.source?.userId;
-      if (!lineUserId) {
-        console.log('LINE Bot: lineUserId が取得できません');
-        continue;
-      }
-
-      // TODO: デバッグ用（本番安定後に先頭8文字に戻す）
-      console.log(`LINE Bot: lineUserId=${lineUserId}`);
+      if (!lineUserId) continue;
 
       // LINE IDから店舗を特定
-      let ownerResult = await pool.query(
+      const ownerResult = await pool.query(
         `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
          FROM owners o
          JOIN stores s ON o.store_id = s.id
@@ -89,36 +83,10 @@ export async function processLineWebhookEvents(
         [lineUserId]
       );
 
-      if (ownerResult.rows.length === 0) {
-        // TODO: 初期セットアップ用 - 未連携のLINEユーザーをowner id=6に自動紐付け（安定後に削除）
-        console.log(`LINE Bot: line_id未登録 → owner id=6 に自動紐付け`);
-        await pool.query(
-          `UPDATE owners SET line_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = 6 AND line_id IS NULL`,
-          [lineUserId]
-        );
-        // 紐付け後に再検索
-        const retryResult = await pool.query(
-          `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
-           FROM owners o
-           JOIN stores s ON o.store_id = s.id
-           WHERE o.line_id = $1
-           LIMIT 1`,
-          [lineUserId]
-        );
-        if (retryResult.rows.length === 0) {
-          console.log(`LINE Bot: 自動紐付け後も見つかりません`);
-          continue;
-        }
-        ownerResult = retryResult;
-      }
+      if (ownerResult.rows.length === 0) continue;
 
       const owner = ownerResult.rows[0];
-      console.log(`LINE Bot: 店舗ID=${owner.store_id}, 飼い主ID=${owner.owner_id}`);
-
-      if (!owner.line_channel_secret) {
-        console.log(`LINE Bot: 店舗ID=${owner.store_id} のline_channel_secretが未設定`);
-        continue;
-      }
+      if (!owner.line_channel_secret) continue;
 
       // 署名検証
       const channelSecret = decrypt(owner.line_channel_secret);
@@ -127,26 +95,16 @@ export async function processLineWebhookEvents(
         continue;
       }
 
-      console.log(`LINE Bot: 署名検証OK`);
-
       // チャットボット有効チェック
       const botSettingsResult = await pool.query(
         `SELECT line_bot_enabled FROM notification_settings WHERE store_id = $1`,
         [owner.store_id]
       );
-      const botEnabled = botSettingsResult.rows[0]?.line_bot_enabled ?? false;
-      if (!botEnabled) {
-        console.log(`LINE Bot: チャットボット無効 (店舗ID=${owner.store_id}, settings=${JSON.stringify(botSettingsResult.rows[0])})`);
-        continue;
-      }
-
-      console.log(`LINE Bot: チャットボット有効、メッセージ処理開始`);
+      if (!(botSettingsResult.rows[0]?.line_bot_enabled ?? false)) continue;
 
       // メッセージ処理
       if (event.replyToken) {
         await handleLineMessage(owner.store_id, owner.owner_id, lineUserId, event, event.replyToken);
-      } else {
-        console.log('LINE Bot: replyToken がありません');
       }
     } catch (error) {
       console.error('LINE Webhook event処理エラー:', error);
