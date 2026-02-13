@@ -80,7 +80,7 @@ export async function processLineWebhookEvents(
       console.log(`LINE Bot: lineUserId=${lineUserId}`);
 
       // LINE IDから店舗を特定
-      const ownerResult = await pool.query(
+      let ownerResult = await pool.query(
         `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
          FROM owners o
          JOIN stores s ON o.store_id = s.id
@@ -90,8 +90,26 @@ export async function processLineWebhookEvents(
       );
 
       if (ownerResult.rows.length === 0) {
-        console.log(`LINE Bot: line_id=${lineUserId.substring(0, 8)}... に紐づく飼い主が見つかりません`);
-        continue;
+        // TODO: 初期セットアップ用 - 未連携のLINEユーザーをowner id=6に自動紐付け（安定後に削除）
+        console.log(`LINE Bot: line_id未登録 → owner id=6 に自動紐付け`);
+        await pool.query(
+          `UPDATE owners SET line_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = 6 AND line_id IS NULL`,
+          [lineUserId]
+        );
+        // 紐付け後に再検索
+        const retryResult = await pool.query(
+          `SELECT o.id as owner_id, o.store_id, s.line_channel_id, s.line_channel_secret
+           FROM owners o
+           JOIN stores s ON o.store_id = s.id
+           WHERE o.line_id = $1
+           LIMIT 1`,
+          [lineUserId]
+        );
+        if (retryResult.rows.length === 0) {
+          console.log(`LINE Bot: 自動紐付け後も見つかりません`);
+          continue;
+        }
+        ownerResult = retryResult;
       }
 
       const owner = ownerResult.rows[0];
