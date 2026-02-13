@@ -128,7 +128,7 @@ export function buildReportPrompt(
   dogName: string,
   data: {
     grooming_data?: { selectedParts?: string[]; partNotes?: Record<string, string> };
-    daycare_data?: { activities?: string[] };
+    daycare_data?: { activities?: string[]; meal?: { morning?: string; afternoon?: string }; toilet?: Record<string, { urination: boolean; defecation: boolean }> };
     hotel_data?: { nights?: number; special_care?: string };
     condition?: { overall?: string };
     health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
@@ -220,14 +220,33 @@ ${memo}
   const activities = formatActivities(data.daycare_data?.activities);
   const memo = data.notes?.internal_notes ? `\nスタッフメモ: ${data.notes.internal_notes}` : '';
 
+  // ごはん情報
+  const mealInfo: string[] = [];
+  if (data.daycare_data?.meal?.morning?.trim()) mealInfo.push(`朝: ${data.daycare_data.meal.morning.trim()}`);
+  if (data.daycare_data?.meal?.afternoon?.trim()) mealInfo.push(`午後: ${data.daycare_data.meal.afternoon.trim()}`);
+  const mealSection = mealInfo.length > 0 ? `\n【ごはん】${mealInfo.join('、')}` : '';
+
+  // トイレ情報
+  const toiletInfo: string[] = [];
+  if (data.daycare_data?.toilet) {
+    for (const [period, entry] of Object.entries(data.daycare_data.toilet)) {
+      const items: string[] = [];
+      if (entry.urination) items.push('オシッコ');
+      if (entry.defecation) items.push('ウンチ');
+      if (items.length > 0) toiletInfo.push(`${period}: ${items.join('・')}`);
+    }
+  }
+  const toiletSection = toiletInfo.length > 0 ? `\n【トイレ】${toiletInfo.join('、')}` : '';
+
   return `あなたは犬の幼稚園のスタッフです。${dogName}ちゃんの今日の活動レポートを飼い主さんに書いてください。
 
 【活動内容】${activities || '未記録'}
 ${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
-${memo}
+${memo}${mealSection}${toiletSection}
 
 200〜300文字程度で、以下を含めてください：
 - 今日の活動と楽しんでいた様子
+- 食事やトイレの状況（記録がある場合）
 - 成長が見られた点
 - 次回への期待
 英語やローマ字の表現（例: freeplay, training, socialization, nap）は使わず、自然な日本語だけで記述してください。

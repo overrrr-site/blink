@@ -188,6 +188,8 @@ const ReservationsCalendar = () => {
     breakfast_status: r.breakfast_status,
     health_status: r.health_status,
     notes: r.notes,
+    end_datetime: r.end_datetime,
+    service_type: r.service_type,
   })
 
   if (loading) {

@@ -13,7 +13,7 @@ import { useBusinessTypeStore } from '../store/businessTypeStore'
 function DogDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [historyTab, setHistoryTab] = useState<'reservations' | 'journals'>('reservations')
+  const [historyTab, setHistoryTab] = useState<'reservations' | 'journals' | 'preVisit'>('reservations')
   const { dog, loading, contracts, loadingContracts } = useDogDetail(id)
   const { selectedBusinessType } = useBusinessTypeStore()
 
@@ -141,6 +141,7 @@ function DogDetail(): JSX.Element {
           activeTab={historyTab}
           reservations={dog.reservations || []}
           journals={dog.journals || []}
+          preVisitHistory={dog.preVisitHistory || []}
           selectedBusinessType={selectedBusinessType}
           onTabChange={setHistoryTab}
           onOpenReservation={(reservationId) => navigate(`/reservations/${reservationId}`)}

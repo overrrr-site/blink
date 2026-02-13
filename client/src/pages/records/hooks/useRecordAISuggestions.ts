@@ -73,6 +73,28 @@ function buildInputTrace(context: RecordAISuggestionContext): AIInputTraceItem[]
       status: filledCount > 0 ? 'present' : 'missing',
       count: filledCount,
     })
+
+    // ごはん
+    const hasMealData = Boolean(
+      context.daycareData.meal?.morning?.trim() ||
+      context.daycareData.meal?.afternoon?.trim()
+    )
+    items.push({
+      key: 'daycare_meal',
+      label: 'ごはん',
+      status: hasMealData ? 'present' : 'missing',
+    })
+
+    // トイレ
+    const toiletEntries = context.daycareData.toilet
+      ? Object.values(context.daycareData.toilet)
+      : []
+    const hasToiletData = toiletEntries.some(e => e.urination || e.defecation)
+    items.push({
+      key: 'daycare_toilet',
+      label: 'トイレ',
+      status: hasToiletData ? 'present' : 'missing',
+    })
   }
 
   if (context.recordType === 'grooming') {
@@ -102,6 +124,8 @@ const INPUT_KEY_LABELS: Record<string, string> = {
   health_check: '健康チェック',
   internal_notes: '内部メモ',
   daycare_training: 'トレーニング記録',
+  daycare_meal: 'ごはん',
+  daycare_toilet: 'トイレ',
   grooming_parts: '施術部位',
   hotel_stay: '宿泊情報',
 }

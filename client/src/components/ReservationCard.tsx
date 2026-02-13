@@ -26,6 +26,8 @@ export interface ReservationCardData {
   breakfast_status?: string
   health_status?: string
   notes?: string
+  end_datetime?: string
+  service_type?: string
 }
 
 export { getDisplayStatus, hasPreVisitInput }
@@ -104,7 +106,23 @@ const ReservationCard = React.memo(function ReservationCard({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {reservation.owner_name}様
+            {(() => {
+              const startTime = reservation.reservation_time
+                ? reservation.reservation_time.substring(0, 5)
+                : ''
+              const endTime = reservation.end_datetime
+                ? reservation.end_datetime.includes('T')
+                  ? reservation.end_datetime.split('T')[1].substring(0, 5)
+                  : reservation.end_datetime.split(' ')[1]?.substring(0, 5) || ''
+                : ''
+              if (startTime && endTime) {
+                return `${startTime}〜${endTime} / ${reservation.owner_name}様`
+              }
+              if (startTime) {
+                return `${startTime} / ${reservation.owner_name}様`
+              }
+              return `${reservation.owner_name}様`
+            })()}
           </p>
         </div>
 
@@ -226,7 +244,7 @@ const ReservationCard = React.memo(function ReservationCard({
               className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted active:scale-[0.98] transition-all"
             >
               <Icon icon="solar:clipboard-list-bold" className="size-4" />
-              トレプロ
+              内部記録
             </button>
             <div className="w-px bg-border" />
             <button

@@ -165,11 +165,17 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
              d.name as dog_name, d.photo_url as dog_photo,
              o.name as owner_name,
              hr.room_name,
-             hr.room_size
+             hr.room_size,
+             pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
+             CASE WHEN j.id IS NOT NULL THEN true ELSE false END as has_journal
       FROM reservations r
       JOIN dogs d ON r.dog_id = d.id
       JOIN owners o ON d.owner_id = o.id
       LEFT JOIN hotel_rooms hr ON r.room_id = hr.id
+      LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
+      LEFT JOIN LATERAL (
+        SELECT j.id FROM journals j WHERE j.reservation_id = r.id LIMIT 1
+      ) j ON true
       WHERE r.store_id = $1
     `;
     const params: (string | number)[] =[req.storeId];

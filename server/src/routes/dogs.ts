@@ -179,16 +179,18 @@ router.get('/:id', async (req: AuthRequest, res) => {
       return;
     }
 
-    const [healthResult, personalityResult, contractResult, reservationsResult, journalsResult] = await Promise.all([
+    const [healthResult, personalityResult, contractResult, reservationsResult, journalsResult, preVisitResult] = await Promise.all([
       pool.query(`SELECT * FROM dog_health WHERE dog_id = $1`, [id]),
       pool.query(`SELECT * FROM dog_personality WHERE dog_id = $1`, [id]),
       pool.query(`SELECT * FROM contracts WHERE dog_id = $1 ORDER BY created_at DESC LIMIT 1`, [id]),
       pool.query(
         `SELECT r.id, r.reservation_date, r.reservation_time, r.status, r.service_type,
-                o.name as owner_name
+                o.name as owner_name,
+                CASE WHEN pvi.id IS NOT NULL THEN true ELSE false END as has_pre_visit
          FROM reservations r
          JOIN dogs rd ON r.dog_id = rd.id
          JOIN owners o ON rd.owner_id = o.id
+         LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
          WHERE r.dog_id = $1 AND r.store_id = $2
          ORDER BY r.reservation_date DESC, r.reservation_time DESC
          LIMIT 50`,
@@ -207,6 +209,15 @@ router.get('/:id', async (req: AuthRequest, res) => {
          LIMIT 50`,
         [id]
       ),
+      pool.query(
+        `SELECT pvi.*, r.reservation_date, r.reservation_time, r.service_type
+         FROM pre_visit_inputs pvi
+         JOIN reservations r ON pvi.reservation_id = r.id
+         WHERE r.dog_id = $1 AND r.store_id = $2
+         ORDER BY r.reservation_date DESC
+         LIMIT 30`,
+        [id, req.storeId]
+      ),
     ]);
 
     res.json({
@@ -216,6 +227,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       contract: contractResult.rows[0] || null,
       reservations: reservationsResult.rows || [],
       journals: journalsResult.rows || [],
+      preVisitHistory: preVisitResult.rows || [],
     });
   } catch (error) {
     sendServerError(res, '犬情報の取得に失敗しました', error);

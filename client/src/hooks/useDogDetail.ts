@@ -8,6 +8,7 @@ interface DogReservationItem {
   status: string
   service_type?: string
   owner_name?: string | null
+  has_pre_visit?: boolean
 }
 
 interface DogJournalItem {
@@ -15,6 +16,24 @@ interface DogJournalItem {
   journal_date: string
   comment?: string | null
   staff_name?: string | null
+}
+
+interface DogPreVisitItem {
+  id: number
+  reservation_id: number
+  reservation_date: string
+  reservation_time: string
+  service_type?: string
+  morning_urination?: boolean
+  morning_defecation?: boolean
+  afternoon_urination?: boolean
+  afternoon_defecation?: boolean
+  breakfast_status?: string
+  health_status?: string
+  notes?: string
+  meal_data?: unknown
+  grooming_data?: unknown
+  hotel_data?: unknown
 }
 
 interface DogDetailData {
@@ -31,6 +50,7 @@ interface DogDetailData {
   personality?: Record<string, unknown>
   reservations?: DogReservationItem[]
   journals?: DogJournalItem[]
+  preVisitHistory?: DogPreVisitItem[]
 }
 
 interface ContractData {
@@ -70,6 +90,7 @@ export function useDogDetail(id?: string) {
           comment: journal.comment ?? undefined,
           staff_name: journal.staff_name ?? undefined,
         })),
+        preVisitHistory: dog.preVisitHistory ?? [],
       }
     : null
 
