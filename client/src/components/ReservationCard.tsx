@@ -3,6 +3,11 @@ import { Icon } from './Icon'
 import { getAvatarUrl } from '../utils/image'
 import { getDashboardStatusLabels } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
+import {
+  getDisplayStatus,
+  getReservationStatusLabel,
+  hasPreVisitInput,
+} from './dashboard/reservationCardModel'
 
 export interface ReservationCardData {
   id: number
@@ -23,26 +28,8 @@ export interface ReservationCardData {
   notes?: string
 }
 
-type DisplayStatus = '来園待ち' | '在園中' | '帰宅済'
-
-export function getDisplayStatus(reservation: ReservationCardData): DisplayStatus {
-  if (reservation.status === '降園済') return '帰宅済'
-  if (reservation.status === '登園済') return '在園中'
-  return '来園待ち'
-}
-
-export function getStatusLabel(status: DisplayStatus, businessType: RecordType | null): string {
-  const l = getDashboardStatusLabels(businessType)
-  switch (status) {
-    case '来園待ち': return l.waiting
-    case '在園中': return l.active
-    case '帰宅済': return l.done
-  }
-}
-
-export function hasPreVisitInput(reservation: ReservationCardData): boolean {
-  return Boolean(reservation.notes || reservation.health_status || reservation.breakfast_status)
-}
+export { getDisplayStatus, hasPreVisitInput }
+export { getReservationStatusLabel as getStatusLabel } from './dashboard/reservationCardModel'
 
 interface ReservationCardProps {
   reservation: ReservationCardData
@@ -212,7 +199,7 @@ const ReservationCard = React.memo(function ReservationCard({
               {displayStatus === '帰宅済' && (
                 <Icon icon="solar:check-circle-bold" className="size-3 mr-1" />
               )}
-              {getStatusLabel(displayStatus, businessType)}
+              {getReservationStatusLabel(displayStatus, businessType)}
             </span>
             {reservation.checked_in_at && (
               <span className="text-chart-2">

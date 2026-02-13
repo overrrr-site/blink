@@ -1,12 +1,19 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Icon } from '../Icon'
-import api from '../../api/client'
+import { trainingProfilesApi } from '../../api/trainingProfiles'
 import type {
   TrainingProfileCategory,
   TrainingProfileCategoryItem,
   AchievementLevel,
   GridEntry,
 } from '../../types/trainingProfile'
+import {
+  buildCategoryDateColumns,
+  buildDisplayDates,
+  buildGridCellAction,
+  buildGridEntryMap,
+  createAchievementCycle,
+} from './trainingGridModel'
 
 interface TrainingGridViewProps {
   category: TrainingProfileCategory
@@ -30,28 +37,11 @@ function TrainingGridView({
   const items: TrainingProfileCategoryItem[] = category.items || []
   const categoryEntries = entries.filter((e) => e.category_id === category.id)
 
-  // Collect unique dates sorted descending, limit to recent 20
-  const allDates = useMemo(() => {
-    const dateSet = new Set(categoryEntries.map((e) => e.entry_date))
-    return Array.from(dateSet).sort((a, b) => b.localeCompare(a)).slice(0, 20)
-  }, [categoryEntries])
+  const allDates = useMemo(() => buildCategoryDateColumns(categoryEntries), [categoryEntries])
 
-  // Build lookup: `${training_item_id}_${entry_date}` → achievement_symbol
-  const entryMap = useMemo(() => {
-    const map = new Map<string, { symbol: string; id: number }>()
-    categoryEntries.forEach((e) => {
-      map.set(`${e.training_item_id}_${e.entry_date}`, {
-        symbol: e.achievement_symbol,
-        id: e.id,
-      })
-    })
-    return map
-  }, [categoryEntries])
+  const entryMap = useMemo(() => buildGridEntryMap(categoryEntries), [categoryEntries])
 
-  // Cycle through achievement symbols
-  const symbolCycle = useMemo(() => {
-    return ['', ...achievementLevels.map((l) => l.symbol)]
-  }, [achievementLevels])
+  const symbolCycle = useMemo(() => createAchievementCycle(achievementLevels), [achievementLevels])
 
   const levelMap = useMemo(() => {
     const map = new Map<string, AchievementLevel>()
@@ -64,68 +54,64 @@ function TrainingGridView({
     date: string,
     currentSymbol: string,
   ) => {
-    if (saving) return
-    const currentIdx = symbolCycle.indexOf(currentSymbol)
-    const nextIdx = (currentIdx + 1) % symbolCycle.length
-    const nextSymbol = symbolCycle[nextIdx]
+    if (saving) {
+      return
+    }
 
-    if (nextSymbol === '') {
-      // Delete the entry
-      const existing = entryMap.get(`${itemId}_${date}`)
-      if (existing) {
-        setSaving(true)
-        try {
-          await api.delete(`/training-profiles/dogs/${dogId}/grid/${existing.id}`)
-          onMutate()
-        } catch {
-          // ignore
-        } finally {
-          setSaving(false)
-        }
-      }
-    } else {
-      // Upsert the entry
-      setSaving(true)
-      try {
-        await api.put(`/training-profiles/dogs/${dogId}/grid`, {
-          category_id: category.id,
-          training_item_id: itemId,
-          entry_date: date,
-          achievement_symbol: nextSymbol,
+    const cellAction = buildGridCellAction({
+      categoryId: category.id,
+      trainingItemId: itemId,
+      entryDate: date,
+      currentSymbol,
+      entryMap,
+      symbolCycle,
+    })
+
+    if (cellAction.type === 'none') {
+      return
+    }
+
+    setSaving(true)
+    try {
+      if (cellAction.type === 'delete') {
+        await trainingProfilesApi.deleteGridEntry({
+          dogId,
+          entryId: cellAction.entryId,
         })
-        onMutate()
-      } catch {
-        // ignore
-      } finally {
-        setSaving(false)
+      } else {
+        await trainingProfilesApi.upsertGridEntry({
+          dogId,
+          categoryId: cellAction.payload.categoryId,
+          trainingItemId: cellAction.payload.trainingItemId,
+          entryDate: cellAction.payload.entryDate,
+          achievementSymbol: cellAction.payload.achievementSymbol,
+        })
       }
+      onMutate()
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false)
     }
   }, [saving, symbolCycle, entryMap, dogId, category.id, onMutate])
 
   const handleAddDate = useCallback(() => {
-    if (!newDate) return
-    // Just close the dialog - next tap on any cell for this date will create the entry
-    setShowAddDate(false)
-    // Force re-render by adding date to entries if not present
-    // We'll add a temporary date by creating a quick entry
-    // Actually, we just need to show the date column. Let's use state for custom dates.
+    if (!newDate) {
+      return
+    }
+
     if (!allDates.includes(newDate)) {
-      // Create a placeholder by toggling the first item
       if (items.length > 0) {
-        // Don't create anything, just show the column
-        // Use local state to track added dates
         setExtraDates((prev) => [...new Set([...prev, newDate])])
       }
     }
+
     setShowAddDate(false)
   }, [newDate, allDates, items])
 
   const [extraDates, setExtraDates] = useState<string[]>([])
 
-  const displayDates = useMemo(() => {
-    const combined = new Set([...allDates, ...extraDates])
-    return Array.from(combined).sort((a, b) => b.localeCompare(a))
-  }, [allDates, extraDates])
+  const displayDates = useMemo(() => buildDisplayDates(allDates, extraDates), [allDates, extraDates])
 
   if (items.length === 0) {
     return (

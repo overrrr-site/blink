@@ -1,6 +1,12 @@
 import { useMemo } from 'react'
 import type { DaycareData } from '@/types/record'
 import { Icon } from '@/components/Icon'
+import {
+  getToiletSlotState,
+  migrateLegacyToiletSlots,
+  toggleToiletBySlot,
+  updateMealByPeriod,
+} from '../utils/daycareForm'
 
 const TIME_PERIODS = [
   { key: 'morning', label: '朝' },
@@ -21,40 +27,7 @@ interface DaycareCareFormProps {
 }
 
 export default function DaycareCareForm({ data, onChange }: DaycareCareFormProps) {
-  const handleMealChange = (period: 'morning' | 'afternoon', value: string) => {
-    onChange({
-      ...data,
-      meal: {
-        ...data.meal,
-        [period]: value,
-      },
-    })
-  }
-
-  const migratedToilet = useMemo(() => {
-    if (!data.toilet) return data.toilet
-    const result: Record<string, { urination: boolean; defecation: boolean }> = {}
-    Object.entries(data.toilet).forEach(([key, val]) => {
-      if (key === 'morning') result['10:00'] = val
-      else if (key === 'afternoon') result['14:00'] = val
-      else result[key] = val
-    })
-    return result
-  }, [data.toilet])
-
-  const toggleToilet = (slot: string, type: 'urination' | 'defecation') => {
-    const currentData = migratedToilet?.[slot] || { urination: false, defecation: false }
-    onChange({
-      ...data,
-      toilet: {
-        ...migratedToilet,
-        [slot]: {
-          ...currentData,
-          [type]: !currentData[type],
-        },
-      },
-    })
-  }
+  const migratedToilet = useMemo(() => migrateLegacyToiletSlots(data.toilet), [data.toilet])
 
   return (
     <div className="space-y-6">
@@ -71,7 +44,7 @@ export default function DaycareCareForm({ data, onChange }: DaycareCareFormProps
               <input
                 type="text"
                 value={data.meal?.[key as 'morning' | 'afternoon'] || ''}
-                onChange={(e) => handleMealChange(key as 'morning' | 'afternoon', e.target.value)}
+                onChange={(e) => onChange(updateMealByPeriod(data, key as 'morning' | 'afternoon', e.target.value))}
                 placeholder="例: 完食、半分残した"
                 className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
               />
@@ -88,14 +61,14 @@ export default function DaycareCareForm({ data, onChange }: DaycareCareFormProps
         </p>
         <div className="flex overflow-x-auto gap-2 pb-2 -mx-1 px-1">
           {TOILET_SLOTS.map(({ key, label }) => {
-            const slotData = migratedToilet?.[key] || { urination: false, defecation: false }
+            const slotData = getToiletSlotState(migratedToilet, key)
             return (
               <div key={key} className="bg-muted/30 rounded-xl p-3 min-w-[100px] flex-shrink-0">
                 <p className="text-xs text-muted-foreground mb-2 text-center">{label}</p>
                 <div className="flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={() => toggleToilet(key, 'urination')}
+                    onClick={() => onChange(toggleToiletBySlot(data, migratedToilet, key, 'urination'))}
                     className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center justify-start gap-1.5 ${
                       slotData.urination ? 'bg-blue-100 border-[1.5px] border-blue-500 text-blue-500' : 'border border-border text-muted-foreground bg-white'
                     }`}
@@ -106,7 +79,7 @@ export default function DaycareCareForm({ data, onChange }: DaycareCareFormProps
                   </button>
                   <button
                     type="button"
-                    onClick={() => toggleToilet(key, 'defecation')}
+                    onClick={() => onChange(toggleToiletBySlot(data, migratedToilet, key, 'defecation'))}
                     className={`py-2.5 pl-3 rounded-lg text-sm font-medium transition-all active:scale-[0.98] min-h-[44px] flex items-center justify-start gap-1.5 ${
                       slotData.defecation ? 'bg-chart-4/10 border-[1.5px] border-chart-4 text-chart-4' : 'border border-border text-muted-foreground bg-white'
                     }`}

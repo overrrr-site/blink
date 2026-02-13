@@ -1,18 +1,23 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import AlertsModal from '../components/AlertsModal'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
-import { getDashboardStatusLabels } from '../domain/businessTypeConfig'
-import type { RecordType } from '../types/record'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import { useToast } from '../components/Toast'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
-import ReservationCard, { getDisplayStatus, getStatusLabel } from '../components/ReservationCard'
+import ReservationCard from '../components/ReservationCard'
 import type { ReservationCardData } from '../components/ReservationCard'
+import QuickActionCard from '../components/dashboard/QuickActionCard'
+import { getReservationStatusLabel } from '../components/dashboard/reservationCardModel'
+import {
+  buildDashboardReservationSummary,
+  getFilterOptions,
+  type StatusFilter,
+} from './dashboard/model'
 
 type Reservation = ReservationCardData
 
@@ -56,79 +61,6 @@ interface DashboardData {
     draft: number
   }
 }
-
-type StatusFilter = 'all' | '来園待ち' | '在園中' | '帰宅済'
-
-interface FilterConfig {
-  id: StatusFilter
-  label: string
-  icon: string
-  accentColor: string
-}
-
-function getFilterOptions(businessType: RecordType | null): FilterConfig[] {
-  const l = getDashboardStatusLabels(businessType)
-
-  // トリミングは2ステータスのみ（来店前・完了）
-  if (businessType === 'grooming') {
-    return [
-      { id: 'all', label: 'すべて', icon: 'solar:list-bold', accentColor: 'bg-primary' },
-      { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', accentColor: 'bg-chart-4' },
-      { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', accentColor: 'bg-chart-3' },
-    ]
-  }
-
-  // daycare, hotel は3ステータス
-  return [
-    { id: 'all', label: 'すべて', icon: 'solar:list-bold', accentColor: 'bg-primary' },
-    { id: '来園待ち', label: l.waiting, icon: 'solar:clock-circle-bold', accentColor: 'bg-chart-4' },
-    { id: '在園中', label: l.active, icon: 'solar:home-smile-bold', accentColor: 'bg-chart-2' },
-    { id: '帰宅済', label: l.done, icon: 'solar:check-circle-bold', accentColor: 'bg-chart-3' },
-  ]
-}
-
-type DisplayStatus = '来園待ち' | '在園中' | '帰宅済'
-
-const QuickActionCard = React.memo(function QuickActionCard({
-  onClick,
-  icon,
-  iconClassName,
-  containerClassName,
-  title,
-  titleClassName,
-  description,
-  badge,
-}: {
-  onClick: () => void
-  icon: string
-  iconClassName: string
-  containerClassName: string
-  title: string
-  titleClassName: string
-  description: string
-  badge?: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full border rounded-xl p-3 flex items-center gap-3 transition-all active:scale-[0.98] ${containerClassName}`}
-    >
-      <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${iconClassName}`}>
-        <Icon icon={icon} className="size-5" />
-      </div>
-      <div className="flex-1 text-left">
-        <p className={`text-sm font-bold ${titleClassName}`}>
-          {title}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {description}
-        </p>
-      </div>
-      {badge}
-      <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground shrink-0" />
-    </button>
-  )
-})
 
 function Dashboard(): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -234,35 +166,12 @@ function Dashboard(): JSX.Element {
     setAlertsModalOpen(false)
   }, [])
 
-  // 4つの計算を1回のループで統合処理（パフォーマンス最適化）
-  const { statusCounts, currentCount, filteredReservations, groupedReservations } = useMemo(function() {
-    const reservations = data?.todayReservations || []
-    const counts: Record<DisplayStatus, number> = { '来園待ち': 0, '在園中': 0, '帰宅済': 0 }
-    const groups: Record<string, Reservation[]> = {}
-    const filtered: Reservation[] = []
-
-    for (const r of reservations) {
-      if (r.status === 'キャンセル') continue
-      const displayStatus = getDisplayStatus(r)
-      counts[displayStatus]++
-
-      if (statusFilter === 'all' || displayStatus === statusFilter) {
-        filtered.push(r)
-        const time = r.reservation_time.slice(0, 5)
-        if (!groups[time]) groups[time] = []
-        groups[time].push(r)
-      }
-    }
-
-    return {
-      statusCounts: counts,
-      currentCount: counts['来園待ち'] + counts['在園中'] + counts['帰宅済'],
-      filteredReservations: filtered,
-      groupedReservations: Object.entries(groups).sort(function([a], [b]) {
-        return a.localeCompare(b)
-      }) as [string, Reservation[]][]
-    }
-  }, [data?.todayReservations, statusFilter])
+  const { statusCounts, currentCount, filteredReservations, groupedReservations } = useMemo(
+    function() {
+      return buildDashboardReservationSummary(data?.todayReservations || [], statusFilter)
+    },
+    [data?.todayReservations, statusFilter]
+  )
 
   const alertSummary = useMemo(function(): string {
     if (!data?.alerts || data.alerts.length === 0) return ''
@@ -330,10 +239,10 @@ function Dashboard(): JSX.Element {
           <EmptyState
             icon={statusFilter === '帰宅済' ? "solar:check-circle-bold" : "solar:calendar-linear"}
             title={statusFilter === 'all'
-              ? dashboardEmptyState.title
-              : statusFilter === '帰宅済'
-                ? '帰宅済みのワンちゃんはいません'
-                : `${getStatusLabel(statusFilter, currentBusinessType)}のワンちゃんはいません`}
+                ? dashboardEmptyState.title
+                : statusFilter === '帰宅済'
+                  ? '帰宅済みのワンちゃんはいません'
+                  : `${getReservationStatusLabel(statusFilter, currentBusinessType)}のワンちゃんはいません`}
             description={statusFilter === 'all'
               ? dashboardEmptyState.description
               : '他のステータスを確認してください'}

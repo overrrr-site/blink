@@ -6,6 +6,7 @@ import DaycareForm from './DaycareForm'
 import DaycareCareForm from './DaycareCareForm'
 import GroomingForm from './GroomingForm'
 import HotelForm from './HotelForm'
+import { getRecordTypeSectionTitle, isDaycareRecordType } from '../utils/recordTypeSection'
 
 interface RecordTypeSectionProps {
   recordType: RecordType
@@ -30,7 +31,7 @@ const RecordTypeSection = ({
 }: RecordTypeSectionProps) => {
   const [careCollapsed, setCareCollapsed] = useState(true)
 
-  if (recordType === 'daycare') {
+  if (isDaycareRecordType(recordType)) {
     return (
       <>
         <RequiredSection title="トレーニング記録">
@@ -47,7 +48,7 @@ const RecordTypeSection = ({
     )
   }
 
-  const title = recordType === 'grooming' ? 'カット内容' : '宿泊情報'
+  const title = getRecordTypeSectionTitle(recordType)
 
   return (
     <RequiredSection title={title}>

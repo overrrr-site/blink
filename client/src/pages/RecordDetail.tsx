@@ -11,12 +11,14 @@ import PetInfoCard from './records/components/PetInfoCard'
 import RequiredSection from './records/components/RequiredSection'
 import OptionalSection from './records/components/OptionalSection'
 import PhotosForm from './records/components/PhotosForm'
-import NotesForm from './records/components/NotesForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
 import AISettingsScreen from './records/components/AISettingsScreen'
 import RecordTypeSection from './records/components/RecordTypeSection'
+import RecordReportComposer from './records/components/RecordReportComposer'
+import RecordSaveFooter from './records/components/RecordSaveFooter'
 import { useRecordFormState } from './records/hooks/useRecordFormState'
+import { useRecordEditorCore } from './records/hooks/useRecordEditorCore'
 import { buildUpdateRecordPayload, validateRecordForm } from './records/utils/recordForm'
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
@@ -25,8 +27,6 @@ import { getRecordLabel } from '../domain/businessTypeConfig'
 import { useAuthStore } from '../store/authStore'
 import { calculateAge } from '../utils/dog'
 import { normalizePhotosData } from '../utils/recordPhotos'
-import { BTN_PRIMARY, BTN_SECONDARY } from '../utils/styles'
-import { getBusinessTypeColors } from '../utils/businessTypeColors'
 
 const RecordDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -55,7 +55,6 @@ const RecordDetail = () => {
   } = useRecordFormState()
 
   // UI state
-  const [saving, setSaving] = useState(false)
   const [collapsed, setCollapsed] = useState({ condition: true, health: true })
   const [activeTab, setActiveTab] = useState<'record' | 'report'>('record')
 
@@ -141,53 +140,8 @@ const RecordDetail = () => {
     recordId: id,
   })
 
-  const handleSave = useCallback(async () => {
-    if (!id || !record) return
-
-    const validation = validateRecordForm({
-      recordType: record.record_type,
-      groomingData,
-      daycareData,
-      hotelData,
-      photos,
-      notes,
-      condition,
-      healthCheck,
-    }, 'save')
-
-    if (!validation.ok) {
-      showToast(validation.errors[0], 'error')
-      return
-    }
-
-    setSaving(true)
-    try {
-      const updates = buildUpdateRecordPayload({
-        recordType: record.record_type,
-        daycareData,
-        groomingData,
-        hotelData,
-        photos,
-        notes,
-        condition,
-        healthCheck,
-        status: 'saved',
-      })
-      await recordsApi.update(id, updates)
-      await mutate()
-      await sendAIFeedback(notes.report_text)
-      showToast('保存しました', 'success')
-    } catch {
-      showToast('保存に失敗しました', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }, [id, record, daycareData, groomingData, hotelData, photos, notes, condition, healthCheck, mutate, showToast])
-
-  const handleShare = useCallback(async () => {
-    if (!id) return
-
-    const validation = validateRecordForm({
+  const validateEditor = useCallback((mode: 'save' | 'share') =>
+    validateRecordForm({
       recordType: record?.record_type || 'daycare',
       groomingData,
       daycareData,
@@ -196,45 +150,74 @@ const RecordDetail = () => {
       notes,
       condition,
       healthCheck,
-    }, 'share')
+    }, mode), [record?.record_type, groomingData, daycareData, hotelData, photos, notes, condition, healthCheck])
 
-    if (!validation.ok) {
-      showToast(validation.errors[0], 'error')
-      return
-    }
-    const ok = await confirm({
+  const saveRecord = useCallback(async () => {
+    if (!id || !record) return
+
+    const updates = buildUpdateRecordPayload({
+      recordType: record.record_type,
+      daycareData,
+      groomingData,
+      hotelData,
+      photos,
+      notes,
+      condition,
+      healthCheck,
+      status: 'saved',
+    })
+    await recordsApi.update(id, updates)
+    await mutate()
+    await sendAIFeedback(notes.report_text)
+    showToast('保存しました', 'success')
+  }, [condition, daycareData, groomingData, healthCheck, hotelData, id, mutate, notes, photos, record, sendAIFeedback, showToast])
+
+  const shareRecord = useCallback(async () => {
+    if (!id) return
+
+    const updates = buildUpdateRecordPayload({
+      recordType: record?.record_type || 'daycare',
+      daycareData,
+      groomingData,
+      hotelData,
+      photos,
+      notes,
+      condition,
+      healthCheck,
+    })
+    await recordsApi.update(id, updates)
+    await recordsApi.share(id)
+    await mutate()
+    await sendAIFeedback(notes.report_text)
+    showToast('飼い主に送信しました', 'success')
+  }, [condition, daycareData, groomingData, healthCheck, hotelData, id, mutate, notes, photos, record?.record_type, sendAIFeedback, showToast])
+
+  const {
+    saving,
+    handleSave,
+    handleShare,
+    handleGenerateReport,
+    handleToneChangeAndGenerate,
+  } = useRecordEditorCore({
+    validate: validateEditor,
+    onValidationError: (message) => showToast(message, 'error'),
+    onSave: saveRecord,
+    onShare: shareRecord,
+    onSaveError: () => showToast('保存に失敗しました', 'error'),
+    onShareError: () => showToast('送信に失敗しました', 'error'),
+    confirmShare: () => confirm({
       title: '送信確認',
       message: '飼い主に送信しますか？',
       confirmLabel: '送信',
       cancelLabel: 'キャンセル',
       variant: 'default',
-    })
-    if (!ok) return
-
-    setSaving(true)
-    try {
-      // Save first, then share
-      const updates = buildUpdateRecordPayload({
-        recordType: record?.record_type || 'daycare',
-        daycareData,
-        groomingData,
-        hotelData,
-        photos,
-        notes,
-        condition,
-        healthCheck,
-      })
-      await recordsApi.update(id, updates)
-      await recordsApi.share(id)
-      await mutate()
-      await sendAIFeedback(notes.report_text)
-      showToast('飼い主に送信しました', 'success')
-    } catch {
-      showToast('送信に失敗しました', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }, [id, record, daycareData, groomingData, hotelData, photos, notes, condition, healthCheck, mutate, showToast, confirm])
+    }),
+    onToneChange: setReportTone,
+    onGenerateReport: (tone) => handleAISuggestionAction('report-draft', undefined, {
+      regenerate: true,
+      tone,
+    }),
+  })
 
   const handlePhotoAdded = async (photoUrl: string, type: 'regular' | 'concern') => {
     if (!record) return
@@ -403,17 +386,15 @@ const RecordDetail = () => {
 
       {activeTab === 'report' && (
         <RequiredSection title="報告文">
-          <NotesForm
-            data={notes}
-            onChange={setNotes}
+          <RecordReportComposer
+            mode="detail"
+            notes={notes}
+            onNotesChange={setNotes}
             aiSuggestion={recordAISuggestions['report-draft']}
             inputTrace={aiSettings.aiAssistantEnabled ? reportInputTrace : []}
             generatedFrom={aiSettings.aiAssistantEnabled ? (recordAISuggestions['report-draft']?.generated_from || []) : []}
-            onRegenerate={() => handleAISuggestionAction('report-draft', undefined, { regenerate: true })}
-            onToneChange={(tone) => {
-              setReportTone(tone)
-              handleAISuggestionAction('report-draft', undefined, { regenerate: true, tone })
-            }}
+            onRegenerate={handleGenerateReport}
+            onToneChange={handleToneChangeAndGenerate}
             onJumpToField={handleJumpToField}
             onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
             onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
@@ -431,31 +412,15 @@ const RecordDetail = () => {
         </button>
       </div>
 
-      {/* Fixed footer with save/share buttons */}
-      <div className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb">
-        <div className="flex gap-3 max-w-lg mx-auto">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={`flex-1 ${BTN_SECONDARY}`}
-          >
-            {saving ? '保存中...' : '保存'}
-          </button>
-          <button
-            onClick={handleShare}
-            disabled={saving || record.status === 'shared'}
-            className={`flex-1 ${BTN_PRIMARY}`}
-            style={{
-              background: record.status === 'shared'
-                ? '#94A3B8'
-                : `linear-gradient(135deg, ${getBusinessTypeColors(record.record_type).primary} 0%, ${getBusinessTypeColors(record.record_type).primary}DD 100%)`,
-              boxShadow: record.status === 'shared' ? 'none' : `0 2px 8px ${getBusinessTypeColors(record.record_type).primary}40`,
-            }}
-          >
-            {record.status === 'shared' ? '共有済み' : '共有'}
-          </button>
-        </div>
-      </div>
+      <RecordSaveFooter
+        mode="detail"
+        recordType={record.record_type}
+        saving={saving}
+        onSave={handleSave}
+        onShare={handleShare}
+        shareDisabled={record.status === 'shared'}
+        shareLabel={record.status === 'shared' ? '共有済み' : '共有'}
+      />
 
       {/* AI Settings Drawer */}
       <AISettingsScreen

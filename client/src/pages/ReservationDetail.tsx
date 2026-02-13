@@ -7,6 +7,11 @@ import api from '../api/client'
 import { fetcher } from '../lib/swr'
 import { getStatusLabel } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
+import {
+  getServiceTypeRenderFlags,
+  hasReservationPreVisitInput,
+  normalizeReservationServiceType,
+} from './dashboard/reservationDetailModel'
 
 interface ReservationDetailData {
   id: number
@@ -134,21 +139,11 @@ const ReservationDetail = () => {
     )
   }
 
-  const serviceType = reservation.service_type || 'daycare'
+  const serviceType = normalizeReservationServiceType(reservation.service_type)
+  const serviceTypeRenderFlags = getServiceTypeRenderFlags(serviceType)
   const createRecordLabel = serviceType === 'daycare' ? '連絡帳を作成する' : 'カルテを作成する'
   const statusLabel = getStatusLabel(serviceType as RecordType, reservation.status || '予定')
-  const hasPreVisitInput = Boolean(
-    reservation.grooming_data ||
-      reservation.hotel_data ||
-      reservation.pre_visit_notes ||
-      reservation.breakfast_status ||
-      reservation.health_status ||
-      (reservation.meal_data && reservation.meal_data.length > 0) ||
-      reservation.morning_urination !== null && reservation.morning_urination !== undefined ||
-      reservation.morning_defecation !== null && reservation.morning_defecation !== undefined ||
-      reservation.afternoon_urination !== null && reservation.afternoon_urination !== undefined ||
-      reservation.afternoon_defecation !== null && reservation.afternoon_defecation !== undefined
-  )
+  const hasPreVisitInput = hasReservationPreVisitInput(reservation)
 
   return (
     <div className="space-y-4 pb-6">
@@ -203,7 +198,7 @@ const ReservationDetail = () => {
                 {reservation.reservation_time?.substring(0, 5)}
               </p>
             </div>
-            {reservation.service_type === 'hotel' && reservation.end_datetime && (
+            {serviceTypeRenderFlags.showHotel && reservation.end_datetime && (
               <div>
                 <label className="text-xs text-muted-foreground">チェックアウト予定</label>
                 <p className="text-base font-medium">
@@ -212,7 +207,7 @@ const ReservationDetail = () => {
                 </p>
               </div>
             )}
-            {reservation.service_type === 'hotel' && (
+            {serviceTypeRenderFlags.showHotel && (
               <div>
                 <label className="text-xs text-muted-foreground">割当部屋</label>
                 <p className="text-base font-medium">
@@ -232,7 +227,7 @@ const ReservationDetail = () => {
         {hasPreVisitInput && (
           <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
             <h3 className="text-lg font-bold mb-4">事前入力</h3>
-            {serviceType === 'daycare' && (
+            {serviceTypeRenderFlags.showDaycare && (
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-muted-foreground">排泄（前日夜〜当日朝）</label>
@@ -298,7 +293,7 @@ const ReservationDetail = () => {
               </div>
             )}
 
-            {serviceType === 'grooming' && (
+            {serviceTypeRenderFlags.showGrooming && (
               <div className="space-y-3">
                 {reservation.grooming_data?.counseling?.style_request && (
                   <div>
@@ -351,7 +346,7 @@ const ReservationDetail = () => {
               </div>
             )}
 
-            {serviceType === 'hotel' && (
+            {serviceTypeRenderFlags.showHotel && (
               <div className="space-y-3">
                 {(reservation.hotel_data?.feeding_schedule?.morning ||
                   reservation.hotel_data?.feeding_schedule?.evening ||

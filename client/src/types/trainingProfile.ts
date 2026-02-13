@@ -34,20 +34,20 @@ export interface GridEntry {
   staff_name?: string | null
 }
 
-export interface LogEntry {
+export interface TrainingEntryRecord {
   id: number
-  category_id: number
   entry_date: string
   staff_name?: string | null
   note: string
 }
 
-export interface ConcernEntry {
-  id: number
-  entry_date: string
-  staff_name?: string | null
-  note: string
+export interface LogEntry extends TrainingEntryRecord {
+  category_id: number
 }
+
+export interface ConcernEntry extends TrainingEntryRecord {}
+
+export type TrainingEntryKind = 'log' | 'concern'
 
 export interface TrainingProfileData {
   categories: TrainingProfileCategory[]

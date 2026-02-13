@@ -6,7 +6,6 @@ import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { Icon } from '../components/Icon'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import { useAuthStore } from '../store/authStore'
@@ -21,13 +20,14 @@ import HealthCheckForm from './records/components/HealthCheckForm'
 import AISettingsScreen from './records/components/AISettingsScreen'
 import RecordTypeSection from './records/components/RecordTypeSection'
 import HotelForm from './records/components/HotelForm'
+import RecordReportComposer from './records/components/RecordReportComposer'
+import RecordSaveFooter from './records/components/RecordSaveFooter'
 import { useRecordFormState } from './records/hooks/useRecordFormState'
+import { useRecordEditorCore } from './records/hooks/useRecordEditorCore'
 import { buildCreateRecordPayload, validateRecordForm } from './records/utils/recordForm'
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
 import { calculateAge } from '../utils/dog'
-import { BTN_PRIMARY, BTN_SECONDARY } from '../utils/styles'
-import { getBusinessTypeColors } from '../utils/businessTypeColors'
 
 interface Dog {
   id: number
@@ -123,9 +123,7 @@ const RecordCreate = () => {
   } = useRecordFormState()
 
   // UI state
-  const [saving, setSaving] = useState(false)
   const [copyLoading, setCopyLoading] = useState(false)
-  const [selectedReportTone, setSelectedReportTone] = useState<'formal' | 'casual'>('formal')
   const [collapsed, setCollapsed] = useState({ condition: true, health: true, careLogs: true })
   const [reservationLookupDone, setReservationLookupDone] = useState(!isCreatingFromReservation)
   const recordMainSectionRef = useRef<HTMLDivElement>(null)
@@ -268,13 +266,11 @@ const RecordCreate = () => {
     ? `${hotelCareLogCount}件${latestHotelCare ? ` / 最新: ${latestHotelCare}` : ''}`
     : '未入力'
 
-  const handleSave = async (shareAfter = false) => {
+  const validateEditor = useCallback((mode: 'save' | 'share') => {
     if (!selectedDogId) {
-      showToast('ワンちゃんを選択してください', 'error')
-      return
+      return { ok: false, errors: ['ワンちゃんを選択してください'] }
     }
-
-    const validation = validateRecordForm({
+    return validateRecordForm({
       recordType,
       groomingData,
       daycareData,
@@ -283,60 +279,53 @@ const RecordCreate = () => {
       notes,
       condition,
       healthCheck,
-    }, shareAfter ? 'share' : 'save')
+    }, mode)
+  }, [selectedDogId, recordType, groomingData, daycareData, hotelData, photos, notes, condition, healthCheck])
 
-    if (!validation.ok) {
-      showToast(validation.errors[0], 'error')
-      return
-    }
+  const createRecord = useCallback(async (shareAfter: boolean) => {
+    if (!selectedDogId) return
 
-    setSaving(true)
-    try {
-      const formData = buildCreateRecordPayload({
-        dogId: selectedDogId,
-        reservationId,
-        recordType,
-        status: shareAfter ? 'shared' : 'saved',
-        daycareData,
-        groomingData,
-        hotelData,
-        photos,
-        notes,
-        condition,
-        healthCheck,
-      })
-
-      const res = await recordsApi.create(formData)
-      const recordId = res.data.id
-
-      if (shareAfter) {
-        await recordsApi.share(recordId)
-        showToast(`${recordLabel}を共有しました`, 'success')
-      } else {
-        showToast(`${recordLabel}を保存しました`, 'success')
-      }
-      await sendAIFeedback(notes.report_text)
-
-      navigate(`/records/${recordId}`, { replace: true })
-    } catch {
-      showToast('保存に失敗しました', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleShare = async () => {
-    const ok = await confirm({
-      title: '送信確認',
-      message: '飼い主に送信しますか？',
-      confirmLabel: '送信',
-      cancelLabel: 'キャンセル',
-      variant: 'default',
+    const formData = buildCreateRecordPayload({
+      dogId: selectedDogId,
+      reservationId,
+      recordType,
+      status: shareAfter ? 'shared' : 'saved',
+      daycareData,
+      groomingData,
+      hotelData,
+      photos,
+      notes,
+      condition,
+      healthCheck,
     })
-    if (ok) {
-      handleSave(true)
+
+    const res = await recordsApi.create(formData)
+    const recordId = res.data.id
+
+    if (shareAfter) {
+      await recordsApi.share(recordId)
+      showToast(`${recordLabel}を共有しました`, 'success')
+    } else {
+      showToast(`${recordLabel}を保存しました`, 'success')
     }
-  }
+    await sendAIFeedback(notes.report_text)
+    navigate(`/records/${recordId}`, { replace: true })
+  }, [
+    condition,
+    daycareData,
+    groomingData,
+    healthCheck,
+    hotelData,
+    navigate,
+    notes,
+    photos,
+    recordLabel,
+    recordType,
+    reservationId,
+    selectedDogId,
+    sendAIFeedback,
+    showToast,
+  ])
 
   const handlePhotoAdded = async (photoUrl: string, type: 'regular' | 'concern') => {
     if (!aiSettings.aiAssistantEnabled || recordType !== 'grooming' || type !== 'regular') return
@@ -384,12 +373,34 @@ const RecordCreate = () => {
     }
   }
 
-  const handleGenerateReport = async () => {
-    await handleAISuggestionAction('report-draft', undefined, {
+  const {
+    saving,
+    reportTone: selectedReportTone,
+    setReportTone: setSelectedReportTone,
+    handleSave,
+    handleShare,
+    handleGenerateReport,
+  } = useRecordEditorCore({
+    validate: validateEditor,
+    onValidationError: (message) => showToast(message, 'error'),
+    onSave: () => createRecord(false),
+    onShare: () => createRecord(true),
+    onSaveError: () => showToast('保存に失敗しました', 'error'),
+    onShareError: () => showToast('保存に失敗しました', 'error'),
+    confirmShare: () => confirm({
+      title: '送信確認',
+      message: '飼い主に送信しますか？',
+      confirmLabel: '送信',
+      cancelLabel: 'キャンセル',
+      variant: 'default',
+    }),
+    validateShareBeforeConfirm: false,
+    onToneChange: setReportTone,
+    onGenerateReport: (tone) => handleAISuggestionAction('report-draft', undefined, {
       regenerate: true,
-      tone: selectedReportTone,
-    })
-  }
+      tone,
+    }),
+  })
 
   return (
     <div className="min-h-screen bg-background pb-56">
@@ -551,146 +562,32 @@ const RecordCreate = () => {
             </OptionalSection>
           </div>
 
-          {aiSettings.aiAssistantEnabled ? (
-            <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-foreground">AIで報告文を作成</p>
-                  <p className="text-xs text-muted-foreground mt-1">上の入力内容をもとに生成します</p>
-                </div>
-                {missingInputCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (firstMissingField) handleJumpToField(firstMissingField)
-                    }}
-                    className="shrink-0 rounded-full bg-chart-4/10 px-2.5 py-1 text-[11px] font-bold text-chart-4 hover:bg-chart-4/20 active:scale-95 transition-all"
-                  >
-                    未入力 {missingInputCount}項目
-                  </button>
-                )}
-              </div>
+          <RecordReportComposer
+            mode="create"
+            notes={notes}
+            onNotesChange={setNotes}
+            aiEnabled={aiSettings.aiAssistantEnabled}
+            reportSuggestion={reportSuggestion}
+            missingInputCount={missingInputCount}
+            firstMissingField={firstMissingField}
+            selectedReportTone={selectedReportTone}
+            reportSectionRef={reportSectionRef}
+            internalMemoSectionRef={internalMemoSectionRef}
+            onJumpToField={handleJumpToField}
+            onGenerateReport={handleGenerateReport}
+            onToneSelect={setSelectedReportTone}
+            onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}
+            onAISuggestionDismiss={() => handleAISuggestionDismiss('report-draft')}
+          />
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleGenerateReport}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary/90 active:scale-[0.98] transition-all"
-                >
-                  <Icon icon="solar:magic-stick-3-bold" width="14" height="14" />
-                  作成する
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedReportTone('formal')
-                    setReportTone('formal')
-                  }}
-                  className={`rounded-lg border px-3 py-2 text-xs font-bold active:scale-[0.98] transition-all ${
-                    selectedReportTone === 'formal'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-background text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  丁寧
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedReportTone('casual')
-                    setReportTone('casual')
-                  }}
-                  className={`rounded-lg border px-3 py-2 text-xs font-bold active:scale-[0.98] transition-all ${
-                    selectedReportTone === 'casual'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-background text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  カジュアル
-                </button>
-              </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                文体を選んでから「作成する」を押すと生成します。
-              </p>
-
-              {reportSuggestion?.preview && !reportSuggestion.dismissed && !reportSuggestion.applied && (
-                <div className="mt-3 rounded-xl border border-border bg-background p-3">
-                  <p className="text-xs font-bold text-muted-foreground mb-2">生成プレビュー</p>
-                  <p className="text-sm text-foreground whitespace-pre-wrap">{reportSuggestion.preview}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleAISuggestionAction('report-draft', reportSuggestion.preview)}
-                      className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary/90 active:scale-[0.98] transition-all"
-                    >
-                      この内容を反映
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAISuggestionDismiss('report-draft')}
-                      className="rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
-                    >
-                      閉じる
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 text-xs text-muted-foreground">
-              AIアシスタントはオフです。ヘッダー右上の設定から有効化できます。
-            </div>
-          )}
-
-          <div ref={reportSectionRef}>
-            <RequiredSection title="飼い主への報告文" completed={!!notes.report_text?.trim()}>
-              <textarea
-                value={notes.report_text || ''}
-                onChange={(e) => setNotes((prev) => ({ ...prev, report_text: e.target.value }))}
-                placeholder="今日の様子を飼い主さんにお伝えする文章を入力してください"
-                className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-border resize-y focus:outline-none focus:ring-2 focus:ring-orange-200"
-                style={{ minHeight: 120 }}
-              />
-            </RequiredSection>
-          </div>
-
-          <div ref={internalMemoSectionRef} className="mx-4 mt-4 rounded-2xl border border-border bg-background p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Icon icon="solar:lock-keyhole-bold" width="16" height="16" className="text-muted-foreground" />
-              <h3 className="text-sm font-bold text-foreground">内部メモ（飼い主に非公開）</h3>
-            </div>
-            <textarea
-              value={notes.internal_notes || ''}
-              onChange={(e) => setNotes((prev) => ({ ...prev, internal_notes: e.target.value }))}
-              placeholder="スタッフ間の申し送りなど"
-              className="w-full px-3 py-2 bg-white rounded-xl text-sm border border-border resize-none focus:outline-none focus:ring-2 focus:ring-border"
-              style={{ minHeight: 88 }}
-            />
-          </div>
-
-          {/* Fixed footer with save/share buttons */}
-          <div className="fixed bottom-[72px] inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
-            <div className="flex gap-3 max-w-lg mx-auto">
-              <button
-                onClick={() => handleSave(false)}
-                disabled={saving}
-                className={`flex-1 ${BTN_SECONDARY}`}
-              >
-                {saving ? '保存中...' : '保存'}
-              </button>
-              <button
-                onClick={handleShare}
-                disabled={saving}
-                className={`flex-1 ${BTN_PRIMARY}`}
-                style={{
-                  background: `linear-gradient(135deg, ${getBusinessTypeColors(recordType).primary} 0%, ${getBusinessTypeColors(recordType).primary}DD 100%)`,
-                  boxShadow: `0 2px 8px ${getBusinessTypeColors(recordType).primary}40`,
-                }}
-              >
-                保存して送信
-              </button>
-            </div>
-          </div>
+          <RecordSaveFooter
+            mode="create"
+            recordType={recordType}
+            saving={saving}
+            onSave={handleSave}
+            onShare={handleShare}
+            shareLabel="保存して送信"
+          />
         </>
       )}
 

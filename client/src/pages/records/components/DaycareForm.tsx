@@ -2,6 +2,12 @@ import useSWR from 'swr'
 import type { DaycareData } from '@/types/record'
 import { Icon } from '@/components/Icon'
 import { fetcher } from '@/lib/swr'
+import {
+  getTrainingItems,
+  hasTrainingMasterCategories,
+  toggleTrainingItem,
+  updateTrainingNote,
+} from '../utils/daycareForm'
 
 // ---------------------------------------------------------------------------
 // Training master types & category config
@@ -45,32 +51,8 @@ export default function DaycareForm({ data, onChange, storeId }: DaycareFormProp
     fetcher,
   )
 
-  const trainingItems = data.training?.items || {}
-
-  const handleTrainingChange = (itemKey: string, value: string) => {
-    const currentValue = trainingItems[itemKey]
-    const newValue = currentValue === value ? '' : value
-    onChange({
-      ...data,
-      training: {
-        ...data.training,
-        items: { ...trainingItems, [itemKey]: newValue },
-      },
-    })
-  }
-
-  const handleTrainingNoteChange = (note: string) => {
-    onChange({
-      ...data,
-      training: {
-        ...data.training,
-        items: trainingItems,
-        note,
-      },
-    })
-  }
-
-  const hasTrainingMasters = trainingMasters && Object.keys(trainingMasters).length > 0
+  const trainingItems = getTrainingItems(data)
+  const hasTrainingMasters = hasTrainingMasterCategories(trainingMasters)
 
   return (
     <div className="space-y-6">
@@ -95,7 +77,7 @@ export default function DaycareForm({ data, onChange, storeId }: DaycareFormProp
                         <button
                           key={option.value}
                           type="button"
-                          onClick={() => handleTrainingChange(item.item_key, option.value)}
+                          onClick={() => onChange(toggleTrainingItem(data, item.item_key, option.value))}
                           className={`size-10 rounded-full flex items-center justify-center text-sm font-bold active:scale-95 transition-all ${
                             trainingItems[item.item_key] === option.value
                               ? option.activeClass
@@ -119,7 +101,7 @@ export default function DaycareForm({ data, onChange, storeId }: DaycareFormProp
             <label className="block text-xs text-muted-foreground mb-1">トレーニングメモ</label>
             <textarea
               value={data.training?.note || ''}
-              onChange={(e) => handleTrainingNoteChange(e.target.value)}
+              onChange={(e) => onChange(updateTrainingNote(data, e.target.value))}
               placeholder="例: 今日は集中力が高く、おすわりの成功率が上がった"
               rows={2}
               className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
