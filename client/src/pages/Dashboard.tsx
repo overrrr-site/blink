@@ -535,7 +535,7 @@ function Dashboard(): JSX.Element {
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`flex-none min-w-[84px] py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all inline-flex items-center justify-center gap-1 relative min-h-[44px] active:scale-[0.98] ${
+                className={`flex-none py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all inline-flex flex-nowrap items-center justify-center gap-1 relative min-h-[44px] active:scale-[0.98] ${
                   statusFilter === filter.id
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground font-normal'
