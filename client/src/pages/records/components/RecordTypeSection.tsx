@@ -12,6 +12,7 @@ interface RecordTypeSectionProps {
   onDaycareChange: (data: DaycareData) => void
   onGroomingChange: (data: GroomingData) => void
   onHotelChange: (data: HotelData) => void
+  storeId: number
 }
 
 const RecordTypeSection = ({
@@ -22,13 +23,14 @@ const RecordTypeSection = ({
   onDaycareChange,
   onGroomingChange,
   onHotelChange,
+  storeId,
 }: RecordTypeSectionProps) => {
-  const title = recordType === 'daycare' ? '今日の活動' : recordType === 'grooming' ? 'カット内容' : '宿泊情報'
+  const title = recordType === 'daycare' ? 'トレーニング記録' : recordType === 'grooming' ? 'カット内容' : '宿泊情報'
 
   return (
     <RequiredSection title={title}>
       {recordType === 'daycare' && (
-        <DaycareForm data={daycareData} onChange={onDaycareChange} />
+        <DaycareForm data={daycareData} onChange={onDaycareChange} storeId={storeId} />
       )}
       {recordType === 'grooming' && (
         <GroomingForm data={groomingData} onChange={onGroomingChange} />

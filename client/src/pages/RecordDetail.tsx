@@ -34,6 +34,7 @@ const RecordDetail = () => {
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
+  const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
   const recordLabel = getRecordLabel(primaryBusinessType)
 
   const {
@@ -358,6 +359,7 @@ const RecordDetail = () => {
             onDaycareChange={setDaycareData}
             onGroomingChange={setGroomingData}
             onHotelChange={setHotelData}
+            storeId={storeId}
           />
 
           <RequiredSection title="写真">

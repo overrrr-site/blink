@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
+import { useAuthStore } from '../store/authStore'
 import type { RecordType } from '../types/record'
 import RecordHeader from './records/components/RecordHeader'
 import PetInfoCard from './records/components/PetInfoCard'
@@ -93,6 +94,7 @@ const RecordCreate = () => {
   const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
   const activeBusinessType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
   const recordLabel = getRecordLabel(activeBusinessType)
+  const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
 
   // Dog selection
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
@@ -348,7 +350,7 @@ const RecordCreate = () => {
   }
 
   const handleJumpToField = (fieldKey: string) => {
-    if (fieldKey === 'daycare_activities' || fieldKey === 'grooming_parts') {
+    if (fieldKey === 'daycare_training' || fieldKey === 'daycare_activities' || fieldKey === 'grooming_parts') {
       scrollToSection(recordMainSectionRef)
       return
     }
@@ -482,6 +484,7 @@ const RecordCreate = () => {
                 onDaycareChange={setDaycareData}
                 onGroomingChange={setGroomingData}
                 onHotelChange={setHotelData}
+                storeId={storeId}
               />
             )}
           </div>

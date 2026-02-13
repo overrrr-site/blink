@@ -23,7 +23,15 @@ interface RecordData {
   dog_birth_date: string
   staff_name: string
   grooming_data: { selectedParts: string[]; partNotes: Record<string, string> } | null
-  daycare_data: { activities: string[] } | null
+  daycare_data: {
+    activities?: string[]
+    training?: {
+      items: Record<string, string>
+      note?: string
+    }
+    meal?: { morning?: string; afternoon?: string }
+    toilet?: Record<string, { urination: boolean; defecation: boolean }>
+  } | null
   hotel_data: {
     check_in: string
     check_out_scheduled: string
@@ -64,6 +72,12 @@ const ACTIVITY_LABELS: Record<string, { label: string; emoji: string }> = {
   walk: { label: 'お散歩', emoji: '🚶' },
   nap: { label: 'お昼寝', emoji: '😴' },
   socialization: { label: '社会化', emoji: '🐕' },
+}
+
+const TRAINING_ACHIEVEMENT_LABELS: Record<string, { label: string; className: string }> = {
+  done: { label: '○', className: 'text-green-600 bg-green-50' },
+  almost: { label: '△', className: 'text-yellow-600 bg-yellow-50' },
+  not_done: { label: '−', className: 'text-muted-foreground bg-muted/50' },
 }
 
 const HOTEL_CARE_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
@@ -227,24 +241,115 @@ export default function RecordDetail() {
         </>
       )}
 
-      {record.record_type === 'daycare' && record.daycare_data && (
-        <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
-          <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-            <Icon icon="solar:sun-bold" width="16" height="16" className="text-orange-500" />
-            今日の活動
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {(record.daycare_data.activities || []).map((activity) => {
-              const config = ACTIVITY_LABELS[activity]
-              return (
-                <span key={activity} className="px-3 py-1.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">
-                  {config ? `${config.emoji} ${config.label}` : activity}
-                </span>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {record.record_type === 'daycare' && record.daycare_data && (() => {
+        const trainingItems = record.daycare_data.training?.items || {}
+        const filledItems = Object.entries(trainingItems).filter(([, v]) => v && v !== '')
+        const trainingNote = record.daycare_data.training?.note
+        const activities = record.daycare_data.activities || []
+        const hasTraining = filledItems.length > 0
+        const hasActivities = activities.length > 0
+
+        return (
+          <>
+            {/* トレーニング記録（新データ） */}
+            {hasTraining && (
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Icon icon="mdi:book-open-page-variant" width="16" height="16" className="text-orange-500" />
+                  トレーニング記録
+                </h3>
+                <div className="space-y-1.5">
+                  {filledItems.map(([key, value]) => {
+                    const achievement = TRAINING_ACHIEVEMENT_LABELS[value]
+                    return (
+                      <div key={key} className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2">
+                        <span className="text-sm">{key.replace(/_/g, ' ')}</span>
+                        {achievement && (
+                          <span className={`size-8 rounded-full flex items-center justify-center text-sm font-bold ${achievement.className}`}>
+                            {achievement.label}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                {trainingNote && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-1">メモ</p>
+                    <p className="text-sm whitespace-pre-wrap">{trainingNote}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 旧「今日の活動」（後方互換） */}
+            {!hasTraining && hasActivities && (
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Icon icon="solar:sun-bold" width="16" height="16" className="text-orange-500" />
+                  今日の活動
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {activities.map((activity) => {
+                    const config = ACTIVITY_LABELS[activity]
+                    return (
+                      <span key={activity} className="px-3 py-1.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">
+                        {config ? `${config.emoji} ${config.label}` : activity}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ごはん */}
+            {(record.daycare_data.meal?.morning || record.daycare_data.meal?.afternoon) && (
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Icon icon="mdi:silverware-fork-knife" width="16" height="16" className="text-orange-500" />
+                  ごはん
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {record.daycare_data.meal?.morning && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">朝</span>
+                      <p className="text-sm">{record.daycare_data.meal.morning}</p>
+                    </div>
+                  )}
+                  {record.daycare_data.meal?.afternoon && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">午後</span>
+                      <p className="text-sm">{record.daycare_data.meal.afternoon}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* トイレ */}
+            {record.daycare_data.toilet && Object.keys(record.daycare_data.toilet).length > 0 && (
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Icon icon="mdi:toilet" width="16" height="16" className="text-orange-500" />
+                  トイレ
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(record.daycare_data.toilet).map(([slot, data]) => (
+                    <div key={slot} className="bg-muted/30 rounded-xl p-2 min-w-[80px] text-center">
+                      <p className="text-xs text-muted-foreground mb-1">{slot}</p>
+                      <div className="flex justify-center gap-1.5">
+                        {data.urination && <span className="text-xs text-blue-500">💧</span>}
+                        {data.defecation && <span className="text-xs text-amber-600">💩</span>}
+                        {!data.urination && !data.defecation && <span className="text-xs text-muted-foreground">−</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {record.record_type === 'hotel' && record.hotel_data && (
         <>

@@ -43,6 +43,7 @@ const AnnouncementList = lazy(() => import('./pages/AnnouncementList'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Onboarding = lazy(() => import('./pages/Onboarding'))
+const DogTrainingProfile = lazy(() => import('./pages/DogTrainingProfile'))
 
 function PageLoader() {
   return (
@@ -119,6 +120,7 @@ function App() {
                 <Route path="/dogs" element={<Navigate to="/customers" replace />} />
                 <Route path="/dogs/:id" element={<DogDetail />} />
                 <Route path="/dogs/:id/edit" element={<DogEdit />} />
+                <Route path="/dogs/:dogId/training" element={<DogTrainingProfile />} />
                 <Route path="/dogs/:dogId/contracts/new" element={<ContractEdit />} />
                 <Route path="/dogs/:dogId/contracts/:id" element={<ContractEdit />} />
                 <Route path="/settings/staff/:id" element={<OwnerRoute><StaffEdit /></OwnerRoute>} />

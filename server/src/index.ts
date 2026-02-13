@@ -31,6 +31,7 @@ import storeSettingsRoutes from './routes/storeSettings.js';
 import staffRoutes from './routes/staff.js';
 import courseMastersRoutes from './routes/courseMasters.js';
 import trainingMastersRoutes from './routes/trainingMasters.js';
+import trainingProfilesRoutes from './routes/trainingProfiles.js';
 import groomingMenusRoutes from './routes/groomingMenus.js';
 import hotelPricesRoutes from './routes/hotelPrices.js';
 import hotelRoomsRoutes from './routes/hotelRooms.js';
@@ -143,6 +144,7 @@ app.use('/api/training-masters', trainingMastersRoutes);
 app.use('/api/grooming-menus', groomingMenusRoutes);
 app.use('/api/hotel-prices', hotelPricesRoutes);
 app.use('/api/hotel-rooms', hotelRoomsRoutes);
+app.use('/api/training-profiles', trainingProfilesRoutes);
 
 // ---------------------------------------------------------------------------
 // API Routes - LIFF (LINE Front-end Framework)

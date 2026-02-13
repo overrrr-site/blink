@@ -15,9 +15,10 @@ export interface GroomingCounseling {
 }
 
 export interface DaycareData {
-  activities: string[]
+  activities?: string[] // 後方互換（旧データ読み取り用）
   training?: {
-    items: Record<string, string>
+    items: Record<string, string> // item_key → 'done' | 'almost' | 'not_done' | ''
+    note?: string                 // トレーニング全体のメモ
   }
   meal?: {
     morning?: string

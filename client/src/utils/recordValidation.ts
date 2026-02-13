@@ -42,9 +42,10 @@ export const validateRecord = (input: ValidationInput, mode: 'save' | 'share'): 
   }
 
   if (input.recordType === 'daycare') {
-    const activities = input.daycareData?.activities || []
-    if (activities.length === 0) {
-      errors.push('今日の活動を1つ以上選択してください')
+    const trainingItems = input.daycareData?.training?.items || {}
+    const hasTraining = Object.values(trainingItems).some((v) => v && v !== '')
+    if (!hasTraining) {
+      errors.push('トレーニング項目を1つ以上記録してください')
     }
   }
 

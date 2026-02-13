@@ -65,11 +65,13 @@ function buildInputTrace(context: RecordAISuggestionContext): AIInputTraceItem[]
   ]
 
   if (context.recordType === 'daycare') {
+    const trainingItems = context.daycareData.training?.items || {}
+    const filledCount = Object.values(trainingItems).filter((v) => v && v !== '').length
     items.push({
-      key: 'daycare_activities',
-      label: '活動記録',
-      status: (context.daycareData.activities?.length || 0) > 0 ? 'present' : 'missing',
-      count: context.daycareData.activities?.length || 0,
+      key: 'daycare_training',
+      label: 'トレーニング記録',
+      status: filledCount > 0 ? 'present' : 'missing',
+      count: filledCount,
     })
   }
 
@@ -99,7 +101,7 @@ const INPUT_KEY_LABELS: Record<string, string> = {
   condition: '体調・様子',
   health_check: '健康チェック',
   internal_notes: '内部メモ',
-  daycare_activities: '活動記録',
+  daycare_training: 'トレーニング記録',
   grooming_parts: '施術部位',
   hotel_stay: '宿泊情報',
 }
