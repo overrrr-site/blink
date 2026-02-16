@@ -172,34 +172,34 @@ ON CONFLICT (dog_id) DO UPDATE SET
 DELETE FROM training_item_masters WHERE store_id = 1;
 
 -- デフォルトのトレーニング項目を追加
-INSERT INTO training_item_masters (store_id, category, item_key, item_label, display_order, enabled) VALUES
-  -- 基本トレーニング
-  (1, '基本トレーニング', 'eye_contact', 'アイコンタクト', 1, TRUE),
-  (1, '基本トレーニング', 'sit', 'オスワリ', 2, TRUE),
-  (1, '基本トレーニング', 'down', 'フセ', 3, TRUE),
-  (1, '基本トレーニング', 'stay', 'マテ', 4, TRUE),
-  (1, '基本トレーニング', 'come', 'オイデ', 5, TRUE),
-  (1, '基本トレーニング', 'heel', 'ツイテ', 6, TRUE),
-  -- トイレトレーニング
-  (1, 'トイレトレーニング', 'voice_cue', '声かけでプログラム', 1, TRUE),
-  (1, 'トイレトレーニング', 'relax_position', 'リラックスポジション', 2, TRUE),
-  (1, 'トイレトレーニング', 'house_training', 'ハウストレーニング', 3, TRUE),
-  -- 社会化トレーニング
-  (1, '社会化トレーニング', 'dog_interaction', '他犬との交流', 1, TRUE),
-  (1, '社会化トレーニング', 'human_interaction', '人慣れ', 2, TRUE),
-  (1, '社会化トレーニング', 'environment', '環境慣れ', 3, TRUE),
-  (1, '社会化トレーニング', 'handling', 'ハンドリング', 4, TRUE),
-  -- 問題行動対策
-  (1, '問題行動対策', 'teeth_brushing', '歯磨き練習', 1, TRUE),
-  (1, '問題行動対策', 'barking', '吠え対策', 2, TRUE),
-  (1, '問題行動対策', 'biting', '噛み対策', 3, TRUE),
-  (1, '問題行動対策', 'pulling', '引っ張り対策', 4, TRUE),
-  (1, '問題行動対策', 'jumping', '飛びつき対策', 5, TRUE)
+INSERT INTO training_item_masters (store_id, category, item_key, item_label, display_order, enabled, evaluation_type, has_note) VALUES
+  -- 基本トレーニング（3段階評価: ○△×）
+  (1, '基本トレーニング', 'praise', '褒め言葉', 1, TRUE, 'simple', TRUE),
+  (1, '基本トレーニング', 'name_response', '名前', 2, TRUE, 'simple', FALSE),
+  (1, '基本トレーニング', 'collar_grab', '首輪をつかむ', 3, TRUE, 'simple', FALSE),
+  (1, '基本トレーニング', 'come', 'おいで', 4, TRUE, 'simple', FALSE),
+  (1, '基本トレーニング', 'hand_follow', '手を追う練習', 5, TRUE, 'simple', FALSE),
+  (1, '基本トレーニング', 'holding', 'ホールディング', 6, TRUE, 'simple', FALSE),
+  (1, '基本トレーニング', 'settle', '足元で落ち着く・休む', 7, TRUE, 'simple', FALSE),
+  -- コマンドトレーニング（デフォルト3段階、店舗設定で6段階A-Fに切替可能）
+  (1, 'コマンドトレーニング', 'sit', 'オスワリ', 1, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'down', 'フセ', 2, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'stand', 'タッテ', 3, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'stay', 'マテ', 4, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'release', '開放の合図', 5, TRUE, 'advanced', TRUE),
+  (1, 'コマンドトレーニング', 'heel', 'ヒール', 6, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'side', 'サイド', 7, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'mat', 'マット', 8, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'go_in', 'ゴーイン', 9, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'spin', 'スピンorくるん（右）', 10, TRUE, 'advanced', FALSE),
+  (1, 'コマンドトレーニング', 'turn', 'ターン（左）', 11, TRUE, 'advanced', FALSE)
 ON CONFLICT (store_id, item_key) DO UPDATE SET
   category = EXCLUDED.category,
   item_label = EXCLUDED.item_label,
   display_order = EXCLUDED.display_order,
-  enabled = EXCLUDED.enabled;
+  enabled = EXCLUDED.enabled,
+  evaluation_type = EXCLUDED.evaluation_type,
+  has_note = EXCLUDED.has_note;
 
 -- ============================================
 -- 6. 契約データの作成

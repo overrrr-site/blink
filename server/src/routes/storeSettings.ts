@@ -33,6 +33,8 @@ router.get('/', cacheControl(30, 60), async (req: AuthRequest, res) => {
         hotel_room_count: 10,
         hotel_checkin_time: '10:00',
         hotel_checkout_time: '18:00',
+        // トレーニング設定
+        training_evaluation_mode: 'three_step',
       });
     }
 
@@ -60,6 +62,8 @@ router.put('/', async (req: AuthRequest, res) => {
       hotel_room_count,
       hotel_checkin_time,
       hotel_checkout_time,
+      // トレーニング設定
+      training_evaluation_mode,
     } = req.body;
 
     if (max_capacity !== undefined && max_capacity < 1) {
@@ -70,9 +74,10 @@ router.put('/', async (req: AuthRequest, res) => {
     const result = await pool.query(
       `INSERT INTO store_settings (
         store_id, max_capacity, ai_assistant_enabled, ai_store_data_contribution, ai_service_improvement,
-        grooming_default_duration, hotel_room_count, hotel_checkin_time, hotel_checkout_time
+        grooming_default_duration, hotel_room_count, hotel_checkin_time, hotel_checkout_time,
+        training_evaluation_mode
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (store_id) DO UPDATE SET
          max_capacity = COALESCE(EXCLUDED.max_capacity, store_settings.max_capacity),
          ai_assistant_enabled = COALESCE(EXCLUDED.ai_assistant_enabled, store_settings.ai_assistant_enabled),
@@ -82,6 +87,7 @@ router.put('/', async (req: AuthRequest, res) => {
          hotel_room_count = COALESCE(EXCLUDED.hotel_room_count, store_settings.hotel_room_count),
          hotel_checkin_time = COALESCE(EXCLUDED.hotel_checkin_time, store_settings.hotel_checkin_time),
          hotel_checkout_time = COALESCE(EXCLUDED.hotel_checkout_time, store_settings.hotel_checkout_time),
+         training_evaluation_mode = COALESCE(EXCLUDED.training_evaluation_mode, store_settings.training_evaluation_mode),
          updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [
@@ -94,6 +100,7 @@ router.put('/', async (req: AuthRequest, res) => {
         hotel_room_count ?? null,
         hotel_checkin_time ?? null,
         hotel_checkout_time ?? null,
+        training_evaluation_mode ?? null,
       ]
     );
 

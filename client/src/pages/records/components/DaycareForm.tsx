@@ -7,6 +7,7 @@ import {
   hasTrainingMasterCategories,
   toggleTrainingItem,
   updateTrainingNote,
+  updateTrainingItemNote,
 } from '../utils/daycareForm'
 
 // ---------------------------------------------------------------------------
@@ -19,20 +20,46 @@ interface TrainingMasterItem {
   item_label: string
   category: string
   display_order: number
+  evaluation_type: 'simple' | 'advanced'
+  has_note: boolean
+}
+
+interface StoreSettings {
+  training_evaluation_mode?: 'three_step' | 'six_step'
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
   '基本トレーニング': 'mdi:book-open-page-variant',
+  'コマンドトレーニング': 'mdi:school-outline',
   'トイレトレーニング': 'mdi:toilet',
   '社会化トレーニング': 'mdi:dog-side',
   '問題行動対策': 'mdi:shield-alert-outline',
 }
 
-const ACHIEVEMENT_OPTIONS = [
+const THREE_STEP_OPTIONS = [
   { value: 'done', label: '○', activeClass: 'bg-green-100 border-[1.5px] border-green-500 text-green-600' },
   { value: 'almost', label: '△', activeClass: 'bg-yellow-100 border-[1.5px] border-yellow-500 text-yellow-600' },
-  { value: 'not_done', label: '−', activeClass: 'bg-muted border-[1.5px] border-muted-foreground/40 text-muted-foreground' },
+  { value: 'not_done', label: '×', activeClass: 'bg-muted border-[1.5px] border-muted-foreground/40 text-muted-foreground' },
 ] as const
+
+const SIX_STEP_OPTIONS = [
+  { value: 'A', label: 'A', activeClass: 'bg-blue-100 border-[1.5px] border-blue-500 text-blue-600' },
+  { value: 'B', label: 'B', activeClass: 'bg-blue-100 border-[1.5px] border-blue-500 text-blue-600' },
+  { value: 'C', label: 'C', activeClass: 'bg-indigo-100 border-[1.5px] border-indigo-500 text-indigo-600' },
+  { value: 'D', label: 'D', activeClass: 'bg-violet-100 border-[1.5px] border-violet-500 text-violet-600' },
+  { value: 'E', label: 'E', activeClass: 'bg-purple-100 border-[1.5px] border-purple-500 text-purple-600' },
+  { value: 'F', label: 'F', activeClass: 'bg-purple-100 border-[1.5px] border-purple-500 text-purple-600' },
+] as const
+
+function getOptionsForItem(
+  item: TrainingMasterItem,
+  evaluationMode: string,
+) {
+  if (evaluationMode === 'six_step' && item.evaluation_type === 'advanced') {
+    return SIX_STEP_OPTIONS
+  }
+  return THREE_STEP_OPTIONS
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -51,6 +78,13 @@ export default function DaycareForm({ data, onChange, storeId }: DaycareFormProp
     fetcher,
   )
 
+  const { data: storeSettings } = useSWR<StoreSettings>(
+    storeId ? '/store-settings' : null,
+    fetcher,
+    { revalidateOnFocus: false },
+  )
+
+  const evaluationMode = storeSettings?.training_evaluation_mode || 'three_step'
   const trainingItems = getTrainingItems(data)
   const hasTrainingMasters = hasTrainingMasterCategories(trainingMasters)
 
@@ -59,39 +93,51 @@ export default function DaycareForm({ data, onChange, storeId }: DaycareFormProp
       {/* トレーニング記録 */}
       {hasTrainingMasters && (
         <div className="space-y-4">
-          {Object.entries(trainingMasters).map(([category, items]) => (
+          {Object.entries(trainingMasters!).map(([category, items]) => (
             <div key={category} className="space-y-2">
               <p className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Icon icon={CATEGORY_ICONS[category] || 'mdi:list-box-outline'} width="18" height="18" />
                 {category}
               </p>
               <div className="grid grid-cols-1 gap-1.5">
-                {items.map((item) => (
-                  <div
-                    key={item.item_key}
-                    className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2"
-                  >
-                    <span className="text-sm">{item.item_label}</span>
-                    <div className="flex gap-1">
-                      {ACHIEVEMENT_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => onChange(toggleTrainingItem(data, item.item_key, option.value))}
-                          className={`size-10 rounded-full flex items-center justify-center text-sm font-bold active:scale-95 transition-all ${
-                            trainingItems[item.item_key] === option.value
-                              ? option.activeClass
-                              : 'text-muted-foreground/30 hover:bg-muted active:bg-muted border border-transparent'
-                          }`}
-                          aria-label={`${item.item_label}を${option.label}に設定`}
-                          aria-pressed={trainingItems[item.item_key] === option.value}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
+                {items.map((item) => {
+                  const options = getOptionsForItem(item, evaluationMode)
+                  const isSixStep = options === SIX_STEP_OPTIONS
+                  return (
+                    <div key={item.item_key}>
+                      <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2">
+                        <span className="text-sm">{item.item_label}</span>
+                        <div className="flex gap-1">
+                          {options.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => onChange(toggleTrainingItem(data, item.item_key, option.value))}
+                              className={`${isSixStep ? 'size-8 text-xs' : 'size-10 text-sm'} rounded-full flex items-center justify-center font-bold active:scale-95 transition-all ${
+                                trainingItems[item.item_key] === option.value
+                                  ? option.activeClass
+                                  : 'text-muted-foreground/30 hover:bg-muted active:bg-muted border border-transparent'
+                              }`}
+                              aria-label={`${item.item_label}を${option.label}に設定`}
+                              aria-pressed={trainingItems[item.item_key] === option.value}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {item.has_note && (
+                        <input
+                          type="text"
+                          value={data.training?.item_notes?.[item.item_key] || ''}
+                          onChange={(e) => onChange(updateTrainingItemNote(data, item.item_key, e.target.value))}
+                          placeholder={`${item.item_label}のメモ`}
+                          className="mt-1 w-full px-3 py-1.5 rounded-lg border border-border bg-input text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        />
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           ))}

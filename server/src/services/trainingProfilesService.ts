@@ -13,11 +13,15 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const DEFAULT_ACHIEVEMENT_LEVELS = [
-  { symbol: '○', label: 'できた', color_class: 'bg-green-100 border-green-500 text-green-600' },
+  { symbol: '○', label: '問題なくできる', color_class: 'bg-green-100 border-green-500 text-green-600' },
   { symbol: '△', label: 'もう少し', color_class: 'bg-yellow-100 border-yellow-500 text-yellow-600' },
-  { symbol: '×', label: 'できなかった', color_class: 'bg-red-100 border-red-500 text-red-600' },
-  { symbol: 'A', label: 'アシスト付き', color_class: 'bg-blue-100 border-blue-500 text-blue-600' },
-  { symbol: 'E', label: 'エクセレント', color_class: 'bg-purple-100 border-purple-500 text-purple-600' },
+  { symbol: '×', label: 'できない', color_class: 'bg-red-100 border-red-500 text-red-600' },
+  { symbol: 'A', label: '手を追わせる（フードで誘導）', color_class: 'bg-blue-100 border-blue-500 text-blue-600' },
+  { symbol: 'B', label: 'ハンドサインを教える', color_class: 'bg-blue-100 border-blue-500 text-blue-600' },
+  { symbol: 'C', label: 'コマンド（声符）を教える練習', color_class: 'bg-indigo-100 border-indigo-500 text-indigo-600' },
+  { symbol: 'D', label: '言葉のみの練習（プロンプトあり）', color_class: 'bg-violet-100 border-violet-500 text-violet-600' },
+  { symbol: 'E', label: '言葉のみでできる', color_class: 'bg-purple-100 border-purple-500 text-purple-600' },
+  { symbol: 'F', label: '言葉を聞き分けられる', color_class: 'bg-purple-100 border-purple-500 text-purple-600' },
 ];
 
 export async function seedDefaultCategories(storeId: number): Promise<void> {

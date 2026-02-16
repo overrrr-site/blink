@@ -170,17 +170,26 @@ const JOURNAL_COMMENTS = [
 ];
 
 const TRAINING_ITEMS = [
-  { category: 'basicTraining',   key: 'sit',               label: 'おすわり',       order: 1 },
-  { category: 'basicTraining',   key: 'wait',              label: 'まて',           order: 2 },
-  { category: 'basicTraining',   key: 'come',              label: 'おいで',         order: 3 },
-  { category: 'basicTraining',   key: 'down',              label: 'ふせ',           order: 4 },
-  { category: 'socialization',   key: 'other_dogs',        label: '他犬との交流',   order: 1 },
-  { category: 'socialization',   key: 'human_interaction', label: '人との交流',     order: 2 },
-  { category: 'socialization',   key: 'noise_tolerance',   label: '音への慣れ',     order: 3 },
-  { category: 'toiletTraining',  key: 'indoor_toilet',     label: '室内トイレ',     order: 1 },
-  { category: 'toiletTraining',  key: 'outdoor_toilet',    label: '屋外トイレ',     order: 2 },
-  { category: 'problemBehavior', key: 'no_biting',         label: '噛みつき防止',   order: 1 },
-  { category: 'problemBehavior', key: 'no_barking',        label: '無駄吠え防止',   order: 2 },
+  // 基本トレーニング（3段階: ○△×）
+  { category: '基本トレーニング', key: 'praise',        label: '褒め言葉',             order: 1, evaluationType: 'simple',   hasNote: true },
+  { category: '基本トレーニング', key: 'name_response',  label: '名前',                 order: 2, evaluationType: 'simple',   hasNote: false },
+  { category: '基本トレーニング', key: 'collar_grab',    label: '首輪をつかむ',         order: 3, evaluationType: 'simple',   hasNote: false },
+  { category: '基本トレーニング', key: 'come',           label: 'おいで',               order: 4, evaluationType: 'simple',   hasNote: false },
+  { category: '基本トレーニング', key: 'hand_follow',    label: '手を追う練習',         order: 5, evaluationType: 'simple',   hasNote: false },
+  { category: '基本トレーニング', key: 'holding',        label: 'ホールディング',       order: 6, evaluationType: 'simple',   hasNote: false },
+  { category: '基本トレーニング', key: 'settle',         label: '足元で落ち着く・休む', order: 7, evaluationType: 'simple',   hasNote: false },
+  // コマンドトレーニング（デフォルト3段階、店舗設定で6段階A-Fに切替可能）
+  { category: 'コマンドトレーニング', key: 'sit',       label: 'オスワリ',             order: 1, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'down',      label: 'フセ',                 order: 2, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'stand',     label: 'タッテ',               order: 3, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'stay',      label: 'マテ',                 order: 4, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'release',   label: '開放の合図',           order: 5, evaluationType: 'advanced', hasNote: true },
+  { category: 'コマンドトレーニング', key: 'heel',      label: 'ヒール',               order: 6, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'side',      label: 'サイド',               order: 7, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'mat',       label: 'マット',               order: 8, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'go_in',     label: 'ゴーイン',             order: 9, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'spin',      label: 'スピンorくるん（右）', order: 10, evaluationType: 'advanced', hasNote: false },
+  { category: 'コマンドトレーニング', key: 'turn',      label: 'ターン（左）',         order: 11, evaluationType: 'advanced', hasNote: false },
 ];
 
 const ANNOUNCEMENTS = [
@@ -428,10 +437,15 @@ async function seedDemo(): Promise<void> {
   // トレーニング項目マスタ
   for (const t of TRAINING_ITEMS) {
     await pool.query(
-      `INSERT INTO training_item_masters (store_id, category, item_key, item_label, display_order, enabled)
-       VALUES ($1,$2,$3,$4,$5,true)
-       ON CONFLICT (store_id, item_key) DO NOTHING`,
-      [STORE_ID, t.category, t.key, t.label, t.order],
+      `INSERT INTO training_item_masters (store_id, category, item_key, item_label, display_order, enabled, evaluation_type, has_note)
+       VALUES ($1,$2,$3,$4,$5,true,$6,$7)
+       ON CONFLICT (store_id, item_key) DO UPDATE SET
+         category = EXCLUDED.category,
+         item_label = EXCLUDED.item_label,
+         display_order = EXCLUDED.display_order,
+         evaluation_type = EXCLUDED.evaluation_type,
+         has_note = EXCLUDED.has_note`,
+      [STORE_ID, t.category, t.key, t.label, t.order, t.evaluationType, t.hasNote],
     );
   }
   console.log('  ✅ トレーニング項目マスタ');

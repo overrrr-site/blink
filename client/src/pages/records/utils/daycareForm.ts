@@ -96,3 +96,19 @@ export const toggleToiletBySlot = (
     },
   }
 }
+
+export const updateTrainingItemNote = (
+  data: DaycareData,
+  itemKey: string,
+  note: string
+): DaycareData => ({
+  ...data,
+  training: {
+    ...data.training,
+    items: data.training?.items || {},
+    item_notes: {
+      ...data.training?.item_notes,
+      [itemKey]: note,
+    },
+  },
+})

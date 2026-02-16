@@ -27,6 +27,7 @@ interface RecordData {
     activities?: string[]
     training?: {
       items: Record<string, string>
+      item_notes?: Record<string, string>
       note?: string
     }
     meal?: { morning?: string; afternoon?: string }
@@ -78,6 +79,12 @@ const TRAINING_ACHIEVEMENT_LABELS: Record<string, { label: string; className: st
   done: { label: '○', className: 'text-green-600 bg-green-50' },
   almost: { label: '△', className: 'text-yellow-600 bg-yellow-50' },
   not_done: { label: '−', className: 'text-muted-foreground bg-muted/50' },
+  A: { label: 'A', className: 'text-blue-600 bg-blue-50' },
+  B: { label: 'B', className: 'text-blue-600 bg-blue-50' },
+  C: { label: 'C', className: 'text-indigo-600 bg-indigo-50' },
+  D: { label: 'D', className: 'text-violet-600 bg-violet-50' },
+  E: { label: 'E', className: 'text-purple-600 bg-purple-50' },
+  F: { label: 'F', className: 'text-purple-600 bg-purple-50' },
 }
 
 const HOTEL_CARE_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
@@ -91,6 +98,11 @@ export default function RecordDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare')
+  const [viewerState, setViewerState] = useState<{
+    photos: { url: string; label?: string }[]
+    initialIndex: number
+    title?: string
+  } | null>(null)
 
   const { data: record, isLoading, error } = useSWR<RecordData>(
     id ? `/records/${id}` : null,
@@ -139,11 +151,6 @@ export default function RecordDetail() {
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
   const groomingParts = record.grooming_data?.selectedParts || []
   const groomingNotes = record.grooming_data?.partNotes || {}
-  const [viewerState, setViewerState] = useState<{
-    photos: { url: string; label?: string }[]
-    initialIndex: number
-    title?: string
-  } | null>(null)
 
   return (
     <div className="px-5 pt-6 pb-28">
@@ -261,13 +268,19 @@ export default function RecordDetail() {
                 <div className="space-y-1.5">
                   {filledItems.map(([key, value]) => {
                     const achievement = TRAINING_ACHIEVEMENT_LABELS[value]
+                    const itemNote = record.daycare_data?.training?.item_notes?.[key]
                     return (
-                      <div key={key} className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2">
-                        <span className="text-sm">{key.replace(/_/g, ' ')}</span>
-                        {achievement && (
-                          <span className={`size-8 rounded-full flex items-center justify-center text-sm font-bold ${achievement.className}`}>
-                            {achievement.label}
-                          </span>
+                      <div key={key}>
+                        <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2">
+                          <span className="text-sm">{key.replace(/_/g, ' ')}</span>
+                          {achievement && (
+                            <span className={`size-8 rounded-full flex items-center justify-center text-sm font-bold ${achievement.className}`}>
+                              {achievement.label}
+                            </span>
+                          )}
+                        </div>
+                        {itemNote && (
+                          <p className="text-xs text-muted-foreground mt-0.5 ml-3">{itemNote}</p>
                         )}
                       </div>
                     )

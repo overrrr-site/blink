@@ -17,7 +17,8 @@ export interface GroomingCounseling {
 export interface DaycareData {
   activities?: string[] // 後方互換（旧データ読み取り用）
   training?: {
-    items: Record<string, string> // item_key → 'done' | 'almost' | 'not_done' | ''
+    items: Record<string, string> // item_key → 'done'|'almost'|'not_done'|'A'-'F'|''
+    item_notes?: Record<string, string> // item_key → メモテキスト
     note?: string                 // トレーニング全体のメモ
   }
   meal?: {

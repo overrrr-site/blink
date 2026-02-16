@@ -10,6 +10,7 @@ router.use(authenticate);
 // カテゴリの表示順序
 const CATEGORY_ORDER = [
   '基本トレーニング',
+  'コマンドトレーニング',
   'トイレトレーニング',
   '社会化トレーニング',
   '問題行動対策',
@@ -80,7 +81,7 @@ router.post('/', async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
 
-    const { category, item_key, item_label, display_order, enabled } = req.body;
+    const { category, item_key, item_label, display_order, enabled, evaluation_type, has_note } = req.body;
 
     if (!category || !item_key || !item_label) {
       return sendBadRequest(res, '必須項目が不足しています');
@@ -97,8 +98,8 @@ router.post('/', async (req: AuthRequest, res) => {
 
     const result = await pool.query(
       `INSERT INTO training_item_masters (
-        store_id, category, item_key, item_label, display_order, enabled
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        store_id, category, item_key, item_label, display_order, enabled, evaluation_type, has_note
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
         req.storeId,
@@ -107,6 +108,8 @@ router.post('/', async (req: AuthRequest, res) => {
         item_label,
         display_order || 0,
         enabled !== undefined ? enabled : true,
+        evaluation_type || 'simple',
+        has_note !== undefined ? has_note : false,
       ]
     );
 
@@ -121,7 +124,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
     if (!requireStoreId(req, res)) return;
 
     const { id } = req.params;
-    const { category, item_key, item_label, display_order, enabled } = req.body;
+    const { category, item_key, item_label, display_order, enabled, evaluation_type, has_note } = req.body;
 
     const itemCheck = await pool.query(
       `SELECT id FROM training_item_masters WHERE id = $1 AND store_id = $2`,
@@ -151,10 +154,12 @@ router.put('/:id', async (req: AuthRequest, res) => {
         item_label = COALESCE($3, item_label),
         display_order = COALESCE($4, display_order),
         enabled = COALESCE($5, enabled),
+        evaluation_type = COALESCE($6, evaluation_type),
+        has_note = COALESCE($7, has_note),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $6 AND store_id = $7
+      WHERE id = $8 AND store_id = $9
       RETURNING *`,
-      [category, item_key, item_label, display_order, enabled, id, req.storeId]
+      [category, item_key, item_label, display_order, enabled, evaluation_type, has_note, id, req.storeId]
     );
 
     res.json(result.rows[0]);
