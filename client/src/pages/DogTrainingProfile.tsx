@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
@@ -18,6 +18,12 @@ interface DogSummary {
   photo_url?: string | null
 }
 
+interface StoreSettings {
+  training_evaluation_mode?: 'three_step' | 'six_step'
+}
+
+const THREE_STEP_SYMBOLS = ['○', '△', '×']
+
 function DogTrainingProfile() {
   const { dogId } = useParams<{ dogId: string }>()
 
@@ -27,6 +33,12 @@ function DogTrainingProfile() {
   )
 
   const { data: profileData, isLoading, mutate } = useTrainingProfile(dogId)
+
+  const { data: storeSettings } = useSWR<StoreSettings>(
+    '/store-settings',
+    fetcher,
+    { revalidateOnFocus: false },
+  )
 
   const handleMutate = useCallback(() => {
     mutate()
@@ -56,6 +68,13 @@ function DogTrainingProfile() {
   }
 
   const { categories, achievementLevels, gridEntries, logEntries, concerns } = profileData
+  const evaluationMode = storeSettings?.training_evaluation_mode || 'three_step'
+  const filteredLevels = useMemo(
+    () => evaluationMode === 'six_step'
+      ? achievementLevels
+      : achievementLevels.filter((l) => THREE_STEP_SYMBOLS.includes(l.symbol)),
+    [achievementLevels, evaluationMode],
+  )
   const enabledCategories = categories
     .filter((c) => c.enabled)
     .sort((a, b) => a.display_order - b.display_order)
@@ -98,7 +117,7 @@ function DogTrainingProfile() {
               <TrainingGridView
                 key={cat.id}
                 category={cat}
-                achievementLevels={achievementLevels}
+                achievementLevels={filteredLevels}
                 entries={gridEntries}
                 dogId={dogId!}
                 onMutate={handleMutate}

@@ -57,6 +57,8 @@ interface StoreSettings {
   hotel_room_count?: number
   hotel_checkin_time?: string
   hotel_checkout_time?: string
+  // トレーニング設定
+  training_evaluation_mode?: 'three_step' | 'six_step'
 }
 
 interface HotelRoomItem {
@@ -702,6 +704,28 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
               追加
             </button>
           </div>
+          {/* 評価方式 */}
+          <div className="px-5 py-3 border-b border-border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium">評価方式</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {storeSettings.training_evaluation_mode === 'six_step'
+                    ? 'コマンド項目を A〜F の6段階で評価'
+                    : '全項目を ○△× の3段階で評価'}
+                </p>
+              </div>
+              <select
+                value={storeSettings.training_evaluation_mode || 'three_step'}
+                onChange={(e) => handleStoreSettingsChange('training_evaluation_mode', e.target.value)}
+                className="rounded-lg border border-border bg-input px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="three_step">○△×（3段階）</option>
+                <option value="six_step">A〜F（6段階）</option>
+              </select>
+            </div>
+          </div>
+
           {loadingTraining ? (
             <div className="text-center py-4">
               <span className="text-xs text-muted-foreground">読み込み中...</span>
