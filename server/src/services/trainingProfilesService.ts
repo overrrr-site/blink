@@ -71,7 +71,10 @@ export async function seedDefaultAchievementLevels(storeId: number): Promise<voi
     await pool.query(
       `INSERT INTO training_achievement_levels (store_id, symbol, label, color_class, display_order)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (store_id, symbol) DO NOTHING`,
+       ON CONFLICT (store_id, symbol) DO UPDATE SET
+         label = EXCLUDED.label,
+         color_class = EXCLUDED.color_class,
+         display_order = EXCLUDED.display_order`,
       [storeId, level.symbol, level.label, level.color_class, i]
     );
   }

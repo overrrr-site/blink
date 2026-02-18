@@ -580,8 +580,7 @@ const lpStyles = `
   @media (max-width: 768px) {
     /* モバイル: ペアを縦並びにしてスナップ無効（ペア内スクロール） */
     .feature-pair, .line-pair {
-      scroll-snap-align: none;
-      min-height: auto;
+      display: contents;
     }
     .feature-pair > .feature-text,
     .feature-pair > .feature-img,
