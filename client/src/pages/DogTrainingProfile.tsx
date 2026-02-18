@@ -44,6 +44,16 @@ function DogTrainingProfile() {
     mutate()
   }, [mutate])
 
+  // useMemo must be called before any early returns (React Hooks rule)
+  const evaluationMode = storeSettings?.training_evaluation_mode || 'three_step'
+  const allLevels = profileData?.achievementLevels ?? []
+  const filteredLevels = useMemo(
+    () => evaluationMode === 'six_step'
+      ? allLevels
+      : allLevels.filter((l) => THREE_STEP_SYMBOLS.includes(l.symbol)),
+    [allLevels, evaluationMode],
+  )
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -67,14 +77,7 @@ function DogTrainingProfile() {
     )
   }
 
-  const { categories, achievementLevels, gridEntries, logEntries, concerns } = profileData
-  const evaluationMode = storeSettings?.training_evaluation_mode || 'three_step'
-  const filteredLevels = useMemo(
-    () => evaluationMode === 'six_step'
-      ? achievementLevels
-      : achievementLevels.filter((l) => THREE_STEP_SYMBOLS.includes(l.symbol)),
-    [achievementLevels, evaluationMode],
-  )
+  const { categories, gridEntries, logEntries, concerns } = profileData
   const enabledCategories = categories
     .filter((c) => c.enabled)
     .sort((a, b) => a.display_order - b.display_order)
