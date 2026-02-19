@@ -6,6 +6,8 @@ import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import type { Staff } from '../types/staff'
 import { useToast } from '../components/Toast'
+import { LazyImage } from '../components/LazyImage'
+import { getDetailThumbnailUrl } from '../utils/image'
 
 // カテゴリのアイコンマッピング
 const CATEGORY_ICONS: Record<string, string> = {
@@ -393,10 +395,10 @@ const JournalDetail = () => {
         <div className="bg-card rounded-2xl p-4 border border-border shadow-sm print:shadow-none print:border-border">
           <div className="flex items-center gap-4">
             {journal.dog_photo ? (
-              <img
-                src={journal.dog_photo}
+              <LazyImage
+                src={getDetailThumbnailUrl(journal.dog_photo)}
                 alt={journal.dog_name}
-                className="size-16 rounded-full object-cover print:size-12"
+                className="size-16 rounded-full print:size-12"
               />
             ) : (
               <div className="size-16 rounded-full bg-muted flex items-center justify-center print:size-12">

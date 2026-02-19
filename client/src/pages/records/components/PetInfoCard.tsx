@@ -1,5 +1,7 @@
 import { Icon } from '@/components/Icon'
 import { getBusinessTypeColors } from '@/utils/businessTypeColors'
+import { LazyImage } from '@/components/LazyImage'
+import { getDetailThumbnailUrl } from '@/utils/image'
 import type { RecordType } from '@/types/record'
 
 interface PetInfoCardProps {
@@ -31,10 +33,10 @@ export default function PetInfoCard({
           style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.light})` }}
         >
           {photoUrl ? (
-            <img
-              src={photoUrl}
+            <LazyImage
+              src={getDetailThumbnailUrl(photoUrl)}
               alt={petName}
-              className="size-full rounded-full object-cover border-2 border-white"
+              className="size-full rounded-full border-2 border-white"
             />
           ) : (
             <div className="size-full rounded-full bg-white flex items-center justify-center">

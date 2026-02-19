@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
@@ -11,12 +11,39 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 import ReservationCard from '../components/ReservationCard'
 import type { ReservationCardData } from '../components/ReservationCard'
+import CalendarCell from '../components/reservations/CalendarCell'
+
+function toDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function toReservationDateKey(value: unknown): string | null {
+  if (value instanceof Date) {
+    return toDateKey(value)
+  }
+  if (typeof value !== 'string') {
+    return null
+  }
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+  if (trimmed.includes('T')) {
+    return trimmed.split('T')[0]
+  }
+  if (trimmed.includes(' ')) {
+    return trimmed.split(' ')[0]
+  }
+  return trimmed
+}
 
 const ReservationsCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [reservations, setReservations] = useState<any[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [selectedDateReservations, setSelectedDateReservations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [draggedReservation, setDraggedReservation] = useState<number | null>(null)
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null)
@@ -41,34 +68,7 @@ const ReservationsCalendar = () => {
     }
   }
 
-  useEffect(() => {
-    fetchReservations()
-  }, [currentDate, selectedBusinessType])
-
-  useEffect(() => {
-    if (selectedDate) {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      setSelectedDateReservations(
-        reservations.filter((r) => {
-          // reservation_date が ISO 形式の場合は 'yyyy-MM-dd' に変換
-          const reservationDate = r.reservation_date instanceof Date
-            ? format(r.reservation_date, 'yyyy-MM-dd')
-            : r.reservation_date?.split('T')[0] || r.reservation_date
-          return reservationDate === dateStr
-        })
-      )
-    }
-  }, [selectedDate, reservations])
-
-  // 日付選択が変わったら展開カードをリセット＆週表示に切替
-  useEffect(() => {
-    setExpandedCard(null)
-    if (selectedDate) {
-      setCalendarMode('week')
-    }
-  }, [selectedDate])
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     try {
       const monthStr = format(currentDate, 'yyyy-MM')
 
@@ -86,7 +86,19 @@ const ReservationsCalendar = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentDate, selectedBusinessType])
+
+  useEffect(() => {
+    void fetchReservations()
+  }, [fetchReservations])
+
+  // 日付選択が変わったら展開カードをリセット＆週表示に切替
+  useEffect(() => {
+    setExpandedCard(null)
+    if (selectedDate) {
+      setCalendarMode('week')
+    }
+  }, [selectedDate])
 
   // プルトゥリフレッシュ
   useEffect(() => {
@@ -95,56 +107,64 @@ const ReservationsCalendar = () => {
 
   const handleRefresh = useCallback(async () => {
     await fetchReservations()
-  }, [currentDate, selectedBusinessType])
+  }, [fetchReservations])
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
     scrollRef: mainRef,
     onRefresh: handleRefresh,
   })
 
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(currentDate)
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const allDays = useMemo(() => {
+    const monthStart = startOfMonth(currentDate)
+    const monthEnd = endOfMonth(currentDate)
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
+    const paddingDays = Array.from({ length: monthStart.getDay() }, () => null)
+    return [...paddingDays, ...days]
+  }, [currentDate])
 
-  // カレンダーの前後の空白日を追加
-  const firstDayOfWeek = monthStart.getDay()
-  const paddingDays = []
+  const { calendarRows, visibleDays } = useMemo(() => {
+    const rows: (Date | null)[][] = []
+    for (let i = 0; i < allDays.length; i += 7) {
+      rows.push(allDays.slice(i, i + 7))
+    }
 
-  for (let i = 0; i < firstDayOfWeek; i++) {
-    paddingDays.push(null)
-  }
+    const selectedDateKey = selectedDate ? toDateKey(selectedDate) : null
+    const selectedRowIndex = selectedDateKey
+      ? rows.findIndex((row) => row.some((day) => day && toDateKey(day) === selectedDateKey))
+      : -1
 
-  const allDays = [...paddingDays, ...days]
+    const nextVisibleDays = calendarMode === 'week' && selectedRowIndex >= 0
+      ? rows[selectedRowIndex]
+      : allDays
 
-  // カレンダーを7日ごとの行に分割
-  const calendarRows: (Date | null)[][] = []
-  for (let i = 0; i < allDays.length; i += 7) {
-    calendarRows.push(allDays.slice(i, i + 7))
-  }
+    return {
+      calendarRows: rows,
+      visibleDays: nextVisibleDays,
+    }
+  }, [allDays, calendarMode, selectedDate])
 
-  // 選択日がどの行にあるかを算出
-  const selectedRowIndex = selectedDate
-    ? calendarRows.findIndex(row =>
-        row.some(day => day && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
-      )
-    : -1
+  const reservationsByDate = useMemo(() => {
+    const indexed = new Map<string, any[]>()
+    for (const reservation of reservations) {
+      const dateKey = toReservationDateKey(reservation.reservation_date)
+      if (!dateKey) continue
+      const current = indexed.get(dateKey)
+      if (current) {
+        current.push(reservation)
+        continue
+      }
+      indexed.set(dateKey, [reservation])
+    }
+    return indexed
+  }, [reservations])
 
-  // 表示する日付（週表示 or 月表示）
-  const visibleDays = calendarMode === 'week' && selectedRowIndex >= 0
-    ? calendarRows[selectedRowIndex]
-    : allDays
+  const selectedDateReservations = useMemo(() => {
+    if (!selectedDate) return []
+    return reservationsByDate.get(toDateKey(selectedDate)) ?? []
+  }, [reservationsByDate, selectedDate])
 
-  const getReservationsForDate = (date: Date | null) => {
-    if (!date) return []
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return reservations.filter((r) => {
-      // reservation_date が ISO 形式の場合は 'yyyy-MM-dd' に変換
-      const reservationDate = r.reservation_date instanceof Date
-        ? format(r.reservation_date, 'yyyy-MM-dd')
-        : r.reservation_date?.split('T')[0] || r.reservation_date
-      return reservationDate === dateStr
-    })
-  }
+  const selectedDateKey = selectedDate ? toDateKey(selectedDate) : null
+  const dragOverDateKey = dragOverDate ? toDateKey(dragOverDate) : null
 
   const goToPreviousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
@@ -163,17 +183,17 @@ const ReservationsCalendar = () => {
     e.dataTransfer.effectAllowed = 'move'
   }
 
-  const handleDragOver = (e: React.DragEvent, date: Date) => {
+  const handleDragOver = useCallback((e: React.DragEvent, date: Date) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     setDragOverDate(date)
-  }
+  }, [])
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDragOverDate(null)
-  }
+  }, [])
 
-  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault()
     setDragOverDate(null)
 
@@ -182,8 +202,8 @@ const ReservationsCalendar = () => {
     const reservation = reservations.find((r) => r.id === draggedReservation)
     if (!reservation) return
 
-    const newDate = format(targetDate, 'yyyy-MM-dd')
-    const oldDate = reservation.reservation_date?.split('T')[0] || reservation.reservation_date
+    const newDate = toDateKey(targetDate)
+    const oldDate = toReservationDateKey(reservation.reservation_date)
 
     if (newDate === oldDate) {
       setDraggedReservation(null)
@@ -203,7 +223,7 @@ const ReservationsCalendar = () => {
       setUpdating(null)
       setDraggedReservation(null)
     }
-  }
+  }, [draggedReservation, fetchReservations, reservations, showToast])
 
   const handlePrint = () => {
     api.post('/exports/log', {
@@ -349,62 +369,21 @@ const ReservationsCalendar = () => {
       <main className="px-5">
         <div className="grid grid-cols-7 gap-1 mb-6">
           {visibleDays.map((day, index) => {
-            if (!day) {
-              return <div key={index} className="aspect-square"></div>
-            }
-
-            const dayReservations = getReservationsForDate(day)
-            const isSelected = selectedDate && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-
-            const isDragOver = dragOverDate && format(day, 'yyyy-MM-dd') === format(dragOverDate, 'yyyy-MM-dd')
-
+            const dayKey = day ? toDateKey(day) : `empty-${calendarRows.length}-${index}`
+            const reservationCount = day ? (reservationsByDate.get(dayKey)?.length ?? 0) : 0
             return (
-              <div
-                key={day.toISOString()}
-                onDragOver={(e) => handleDragOver(e, day)}
+              <CalendarCell
+                key={dayKey}
+                day={day}
+                reservationCount={reservationCount}
+                isSelected={Boolean(day && selectedDateKey === dayKey)}
+                isDragOver={Boolean(day && dragOverDateKey === dayKey)}
+                onSelect={setSelectedDate}
+                onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, day)}
-                className={`aspect-square rounded-lg p-1 flex flex-col items-center justify-start transition-colors relative ${
-                  isDragOver
-                    ? 'bg-chart-2/20 border-2 border-chart-2 border-dashed'
-                    : isToday(day) && !isSelected
-                    ? 'bg-primary/10 border-2 border-primary'
-                    : isSelected
-                    ? 'bg-primary text-primary-foreground'
-                    : dayReservations.length > 0
-                    ? 'bg-primary/5 border border-primary/20'
-                    : 'hover:bg-muted'
-                }`}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedDate(day)
-                  }}
-                  className="w-full h-full flex flex-col items-center justify-start min-h-[48px] active:scale-[0.98] transition-all"
-                  aria-label={`${format(day, 'M月d日')}の予約を表示`}
-                >
-                  <span className={`text-xs ${isSelected ? 'font-bold' : isToday(day) ? 'font-bold' : ''}`}>
-                    {format(day, 'd')}
-                  </span>
-                  {dayReservations.length > 0 && (
-                    <div className="flex items-center justify-center mt-1">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        isSelected
-                          ? 'bg-white/30 text-white'
-                          : 'bg-primary text-primary-foreground'
-                      }`}>
-                        {dayReservations.length}件
-                      </span>
-                    </div>
-                  )}
-                </button>
-                {isDragOver && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-chart-2/30 rounded-lg">
-                    <Icon icon="solar:arrow-down-bold" className="size-6 text-chart-2" />
-                  </div>
-                )}
-              </div>
+                onDrop={handleDrop}
+                isToday={isToday}
+              />
             )
           })}
         </div>

@@ -5,6 +5,8 @@ import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import type { RecordType } from '../types/record'
 import { getBusinessTypeColors, getBusinessTypeLabel } from '../utils/businessTypeColors'
+import { LazyImage } from '../components/LazyImage'
+import { getDetailThumbnailUrl } from '../utils/image'
 
 interface OwnerDog {
   id: number
@@ -188,10 +190,10 @@ function OwnerDetail(): JSX.Element {
                 className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 {owner.dogs[0].photo_url ? (
-                  <img
-                    src={owner.dogs[0].photo_url}
+                  <LazyImage
+                    src={getDetailThumbnailUrl(owner.dogs[0].photo_url)}
                     alt={owner.dogs[0].name}
-                    className="size-20 rounded-full object-cover shrink-0"
+                    className="size-20 rounded-full shrink-0"
                   />
                 ) : (
                   <div className="size-20 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -219,10 +221,10 @@ function OwnerDetail(): JSX.Element {
                       onKeyDown={(e) => e.key === 'Enter' && navigate(`/dogs/${dog.id}`)}
                     >
                       {dog.photo_url ? (
-                        <img
-                          src={dog.photo_url}
+                        <LazyImage
+                          src={getDetailThumbnailUrl(dog.photo_url)}
                           alt={dog.name}
-                          className="size-16 rounded-full object-cover"
+                          className="size-16 rounded-full"
                         />
                       ) : (
                         <div className="size-16 rounded-full bg-muted flex items-center justify-center">

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Icon } from '../Icon'
 import type { RecentReservation, ReservationDog } from '../../hooks/useReservationCreateData'
+import { LazyImage } from '../LazyImage'
+import { getListThumbnailUrl } from '../../utils/image'
 
 type DogSelectStepProps = {
   title: string
@@ -108,7 +110,11 @@ export default function DogSelectStep({
               />
               <div className="size-10 rounded-full overflow-hidden border-2 border-transparent shrink-0">
                 {dog.photo_url ? (
-                  <img src={dog.photo_url} alt={dog.name} className="w-full h-full object-cover" />
+                  <LazyImage
+                    src={getListThumbnailUrl(dog.photo_url)}
+                    alt={dog.name}
+                    className="w-full h-full"
+                  />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
                     <Icon icon="solar:paw-print-bold" className="size-5 text-muted-foreground" />

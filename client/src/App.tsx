@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 import { Icon } from '@/components/Icon'
-import { useAuthStore } from './store/authStore'
+import { SWRConfig } from 'swr'
+import { useAuthStore, selectIsAuthenticated, selectUser } from './store/authStore'
+import { fetcher } from './lib/swr'
 import { ToastProvider } from './components/Toast'
 import Layout from './components/Layout'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -56,7 +58,8 @@ function PageLoader() {
 }
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const isAuthenticated = useAuthStore(selectIsAuthenticated)
+  const isLoading = useAuthStore((s) => s.isLoading)
 
   if (isLoading) {
     return <PageLoader />
@@ -70,7 +73,8 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 function OwnerRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuthStore()
+  const user = useAuthStore(selectUser)
+  const isLoading = useAuthStore((s) => s.isLoading)
 
   if (isLoading) {
     return <PageLoader />
@@ -86,10 +90,19 @@ function OwnerRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <ToastProvider>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <ErrorBoundary>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+      <SWRConfig
+        value={{
+          fetcher,
+          revalidateOnFocus: false,
+          dedupingInterval: 5000,
+          focusThrottleInterval: 10000,
+          errorRetryCount: 2,
+        }}
+      >
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
@@ -151,10 +164,11 @@ function App() {
                 <Route path="/billing" element={<OwnerRoute><Billing /></OwnerRoute>} />
                 <Route path="/help" element={<Help />} />
               </Route>
-            </Routes>
-          </Suspense>
-        </ErrorBoundary>
-      </BrowserRouter>
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </BrowserRouter>
+      </SWRConfig>
     </ToastProvider>
   )
 }

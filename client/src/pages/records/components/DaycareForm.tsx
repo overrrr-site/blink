@@ -78,11 +78,7 @@ export default function DaycareForm({ data, onChange, storeId }: DaycareFormProp
     fetcher,
   )
 
-  const { data: storeSettings } = useSWR<StoreSettings>(
-    storeId ? '/store-settings' : null,
-    fetcher,
-    { revalidateOnFocus: false },
-  )
+  const { data: storeSettings } = useSWR<StoreSettings>(storeId ? '/store-settings' : null, fetcher)
 
   const evaluationMode = storeSettings?.training_evaluation_mode || 'three_step'
   const trainingItems = getTrainingItems(data)

@@ -1,9 +1,6 @@
-import { useState, useEffect, Suspense, lazy, useMemo, useCallback } from 'react'
-import type { Dispatch, SetStateAction } from 'react'
+import { useEffect, Suspense, lazy, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
-import { useAuthStore } from '../store/authStore'
-import useSWR from 'swr'
-import { fetcher } from '../lib/swr'
+import { useAuthStore, selectUser } from '../store/authStore'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
 
 type TabId = 'store' | 'pricing' | 'integration' | 'other'
@@ -13,19 +10,6 @@ interface TabConfig {
   label: string
   icon: string
   ownerOnly?: boolean
-}
-
-interface StoreInfo {
-  name?: string | null
-  address?: string | null
-  phone?: string | null
-  business_hours?: {
-    open?: string | null
-    close?: string | null
-  } | null
-  closed_days?: string[] | null
-  business_types?: string[] | null
-  primary_business_type?: string | null
 }
 
 const ALL_TABS: TabConfig[] = [
@@ -48,21 +32,10 @@ function TabLoader() {
   )
 }
 
-function renderActiveTab(
-  activeTab: TabId,
-  storeInfo: StoreInfo | null,
-  setStoreInfo: Dispatch<SetStateAction<StoreInfo | null>>,
-  fetchStoreInfo: () => Promise<void>
-) {
+function renderActiveTab(activeTab: TabId) {
   switch (activeTab) {
     case 'store':
-      return (
-        <StoreTab
-          storeInfo={storeInfo}
-          setStoreInfo={setStoreInfo}
-          fetchStoreInfo={fetchStoreInfo}
-        />
-      )
+      return <StoreTab />
     case 'pricing':
       return <PricingTab />
     case 'integration':
@@ -73,44 +46,19 @@ function renderActiveTab(
 }
 
 function Settings() {
-  const { user } = useAuthStore()
+  const user = useAuthStore(selectUser)
   const isOwner = user?.isOwner || false
 
-  // 権限に応じて表示するタブをフィルタリング
-  const TABS = useMemo(() => {
-    return ALL_TABS.filter(tab => !tab.ownerOnly || isOwner)
-  }, [isOwner])
-
-  // デフォルトタブ（管理者はstore、それ以外はintegration）
-  const defaultTab = isOwner ? 'store' : 'integration'
+  const tabs = useMemo(() => ALL_TABS.filter((tab) => !tab.ownerOnly || isOwner), [isOwner])
+  const defaultTab: TabId = isOwner ? 'store' : 'integration'
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab)
-  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
 
-  const { data: storeInfoData, mutate: mutateStoreInfo } = useSWR<StoreInfo>(
-    isOwner ? '/stores' : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  )
-
-  // 権限変更時にタブをリセット
   useEffect(() => {
-    const validTabs = TABS.map(t => t.id)
+    const validTabs = tabs.map((tab) => tab.id)
     if (!validTabs.includes(activeTab)) {
       setActiveTab(defaultTab)
     }
-  }, [TABS, activeTab, defaultTab])
-
-  useEffect(() => {
-    if (storeInfoData) {
-      setStoreInfo(storeInfoData)
-    } else if (!isOwner) {
-      setStoreInfo(null)
-    }
-  }, [storeInfoData, isOwner])
-
-  const fetchStoreInfo = useCallback(async () => {
-    await mutateStoreInfo()
-  }, [mutateStoreInfo])
+  }, [tabs, activeTab, defaultTab])
 
   return (
     <div className="pb-32">
@@ -121,7 +69,7 @@ function Settings() {
         </div>
 
         <div className="flex bg-muted rounded-xl p-1 gap-1">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -141,7 +89,7 @@ function Settings() {
 
       <main className="flex-1 overflow-y-auto pb-24 px-5 space-y-4 pt-4">
         <Suspense fallback={<TabLoader />}>
-          {renderActiveTab(activeTab, storeInfo, setStoreInfo, fetchStoreInfo)}
+          {renderActiveTab(activeTab)}
         </Suspense>
       </main>
     </div>

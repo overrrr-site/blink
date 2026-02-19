@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 
 const AuthCallback = () => {
   const navigate = useNavigate()
-  const { fetchStaffInfo } = useAuthStore()
+  const fetchStaffInfo = useAuthStore((s) => s.fetchStaffInfo)
   const [error, setError] = useState<string | null>(null)
 
   // オンボーディング状態に基づいてリダイレクト先を決定

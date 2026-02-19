@@ -151,7 +151,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // 予約一覧取得（日付指定）
-router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<void> {
+router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Promise<void> {
   try {
     const { date, month, service_type } = req.query;
 

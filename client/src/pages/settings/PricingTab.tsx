@@ -5,7 +5,7 @@ import axios from 'axios'
 import useSWR from 'swr'
 import api from '../../api/client'
 import { fetcher } from '../../lib/swr'
-import { useAuthStore } from '../../store/authStore'
+import { useAuthStore, selectUser } from '../../store/authStore'
 import { useBusinessTypeStore } from '../../store/businessTypeStore'
 import { getAvailableBusinessTypes, isBusinessTypeVisible } from '../../utils/businessTypeAccess'
 import { useToast } from '../../components/Toast'
@@ -50,7 +50,7 @@ function getContractTypeStyle(contractType: string): string {
 
 function PricingTab() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const user = useAuthStore(selectUser)
   const { selectedBusinessType } = useBusinessTypeStore()
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
@@ -67,20 +67,19 @@ function PricingTab() {
 
   const { data, isLoading, mutate } = useSWR<CourseMaster[]>(
     '/course-masters',
-    fetcher,
-    { revalidateOnFocus: false }
+    fetcher
   )
   const courseList = data ?? []
   const {
     data: groomingMenus,
     isLoading: loadingGroomingMenus,
     mutate: mutateGroomingMenus,
-  } = useSWR<GroomingMenuItem[]>(isGroomingEnabled ? '/grooming-menus' : null, fetcher, { revalidateOnFocus: false })
+  } = useSWR<GroomingMenuItem[]>(isGroomingEnabled ? '/grooming-menus' : null, fetcher)
   const {
     data: hotelPrices,
     isLoading: loadingHotelPrices,
     mutate: mutateHotelPrices,
-  } = useSWR<HotelPriceItem[]>(isHotelEnabled ? '/hotel-prices' : null, fetcher, { revalidateOnFocus: false })
+  } = useSWR<HotelPriceItem[]>(isHotelEnabled ? '/hotel-prices' : null, fetcher)
   const [localHotelPrices, setLocalHotelPrices] = useState<HotelPriceItem[]>([])
 
   const resolvedGroomingMenus = groomingMenus ?? []

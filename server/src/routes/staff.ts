@@ -8,13 +8,14 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { cacheControl } from '../middleware/cache.js';
 
 const router = express.Router();
 router.use(authenticate);
 router.use(requireOwner); // スタッフ管理は管理者のみ
 
 // スタッフ一覧取得
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', cacheControl(60, 300), async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) {
       return;

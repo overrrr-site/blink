@@ -11,7 +11,8 @@ function Login(): JSX.Element {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { login, loginWithGoogle } = useAuthStore()
+  const login = useAuthStore((s) => s.login)
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

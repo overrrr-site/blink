@@ -3,9 +3,13 @@ import { trainingProfilesApi } from '../api/trainingProfiles'
 import type { TrainingProfileData } from '../types/trainingProfile'
 
 export function useTrainingProfile(dogId: string | undefined) {
-  const swrKey = dogId ? ['training-profile', dogId] as const : null
+  const swrKey = dogId ? (['training-profile', dogId] as const) : null
 
-  const { data, error, isLoading, mutate } = useSWR<TrainingProfileData>(
+  const { data, error, isLoading, mutate } = useSWR<
+    TrainingProfileData,
+    unknown,
+    readonly [string, string] | null
+  >(
     swrKey,
     ([, currentDogId]) => trainingProfilesApi.getProfile(currentDogId),
   )

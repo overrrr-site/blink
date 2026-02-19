@@ -82,18 +82,18 @@ function IntegrationTab() {
     data: googleCalendarStatus,
     isLoading: loadingCalendar,
     mutate: mutateGoogleCalendarStatus,
-  } = useSWR<GoogleCalendarStatus>('/google-calendar/status', fetcher, { revalidateOnFocus: false })
+  } = useSWR<GoogleCalendarStatus>('/google-calendar/status', fetcher)
 
   const {
     data: notificationSettingsData,
     mutate: mutateNotificationSettings,
-  } = useSWR<NotificationSettings>('/notifications/settings', fetcher, { revalidateOnFocus: false })
+  } = useSWR<NotificationSettings>('/notifications/settings', fetcher)
 
   const {
     data: storeData,
     isLoading: loadingLine,
     mutate: mutateStore,
-  } = useSWR<StoreLineStatus>('/stores', fetcher, { revalidateOnFocus: false })
+  } = useSWR<StoreLineStatus>('/stores', fetcher)
 
   const notificationSettings = notificationSettingsData
     ? { ...defaultNotificationSettings, ...notificationSettingsData }

@@ -349,11 +349,7 @@ function AnnouncementModal({ editingAnnouncement, onClose, onSaved }: Announceme
 // --- Main component ---
 
 function AnnouncementList(): JSX.Element {
-  const { data, isLoading, mutate } = useSWR<Announcement[]>(
-    '/announcements',
-    fetcher,
-    { revalidateOnFocus: false }
-  )
+  const { data, isLoading, mutate } = useSWR<Announcement[]>('/announcements', fetcher)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)

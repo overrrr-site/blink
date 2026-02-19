@@ -9,6 +9,8 @@ import { calculateAge } from '../utils/dog'
 import TrainingGridView from '../components/training/TrainingGridView'
 import TrainingLogView from '../components/training/TrainingLogView'
 import ConcernSection from '../components/training/ConcernSection'
+import { LazyImage } from '../components/LazyImage'
+import { getDetailThumbnailUrl } from '../utils/image'
 
 interface DogSummary {
   id: number
@@ -34,11 +36,7 @@ function DogTrainingProfile() {
 
   const { data: profileData, isLoading, mutate } = useTrainingProfile(dogId)
 
-  const { data: storeSettings } = useSWR<StoreSettings>(
-    '/store-settings',
-    fetcher,
-    { revalidateOnFocus: false },
-  )
+  const { data: storeSettings } = useSWR<StoreSettings>('/store-settings', fetcher)
 
   const handleMutate = useCallback(() => {
     mutate()
@@ -91,10 +89,10 @@ function DogTrainingProfile() {
         <div className="mx-4 mt-4 bg-card rounded-2xl border border-border shadow-sm p-4">
           <div className="flex items-center gap-3">
             {dog.photo_url ? (
-              <img
-                src={dog.photo_url}
+              <LazyImage
+                src={getDetailThumbnailUrl(dog.photo_url)}
                 alt={dog.name}
-                className="size-12 rounded-xl object-cover"
+                className="size-12 rounded-xl"
               />
             ) : (
               <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">

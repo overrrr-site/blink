@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Icon } from './Icon'
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore, selectUser } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
 import { getBusinessTypeColors, getBusinessTypeLabel, getBusinessTypeIcon } from '../utils/businessTypeColors'
 import { getAvailableBusinessTypes } from '../utils/businessTypeAccess'
@@ -13,7 +13,7 @@ interface BusinessTypeSwitcherProps {
 }
 
 export default function BusinessTypeSwitcher({ variant = 'icon' }: BusinessTypeSwitcherProps): JSX.Element {
-  const { user } = useAuthStore()
+  const user = useAuthStore(selectUser)
   const { selectedBusinessType, setSelectedBusinessType } = useBusinessTypeStore()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)

@@ -18,7 +18,7 @@ interface StaffUser {
   assignedBusinessTypes?: RecordType[] | null // nullの場合は全業種アクセス可（管理者）
 }
 
-interface AuthState {
+export interface AuthState {
   user: StaffUser | null
   supabaseUser: SupabaseUser | null
   session: Session | null
@@ -190,3 +190,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     })
   },
 }))
+
+export const selectUser = (s: AuthState) => s.user
+export const selectIsAuthenticated = (s: AuthState) => s.isAuthenticated

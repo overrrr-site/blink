@@ -11,6 +11,7 @@ import { buildPaginatedResponse, extractTotalCount, parsePaginationParams, Pagin
 import { isNonEmptyString } from '../utils/validation.js';
 import type { BusinessType } from '../utils/businessTypes.js';
 import { isBusinessType, parseBusinessTypeInput } from '../utils/businessTypes.js';
+import { cacheControl } from '../middleware/cache.js';
 
 function buildOwnersListQuery(params: {
   storeId: number;
@@ -115,6 +116,9 @@ function buildOwnersListQuery(params: {
 const router = express.Router();
 router.use(authenticate);
 
+let hasOwnersBusinessTypesColumnCache: boolean | null = null;
+let hasOwnersBusinessTypesColumnInFlight: Promise<boolean> | null = null;
+
 function normalizeBusinessTypesInput(value: unknown): BusinessType[] | null {
   if (!Array.isArray(value)) return null;
   const normalized = value.filter((item): item is BusinessType => isBusinessType(item));
@@ -122,7 +126,14 @@ function normalizeBusinessTypesInput(value: unknown): BusinessType[] | null {
 }
 
 async function hasOwnersBusinessTypesColumn(): Promise<boolean> {
-  const result = await pool.query(
+  if (hasOwnersBusinessTypesColumnCache !== null) {
+    return hasOwnersBusinessTypesColumnCache;
+  }
+  if (hasOwnersBusinessTypesColumnInFlight) {
+    return hasOwnersBusinessTypesColumnInFlight;
+  }
+
+  hasOwnersBusinessTypesColumnInFlight = pool.query(
     `SELECT EXISTS (
        SELECT 1
        FROM information_schema.columns
@@ -130,8 +141,17 @@ async function hasOwnersBusinessTypesColumn(): Promise<boolean> {
          AND table_name = 'owners'
          AND column_name = 'business_types'
      ) AS has_column`
-  );
-  return Boolean(result.rows[0]?.has_column);
+  )
+    .then((result) => {
+      const hasColumn = Boolean(result.rows[0]?.has_column);
+      hasOwnersBusinessTypesColumnCache = hasColumn;
+      return hasColumn;
+    })
+    .finally(() => {
+      hasOwnersBusinessTypesColumnInFlight = null;
+    });
+
+  return hasOwnersBusinessTypesColumnInFlight;
 }
 
 async function ensureOwnersBusinessTypesColumn(): Promise<void> {
@@ -139,10 +159,12 @@ async function ensureOwnersBusinessTypesColumn(): Promise<void> {
     `ALTER TABLE owners
      ADD COLUMN IF NOT EXISTS business_types TEXT[] DEFAULT NULL`
   );
+  hasOwnersBusinessTypesColumnCache = true;
+  hasOwnersBusinessTypesColumnInFlight = null;
 }
 
 // 飼い主一覧取得
-router.get('/', async function(req: AuthRequest, res): Promise<void> {
+router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Promise<void> {
   try {
     if (!requireStoreId(req, res)) {
       return;

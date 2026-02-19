@@ -1,6 +1,7 @@
 import React from 'react'
 import { Icon } from './Icon'
 import { getAvatarUrl } from '../utils/image'
+import { LazyImage } from './LazyImage'
 import { getDashboardStatusLabels } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
 import {
@@ -83,11 +84,10 @@ const ReservationCard = React.memo(function ReservationCard({
       >
         <div className="size-10 rounded-full overflow-hidden bg-muted shrink-0">
           {reservation.dog_photo ? (
-            <img
+            <LazyImage
               src={getAvatarUrl(reservation.dog_photo)}
               alt={reservation.dog_name}
-              loading="lazy"
-              className="w-full h-full object-cover"
+              className="w-full h-full"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

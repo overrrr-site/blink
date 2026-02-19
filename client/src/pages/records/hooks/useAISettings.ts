@@ -14,8 +14,7 @@ export const useAISettings = () => {
   const [showAISettings, setShowAISettings] = useState(false)
   const { data: storeSettings, mutate: mutateStoreSettings } = useSWR<StoreSettings>(
     '/store-settings',
-    fetcher,
-    { revalidateOnFocus: false }
+    fetcher
   )
 
   const aiSettings = useMemo<AISettings>(() => ({

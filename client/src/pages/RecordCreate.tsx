@@ -28,6 +28,8 @@ import { buildCreateRecordPayload, validateRecordForm } from './records/utils/re
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
 import { calculateAge } from '../utils/dog'
+import { LazyImage } from '../components/LazyImage'
+import { getListThumbnailUrl } from '../utils/image'
 
 interface Dog {
   id: number
@@ -147,8 +149,7 @@ const RecordCreate = () => {
     isLoading: loadingSelectedDogFallback,
   } = useSWR<Dog>(
     selectedDogId && !selectedDogFromList ? `/dogs/${selectedDogId}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
+    fetcher
   )
   const selectedDog = selectedDogFromList || selectedDogFallback
 
@@ -435,7 +436,11 @@ const RecordCreate = () => {
                     className="w-full flex items-center gap-3 p-3 hover:bg-background active:scale-[0.98] transition-all text-left"
                   >
                     {dog.photo_url ? (
-                      <img src={dog.photo_url} alt={dog.name} className="size-10 rounded-full object-cover" />
+                      <LazyImage
+                        src={getListThumbnailUrl(dog.photo_url)}
+                        alt={dog.name}
+                        className="size-10 rounded-full"
+                      />
                     ) : (
                       <div className="size-10 rounded-full bg-muted flex items-center justify-center">
                         <span className="text-sm font-bold text-muted-foreground">{dog.name.charAt(0)}</span>

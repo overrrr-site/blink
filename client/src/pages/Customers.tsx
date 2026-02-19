@@ -10,6 +10,8 @@ import { Pagination } from '../components/Pagination'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
+import { LazyImage } from '../components/LazyImage'
+import { getListThumbnailUrl } from '../utils/image'
 
 interface Owner {
   id: number
@@ -70,10 +72,10 @@ const OwnerCard = React.memo(function OwnerCard({
               className="size-8 rounded-full bg-muted overflow-hidden border-2 border-background -ml-2 first:ml-0"
             >
               {dog.photo_url ? (
-                <img
-                  src={dog.photo_url}
+                <LazyImage
+                  src={getListThumbnailUrl(dog.photo_url)}
                   alt={dog.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -114,10 +116,10 @@ const DogCard = React.memo(function DogCard({
       <div className="flex items-center gap-3">
         <div className="size-12 rounded-full bg-muted overflow-hidden">
           {dog.photo_url ? (
-            <img
-              src={dog.photo_url}
+            <LazyImage
+              src={getListThumbnailUrl(dog.photo_url)}
               alt={dog.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -159,9 +161,7 @@ const Customers = () => {
   // 業種フィルタを含むSWRキー
   const serviceTypeQuery = serviceTypeParam ? `&${serviceTypeParam}` : ''
   const listKey = `/owners?search=${encodeURIComponent(debouncedSearchQuery)}&page=${page}&limit=${PAGE_SIZE}${serviceTypeQuery}`
-  const { data, isLoading, error, mutate } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher, {
-    revalidateOnFocus: false,
-  })
+  const { data, isLoading, error, mutate } = useSWR<PaginatedResponse<Owner>>(listKey, fetcher)
   const owners = data?.data ?? []
   const pagination = data?.pagination
 

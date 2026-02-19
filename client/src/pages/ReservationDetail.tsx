@@ -12,6 +12,8 @@ import {
   hasReservationPreVisitInput,
   normalizeReservationServiceType,
 } from './dashboard/reservationDetailModel'
+import { LazyImage } from '../components/LazyImage'
+import { getDetailThumbnailUrl } from '../utils/image'
 
 interface ReservationDetailData {
   id: number
@@ -173,10 +175,10 @@ const ReservationDetail = () => {
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
           <div className="flex items-center gap-4 mb-4">
             {reservation.dog_photo ? (
-              <img
-                src={reservation.dog_photo}
+              <LazyImage
+                src={getDetailThumbnailUrl(reservation.dog_photo)}
                 alt={reservation.dog_name}
-                className="size-20 rounded-full object-cover"
+                className="size-20 rounded-full"
               />
             ) : (
               <div className="size-20 rounded-full bg-muted flex items-center justify-center">

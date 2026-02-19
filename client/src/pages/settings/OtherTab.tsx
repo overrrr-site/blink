@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../../store/authStore'
+import { useAuthStore, selectUser } from '../../store/authStore'
 import api from '../../api/client'
 import { useToast } from '../../components/Toast'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
@@ -17,7 +17,8 @@ const EXPORT_ITEMS: { type: ExportType; icon: string; label: string }[] = [
 
 function OtherTab() {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const user = useAuthStore(selectUser)
+  const logout = useAuthStore((s) => s.logout)
   const isOwner = user?.isOwner || false
   const [exporting, setExporting] = useState<ExportType | null>(null)
   const { showToast } = useToast()

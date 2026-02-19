@@ -7,6 +7,8 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { formatDateWithWeekday } from '../utils/date'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import type { RecordType } from '../types/record'
+import { LazyImage } from '../components/LazyImage'
+import { getListThumbnailUrl } from '../utils/image'
 
 interface Reservation {
   id: number
@@ -104,10 +106,10 @@ function JournalNew(): JSX.Element {
               >
                 <div className="flex items-center gap-3">
                   {reservation.dog_photo ? (
-                    <img
-                      src={reservation.dog_photo}
+                    <LazyImage
+                      src={getListThumbnailUrl(reservation.dog_photo)}
                       alt={reservation.dog_name}
-                      className="size-12 rounded-full object-cover"
+                      className="size-12 rounded-full"
                     />
                   ) : (
                     <div className="size-12 rounded-full bg-muted flex items-center justify-center">

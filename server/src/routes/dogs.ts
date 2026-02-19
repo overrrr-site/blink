@@ -9,48 +9,10 @@ import {
   sendServerError,
 } from '../utils/response.js';
 import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
+import { cacheControl } from '../middleware/cache.js';
 
 async function upsertDogHealth(dogId: number, health: any): Promise<void> {
   if (!health) return;
-
-  const healthExists = await pool.query(
-    `SELECT id FROM dog_health WHERE dog_id = $1`,
-    [dogId]
-  );
-
-  if (healthExists.rows.length > 0) {
-    await pool.query(
-      `UPDATE dog_health SET
-        mixed_vaccine_date = $1,
-        mixed_vaccine_cert_url = $2,
-        rabies_vaccine_date = $3,
-        rabies_vaccine_cert_url = $4,
-        flea_tick_date = $5,
-        medical_history = $6,
-        allergies = $7,
-        medications = $8,
-        vet_name = $9,
-        vet_phone = $10,
-        food_info = $11,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE dog_id = $12`,
-      [
-        health.mixed_vaccine_date || null,
-        health.mixed_vaccine_cert_url || null,
-        health.rabies_vaccine_date || null,
-        health.rabies_vaccine_cert_url || null,
-        health.flea_tick_date || null,
-        health.medical_history || null,
-        health.allergies || null,
-        health.medications || null,
-        health.vet_name || null,
-        health.vet_phone || null,
-        health.food_info || null,
-        dogId
-      ]
-    );
-    return;
-  }
 
   await pool.query(
     `INSERT INTO dog_health (
@@ -58,7 +20,20 @@ async function upsertDogHealth(dogId: number, health: any): Promise<void> {
       rabies_vaccine_date, rabies_vaccine_cert_url,
       flea_tick_date, medical_history, allergies, medications,
       vet_name, vet_phone, food_info
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    ON CONFLICT (dog_id) DO UPDATE SET
+      mixed_vaccine_date = EXCLUDED.mixed_vaccine_date,
+      mixed_vaccine_cert_url = EXCLUDED.mixed_vaccine_cert_url,
+      rabies_vaccine_date = EXCLUDED.rabies_vaccine_date,
+      rabies_vaccine_cert_url = EXCLUDED.rabies_vaccine_cert_url,
+      flea_tick_date = EXCLUDED.flea_tick_date,
+      medical_history = EXCLUDED.medical_history,
+      allergies = EXCLUDED.allergies,
+      medications = EXCLUDED.medications,
+      vet_name = EXCLUDED.vet_name,
+      vet_phone = EXCLUDED.vet_phone,
+      food_info = EXCLUDED.food_info,
+      updated_at = CURRENT_TIMESTAMP`,
     [
       dogId,
       health.mixed_vaccine_date || null,
@@ -79,42 +54,20 @@ async function upsertDogHealth(dogId: number, health: any): Promise<void> {
 async function upsertDogPersonality(dogId: number, personality: any): Promise<void> {
   if (!personality) return;
 
-  const personalityExists = await pool.query(
-    `SELECT id FROM dog_personality WHERE dog_id = $1`,
-    [dogId]
-  );
-
-  if (personalityExists.rows.length > 0) {
-    await pool.query(
-      `UPDATE dog_personality SET
-        personality_description = $1,
-        dog_compatibility = $2,
-        human_reaction = $3,
-        likes = $4,
-        dislikes = $5,
-        toilet_status = $6,
-        crate_training = $7,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE dog_id = $8`,
-      [
-        personality.personality_description || null,
-        personality.dog_compatibility || null,
-        personality.human_reaction || null,
-        personality.likes || null,
-        personality.dislikes || null,
-        personality.toilet_status || null,
-        personality.crate_training || null,
-        dogId
-      ]
-    );
-    return;
-  }
-
   await pool.query(
     `INSERT INTO dog_personality (
       dog_id, personality_description, dog_compatibility, human_reaction,
       likes, dislikes, toilet_status, crate_training
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    ON CONFLICT (dog_id) DO UPDATE SET
+      personality_description = EXCLUDED.personality_description,
+      dog_compatibility = EXCLUDED.dog_compatibility,
+      human_reaction = EXCLUDED.human_reaction,
+      likes = EXCLUDED.likes,
+      dislikes = EXCLUDED.dislikes,
+      toilet_status = EXCLUDED.toilet_status,
+      crate_training = EXCLUDED.crate_training,
+      updated_at = CURRENT_TIMESTAMP`,
     [
       dogId,
       personality.personality_description || null,
@@ -132,7 +85,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // 犬一覧取得
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', cacheControl(0, 30), async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
 

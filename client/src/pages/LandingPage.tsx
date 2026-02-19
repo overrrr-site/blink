@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore, selectIsAuthenticated } from '../store/authStore'
 import { Icon } from '../components/Icon'
 
 const LandingPage = () => {
   const navigate = useNavigate()
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const isAuthenticated = useAuthStore(selectIsAuthenticated)
+  const isLoading = useAuthStore((s) => s.isLoading)
 
   // ログイン済みならダッシュボードへ
   useEffect(() => {

@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import axios from 'axios'
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore, selectUser } from '../store/authStore'
 import type { RecordType } from '../types/record'
 import { ONBOARDING_BUSINESS_TYPES } from '../domain/businessTypeConfig'
 
 export default function Onboarding() {
   const navigate = useNavigate()
-  const { user, fetchStaffInfo, session } = useAuthStore()
+  const user = useAuthStore(selectUser)
+  const fetchStaffInfo = useAuthStore((s) => s.fetchStaffInfo)
+  const session = useAuthStore((s) => s.session)
 
   const [step, setStep] = useState<'select' | 'primary'>('select')
   const [selectedTypes, setSelectedTypes] = useState<RecordType[]>([])

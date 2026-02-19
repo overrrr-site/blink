@@ -14,6 +14,8 @@ import {
 } from '../domain/businessTypeConfig'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
+import { LazyImage } from '../components/LazyImage'
+import { getListThumbnailUrl } from '../utils/image'
 
 const PAGE_SIZE = 50
 
@@ -92,10 +94,10 @@ const RecordCard = React.memo(function RecordCard({
     >
       <div className="flex items-center gap-3 mb-2">
         {record.dog_photo ? (
-          <img
-            src={record.dog_photo}
+          <LazyImage
+            src={getListThumbnailUrl(record.dog_photo)}
             alt={record.dog_name || ''}
-            className="size-12 rounded-full object-cover"
+            className="size-12 rounded-full"
           />
         ) : (
           <div className="size-12 rounded-full bg-muted flex items-center justify-center">
@@ -141,15 +143,11 @@ const RecordList = () => {
     setPage(1)
   }, [debouncedSearchQuery, selectedType, selectedDogId, selectedStaffId, dateFrom, dateTo])
 
-  const { data: staffItems } = useSWR<StaffFilterItem[]>('/staff', fetcher, { revalidateOnFocus: false })
-  const { data: dogItems } = useSWR<DogFilterItem[]>('/dogs', fetcher, { revalidateOnFocus: false })
+  const { data: staffItems } = useSWR<StaffFilterItem[]>('/staff', fetcher)
+  const { data: dogItems } = useSWR<DogFilterItem[]>('/dogs', fetcher)
 
   const swrKey = `/records?page=${page}&limit=${PAGE_SIZE}${debouncedSearchQuery ? `&search=${encodeURIComponent(debouncedSearchQuery)}` : ''}${selectedType ? `&record_type=${selectedType}` : ''}${selectedDogId ? `&dog_id=${selectedDogId}` : ''}${selectedStaffId ? `&staff_id=${selectedStaffId}` : ''}${dateFrom ? `&date_from=${dateFrom}` : ''}${dateTo ? `&date_to=${dateTo}` : ''}`
-  const { data, isLoading } = useSWR<PaginatedResponse<RecordItem>>(
-    swrKey,
-    fetcher,
-    { revalidateOnFocus: false }
-  )
+  const { data, isLoading } = useSWR<PaginatedResponse<RecordItem>>(swrKey, fetcher)
   const records = data?.data ?? []
   const pagination = data?.pagination
 

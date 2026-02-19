@@ -16,7 +16,7 @@ const CATEGORY_ORDER = [
   '問題行動対策',
 ];
 
-router.get('/', cacheControl(60, 120), async (req: AuthRequest, res) => {
+router.get('/', cacheControl(60, 300), async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
 

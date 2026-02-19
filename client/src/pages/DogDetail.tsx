@@ -9,6 +9,8 @@ import ContractsSection from '../components/dogs/ContractsSection'
 import HistoryTabs from '../components/dogs/HistoryTabs'
 import { useDogDetail } from '../hooks/useDogDetail'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
+import { LazyImage } from '../components/LazyImage'
+import { getDetailThumbnailUrl } from '../utils/image'
 
 function DogDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
@@ -54,10 +56,10 @@ function DogDetail(): JSX.Element {
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
           <div className="flex items-center gap-4 mb-4">
             {dog.photo_url ? (
-              <img
-                src={dog.photo_url}
+              <LazyImage
+                src={getDetailThumbnailUrl(dog.photo_url)}
                 alt={dog.name}
-                className="size-20 rounded-full object-cover"
+                className="size-20 rounded-full"
               />
             ) : (
               <div className="size-20 rounded-full bg-muted flex items-center justify-center">

@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Icon } from './Icon'
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore, selectUser } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
 import { getAvailableBusinessTypes, getEffectiveBusinessType } from '../utils/businessTypeAccess'
 import { getRandomGreeting } from '../utils/greetings'
@@ -74,7 +74,7 @@ function NavButton({ path, label, icon, active, onClick }: NavButtonProps): JSX.
 function Layout(): JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuthStore()
+  const user = useAuthStore(selectUser)
   const { selectedBusinessType, syncFromUser } = useBusinessTypeStore()
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())

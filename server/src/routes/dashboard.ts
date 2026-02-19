@@ -9,7 +9,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // ダッシュボードデータ取得
-router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<void> {
+router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Promise<void> {
   try {
     if (!requireStoreId(req, res)) {
       return;
@@ -48,18 +48,27 @@ router.get('/', cacheControl(), async function(req: AuthRequest, res): Promise<v
       announcementStatsResult
     ] = await Promise.all([
       timedQuery('reservations', () => pool.query(
-        `SELECT r.*,
+        `SELECT r.id,
+                r.dog_id,
+                r.reservation_date,
+                r.reservation_time,
+                r.status,
+                r.checked_in_at,
+                r.service_type,
+                r.end_datetime,
                 d.name as dog_name, d.photo_url as dog_photo,
                 o.name as owner_name,
-                pvi.morning_urination, pvi.morning_defecation,
-                pvi.afternoon_urination, pvi.afternoon_defecation,
                 pvi.breakfast_status, pvi.health_status, pvi.notes,
-                CASE WHEN j.id IS NOT NULL AND j.comment IS NOT NULL AND j.comment != '' THEN true ELSE false END as has_journal
+                EXISTS (
+                  SELECT 1 FROM journals j
+                  WHERE j.reservation_id = r.id
+                    AND j.comment IS NOT NULL
+                    AND j.comment != ''
+                ) as has_journal
          FROM reservations r
          JOIN dogs d ON r.dog_id = d.id
          JOIN owners o ON d.owner_id = o.id
          LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
-         LEFT JOIN journals j ON r.id = j.reservation_id
          WHERE r.store_id = $1 AND r.reservation_date = $2${serviceTypeCondition}
          ORDER BY r.reservation_time`,
         reservationParams
