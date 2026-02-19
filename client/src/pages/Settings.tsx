@@ -117,15 +117,15 @@ function Settings() {
       <header className="px-5 pt-6 pb-2 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">設定</h1>
-          <BusinessTypeSwitcher />
+          <BusinessTypeSwitcher variant="pill" />
         </div>
 
-        <div className="flex bg-muted rounded-xl p-1 gap-0.5">
+        <div className="flex bg-muted rounded-xl p-1 gap-1">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2 px-1.5 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center justify-center gap-0.5 min-h-[52px] whitespace-nowrap active:scale-[0.98] ${
+              className={`flex-1 py-2 px-2 rounded-lg text-[11px] font-bold transition-all flex flex-col items-center justify-center gap-1 min-h-[52px] whitespace-nowrap active:scale-[0.98] ${
                 activeTab === tab.id
                   ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
                   : 'text-muted-foreground font-normal'

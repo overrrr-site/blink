@@ -7,6 +7,7 @@ import DogEditBasicInfo from '../components/dogs/DogEditBasicInfo'
 import DogEditHealth from '../components/dogs/DogEditHealth'
 import DogEditPersonality from '../components/dogs/DogEditPersonality'
 import type { DogFormData, DogHealthData, DogPersonalityData } from '../components/dogs/types'
+import SwipeDownHeader from '../components/SwipeDownHeader'
 
 interface JournalPhoto {
   url: string
@@ -275,17 +276,22 @@ const DogEdit = () => {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between safe-area-pt">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(`/dogs/${id}`)}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
-          >
-            <Icon icon="solar:close-circle-linear" width="24" height="24" />
-          </button>
-          <h1 className="text-lg font-bold font-heading">ワンちゃん情報の編集</h1>
+      <SwipeDownHeader
+        onDismiss={() => navigate(`/dogs/${id}`)}
+        className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border safe-area-pt"
+      >
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/dogs/${id}`)}
+              className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted active:scale-95 transition-all"
+            >
+              <Icon icon="solar:close-circle-linear" width="24" height="24" />
+            </button>
+            <h1 className="text-lg font-bold font-heading">ワンちゃん情報の編集</h1>
+          </div>
         </div>
-      </header>
+      </SwipeDownHeader>
 
       <form onSubmit={handleSubmit} className="px-5 pt-4 space-y-4">
         <DogEditBasicInfo

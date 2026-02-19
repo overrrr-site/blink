@@ -8,7 +8,11 @@ import type { RecordType } from '../types/record'
 
 const ALL_BUSINESS_TYPES: RecordType[] = ['daycare', 'grooming', 'hotel']
 
-export default function BusinessTypeSwitcher(): JSX.Element {
+interface BusinessTypeSwitcherProps {
+  variant?: 'icon' | 'pill'
+}
+
+export default function BusinessTypeSwitcher({ variant = 'icon' }: BusinessTypeSwitcherProps): JSX.Element {
   const { user } = useAuthStore()
   const { selectedBusinessType, setSelectedBusinessType } = useBusinessTypeStore()
   const [isOpen, setIsOpen] = useState(false)
@@ -74,7 +78,21 @@ export default function BusinessTypeSwitcher(): JSX.Element {
   if (!hasMultipleTypes && availableTypes.length === 1) {
     const singleType = availableTypes[0]
     const colors = getBusinessTypeColors(singleType)
-    return (
+    return variant === 'pill' ? (
+      <div
+        className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+        style={{
+          backgroundColor: colors.pale,
+          border: `1.5px solid ${colors.light}`,
+          color: colors.primary,
+        }}
+      >
+        <Icon icon={getBusinessTypeIcon(singleType)} width="16" height="16" />
+        <span className="text-xs font-bold whitespace-nowrap">
+          {getBusinessTypeLabel(singleType)}
+        </span>
+      </div>
+    ) : (
       <div className="flex flex-col items-center gap-0.5">
         <div
           className="size-10 rounded-full p-0.5 flex items-center justify-center"
@@ -97,33 +115,54 @@ export default function BusinessTypeSwitcher(): JSX.Element {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* トリガーボタン */}
-      <div className="flex flex-col items-center gap-0.5">
+      {variant === 'pill' ? (
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="size-10 rounded-full p-0.5 flex items-center justify-center transition-all active:scale-95"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all active:scale-95 min-h-[36px]"
           style={{
             backgroundColor: currentColors?.pale || '#F3F4F6',
-            border: `2px solid ${currentColors?.light || '#D1D5DB'}`,
+            border: `1.5px solid ${currentColors?.light || '#D1D5DB'}`,
+            color: currentColors?.primary || '#6B7280',
           }}
           aria-label="業種を切り替え"
           aria-expanded={isOpen}
           aria-haspopup="listbox"
         >
-          <div
-            className="w-full h-full rounded-full flex items-center justify-center"
-            style={{ backgroundColor: currentColors?.pale || '#F3F4F6', color: currentColors?.primary || '#6B7280' }}
-          >
-            <Icon
-              icon={currentIcon}
-              width="20"
-              height="20"
-            />
-          </div>
+          <Icon icon={currentIcon} width="16" height="16" />
+          <span className="text-xs font-bold whitespace-nowrap">
+            {currentLabel || 'すべて'}
+          </span>
+          <Icon icon="solar:alt-arrow-down-linear" width="14" height="14" className="opacity-60" />
         </button>
-        <span className="text-[9px] font-bold leading-none whitespace-nowrap" style={{ color: currentColors?.primary || '#6B7280' }}>
-          {currentLabel || 'すべて'}
-        </span>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center gap-0.5">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="size-10 rounded-full p-0.5 flex items-center justify-center transition-all active:scale-95"
+            style={{
+              backgroundColor: currentColors?.pale || '#F3F4F6',
+              border: `2px solid ${currentColors?.light || '#D1D5DB'}`,
+            }}
+            aria-label="業種を切り替え"
+            aria-expanded={isOpen}
+            aria-haspopup="listbox"
+          >
+            <div
+              className="w-full h-full rounded-full flex items-center justify-center"
+              style={{ backgroundColor: currentColors?.pale || '#F3F4F6', color: currentColors?.primary || '#6B7280' }}
+            >
+              <Icon
+                icon={currentIcon}
+                width="20"
+                height="20"
+              />
+            </div>
+          </button>
+          <span className="text-[9px] font-bold leading-none whitespace-nowrap" style={{ color: currentColors?.primary || '#6B7280' }}>
+            {currentLabel || 'すべて'}
+          </span>
+        </div>
+      )}
 
       {/* ドロップダウンメニュー */}
       {isOpen && (

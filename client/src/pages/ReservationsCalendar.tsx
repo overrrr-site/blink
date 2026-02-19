@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
 import api from '../api/client'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
+import OverflowMenu from '../components/OverflowMenu'
 import { useToast } from '../components/Toast'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 import ReservationCard from '../components/ReservationCard'
 import type { ReservationCardData } from '../components/ReservationCard'
 
@@ -19,6 +22,8 @@ const ReservationsCalendar = () => {
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
+  const [calendarMode, setCalendarMode] = useState<'month' | 'week'>('month')
+  const mainRef = useRef<HTMLElement | null>(null)
   const navigate = useNavigate()
   const { showToast } = useToast()
   const { selectedBusinessType, effectiveBusinessType, recordLabel } = useBusinessTypeFilter()
@@ -55,9 +60,12 @@ const ReservationsCalendar = () => {
     }
   }, [selectedDate, reservations])
 
-  // 日付選択が変わったら展開カードをリセット
+  // 日付選択が変わったら展開カードをリセット＆週表示に切替
   useEffect(() => {
     setExpandedCard(null)
+    if (selectedDate) {
+      setCalendarMode('week')
+    }
   }, [selectedDate])
 
   const fetchReservations = async () => {
@@ -80,6 +88,20 @@ const ReservationsCalendar = () => {
     }
   }
 
+  // プルトゥリフレッシュ
+  useEffect(() => {
+    mainRef.current = document.getElementById('main-content')
+  }, [])
+
+  const handleRefresh = useCallback(async () => {
+    await fetchReservations()
+  }, [currentDate, selectedBusinessType])
+
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    scrollRef: mainRef,
+    onRefresh: handleRefresh,
+  })
+
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
@@ -93,6 +115,24 @@ const ReservationsCalendar = () => {
   }
 
   const allDays = [...paddingDays, ...days]
+
+  // カレンダーを7日ごとの行に分割
+  const calendarRows: (Date | null)[][] = []
+  for (let i = 0; i < allDays.length; i += 7) {
+    calendarRows.push(allDays.slice(i, i + 7))
+  }
+
+  // 選択日がどの行にあるかを算出
+  const selectedRowIndex = selectedDate
+    ? calendarRows.findIndex(row =>
+        row.some(day => day && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
+      )
+    : -1
+
+  // 表示する日付（週表示 or 月表示）
+  const visibleDays = calendarMode === 'week' && selectedRowIndex >= 0
+    ? calendarRows[selectedRowIndex]
+    : allDays
 
   const getReservationsForDate = (date: Date | null) => {
     if (!date) return []
@@ -108,10 +148,14 @@ const ReservationsCalendar = () => {
 
   const goToPreviousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+    setCalendarMode('month')
+    setSelectedDate(null)
   }
 
   const goToNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+    setCalendarMode('month')
+    setSelectedDate(null)
   }
 
   const handleDragStart = (e: React.DragEvent, reservationId: number) => {
@@ -173,6 +217,29 @@ const ReservationsCalendar = () => {
     window.print()
   }
 
+  const handleExport = () => {
+    const monthStr = format(currentDate, 'yyyy-MM')
+    const token = localStorage.getItem('token')
+    const url = `${import.meta.env.VITE_API_URL}/reservations/export.ics?month=${monthStr}`
+    fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((response) => response.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = `reservations-${monthStr}.ics`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(blobUrl)
+      })
+      .catch(() => {
+        showToast('カレンダーのエクスポートに失敗しました', 'error')
+      })
+  }
+
   // カレンダーの予約データを ReservationCardData に変換
   const toCardData = (r: any): ReservationCardData => ({
     id: r.id,
@@ -202,6 +269,7 @@ const ReservationsCalendar = () => {
 
   return (
     <div className="space-y-4 pb-6">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
       <div className="hidden print:block print:mb-4 print:border-b print:border-border print:pb-4 px-5">
         <h1 className="text-xl font-bold">予約一覧</h1>
         <p className="text-sm text-muted-foreground">{format(currentDate, 'yyyy年MM月')}</p>
@@ -209,47 +277,14 @@ const ReservationsCalendar = () => {
       <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold font-heading text-foreground">予約管理</h1>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handlePrint}
-              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted active:scale-95 transition-all print:hidden"
-              aria-label="印刷"
-              title="印刷"
-            >
-              <Icon icon="solar:printer-bold" className="size-5" />
-              <span className="text-[9px] leading-none">印刷</span>
-            </button>
-            <button
-              onClick={() => {
-                const monthStr = format(currentDate, 'yyyy-MM')
-                const token = localStorage.getItem('token')
-                const url = `${import.meta.env.VITE_API_URL}/reservations/export.ics?month=${monthStr}`
-
-                fetch(url, {
-                  headers: { Authorization: `Bearer ${token}` },
-                })
-                  .then((response) => response.blob())
-                  .then((blob) => {
-                    const blobUrl = URL.createObjectURL(blob)
-                    const link = document.createElement('a')
-                    link.href = blobUrl
-                    link.download = `reservations-${monthStr}.ics`
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                    URL.revokeObjectURL(blobUrl)
-                  })
-                  .catch(() => {
-                    showToast('カレンダーのエクスポートに失敗しました', 'error')
-                  })
-              }}
-              className="min-w-[44px] min-h-[44px] px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted active:scale-95 transition-all"
-              aria-label="カレンダーをiCS形式でダウンロード"
-              title="iCS形式でダウンロード"
-            >
-              <Icon icon="solar:download-bold" className="size-5" />
-              <span className="text-[9px] leading-none">出力</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <OverflowMenu
+              className="print:hidden"
+              items={[
+                { label: '印刷', icon: 'solar:printer-bold', onClick: handlePrint },
+                { label: 'iCS出力', icon: 'solar:download-bold', onClick: handleExport },
+              ]}
+            />
             <button
               onClick={() => navigate(getCreateUrl())}
               className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[44px] print:hidden"
@@ -273,14 +308,28 @@ const ReservationsCalendar = () => {
               className="size-6 text-muted-foreground" />
           </button>
           <h2 className="text-lg font-bold">{format(currentDate, 'yyyy年MM月')}</h2>
-          <button
-            onClick={goToNextMonth}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
-            aria-label="次の月"
-          >
-            <Icon icon="solar:alt-arrow-right-linear"
-              className="size-6 text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={goToNextMonth}
+              className="min-w-[48px] min-h-[48px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-transform"
+              aria-label="次の月"
+            >
+              <Icon icon="solar:alt-arrow-right-linear"
+                className="size-6 text-muted-foreground" />
+            </button>
+            {selectedDate && (
+              <button
+                onClick={() => setCalendarMode(prev => prev === 'month' ? 'week' : 'month')}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-all"
+                aria-label={calendarMode === 'month' ? '週表示に切り替え' : '月表示に切り替え'}
+              >
+                <Icon
+                  icon={calendarMode === 'month' ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
+                  className="size-5 text-muted-foreground"
+                />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
@@ -299,7 +348,7 @@ const ReservationsCalendar = () => {
 
       <main className="px-5">
         <div className="grid grid-cols-7 gap-1 mb-6">
-          {allDays.map((day, index) => {
+          {visibleDays.map((day, index) => {
             if (!day) {
               return <div key={index} className="aspect-square"></div>
             }

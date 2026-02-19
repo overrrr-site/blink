@@ -109,6 +109,7 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
   const [qrLoading, setQrLoading] = useState(false)
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrExpanded, setQrExpanded] = useState(false)
+  const [reorderCategory, setReorderCategory] = useState<string | null>(null)
   const [localHotelRooms, setLocalHotelRooms] = useState<HotelRoomItem[]>([])
   const [newRoom, setNewRoom] = useState({
     room_name: '',
@@ -741,46 +742,70 @@ function StoreTab({ storeInfo, setStoreInfo, fetchStoreInfo }: StoreTabProps): J
                 <div key={category} className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-bold">{category}</h3>
-                    <span className="text-[10px] text-muted-foreground">{items.length}項目</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">{items.length}項目</span>
+                      <button
+                        onClick={() => setReorderCategory(reorderCategory === category ? null : category)}
+                        className={`text-[10px] font-bold flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all active:scale-[0.98] ${
+                          reorderCategory === category
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        <Icon icon="solar:sort-vertical-bold" width="12" height="12" />
+                        {reorderCategory === category ? '完了' : '並替'}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-1">
                     {items.map((item, index) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-2 hover:bg-muted/30 rounded-lg group"
+                        className={`flex items-center justify-between p-2 rounded-lg group ${
+                          reorderCategory === category
+                            ? 'bg-primary/5 border-l-2 border-primary'
+                            : 'hover:bg-muted/30'
+                        }`}
                       >
                         <span className="text-xs text-muted-foreground flex-1">{item.item_label}</span>
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            onClick={(e) => handleReorderTrainingItem(category, item.id, 'up', e)}
-                            disabled={index === 0}
-                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] flex items-center justify-center"
-                            aria-label={`${item.item_label}を上に移動`}
-                          >
-                            <Icon icon="solar:alt-arrow-up-linear" width="16" height="16" />
-                          </button>
-                          <button
-                            onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
-                            disabled={index === items.length - 1}
-                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] flex items-center justify-center"
-                            aria-label={`${item.item_label}を下に移動`}
-                          >
-                            <Icon icon="solar:alt-arrow-down-linear" width="16" height="16" />
-                          </button>
-                          <button
-                            onClick={() => navigate(`/settings/training/${item.id}`)}
-                            className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 min-w-[48px] min-h-[48px] flex items-center justify-center"
-                            aria-label={`${item.item_label}を編集`}
-                          >
-                            <Icon icon="solar:pen-bold" width="16" height="16" />
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteTrainingItem(item.id, e)}
-                            className="p-2 text-destructive rounded hover:bg-destructive/10 transition-all active:scale-90 min-w-[48px] min-h-[48px] flex items-center justify-center"
-                            aria-label={`${item.item_label}を削除`}
-                          >
-                            <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
-                          </button>
+                        <div className="flex items-center gap-1">
+                          {reorderCategory === category ? (
+                            <>
+                              <button
+                                onClick={(e) => handleReorderTrainingItem(category, item.id, 'up', e)}
+                                disabled={index === 0}
+                                className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] flex items-center justify-center"
+                                aria-label={`${item.item_label}を上に移動`}
+                              >
+                                <Icon icon="solar:alt-arrow-up-linear" width="16" height="16" />
+                              </button>
+                              <button
+                                onClick={(e) => handleReorderTrainingItem(category, item.id, 'down', e)}
+                                disabled={index === items.length - 1}
+                                className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] flex items-center justify-center"
+                                aria-label={`${item.item_label}を下に移動`}
+                              >
+                                <Icon icon="solar:alt-arrow-down-linear" width="16" height="16" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => navigate(`/settings/training/${item.id}`)}
+                                className="p-2 text-muted-foreground rounded hover:bg-muted transition-all active:scale-90 min-w-[48px] min-h-[48px] flex items-center justify-center"
+                                aria-label={`${item.item_label}を編集`}
+                              >
+                                <Icon icon="solar:pen-bold" width="16" height="16" />
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteTrainingItem(item.id, e)}
+                                className="p-2 text-destructive rounded hover:bg-destructive/10 transition-all active:scale-90 min-w-[48px] min-h-[48px] flex items-center justify-center"
+                                aria-label={`${item.item_label}を削除`}
+                              >
+                                <Icon icon="solar:trash-bin-minimalistic-bold" width="16" height="16" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}

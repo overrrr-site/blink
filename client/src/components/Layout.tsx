@@ -149,7 +149,7 @@ function Layout(): JSX.Element {
               <span className="whitespace-nowrap">{user?.name || 'スタッフ'}さん</span>
             </h1>
           </div>
-          <BusinessTypeSwitcher />
+          <BusinessTypeSwitcher variant="pill" />
         </header>
       )}
 

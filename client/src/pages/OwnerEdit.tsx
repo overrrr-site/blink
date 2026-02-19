@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
 import { useAuthStore } from '../store/authStore'
 import type { RecordType } from '../types/record'
+import SwipeDownHeader from '../components/SwipeDownHeader'
 
 const OwnerEdit = () => {
   const { id } = useParams<{ id: string }>()
@@ -81,17 +82,22 @@ const OwnerEdit = () => {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between safe-area-pt">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(`/owners/${id}`)}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
-          >
-            <Icon icon="solar:close-circle-linear" width="24" height="24" />
-          </button>
-          <h1 className="text-lg font-bold font-heading">飼い主情報の編集</h1>
+      <SwipeDownHeader
+        onDismiss={() => navigate(`/owners/${id}`)}
+        className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border safe-area-pt"
+      >
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/owners/${id}`)}
+              className="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-foreground rounded-full active:bg-muted transition-colors"
+            >
+              <Icon icon="solar:close-circle-linear" width="24" height="24" />
+            </button>
+            <h1 className="text-lg font-bold font-heading">飼い主情報の編集</h1>
+          </div>
         </div>
-      </header>
+      </SwipeDownHeader>
 
       <OwnerForm
         initialValues={initialValues}

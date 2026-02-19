@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
@@ -7,6 +7,9 @@ import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import { useToast } from '../components/Toast'
+import { useScrollFade } from '../hooks/useScrollFade'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import ReservationCard from '../components/ReservationCard'
@@ -67,6 +70,9 @@ function Dashboard(): JSX.Element {
   const [checkingIn, setCheckingIn] = useState<number | null>(null)
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLElement | null>(null)
+  const { showRightFade } = useScrollFade(scrollRef)
   const navigate = useNavigate()
   const { showToast } = useToast()
   const {
@@ -88,6 +94,20 @@ function Dashboard(): JSX.Element {
   const { data, isLoading, mutate } = useSWR<DashboardData>(dashboardKey, fetcher, {
     revalidateOnFocus: true,
     refreshInterval: 30000,
+  })
+
+  // プルトゥリフレッシュ
+  useEffect(() => {
+    mainRef.current = document.getElementById('main-content')
+  }, [])
+
+  const handleRefresh = useCallback(async () => {
+    await mutate()
+  }, [mutate])
+
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    scrollRef: mainRef,
+    onRefresh: handleRefresh,
   })
 
   const handleCheckIn = useCallback(async function(reservationId: number): Promise<void> {
@@ -204,32 +224,40 @@ function Dashboard(): JSX.Element {
 
   return (
     <div className="pb-6">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
       {/* ステータスフィルター */}
       <div className="px-5 pt-2 mb-4">
-        <div className="flex bg-muted rounded-xl p-1 gap-2 overflow-x-auto scrollbar-hide">
-          {filterOptions.map((filter) => {
-            const count = filter.id === 'all' ? currentCount : statusCounts[filter.id]
-            return (
-              <button
-                key={filter.id}
-                onClick={() => setStatusFilter(filter.id)}
-                className={`flex-none py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all inline-flex flex-nowrap items-center justify-center gap-1 relative min-h-[44px] active:scale-[0.98] ${
-                  statusFilter === filter.id
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground font-normal'
-                }`}
-                aria-label={`${filter.label}の予約を表示`}
-                aria-pressed={statusFilter === filter.id}
-              >
-                <Icon icon={filter.icon} width="16" height="16" className="shrink-0" />
-                <span className="whitespace-nowrap">{filter.label}</span>
-                {count > 0 && <span className="text-[10px] opacity-70 hidden sm:inline">({count})</span>}
-                {statusFilter === filter.id && (
-                  <span className={`absolute bottom-0 left-2 right-2 h-0.5 rounded-full ${filter.accentColor}`} />
-                )}
-              </button>
-            )
-          })}
+        <div className="relative">
+          <div ref={scrollRef} className="flex bg-muted rounded-xl p-1 gap-2 overflow-x-auto scrollbar-hide">
+            {filterOptions.map((filter) => {
+              const count = filter.id === 'all' ? currentCount : statusCounts[filter.id]
+              return (
+                <button
+                  key={filter.id}
+                  onClick={() => setStatusFilter(filter.id)}
+                  className={`flex-none py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all inline-flex flex-nowrap items-center justify-center gap-1 relative min-h-[44px] active:scale-[0.98] ${
+                    statusFilter === filter.id
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground font-normal'
+                  }`}
+                  aria-label={`${filter.label}の予約を表示`}
+                  aria-pressed={statusFilter === filter.id}
+                >
+                  <Icon icon={filter.icon} width="16" height="16" className="shrink-0" />
+                  <span className="whitespace-nowrap">{filter.label}</span>
+                  {count > 0 && <span className="text-[10px] opacity-70 hidden sm:inline">({count})</span>}
+                  {statusFilter === filter.id && (
+                    <span className={`absolute bottom-0 left-2 right-2 h-0.5 rounded-full ${filter.accentColor}`} />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          <div
+            className={`absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted to-transparent rounded-r-xl pointer-events-none transition-opacity duration-200 ${
+              showRightFade ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
         </div>
       </div>
 
