@@ -99,6 +99,14 @@ async function countCategories(storeId: number): Promise<number> {
   return Number.parseInt(result.rows[0].count as string, 10);
 }
 
+async function countAchievementLevels(storeId: number): Promise<number> {
+  const result = await pool.query(
+    `SELECT COUNT(*) FROM training_achievement_levels WHERE store_id = $1`,
+    [storeId]
+  );
+  return Number.parseInt(result.rows[0].count as string, 10);
+}
+
 export async function ensureDefaultCategories(storeId: number): Promise<void> {
   if ((await countCategories(storeId)) === 0) {
     await seedDefaultCategories(storeId);
@@ -106,7 +114,9 @@ export async function ensureDefaultCategories(storeId: number): Promise<void> {
 }
 
 export async function ensureDefaultAchievementLevels(storeId: number): Promise<void> {
-  await seedDefaultAchievementLevels(storeId);
+  if ((await countAchievementLevels(storeId)) === 0) {
+    await seedDefaultAchievementLevels(storeId);
+  }
 }
 
 export async function listCategories(storeId: number): Promise<TrainingProfileRow[]> {
