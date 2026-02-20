@@ -26,6 +26,14 @@ export interface AuthState {
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
+  register: (params: {
+    storeName: string
+    ownerName: string
+    email: string
+    password: string
+    businessTypes: RecordType[]
+    primaryBusinessType: RecordType
+  }) => Promise<void>
   logout: () => Promise<void>
   initialize: () => Promise<void>
   fetchStaffInfo: (accessToken: string) => Promise<void>
@@ -67,6 +75,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
 
   login: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      throw new Error(error.message || 'ログインに失敗しました')
+    }
+
+    if (data.session) {
+      setAuthHeader(data.session.access_token)
+      await get().fetchStaffInfo(data.session.access_token)
+      set({
+        supabaseUser: data.user,
+        session: data.session,
+        isAuthenticated: true,
+      })
+    }
+  },
+
+  register: async ({ storeName, ownerName, email, password, businessTypes, primaryBusinessType }) => {
+    // サーバーで店舗・スタッフ・認証ユーザーを一括作成
+    await axios.post('/api/auth/register', {
+      storeName,
+      ownerName,
+      email,
+      password,
+      businessTypes,
+      primaryBusinessType,
+    })
+
+    // 作成した認証情報で自動ログイン
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Icon } from './Icon'
-import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore, selectUser } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
 import { getAvailableBusinessTypes, getEffectiveBusinessType } from '../utils/businessTypeAccess'
@@ -101,11 +101,6 @@ function Layout(): JSX.Element {
 
   // 選択中の業種に応じたラベル（nullの場合はprimaryBusinessTypeを使用）
   const recordLabel = getRecordLabel(effectiveBusinessType)
-
-  // オンボーディング未完了の場合はリダイレクト
-  if (user && user.onboardingCompleted === false) {
-    return <Navigate to="/onboarding" replace />
-  }
 
   const fabActions = useMemo(() => FAB_ACTIONS_BASE.map(action => ({
     ...action,

@@ -6,6 +6,130 @@ import { requireStoreId, sendBadRequest, sendServerError } from '../utils/respon
 
 const router = express.Router();
 
+// 新規店舗・アカウント登録（認証不要）
+router.post('/register', async (req, res) => {
+  try {
+    const { storeName, ownerName, email, password, businessTypes, primaryBusinessType } = req.body;
+
+    // バリデーション
+    if (!storeName || !ownerName || !email || !password || !businessTypes) {
+      sendBadRequest(res, '全ての項目を入力してください');
+      return;
+    }
+
+    if (typeof storeName !== 'string' || storeName.trim().length === 0 || storeName.length > 255) {
+      sendBadRequest(res, '店舗名は1〜255文字で入力してください');
+      return;
+    }
+
+    if (typeof ownerName !== 'string' || ownerName.trim().length === 0 || ownerName.length > 100) {
+      sendBadRequest(res, '名前は1〜100文字で入力してください');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      sendBadRequest(res, '有効なメールアドレスを入力してください');
+      return;
+    }
+
+    if (typeof password !== 'string' || password.length < 8) {
+      sendBadRequest(res, 'パスワードは8文字以上で入力してください');
+      return;
+    }
+
+    const validTypes = ['daycare', 'grooming', 'hotel'];
+    if (!Array.isArray(businessTypes) || businessTypes.length === 0) {
+      sendBadRequest(res, '業態を1つ以上選択してください');
+      return;
+    }
+    const invalidTypes = businessTypes.filter((t: string) => !validTypes.includes(t));
+    if (invalidTypes.length > 0) {
+      sendBadRequest(res, '無効な業態が含まれています');
+      return;
+    }
+
+    const primary = primaryBusinessType && businessTypes.includes(primaryBusinessType)
+      ? primaryBusinessType
+      : businessTypes[0];
+
+    if (!supabase) {
+      return res.status(500).json({ error: '認証システムが設定されていません' });
+    }
+
+    // 既存メールチェック
+    const existingStaff = await pool.query(
+      'SELECT id FROM staff WHERE email = $1',
+      [email]
+    );
+    if (existingStaff.rows.length > 0) {
+      return res.status(400).json({ error: 'このメールアドレスは既に登録されています' });
+    }
+
+    // Supabase認証ユーザー作成
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (authError) {
+      console.error('Supabase createUser error:', authError);
+      if (authError.message?.includes('already been registered')) {
+        return res.status(400).json({ error: 'このメールアドレスは既に登録されています' });
+      }
+      return res.status(500).json({ error: 'アカウントの作成に失敗しました' });
+    }
+
+    const authUserId = authData.user.id;
+
+    // トランザクションで店舗・スタッフ・関連を一括作成
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const storeResult = await client.query(
+        `INSERT INTO stores (name, business_types, primary_business_type, onboarding_completed)
+         VALUES ($1, $2, $3, TRUE)
+         RETURNING id`,
+        [storeName.trim(), businessTypes, primary]
+      );
+      const storeId = storeResult.rows[0].id;
+
+      const staffResult = await client.query(
+        `INSERT INTO staff (email, name, auth_user_id, is_owner)
+         VALUES ($1, $2, $3, TRUE)
+         RETURNING id`,
+        [email, ownerName.trim(), authUserId]
+      );
+      const staffId = staffResult.rows[0].id;
+
+      await client.query(
+        `INSERT INTO staff_stores (staff_id, store_id)
+         VALUES ($1, $2)`,
+        [staffId, storeId]
+      );
+
+      await client.query('COMMIT');
+
+      res.status(201).json({ success: true, message: 'アカウントが作成されました' });
+    } catch (dbError) {
+      await client.query('ROLLBACK');
+      // Supabaseユーザーをクリーンアップ
+      try {
+        await supabase.auth.admin.deleteUser(authUserId);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup Supabase user after DB error:', cleanupError);
+      }
+      throw dbError;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    sendServerError(res, 'アカウントの作成に失敗しました', error);
+  }
+});
+
 // 現在のログインユーザーのスタッフ情報を取得
 router.get('/me', authenticate, async (req: AuthRequest, res) => {
   try {
@@ -129,51 +253,6 @@ router.post('/invite', authenticate, requireOwner, async (req: AuthRequest, res)
     });
   } catch (error) {
     sendServerError(res, 'スタッフの招待に失敗しました', error);
-  }
-});
-
-// オンボーディング完了（業態設定）
-router.post('/complete-onboarding', authenticate, requireOwner, async (req: AuthRequest, res) => {
-  try {
-    if (!requireStoreId(req, res)) {
-      return;
-    }
-
-    const { businessTypes, primaryBusinessType } = req.body;
-
-    if (!businessTypes || !Array.isArray(businessTypes) || businessTypes.length === 0) {
-      sendBadRequest(res, '業態を1つ以上選択してください');
-      return;
-    }
-
-    const validTypes = ['daycare', 'grooming', 'hotel'];
-    const invalidTypes = businessTypes.filter((t: string) => !validTypes.includes(t));
-    if (invalidTypes.length > 0) {
-      sendBadRequest(res, '無効な業態が含まれています');
-      return;
-    }
-
-    // primaryBusinessTypeが指定されていなければ最初の選択を使用
-    const primary = primaryBusinessType && businessTypes.includes(primaryBusinessType)
-      ? primaryBusinessType
-      : businessTypes[0];
-
-    await pool.query(
-      `UPDATE stores SET
-         business_types = $2,
-         primary_business_type = $3,
-         onboarding_completed = TRUE
-       WHERE id = $1`,
-      [req.storeId, businessTypes, primary]
-    );
-
-    res.json({
-      success: true,
-      businessTypes,
-      primaryBusinessType: primary,
-    });
-  } catch (error) {
-    sendServerError(res, 'オンボーディングの完了に失敗しました', error);
   }
 });
 
