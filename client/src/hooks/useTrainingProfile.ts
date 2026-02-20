@@ -51,5 +51,5 @@ function getErrorMessage(error: unknown): string | null {
     }
   }
 
-  return 'トレーニングプロフィールの取得に失敗しました'
+  return '内部記録の取得に失敗しました'
 }

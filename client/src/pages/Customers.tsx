@@ -225,7 +225,7 @@ const Customers = () => {
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold font-heading">顧客管理</h1>
-          <BusinessTypeSwitcher />
+          <BusinessTypeSwitcher variant="pill" />
         </div>
       </header>
 

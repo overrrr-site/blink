@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Icon } from '../Icon'
 import type { TrainingEntryRecord } from '../../types/trainingProfile'
 import type { TrainingEntryActions } from './useTrainingEntryActions'
+import { formatEntryDateShort } from '../../utils/trainingDate'
 
 type TrainingEntryListProps = {
   header: ReactNode
@@ -83,7 +84,7 @@ function TrainingEntryList({
               <div className="flex items-start gap-3">
                 <div className="shrink-0 pt-0.5">
                   <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                    {formatDateShort(entry.entry_date)}
+                    {formatEntryDateShort(entry.entry_date)}
                   </span>
                   {entry.staff_name && (
                     <span className="block text-[10px] text-muted-foreground/70">{entry.staff_name}</span>
@@ -161,11 +162,6 @@ function TrainingEntryList({
       )}
     </div>
   )
-}
-
-function formatDateShort(dateStr: string): string {
-  const date = new Date(`${dateStr}T00:00:00`)
-  return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
 export default TrainingEntryList

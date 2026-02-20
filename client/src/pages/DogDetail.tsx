@@ -113,7 +113,7 @@ function DogDetail(): JSX.Element {
 
         {dog.personality && <PersonalitySection personality={dog.personality} />}
 
-        {/* トレーニングプロフィール */}
+        {/* 内部記録 */}
         <button
           onClick={() => navigate(`/dogs/${id}/training`)}
           className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left active:scale-[0.98] transition-all"
@@ -124,7 +124,7 @@ function DogDetail(): JSX.Element {
                 <Icon icon="solar:clipboard-list-bold" width="20" height="20" className="text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-bold">トレーニングプロフィール</h3>
+                <h3 className="text-sm font-bold">内部記録</h3>
                 <p className="text-[11px] text-muted-foreground">コマンド達成状況・日々の記録</p>
               </div>
             </div>

@@ -295,27 +295,28 @@ const ReservationsCalendar = () => {
         <p className="text-sm text-muted-foreground">{format(currentDate, 'yyyy年MM月')}</p>
       </div>
       <header className="px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold font-heading text-foreground">予約管理</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
             <OverflowMenu
-              className="print:hidden"
+              className="shrink-0"
               items={[
                 { label: '印刷', icon: 'solar:printer-bold', onClick: handlePrint },
                 { label: 'iCS出力', icon: 'solar:download-bold', onClick: handleExport },
               ]}
             />
-            <button
-              onClick={() => navigate(getCreateUrl())}
-              className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[44px] print:hidden"
-            >
-              <Icon icon="solar:add-circle-bold" className="size-4" />
-              新規予約
-            </button>
-            <div className="print:hidden">
-              <BusinessTypeSwitcher />
-            </div>
+            <BusinessTypeSwitcher variant="pill" />
           </div>
+        </div>
+
+        <div className="mb-3 flex justify-end print:hidden">
+          <button
+            onClick={() => navigate(getCreateUrl())}
+            className="bg-primary text-primary-foreground px-4 py-2.5 rounded-full text-sm font-bold inline-flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[44px] shadow-sm"
+          >
+            <Icon icon="solar:add-circle-bold" className="size-4" />
+            新規予約
+          </button>
         </div>
 
         <div className="flex items-center justify-between mb-4">

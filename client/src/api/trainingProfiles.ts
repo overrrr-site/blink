@@ -1,5 +1,6 @@
 import api from './client'
 import type { TrainingProfileData } from '../types/trainingProfile'
+import { normalizeEntryDate } from '../utils/trainingDate'
 
 type DogId = string | number
 
@@ -38,7 +39,7 @@ type EntryDeletePayload = {
 export const trainingProfilesApi = {
   getProfile: async (dogId: DogId): Promise<TrainingProfileData> => {
     const response = await api.get<TrainingProfileData>(`/training-profiles/dogs/${dogId}/all`)
-    return response.data
+    return normalizeTrainingProfileData(response.data)
   },
 
   upsertGridEntry: ({
@@ -81,4 +82,22 @@ export const trainingProfilesApi = {
 
   deleteConcernEntry: ({ dogId, entryId }: EntryDeletePayload) =>
     api.delete(`/training-profiles/dogs/${dogId}/concerns/${entryId}`),
+}
+
+function normalizeTrainingProfileData(data: TrainingProfileData): TrainingProfileData {
+  return {
+    ...data,
+    gridEntries: data.gridEntries.map((entry) => ({
+      ...entry,
+      entry_date: normalizeEntryDate(entry.entry_date),
+    })),
+    logEntries: data.logEntries.map((entry) => ({
+      ...entry,
+      entry_date: normalizeEntryDate(entry.entry_date),
+    })),
+    concerns: data.concerns.map((entry) => ({
+      ...entry,
+      entry_date: normalizeEntryDate(entry.entry_date),
+    })),
+  }
 }

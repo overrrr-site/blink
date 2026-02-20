@@ -1,4 +1,5 @@
 import type { AchievementLevel, GridEntry } from '../../types/trainingProfile'
+import { normalizeEntryDate } from '../../utils/trainingDate'
 
 type GridEntryMapValue = {
   id: number
@@ -33,12 +34,20 @@ export type GridCellAction =
     }
 
 export function buildCategoryDateColumns(entries: GridEntry[], maxDates = 20): string[] {
-  const dateSet = new Set(entries.map((entry) => entry.entry_date))
+  const dateSet = new Set(
+    entries
+      .map((entry) => normalizeEntryDate(entry.entry_date))
+      .filter((entryDate) => entryDate.length > 0),
+  )
   return Array.from(dateSet).sort((a, b) => b.localeCompare(a)).slice(0, maxDates)
 }
 
 export function buildDisplayDates(allDates: string[], extraDates: string[]): string[] {
-  const combined = new Set([...allDates, ...extraDates])
+  const combined = new Set(
+    [...allDates, ...extraDates]
+      .map((entryDate) => normalizeEntryDate(entryDate))
+      .filter((entryDate) => entryDate.length > 0),
+  )
   return Array.from(combined).sort((a, b) => b.localeCompare(a))
 }
 
@@ -46,7 +55,12 @@ export function buildGridEntryMap(entries: GridEntry[]): Map<string, GridEntryMa
   const entryMap = new Map<string, GridEntryMapValue>()
 
   entries.forEach((entry) => {
-    entryMap.set(`${entry.training_item_id}_${entry.entry_date}`, {
+    const normalizedDate = normalizeEntryDate(entry.entry_date)
+    if (!normalizedDate) {
+      return
+    }
+
+    entryMap.set(`${entry.training_item_id}_${normalizedDate}`, {
       id: entry.id,
       symbol: entry.achievement_symbol,
     })

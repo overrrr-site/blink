@@ -14,6 +14,7 @@ import {
   buildGridEntryMap,
   createAchievementCycle,
 } from './trainingGridModel'
+import { formatEntryDateShort } from '../../utils/trainingDate'
 
 interface TrainingGridViewProps {
   category: TrainingProfileCategory
@@ -21,6 +22,7 @@ interface TrainingGridViewProps {
   entries: GridEntry[]
   dogId: string
   onMutate: () => void
+  evaluationMode: 'three_step' | 'six_step'
 }
 
 function TrainingGridView({
@@ -29,6 +31,7 @@ function TrainingGridView({
   entries,
   dogId,
   onMutate,
+  evaluationMode,
 }: TrainingGridViewProps) {
   const [saving, setSaving] = useState(false)
   const [showAddDate, setShowAddDate] = useState(false)
@@ -42,6 +45,10 @@ function TrainingGridView({
   const entryMap = useMemo(() => buildGridEntryMap(categoryEntries), [categoryEntries])
 
   const symbolCycle = useMemo(() => createAchievementCycle(achievementLevels), [achievementLevels])
+  const legendNote = useMemo(
+    () => '※ 上段は凡例です。記録は下のマスをタップしてください',
+    [],
+  )
 
   const levelMap = useMemo(() => {
     const map = new Map<string, AchievementLevel>()
@@ -141,13 +148,16 @@ function TrainingGridView({
       </div>
 
       {/* Legend */}
-      <div className="px-4 py-2 border-b border-border flex flex-wrap gap-2">
-        {achievementLevels.map((level) => (
-          <div key={level.id} className="flex items-center gap-1">
-            <CellBadge symbol={level.symbol} level={level} size="sm" />
-            <span className="text-[10px] text-muted-foreground">{level.label}</span>
-          </div>
-        ))}
+      <div className="px-4 py-2 border-b border-border">
+        <div className="flex flex-wrap gap-2">
+          {achievementLevels.map((level) => (
+            <div key={level.id} className="flex items-center gap-1">
+              <CellBadge symbol={level.symbol} level={level} size="sm" />
+              <span className="text-[10px] text-muted-foreground">{level.label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-1 text-[10px] text-muted-foreground">{legendNote}</p>
       </div>
 
       {/* Grid table */}
@@ -160,7 +170,7 @@ function TrainingGridView({
               </th>
               {displayDates.map((date) => (
                 <th key={date} className="min-w-[48px] px-1 py-2 text-center text-[10px] font-medium text-muted-foreground border-b border-border">
-                  {formatDateShort(date)}
+                  {formatEntryDateShort(date)}
                 </th>
               ))}
               <th className="min-w-[40px] px-1 py-2 text-center border-b border-border">
@@ -184,6 +194,7 @@ function TrainingGridView({
                   const existing = entryMap.get(key)
                   const symbol = existing?.symbol || ''
                   const level = symbol ? levelMap.get(symbol) : undefined
+                  const dateLabel = formatEntryDateShort(date)
 
                   return (
                     <td
@@ -192,13 +203,19 @@ function TrainingGridView({
                     >
                       <button
                         onClick={() => handleCellTap(item.training_item_id, date, symbol)}
-                        className="inline-flex items-center justify-center min-w-[36px] min-h-[36px] rounded-lg hover:bg-muted active:scale-90 transition-all"
+                        className={`inline-flex items-center justify-center min-w-[36px] min-h-[36px] rounded-lg border transition-all active:scale-90 ${
+                          symbol
+                            ? 'border-border/70 bg-background hover:bg-muted'
+                            : 'border-dashed border-border/70 bg-muted/30 hover:bg-muted'
+                        }`}
                         disabled={saving}
+                        aria-label={`${item.item_label} ${dateLabel} の達成状況を記録`}
+                        title={`${item.item_label} ${dateLabel} の達成状況を記録`}
                       >
                         {symbol ? (
                           <CellBadge symbol={symbol} level={level} size="md" />
                         ) : (
-                          <span className="text-muted-foreground/30">-</span>
+                          <span className="text-muted-foreground/40 text-xs">タップ</span>
                         )}
                       </button>
                     </td>
@@ -261,11 +278,6 @@ function CellBadge({
       {symbol}
     </span>
   )
-}
-
-function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00')
-  return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
 export default TrainingGridView

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { AchievementLevel, GridEntry } from '../../types/trainingProfile'
 import {
   buildCategoryDateColumns,
+  buildGridEntryMap,
   createAchievementCycle,
   getNextAchievementSymbol,
 } from './trainingGridModel'
@@ -47,5 +48,33 @@ describe('trainingGridModel', () => {
     expect(getNextAchievementSymbol(cycle, '△')).toBe('◯')
     expect(getNextAchievementSymbol(cycle, '◯')).toBe('')
     expect(getNextAchievementSymbol(cycle, 'unknown')).toBe('')
+  })
+
+  it('normalizes ISO datetime strings when building date columns and grid map keys', () => {
+    const entries: GridEntry[] = [
+      {
+        id: 1,
+        category_id: 1,
+        training_item_id: 10,
+        entry_date: '2026-02-19T00:00:00.000Z',
+        achievement_symbol: '○',
+      },
+      {
+        id: 2,
+        category_id: 1,
+        training_item_id: 10,
+        entry_date: '2026-02-19',
+        achievement_symbol: '△',
+      },
+    ]
+
+    const columns = buildCategoryDateColumns(entries)
+    const entryMap = buildGridEntryMap(entries)
+
+    expect(columns).toEqual(['2026-02-19'])
+    expect(entryMap.get('10_2026-02-19')).toEqual({
+      id: 2,
+      symbol: '△',
+    })
   })
 })

@@ -25,6 +25,16 @@ interface StoreSettings {
 }
 
 const THREE_STEP_SYMBOLS = ['○', '△', '×']
+const SIX_STEP_SYMBOLS = ['A', 'B', 'C', 'D', 'E', 'F']
+
+const SIX_STEP_GENERIC_LABELS: Record<string, string> = {
+  A: '導入段階',
+  B: '練習中',
+  C: '一部できる',
+  D: 'ほぼできる',
+  E: '安定してできる',
+  F: '定着',
+}
 
 function DogTrainingProfile() {
   const { dogId } = useParams<{ dogId: string }>()
@@ -48,6 +58,11 @@ function DogTrainingProfile() {
   const filteredLevels = useMemo(
     () => evaluationMode === 'six_step'
       ? allLevels
+        .filter((l) => SIX_STEP_SYMBOLS.includes(l.symbol))
+        .map((l) => ({
+          ...l,
+          label: SIX_STEP_GENERIC_LABELS[l.symbol] ?? l.label,
+        }))
       : allLevels.filter((l) => THREE_STEP_SYMBOLS.includes(l.symbol)),
     [allLevels, evaluationMode],
   )
@@ -55,7 +70,7 @@ function DogTrainingProfile() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <PageHeader title="トレーニングプロフィール" backPath={dogId ? `/dogs/${dogId}` : undefined} />
+        <PageHeader title="内部記録" backPath={dogId ? `/dogs/${dogId}` : undefined} />
         <div className="flex items-center justify-center py-20">
           <p className="text-muted-foreground">読み込み中...</p>
         </div>
@@ -66,7 +81,7 @@ function DogTrainingProfile() {
   if (!profileData) {
     return (
       <div className="min-h-screen bg-background">
-        <PageHeader title="トレーニングプロフィール" backPath={dogId ? `/dogs/${dogId}` : undefined} />
+        <PageHeader title="内部記録" backPath={dogId ? `/dogs/${dogId}` : undefined} />
         <div className="flex flex-col items-center justify-center py-20">
           <Icon icon="solar:clipboard-remove-bold" width="48" height="48" className="text-muted-foreground mb-4" />
           <p className="text-sm text-muted-foreground">データを取得できませんでした</p>
@@ -82,7 +97,7 @@ function DogTrainingProfile() {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <PageHeader title="トレーニングプロフィール" backPath={dogId ? `/dogs/${dogId}` : undefined} />
+      <PageHeader title="内部記録" backPath={dogId ? `/dogs/${dogId}` : undefined} />
 
       {/* Dog summary card */}
       {dog && (
@@ -122,6 +137,7 @@ function DogTrainingProfile() {
                 entries={gridEntries}
                 dogId={dogId!}
                 onMutate={handleMutate}
+                evaluationMode={evaluationMode}
               />
             )
           }
