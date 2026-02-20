@@ -22,7 +22,6 @@ interface TrainingGridViewProps {
   entries: GridEntry[]
   dogId: string
   onMutate: () => void
-  evaluationMode: 'three_step' | 'six_step'
 }
 
 function TrainingGridView({
@@ -31,7 +30,6 @@ function TrainingGridView({
   entries,
   dogId,
   onMutate,
-  evaluationMode,
 }: TrainingGridViewProps) {
   const [saving, setSaving] = useState(false)
   const [showAddDate, setShowAddDate] = useState(false)
@@ -45,10 +43,7 @@ function TrainingGridView({
   const entryMap = useMemo(() => buildGridEntryMap(categoryEntries), [categoryEntries])
 
   const symbolCycle = useMemo(() => createAchievementCycle(achievementLevels), [achievementLevels])
-  const legendNote = useMemo(
-    () => '※ 上段は凡例です。記録は下のマスをタップしてください',
-    [],
-  )
+  const legendNote = '※ 上段は凡例です。記録は下のマスをタップしてください'
 
   const levelMap = useMemo(() => {
     const map = new Map<string, AchievementLevel>()

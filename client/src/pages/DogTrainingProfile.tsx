@@ -137,7 +137,6 @@ function DogTrainingProfile() {
                 entries={gridEntries}
                 dogId={dogId!}
                 onMutate={handleMutate}
-                evaluationMode={evaluationMode}
               />
             )
           }
