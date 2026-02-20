@@ -21,14 +21,43 @@ interface TrainingGridViewProps {
   achievementLevels: AchievementLevel[]
   entries: GridEntry[]
   dogId: string
+  visualIndex?: number
   onMutate: () => void
 }
+
+const GRID_VISUALS = [
+  {
+    icon: 'solar:checklist-bold',
+    borderClass: 'border-chart-2/20',
+    headerClass: 'bg-gradient-to-r from-chart-2/10 via-transparent to-transparent',
+    iconClass: 'bg-chart-2/15 text-chart-2',
+    legendClass: 'bg-chart-2/5',
+    addDateButtonClass: 'text-chart-2 hover:bg-chart-2/10',
+  },
+  {
+    icon: 'solar:star-bold',
+    borderClass: 'border-chart-4/20',
+    headerClass: 'bg-gradient-to-r from-chart-4/10 via-transparent to-transparent',
+    iconClass: 'bg-chart-4/15 text-chart-4',
+    legendClass: 'bg-chart-4/5',
+    addDateButtonClass: 'text-chart-4 hover:bg-chart-4/10',
+  },
+  {
+    icon: 'solar:paw-print-bold',
+    borderClass: 'border-chart-3/20',
+    headerClass: 'bg-gradient-to-r from-chart-3/10 via-transparent to-transparent',
+    iconClass: 'bg-chart-3/15 text-chart-3',
+    legendClass: 'bg-chart-3/5',
+    addDateButtonClass: 'text-chart-3 hover:bg-chart-3/10',
+  },
+] as const
 
 function TrainingGridView({
   category,
   achievementLevels,
   entries,
   dogId,
+  visualIndex = 0,
   onMutate,
 }: TrainingGridViewProps) {
   const [saving, setSaving] = useState(false)
@@ -114,16 +143,28 @@ function TrainingGridView({
   const [extraDates, setExtraDates] = useState<string[]>([])
 
   const displayDates = useMemo(() => buildDisplayDates(allDates, extraDates), [allDates, extraDates])
+  const visual = GRID_VISUALS[Math.abs(visualIndex) % GRID_VISUALS.length]
 
-  if (items.length === 0) {
-    return (
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
+  const headerContent = (
+    <div className={`px-4 py-3 border-b border-border ${visual.headerClass}`}>
+      <div className="flex items-start gap-2">
+        <span className={`mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-lg ${visual.iconClass}`}>
+          <Icon icon={visual.icon} width="14" height="14" />
+        </span>
+        <div>
           <h3 className="text-sm font-bold">{category.name}</h3>
           {category.goal && (
             <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{category.goal}</p>
           )}
         </div>
+      </div>
+    </div>
+  )
+
+  if (items.length === 0) {
+    return (
+      <div className={`bg-card rounded-2xl border border-border shadow-sm overflow-hidden ${visual.borderClass}`}>
+        {headerContent}
         <div className="px-4 py-6 text-center">
           <p className="text-xs text-muted-foreground">項目が設定されていません</p>
           <p className="text-[11px] text-muted-foreground mt-1">設定ページからトレーニング項目を追加してください</p>
@@ -133,17 +174,11 @@ function TrainingGridView({
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border">
-        <h3 className="text-sm font-bold">{category.name}</h3>
-        {category.goal && (
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{category.goal}</p>
-        )}
-      </div>
+    <div className={`bg-card rounded-2xl border border-border shadow-sm overflow-hidden ${visual.borderClass}`}>
+      {headerContent}
 
       {/* Legend */}
-      <div className="px-4 py-2 border-b border-border">
+      <div className={`px-4 py-2 border-b border-border ${visual.legendClass}`}>
         <div className="flex flex-wrap gap-2">
           {achievementLevels.map((level) => (
             <div key={level.id} className="flex items-center gap-1">
@@ -161,7 +196,10 @@ function TrainingGridView({
           <thead>
             <tr>
               <th className="sticky left-0 z-10 bg-card min-w-[120px] px-3 py-2 text-left text-[11px] font-bold text-muted-foreground border-b border-border">
-                項目
+                <span className="inline-flex items-center gap-1">
+                  <Icon icon="solar:clipboard-list-bold" width="12" height="12" className="opacity-70" />
+                  項目
+                </span>
               </th>
               {displayDates.map((date) => (
                 <th key={date} className="min-w-[48px] px-1 py-2 text-center text-[10px] font-medium text-muted-foreground border-b border-border">
@@ -171,7 +209,7 @@ function TrainingGridView({
               <th className="min-w-[40px] px-1 py-2 text-center border-b border-border">
                 <button
                   onClick={() => setShowAddDate(true)}
-                  className="inline-flex items-center justify-center min-w-[32px] min-h-[32px] rounded-full text-primary hover:bg-primary/10 active:scale-95 transition-all"
+                  className={`inline-flex items-center justify-center min-w-[32px] min-h-[32px] rounded-full active:scale-95 transition-all ${visual.addDateButtonClass}`}
                 >
                   <Icon icon="solar:add-circle-linear" width="16" height="16" />
                 </button>
@@ -187,7 +225,8 @@ function TrainingGridView({
                 {displayDates.map((date) => {
                   const key = `${item.training_item_id}_${date}`
                   const existing = entryMap.get(key)
-                  const symbol = existing?.symbol || ''
+                  const rawSymbol = existing?.symbol || ''
+                  const symbol = levelMap.has(rawSymbol) ? rawSymbol : ''
                   const level = symbol ? levelMap.get(symbol) : undefined
                   const dateLabel = formatEntryDateShort(date)
 

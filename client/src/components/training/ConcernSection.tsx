@@ -19,14 +19,19 @@ function ConcernSection({ concerns, dogId, onMutate }: ConcernSectionProps) {
   return (
     <TrainingEntryList
       header={(
-        <div className="flex items-center gap-2">
-          <Icon icon="solar:danger-triangle-bold" width="16" height="16" className="text-amber-500" />
+        <div className="flex items-start gap-2">
+          <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+            <Icon icon="solar:danger-triangle-bold" width="14" height="14" />
+          </span>
           <h3 className="text-sm font-bold">犬の様子で気になること</h3>
         </div>
       )}
       entries={concerns}
       addPlaceholder="気になることを入力..."
       addButtonLabel="追加"
+      containerClassName="border-destructive/20"
+      headerClassName="bg-gradient-to-r from-destructive/10 via-transparent to-transparent"
+      addButtonClassName="text-destructive hover:bg-destructive/10 active:bg-destructive/15"
       actions={actions}
     />
   )

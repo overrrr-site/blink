@@ -9,6 +9,9 @@ type TrainingEntryListProps = {
   entries: TrainingEntryRecord[]
   addPlaceholder: string
   addButtonLabel: string
+  containerClassName?: string
+  headerClassName?: string
+  addButtonClassName?: string
   actions: TrainingEntryActions
 }
 
@@ -17,6 +20,9 @@ function TrainingEntryList({
   entries,
   addPlaceholder,
   addButtonLabel,
+  containerClassName,
+  headerClassName,
+  addButtonClassName,
   actions,
 }: TrainingEntryListProps) {
   const {
@@ -41,8 +47,8 @@ function TrainingEntryList({
   } = actions
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
+    <div className={`bg-card rounded-2xl border border-border shadow-sm overflow-hidden ${containerClassName ?? ''}`}>
+      <div className={`px-4 py-3 border-b border-border ${headerClassName ?? ''}`}>
         {header}
       </div>
 
@@ -83,11 +89,15 @@ function TrainingEntryList({
             ) : (
               <div className="flex items-start gap-3">
                 <div className="shrink-0 pt-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                    <Icon icon="solar:calendar-linear" width="12" height="12" className="opacity-70" />
                     {formatEntryDateShort(entry.entry_date)}
                   </span>
                   {entry.staff_name && (
-                    <span className="block text-[10px] text-muted-foreground/70">{entry.staff_name}</span>
+                    <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted-foreground/70">
+                      <Icon icon="solar:user-bold" width="11" height="11" className="opacity-70" />
+                      {entry.staff_name}
+                    </span>
                   )}
                 </div>
                 <p className="flex-1 text-sm leading-relaxed">{entry.note}</p>
@@ -154,7 +164,7 @@ function TrainingEntryList({
       ) : (
         <button
           onClick={openAddForm}
-          className="w-full px-4 py-3 border-t border-border text-sm font-medium text-primary flex items-center justify-center gap-1.5 hover:bg-primary/5 active:bg-primary/10 transition-colors"
+          className={`w-full px-4 py-3 border-t border-border text-sm font-medium text-primary flex items-center justify-center gap-1.5 hover:bg-primary/5 active:bg-primary/10 transition-colors ${addButtonClassName ?? ''}`}
         >
           <Icon icon="solar:add-circle-linear" width="16" height="16" />
           {addButtonLabel}

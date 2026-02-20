@@ -28,12 +28,12 @@ const THREE_STEP_SYMBOLS = ['○', '△', '×']
 const SIX_STEP_SYMBOLS = ['A', 'B', 'C', 'D', 'E', 'F']
 
 const SIX_STEP_GENERIC_LABELS: Record<string, string> = {
-  A: '導入段階',
-  B: '練習中',
-  C: '一部できる',
-  D: 'ほぼできる',
-  E: '安定してできる',
-  F: '定着',
+  A: 'とても良い',
+  B: '良い',
+  C: '標準',
+  D: 'もう少し',
+  E: '要サポート',
+  F: '要練習',
 }
 
 function DogTrainingProfile() {
@@ -46,7 +46,7 @@ function DogTrainingProfile() {
 
   const { data: profileData, isLoading, mutate } = useTrainingProfile(dogId)
 
-  const { data: storeSettings } = useSWR<StoreSettings>('/store-settings', fetcher)
+  const { data: storeSettings, isLoading: isStoreSettingsLoading } = useSWR<StoreSettings>('/store-settings', fetcher)
 
   const handleMutate = useCallback(() => {
     mutate()
@@ -54,6 +54,7 @@ function DogTrainingProfile() {
 
   // useMemo must be called before any early returns (React Hooks rule)
   const evaluationMode = storeSettings?.training_evaluation_mode || 'three_step'
+  const isSettingsPending = isStoreSettingsLoading && !storeSettings
   const allLevels = profileData?.achievementLevels ?? []
   const filteredLevels = useMemo(
     () => evaluationMode === 'six_step'
@@ -67,7 +68,7 @@ function DogTrainingProfile() {
     [allLevels, evaluationMode],
   )
 
-  if (isLoading) {
+  if (isLoading || isSettingsPending) {
     return (
       <div className="min-h-screen bg-background">
         <PageHeader title="内部記録" backPath={dogId ? `/dogs/${dogId}` : undefined} />
@@ -127,7 +128,7 @@ function DogTrainingProfile() {
 
       {/* Category sections */}
       <div className="mx-4 mt-4 space-y-4">
-        {enabledCategories.map((cat) => {
+        {enabledCategories.map((cat, index) => {
           if (cat.category_type === 'grid') {
             return (
               <TrainingGridView
@@ -136,6 +137,7 @@ function DogTrainingProfile() {
                 achievementLevels={filteredLevels}
                 entries={gridEntries}
                 dogId={dogId!}
+                visualIndex={index}
                 onMutate={handleMutate}
               />
             )
@@ -146,6 +148,7 @@ function DogTrainingProfile() {
               category={cat}
               entries={logEntries}
               dogId={dogId!}
+              visualIndex={index}
               onMutate={handleMutate}
             />
           )
