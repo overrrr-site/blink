@@ -47,14 +47,7 @@ router.post('/', async (req: AuthRequest, res) => {
     const {
       reservation_id,
       service_type,
-      morning_urination,
-      morning_defecation,
-      afternoon_urination,
-      afternoon_defecation,
-      breakfast_status,
-      health_status,
-      notes,
-      meal_data,
+      daycare_data,
       grooming_data,
       hotel_data,
     } = req.body;
@@ -98,23 +91,13 @@ router.post('/', async (req: AuthRequest, res) => {
       // 更新
       result = await pool.query(
         `UPDATE pre_visit_inputs SET
-          morning_urination = $1, morning_defecation = $2,
-          afternoon_urination = $3, afternoon_defecation = $4,
-          breakfast_status = $5, health_status = $6, notes = $7,
-          meal_data = $8, service_type = $9,
-          grooming_data = $10, hotel_data = $11
-        WHERE reservation_id = $12
+          service_type = $1, daycare_data = $2,
+          grooming_data = $3, hotel_data = $4
+        WHERE reservation_id = $5
         RETURNING *`,
         [
-          morning_urination,
-          morning_defecation,
-          afternoon_urination,
-          afternoon_defecation,
-          breakfast_status,
-          health_status,
-          notes,
-          meal_data ? JSON.stringify(meal_data) : null,
           finalServiceType,
+          daycare_data ? JSON.stringify(daycare_data) : null,
           grooming_data ? JSON.stringify(grooming_data) : null,
           hotel_data ? JSON.stringify(hotel_data) : null,
           reservation_id,
@@ -124,23 +107,13 @@ router.post('/', async (req: AuthRequest, res) => {
       // 新規作成
       result = await pool.query(
         `INSERT INTO pre_visit_inputs (
-          reservation_id, morning_urination, morning_defecation,
-          afternoon_urination, afternoon_defecation,
-          breakfast_status, health_status, notes, meal_data,
-          service_type, grooming_data, hotel_data
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          reservation_id, service_type, daycare_data, grooming_data, hotel_data
+        ) VALUES ($1, $2, $3, $4, $5)
         RETURNING *`,
         [
           reservation_id,
-          morning_urination,
-          morning_defecation,
-          afternoon_urination,
-          afternoon_defecation,
-          breakfast_status,
-          health_status,
-          notes,
-          meal_data ? JSON.stringify(meal_data) : null,
           finalServiceType,
+          daycare_data ? JSON.stringify(daycare_data) : null,
           grooming_data ? JSON.stringify(grooming_data) : null,
           hotel_data ? JSON.stringify(hotel_data) : null,
         ]
