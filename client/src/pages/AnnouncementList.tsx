@@ -436,6 +436,7 @@ function AnnouncementList(): JSX.Element {
             icon="solar:megaphone-linear"
             title={statusFilter === 'all' ? 'お知らせがありません' : `${getStatusInfo(statusFilter as AnnouncementStatus).label}のお知らせはありません`}
             description="新しいお知らせを作成して飼い主さんに情報を発信しましょう"
+            illustration={statusFilter === 'all' ? '/images/dog-waiting.webp' : undefined}
             action={{
               label: '新規作成',
               onClick: () => openModal(),
@@ -443,7 +444,7 @@ function AnnouncementList(): JSX.Element {
             }}
           />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4 lg:space-y-0">
             {filteredAnnouncements.map((announcement) => {
               const status = getStatus(announcement)
               const statusInfo = getStatusInfo(status)

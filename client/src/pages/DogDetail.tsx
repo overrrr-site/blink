@@ -52,103 +52,109 @@ function DogDetail(): JSX.Element {
         }
       />
 
-      <main className="px-5 space-y-4 pt-4">
-        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-          <div className="flex items-center gap-4 mb-4">
-            {dog.photo_url ? (
-              <LazyImage
-                src={getDetailThumbnailUrl(dog.photo_url)}
-                alt={dog.name}
-                className="size-20 rounded-full"
-              />
-            ) : (
-              <div className="size-20 rounded-full bg-muted flex items-center justify-center">
-                <Icon icon="solar:paw-print-bold"
-                  className="size-10 text-muted-foreground" />
-              </div>
-            )}
-            <div>
-              <h2 className="text-2xl font-bold mb-1">{dog.name}</h2>
-              <p className="text-sm text-muted-foreground">{dog.breed}</p>
-              <p className="text-xs text-muted-foreground">
-                {calculateAge(dog.birth_date)} / {dog.gender}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-          <h3 className="text-lg font-bold mb-4">基本情報</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-muted-foreground">生年月日</label>
-              <p className="text-base font-medium">
-                {new Date(dog.birth_date).toLocaleDateString('ja-JP')}
-              </p>
-            </div>
-            {dog.weight && (
+      <main className="px-5 space-y-4 pt-4 lg:grid lg:grid-cols-5 lg:gap-6 lg:space-y-0">
+        {/* Left column (2/5) */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              {dog.photo_url ? (
+                <LazyImage
+                  src={getDetailThumbnailUrl(dog.photo_url)}
+                  alt={dog.name}
+                  className="size-20 rounded-full"
+                />
+              ) : (
+                <div className="size-20 rounded-full bg-muted flex items-center justify-center">
+                  <Icon icon="solar:paw-print-bold"
+                    className="size-10 text-muted-foreground" />
+                </div>
+              )}
               <div>
-                <label className="text-xs text-muted-foreground">体重</label>
-                <p className="text-base font-medium">{dog.weight}kg</p>
-              </div>
-            )}
-            {dog.color && (
-              <div>
-                <label className="text-xs text-muted-foreground">毛色</label>
-                <p className="text-base font-medium">{dog.color}</p>
-              </div>
-            )}
-            {dog.neutered && (
-              <div>
-                <label className="text-xs text-muted-foreground">避妊・去勢</label>
-                <p className="text-base font-medium">
-                  {dog.neutered === '済' ? '避妊/去勢済み' : dog.neutered === '未' ? '未実施' : dog.neutered}
+                <h2 className="text-2xl font-bold mb-1">{dog.name}</h2>
+                <p className="text-sm text-muted-foreground">{dog.breed}</p>
+                <p className="text-xs text-muted-foreground">
+                  {calculateAge(dog.birth_date)} / {dog.gender}
                 </p>
               </div>
-            )}
+            </div>
           </div>
+
+          <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+            <h3 className="text-lg font-bold mb-4">基本情報</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground">生年月日</label>
+                <p className="text-base font-medium">
+                  {new Date(dog.birth_date).toLocaleDateString('ja-JP')}
+                </p>
+              </div>
+              {dog.weight && (
+                <div>
+                  <label className="text-xs text-muted-foreground">体重</label>
+                  <p className="text-base font-medium">{dog.weight}kg</p>
+                </div>
+              )}
+              {dog.color && (
+                <div>
+                  <label className="text-xs text-muted-foreground">毛色</label>
+                  <p className="text-base font-medium">{dog.color}</p>
+                </div>
+              )}
+              {dog.neutered && (
+                <div>
+                  <label className="text-xs text-muted-foreground">避妊・去勢</label>
+                  <p className="text-base font-medium">
+                    {dog.neutered === '済' ? '避妊/去勢済み' : dog.neutered === '未' ? '未実施' : dog.neutered}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 内部記録 */}
+          <button
+            onClick={() => navigate(`/dogs/${id}/training`)}
+            className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left active:scale-[0.98] transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Icon icon="solar:clipboard-list-bold" width="20" height="20" className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">内部記録</h3>
+                  <p className="text-[11px] text-muted-foreground">コマンド達成状況・日々の記録</p>
+                </div>
+              </div>
+              <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
+            </div>
+          </button>
+
+          <ContractsSection
+            contracts={contracts}
+            loading={loadingContracts}
+            onCreate={() => navigate(`/dogs/${id}/contracts/new`)}
+            onSelect={(contractId) => navigate(`/dogs/${id}/contracts/${contractId}`)}
+          />
         </div>
 
-        {dog.health && <HealthInfoSection health={dog.health} />}
+        {/* Right column (3/5) */}
+        <div className="lg:col-span-3 space-y-4">
+          {dog.health && <HealthInfoSection health={dog.health} />}
 
-        {dog.personality && <PersonalitySection personality={dog.personality} />}
+          {dog.personality && <PersonalitySection personality={dog.personality} />}
 
-        {/* 内部記録 */}
-        <button
-          onClick={() => navigate(`/dogs/${id}/training`)}
-          className="w-full bg-card rounded-2xl p-4 border border-border shadow-sm text-left active:scale-[0.98] transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Icon icon="solar:clipboard-list-bold" width="20" height="20" className="text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold">内部記録</h3>
-                <p className="text-[11px] text-muted-foreground">コマンド達成状況・日々の記録</p>
-              </div>
-            </div>
-            <Icon icon="solar:alt-arrow-right-linear" width="20" height="20" className="text-muted-foreground" />
-          </div>
-        </button>
-
-        <ContractsSection
-          contracts={contracts}
-          loading={loadingContracts}
-          onCreate={() => navigate(`/dogs/${id}/contracts/new`)}
-          onSelect={(contractId) => navigate(`/dogs/${id}/contracts/${contractId}`)}
-        />
-
-        <HistoryTabs
-          activeTab={historyTab}
-          reservations={dog.reservations || []}
-          journals={dog.journals || []}
-          preVisitHistory={dog.preVisitHistory || []}
-          selectedBusinessType={selectedBusinessType}
-          onTabChange={setHistoryTab}
-          onOpenReservation={(reservationId) => navigate(`/reservations/${reservationId}`)}
-          onOpenJournal={(journalId) => navigate(`/journals/${journalId}`)}
-        />
+          <HistoryTabs
+            activeTab={historyTab}
+            reservations={dog.reservations || []}
+            journals={dog.journals || []}
+            preVisitHistory={dog.preVisitHistory || []}
+            selectedBusinessType={selectedBusinessType}
+            onTabChange={setHistoryTab}
+            onOpenReservation={(reservationId) => navigate(`/reservations/${reservationId}`)}
+            onOpenJournal={(journalId) => navigate(`/journals/${journalId}`)}
+          />
+        </div>
       </main>
     </div>
   )

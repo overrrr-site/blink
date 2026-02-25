@@ -261,7 +261,7 @@ const Customers = () => {
         </div>
 
         {/* 表示切り替え */}
-        <div className="flex bg-muted rounded-xl p-1">
+        <div className="flex bg-muted rounded-xl p-1 lg:max-w-xs">
           <button
             onClick={() => setViewMode('owners')}
             className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-colors relative min-h-[48px] ${
@@ -322,7 +322,7 @@ const Customers = () => {
               }
             />
           ) : (
-            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0">
+            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-3 md:space-y-0">
               {owners.map((owner) => (
                 <OwnerCard key={owner.id} owner={owner} onNavigate={handleNavigateOwner} />
               ))}
@@ -338,7 +338,7 @@ const Customers = () => {
               illustration={!searchQuery ? '/images/dog-waiting.webp' : undefined}
             />
           ) : (
-            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0">
+            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-3 md:space-y-0">
               {allDogs.map((dog) => (
                 <DogCard key={dog.id} dog={dog} onNavigate={handleNavigateDog} />
               ))}

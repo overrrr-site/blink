@@ -368,7 +368,7 @@ const ReservationsCalendar = () => {
       </header>
 
       <main className="px-5 md:flex md:gap-6">
-        <div className="md:w-1/2 md:shrink-0">
+        <div className="md:w-1/2 lg:w-2/5 md:shrink-0">
         <div className="grid grid-cols-7 gap-1 mb-6 md:mb-0">
           {visibleDays.map((day, index) => {
             const dayKey = day ? toDateKey(day) : `empty-${calendarRows.length}-${index}`
@@ -392,7 +392,7 @@ const ReservationsCalendar = () => {
         </div>
 
         {selectedDate && (
-          <section className="md:w-1/2 md:min-w-0">
+          <section className="md:w-1/2 lg:w-3/5 md:min-w-0">
             <div className="mb-4">
               <h2 className="text-lg font-bold font-heading flex items-center gap-2">
                 <Icon icon="solar:calendar-bold" className="text-primary size-5" />

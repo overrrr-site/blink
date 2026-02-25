@@ -68,12 +68,12 @@ function Settings() {
           <BusinessTypeSwitcher variant="pill" />
         </div>
 
-        <div className="flex bg-muted rounded-xl p-1 gap-1">
+        <div className="flex bg-muted rounded-xl p-1 gap-1 md:gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2 px-2 rounded-lg text-[11px] font-bold transition-all flex flex-col items-center justify-center gap-1 min-h-[52px] whitespace-nowrap active:scale-[0.98] ${
+              className={`flex-1 py-2 px-2 rounded-lg text-[11px] md:text-sm font-bold transition-all flex flex-col items-center justify-center gap-1 min-h-[52px] whitespace-nowrap active:scale-[0.98] ${
                 activeTab === tab.id
                   ? 'bg-background text-foreground shadow-sm border-b-2 border-primary'
                   : 'text-muted-foreground font-normal'
@@ -87,7 +87,7 @@ function Settings() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-24 px-5 space-y-4 pt-4">
+      <main className="flex-1 overflow-y-auto pb-24 px-5 space-y-4 pt-4 lg:max-w-3xl">
         <Suspense fallback={<TabLoader />}>
           {renderActiveTab(activeTab)}
         </Suspense>

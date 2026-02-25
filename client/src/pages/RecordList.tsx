@@ -317,7 +317,7 @@ const RecordList = () => {
                 })}
                 <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{dateRecords.length}件</span>
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4 lg:space-y-0">
                 {dateRecords.map((record) => (
                   <RecordCard key={record.id} record={record} onNavigate={handleNavigateRecord} />
                 ))}

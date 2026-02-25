@@ -166,246 +166,252 @@ const ReservationDetail = () => {
         </button>
       </header>
 
-      <main className="px-5 space-y-4">
-        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-          <div className="flex items-center gap-4 mb-4">
-            {reservation.dog_photo ? (
-              <LazyImage
-                src={getDetailThumbnailUrl(reservation.dog_photo)}
-                alt={reservation.dog_name}
-                className="size-20 rounded-full"
-              />
-            ) : (
-              <div className="size-20 rounded-full bg-muted flex items-center justify-center">
-                <Icon icon="solar:paw-print-bold"
-                  className="size-10 text-muted-foreground" />
-              </div>
-            )}
-            <div>
-              <h2 className="text-2xl font-bold mb-1">{reservation.dog_name}</h2>
-              <p className="text-sm text-muted-foreground">{reservation.owner_name} 様</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-muted-foreground">予約日時</label>
-              <p className="text-base font-medium">
-                {new Date(reservation.reservation_date).toLocaleDateString('ja-JP')}{' '}
-                {reservation.reservation_time?.substring(0, 5)}
-              </p>
-            </div>
-            {serviceTypeRenderFlags.showHotel && reservation.end_datetime && (
-              <div>
-                <label className="text-xs text-muted-foreground">チェックアウト予定</label>
-                <p className="text-base font-medium">
-                  {new Date(reservation.end_datetime).toLocaleDateString('ja-JP')}{' '}
-                  {new Date(reservation.end_datetime).toTimeString().slice(0, 5)}
-                </p>
-              </div>
-            )}
-            {serviceTypeRenderFlags.showHotel && (
-              <div>
-                <label className="text-xs text-muted-foreground">割当部屋</label>
-                <p className="text-base font-medium">
-                  {reservation.room_name
-                    ? `${reservation.room_name}${reservation.room_size ? ` (${reservation.room_size})` : ''}`
-                    : '未設定'}
-                </p>
-              </div>
-            )}
-            <div>
-              <label className="text-xs text-muted-foreground">ステータス</label>
-              <p className="text-base font-medium">{statusLabel}</p>
-            </div>
-          </div>
-        </div>
-
-        {hasPreVisitInput && (
+      <main className="px-5 space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
+        {/* Left column: reservation overview */}
+        <div className="space-y-4">
           <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-            <h3 className="text-lg font-bold mb-4">事前入力</h3>
-            {serviceTypeRenderFlags.showDaycare && reservation.daycare_data && (
-              <div className="space-y-3">
+            <div className="flex items-center gap-4 mb-4">
+              {reservation.dog_photo ? (
+                <LazyImage
+                  src={getDetailThumbnailUrl(reservation.dog_photo)}
+                  alt={reservation.dog_name}
+                  className="size-20 rounded-full"
+                />
+              ) : (
+                <div className="size-20 rounded-full bg-muted flex items-center justify-center">
+                  <Icon icon="solar:paw-print-bold"
+                    className="size-10 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <h2 className="text-2xl font-bold mb-1">{reservation.dog_name}</h2>
+                <p className="text-sm text-muted-foreground">{reservation.owner_name} 様</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground">予約日時</label>
+                <p className="text-base font-medium">
+                  {new Date(reservation.reservation_date).toLocaleDateString('ja-JP')}{' '}
+                  {reservation.reservation_time?.substring(0, 5)}
+                </p>
+              </div>
+              {serviceTypeRenderFlags.showHotel && reservation.end_datetime && (
                 <div>
-                  <label className="text-xs text-muted-foreground">お迎え予定</label>
+                  <label className="text-xs text-muted-foreground">チェックアウト予定</label>
                   <p className="text-base font-medium">
-                    {DAYCARE_LABELS.pickup_time[reservation.daycare_data.pickup_time] ?? reservation.daycare_data.pickup_time_other ?? '未設定'}
+                    {new Date(reservation.end_datetime).toLocaleDateString('ja-JP')}{' '}
+                    {new Date(reservation.end_datetime).toTimeString().slice(0, 5)}
                   </p>
                 </div>
+              )}
+              {serviceTypeRenderFlags.showHotel && (
                 <div>
-                  <label className="text-xs text-muted-foreground">健康状態</label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.energy === 'poor' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
-                      元気: {DAYCARE_LABELS.energy[reservation.daycare_data.energy]}
-                      {reservation.daycare_data.energy === 'poor' && reservation.daycare_data.energy_detail && ` (${reservation.daycare_data.energy_detail})`}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.appetite === 'poor' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
-                      食欲: {DAYCARE_LABELS.appetite[reservation.daycare_data.appetite]}
-                      {reservation.daycare_data.appetite === 'poor' && reservation.daycare_data.appetite_detail && ` (${reservation.daycare_data.appetite_detail})`}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.poop !== 'normal' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
-                      うんち: {DAYCARE_LABELS.poop[reservation.daycare_data.poop]}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.pee !== 'normal' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
-                      おしっこ: {DAYCARE_LABELS.pee[reservation.daycare_data.pee]}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.vomiting ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
-                      嘔吐: {reservation.daycare_data.vomiting ? 'あり' : 'なし'}
-                      {reservation.daycare_data.vomiting && reservation.daycare_data.vomiting_detail && ` (${reservation.daycare_data.vomiting_detail})`}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.itching ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
-                      かゆみ: {reservation.daycare_data.itching ? 'あり' : 'なし'}
-                      {reservation.daycare_data.itching && reservation.daycare_data.itching_detail && ` (${reservation.daycare_data.itching_detail})`}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded bg-chart-2/10 text-chart-2`}>
-                      お薬: {reservation.daycare_data.medication ? 'あり' : 'なし'}
-                      {reservation.daycare_data.medication && reservation.daycare_data.medication_detail && ` (${reservation.daycare_data.medication_detail})`}
-                    </span>
-                  </div>
+                  <label className="text-xs text-muted-foreground">割当部屋</label>
+                  <p className="text-base font-medium">
+                    {reservation.room_name
+                      ? `${reservation.room_name}${reservation.room_size ? ` (${reservation.room_size})` : ''}`
+                      : '未設定'}
+                  </p>
                 </div>
-                {(reservation.daycare_data.last_poop_time || reservation.daycare_data.last_pee_time || reservation.daycare_data.last_meal_time) && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">最後の排泄・食事</label>
-                    <div className="text-sm mt-1 space-y-0.5">
-                      {reservation.daycare_data.last_poop_time && <p>うんち: {reservation.daycare_data.last_poop_time.replace(':', '時')}分頃</p>}
-                      {reservation.daycare_data.last_pee_time && <p>おしっこ: {reservation.daycare_data.last_pee_time.replace(':', '時')}分頃</p>}
-                      {reservation.daycare_data.last_meal_time && <p>ごはん: {reservation.daycare_data.last_meal_time.replace(':', '時')}分頃</p>}
-                    </div>
-                  </div>
-                )}
-                {reservation.daycare_data.notes && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">コメント</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.daycare_data.notes}</p>
-                  </div>
-                )}
+              )}
+              <div>
+                <label className="text-xs text-muted-foreground">ステータス</label>
+                <p className="text-base font-medium">{statusLabel}</p>
               </div>
-            )}
-
-            {serviceTypeRenderFlags.showGrooming && (
-              <div className="space-y-3">
-                {reservation.grooming_data?.counseling?.style_request && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">希望スタイル</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.style_request}</p>
-                  </div>
-                )}
-                {reservation.grooming_data?.counseling?.caution_notes && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">注意事項</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.caution_notes}</p>
-                  </div>
-                )}
-                {reservation.grooming_data?.counseling?.condition_notes && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">当日の体調・変化</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.condition_notes}</p>
-                  </div>
-                )}
-                {reservation.grooming_data?.pre_visit?.pickup_time && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">お迎え予定時刻</label>
-                    <p className="text-base font-medium">{reservation.grooming_data.pre_visit.pickup_time}</p>
-                  </div>
-                )}
-                {reservation.grooming_data?.pre_visit?.completion_contact && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">仕上がり連絡の希望</label>
-                    <p className="text-base font-medium">
-                      {reservation.grooming_data.pre_visit.completion_contact === 'line'
-                        ? 'LINEで連絡'
-                        : reservation.grooming_data.pre_visit.completion_contact === 'phone'
-                          ? '電話で連絡'
-                          : '連絡不要'}
-                    </p>
-                  </div>
-                )}
-                {reservation.grooming_data?.pre_visit?.day_of_notes && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">当日メモ</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.pre_visit.day_of_notes}</p>
-                  </div>
-                )}
-                {reservation.grooming_data?.counseling?.consent_confirmed && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">確認状況</label>
-                    <p className="text-base font-medium">内容確認済み</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {serviceTypeRenderFlags.showHotel && (
-              <div className="space-y-3">
-                {(reservation.hotel_data?.feeding_schedule?.morning ||
-                  reservation.hotel_data?.feeding_schedule?.evening ||
-                  reservation.hotel_data?.feeding_schedule?.snack) && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">食事について</label>
-                    <div className="mt-1 space-y-1 text-sm">
-                      {reservation.hotel_data?.feeding_schedule?.morning && (
-                        <p>朝: {reservation.hotel_data.feeding_schedule.morning}</p>
-                      )}
-                      {reservation.hotel_data?.feeding_schedule?.evening && (
-                        <p>夜: {reservation.hotel_data.feeding_schedule.evening}</p>
-                      )}
-                      {reservation.hotel_data?.feeding_schedule?.snack && (
-                        <p>おやつ: {reservation.hotel_data.feeding_schedule.snack}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {reservation.hotel_data?.medication?.has_medication !== undefined && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">投薬</label>
-                    <p className="text-base font-medium">
-                      {reservation.hotel_data.medication?.has_medication ? 'あり' : 'なし'}
-                    </p>
-                    {reservation.hotel_data.medication?.details && (
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">
-                        {reservation.hotel_data.medication.details}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {reservation.hotel_data?.walk_preference && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">お散歩の希望</label>
-                    <p className="text-base font-medium">{reservation.hotel_data.walk_preference}</p>
-                  </div>
-                )}
-                {reservation.hotel_data?.sleeping_habit && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">寝る時の習慣</label>
-                    <p className="text-base font-medium">{reservation.hotel_data.sleeping_habit}</p>
-                  </div>
-                )}
-                {reservation.hotel_data?.special_notes && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">特記事項</label>
-                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.hotel_data.special_notes}</p>
-                  </div>
-                )}
-                {reservation.hotel_data?.emergency_contact_confirmed !== undefined && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">緊急連絡先</label>
-                    <p className="text-base font-medium">
-                      {reservation.hotel_data.emergency_contact_confirmed ? '確認済み' : '未確認'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            </div>
           </div>
-        )}
 
-        {/* カルテ作成ボタン */}
-        <button
-          onClick={() => navigate(`/records/create/${reservation.id}`)}
-          className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
-        >
-          {createRecordLabel}
-        </button>
+          {/* カルテ作成ボタン */}
+          <button
+            onClick={() => navigate(`/records/create/${reservation.id}`)}
+            className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+          >
+            {createRecordLabel}
+          </button>
+        </div>
+
+        {/* Right column: pre-visit data */}
+        <div className="space-y-4">
+          {hasPreVisitInput && (
+            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+              <h3 className="text-lg font-bold mb-4">事前入力</h3>
+              {serviceTypeRenderFlags.showDaycare && reservation.daycare_data && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground">お迎え予定</label>
+                    <p className="text-base font-medium">
+                      {DAYCARE_LABELS.pickup_time[reservation.daycare_data.pickup_time] ?? reservation.daycare_data.pickup_time_other ?? '未設定'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">健康状態</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.energy === 'poor' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                        元気: {DAYCARE_LABELS.energy[reservation.daycare_data.energy]}
+                        {reservation.daycare_data.energy === 'poor' && reservation.daycare_data.energy_detail && ` (${reservation.daycare_data.energy_detail})`}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.appetite === 'poor' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                        食欲: {DAYCARE_LABELS.appetite[reservation.daycare_data.appetite]}
+                        {reservation.daycare_data.appetite === 'poor' && reservation.daycare_data.appetite_detail && ` (${reservation.daycare_data.appetite_detail})`}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.poop !== 'normal' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                        うんち: {DAYCARE_LABELS.poop[reservation.daycare_data.poop]}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.pee !== 'normal' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                        おしっこ: {DAYCARE_LABELS.pee[reservation.daycare_data.pee]}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.vomiting ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                        嘔吐: {reservation.daycare_data.vomiting ? 'あり' : 'なし'}
+                        {reservation.daycare_data.vomiting && reservation.daycare_data.vomiting_detail && ` (${reservation.daycare_data.vomiting_detail})`}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.itching ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                        かゆみ: {reservation.daycare_data.itching ? 'あり' : 'なし'}
+                        {reservation.daycare_data.itching && reservation.daycare_data.itching_detail && ` (${reservation.daycare_data.itching_detail})`}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded bg-chart-2/10 text-chart-2`}>
+                        お薬: {reservation.daycare_data.medication ? 'あり' : 'なし'}
+                        {reservation.daycare_data.medication && reservation.daycare_data.medication_detail && ` (${reservation.daycare_data.medication_detail})`}
+                      </span>
+                    </div>
+                  </div>
+                  {(reservation.daycare_data.last_poop_time || reservation.daycare_data.last_pee_time || reservation.daycare_data.last_meal_time) && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">最後の排泄・食事</label>
+                      <div className="text-sm mt-1 space-y-0.5">
+                        {reservation.daycare_data.last_poop_time && <p>うんち: {reservation.daycare_data.last_poop_time.replace(':', '時')}分頃</p>}
+                        {reservation.daycare_data.last_pee_time && <p>おしっこ: {reservation.daycare_data.last_pee_time.replace(':', '時')}分頃</p>}
+                        {reservation.daycare_data.last_meal_time && <p>ごはん: {reservation.daycare_data.last_meal_time.replace(':', '時')}分頃</p>}
+                      </div>
+                    </div>
+                  )}
+                  {reservation.daycare_data.notes && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">コメント</label>
+                      <p className="text-base font-medium whitespace-pre-wrap">{reservation.daycare_data.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {serviceTypeRenderFlags.showGrooming && (
+                <div className="space-y-3">
+                  {reservation.grooming_data?.counseling?.style_request && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">希望スタイル</label>
+                      <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.style_request}</p>
+                    </div>
+                  )}
+                  {reservation.grooming_data?.counseling?.caution_notes && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">注意事項</label>
+                      <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.caution_notes}</p>
+                    </div>
+                  )}
+                  {reservation.grooming_data?.counseling?.condition_notes && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">当日の体調・変化</label>
+                      <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.counseling.condition_notes}</p>
+                    </div>
+                  )}
+                  {reservation.grooming_data?.pre_visit?.pickup_time && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">お迎え予定時刻</label>
+                      <p className="text-base font-medium">{reservation.grooming_data.pre_visit.pickup_time}</p>
+                    </div>
+                  )}
+                  {reservation.grooming_data?.pre_visit?.completion_contact && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">仕上がり連絡の希望</label>
+                      <p className="text-base font-medium">
+                        {reservation.grooming_data.pre_visit.completion_contact === 'line'
+                          ? 'LINEで連絡'
+                          : reservation.grooming_data.pre_visit.completion_contact === 'phone'
+                            ? '電話で連絡'
+                            : '連絡不要'}
+                      </p>
+                    </div>
+                  )}
+                  {reservation.grooming_data?.pre_visit?.day_of_notes && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">当日メモ</label>
+                      <p className="text-base font-medium whitespace-pre-wrap">{reservation.grooming_data.pre_visit.day_of_notes}</p>
+                    </div>
+                  )}
+                  {reservation.grooming_data?.counseling?.consent_confirmed && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">確認状況</label>
+                      <p className="text-base font-medium">内容確認済み</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {serviceTypeRenderFlags.showHotel && (
+                <div className="space-y-3">
+                  {(reservation.hotel_data?.feeding_schedule?.morning ||
+                    reservation.hotel_data?.feeding_schedule?.evening ||
+                    reservation.hotel_data?.feeding_schedule?.snack) && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">食事について</label>
+                      <div className="mt-1 space-y-1 text-sm">
+                        {reservation.hotel_data?.feeding_schedule?.morning && (
+                          <p>朝: {reservation.hotel_data.feeding_schedule.morning}</p>
+                        )}
+                        {reservation.hotel_data?.feeding_schedule?.evening && (
+                          <p>夜: {reservation.hotel_data.feeding_schedule.evening}</p>
+                        )}
+                        {reservation.hotel_data?.feeding_schedule?.snack && (
+                          <p>おやつ: {reservation.hotel_data.feeding_schedule.snack}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {reservation.hotel_data?.medication?.has_medication !== undefined && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">投薬</label>
+                      <p className="text-base font-medium">
+                        {reservation.hotel_data.medication?.has_medication ? 'あり' : 'なし'}
+                      </p>
+                      {reservation.hotel_data.medication?.details && (
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">
+                          {reservation.hotel_data.medication.details}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {reservation.hotel_data?.walk_preference && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">お散歩の希望</label>
+                      <p className="text-base font-medium">{reservation.hotel_data.walk_preference}</p>
+                    </div>
+                  )}
+                  {reservation.hotel_data?.sleeping_habit && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">寝る時の習慣</label>
+                      <p className="text-base font-medium">{reservation.hotel_data.sleeping_habit}</p>
+                    </div>
+                  )}
+                  {reservation.hotel_data?.special_notes && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">特記事項</label>
+                      <p className="text-base font-medium whitespace-pre-wrap">{reservation.hotel_data.special_notes}</p>
+                    </div>
+                  )}
+                  {reservation.hotel_data?.emergency_contact_confirmed !== undefined && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">緊急連絡先</label>
+                      <p className="text-base font-medium">
+                        {reservation.hotel_data.emergency_contact_confirmed ? '確認済み' : '未確認'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )

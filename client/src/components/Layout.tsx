@@ -8,6 +8,7 @@ import { getRandomGreeting } from '../utils/greetings'
 import { getRecordLabel } from '../utils/businessTypeColors'
 import OnboardingGuide from './OnboardingGuide'
 import BusinessTypeSwitcher from './BusinessTypeSwitcher'
+import logoImage from '../assets/logo.png'
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: '今日', icon: 'solar:calendar-mark-bold' },
@@ -128,40 +129,91 @@ function Layout(): JSX.Element {
         メインコンテンツへスキップ
       </a>
 
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64 lg:flex-col lg:border-r lg:border-border lg:bg-background">
+        <div className="px-5 pt-6 pb-4">
+          <img src={logoImage} alt="Blink" className="h-8" />
+        </div>
+
+        <nav className="flex-1 px-3 space-y-1" aria-label="メインナビゲーション">
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.path)
+            const guideKey = GUIDE_KEYS[item.path]
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                aria-label={`${item.label}へ移動`}
+                aria-current={active ? 'page' : undefined}
+                data-guide={guideKey}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
+                  active
+                    ? 'bg-primary/10 text-primary font-bold'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground font-medium'
+                }`}
+              >
+                <Icon icon={item.icon} width="22" height="22" aria-hidden="true" />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="mx-5 border-t border-border" />
+
+        <div className="px-3 py-4 space-y-2">
+          <p className="px-4 text-xs font-bold text-muted-foreground mb-2">新規作成</p>
+          {fabActions.map((action) => (
+            <button
+              key={action.path}
+              onClick={() => navigate(action.path)}
+              className={`w-full flex items-center gap-3 ${action.color} text-white px-4 py-3 rounded-xl text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all`}
+            >
+              <Icon icon={action.icon} width="20" height="20" aria-hidden="true" />
+              <span>{action.label}</span>
+            </button>
+          ))}
+        </div>
+      </aside>
+
       {isHomePage && (
-        <header className="px-5 pt-4 pb-3 flex items-center justify-between bg-background sticky top-0 z-10 border-b border-border safe-area-pt">
-          <div>
-            <p className="text-xs text-muted-foreground font-medium mb-0.5">
-              {new Date().toLocaleDateString('ja-JP', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'short',
-              })}
-            </p>
-            <h1 className="text-lg font-bold font-heading text-foreground leading-tight">
-              <span className="whitespace-nowrap">{greeting}、</span>
-              <span className="whitespace-nowrap">{user?.name || 'スタッフ'}さん</span>
-            </h1>
+        <header className="bg-background sticky top-0 z-10 border-b border-border safe-area-pt lg:ml-64 md:px-8 lg:px-12">
+          <div className="max-w-7xl mx-auto px-5 md:px-0 pt-4 pb-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground font-medium mb-0.5">
+                {new Date().toLocaleDateString('ja-JP', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  weekday: 'short',
+                })}
+              </p>
+              <h1 className="text-lg font-bold font-heading text-foreground leading-tight">
+                <span className="whitespace-nowrap">{greeting}、</span>
+                <span className="whitespace-nowrap">{user?.name || 'スタッフ'}さん</span>
+              </h1>
+            </div>
+            <BusinessTypeSwitcher variant="pill" />
           </div>
-          <BusinessTypeSwitcher variant="pill" />
         </header>
       )}
 
-      <main id="main-content" className="flex-1 overflow-y-auto pb-24">
-        <Outlet />
+      <main id="main-content" className="flex-1 overflow-y-auto pb-24 lg:pb-6 md:px-8 lg:ml-64 lg:px-12">
+        <div className="max-w-7xl mx-auto">
+          <Outlet />
+        </div>
       </main>
 
       {fabOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+          className="fixed inset-0 bg-black/50 z-40 transition-opacity lg:hidden"
           onClick={() => setFabOpen(false)}
           aria-hidden="true"
         />
       )}
 
       <div
-        className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3 transition-all duration-300 ${
+        className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3 transition-all duration-300 lg:hidden ${
           fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
@@ -184,7 +236,7 @@ function Layout(): JSX.Element {
         ))}
       </div>
 
-      <nav role="navigation" aria-label="メインナビゲーション" className="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 safe-area-pb">
+      <nav role="navigation" aria-label="メインナビゲーション" className="border-t border-border bg-background/95 backdrop-blur-md fixed bottom-0 left-0 right-0 z-50 safe-area-pb lg:hidden">
         <div className="flex items-center justify-around px-1 relative">
           {NAV_ITEMS.slice(0, 2).map((item) => (
             <NavButton

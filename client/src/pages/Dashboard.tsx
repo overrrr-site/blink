@@ -225,167 +225,174 @@ function Dashboard(): JSX.Element {
   return (
     <div className="pb-6">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
-      {/* ステータスフィルター */}
-      <div className="px-5 pt-2 mb-4">
-        <div className="relative">
-          <div ref={scrollRef} className="flex bg-muted rounded-xl p-1 gap-2 overflow-x-auto scrollbar-hide">
-            {filterOptions.map((filter) => {
-              const count = filter.id === 'all' ? currentCount : statusCounts[filter.id]
-              return (
-                <button
-                  key={filter.id}
-                  onClick={() => setStatusFilter(filter.id)}
-                  className={`flex-none py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all inline-flex flex-nowrap items-center justify-center gap-1 relative min-h-[44px] active:scale-[0.98] ${
-                    statusFilter === filter.id
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground font-normal'
-                  }`}
-                  aria-label={`${filter.label}の予約を表示`}
-                  aria-pressed={statusFilter === filter.id}
-                >
-                  <Icon icon={filter.icon} width="16" height="16" className="shrink-0" />
-                  <span className="whitespace-nowrap">{filter.label}</span>
-                  {count > 0 && <span className="text-[10px] opacity-70 hidden sm:inline">({count})</span>}
-                  {statusFilter === filter.id && (
-                    <span className={`absolute bottom-0 left-2 right-2 h-0.5 rounded-full ${filter.accentColor}`} />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-          <div
-            className={`absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted to-transparent rounded-r-xl pointer-events-none transition-opacity duration-200 ${
-              showRightFade ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-        </div>
-      </div>
-
-      {/* 予約リスト */}
-      <section className="px-5">
-        {filteredReservations.length === 0 ? (
-          <EmptyState
-            icon={statusFilter === '帰宅済' ? "solar:check-circle-bold" : "solar:calendar-linear"}
-            title={statusFilter === 'all'
-                ? dashboardEmptyState.title
-                : statusFilter === '帰宅済'
-                  ? '帰宅済みのワンちゃんはいません'
-                  : `${getReservationStatusLabel(statusFilter, currentBusinessType)}のワンちゃんはいません`}
-            description={statusFilter === 'all'
-              ? dashboardEmptyState.description
-              : '他のステータスを確認してください'}
-            action={statusFilter === 'all'
-              ? {
-                label: dashboardEmptyState.actionLabel,
-                onClick: handleNavigateNewReservation,
-                icon: 'solar:add-circle-bold'
-              }
-              : undefined}
-          />
-        ) : (
-          <div className="space-y-4">
-            {groupedReservations.map(([time, reservations]) => (
-              <div key={time}>
-                {/* 時間ヘッダー - より大きく目立つように */}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex items-center gap-2 min-w-[60px]">
-                    <Icon icon="solar:clock-circle-bold" className="size-5 text-primary" />
-                    <span className="text-base font-bold text-foreground">
-                      {time}
-                    </span>
-                  </div>
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground">{reservations.length}件</span>
-                </div>
-
-                {/* その時間の予約 - シンプルな展開式カード */}
-                <div className="space-y-2">
-                  {reservations.map((reservation) => (
-                    <ReservationCard
-                      key={reservation.id}
-                      reservation={reservation}
-                      isExpanded={expandedCard === reservation.id}
-                      onToggle={() => handleToggleCard(reservation.id)}
-                      onCheckIn={handleCheckIn}
-                      onCheckOut={handleCheckOut}
-                      onNavigatePreVisit={handleNavigatePreVisit}
-                      onNavigateTraining={handleNavigateTraining}
-                      onNavigateRecord={handleNavigateRecord}
-                      onNavigateJournal={handleNavigateJournalCreate}
-                      checkingIn={checkingIn}
-                      recordLabel={recordLabel}
-                      businessType={currentBusinessType}
-                    />
-                  ))}
-                </div>
+      <div className="lg:flex lg:gap-8">
+        <div className="lg:flex-1 lg:min-w-0">
+          {/* ステータスフィルター */}
+          <div className="px-5 pt-2 mb-4">
+            <div className="relative">
+              <div ref={scrollRef} className="flex bg-muted rounded-xl p-1 gap-2 overflow-x-auto scrollbar-hide">
+                {filterOptions.map((filter) => {
+                  const count = filter.id === 'all' ? currentCount : statusCounts[filter.id]
+                  return (
+                    <button
+                      key={filter.id}
+                      onClick={() => setStatusFilter(filter.id)}
+                      className={`flex-none py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all inline-flex flex-nowrap items-center justify-center gap-1 relative min-h-[44px] active:scale-[0.98] ${
+                        statusFilter === filter.id
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground font-normal'
+                      }`}
+                      aria-label={`${filter.label}の予約を表示`}
+                      aria-pressed={statusFilter === filter.id}
+                    >
+                      <Icon icon={filter.icon} width="16" height="16" className="shrink-0" />
+                      <span className="whitespace-nowrap">{filter.label}</span>
+                      {count > 0 && <span className="text-[10px] opacity-70 hidden sm:inline">({count})</span>}
+                      {statusFilter === filter.id && (
+                        <span className={`absolute bottom-0 left-2 right-2 h-0.5 rounded-full ${filter.accentColor}`} />
+                      )}
+                    </button>
+                  )
+                })}
               </div>
-            ))}
+              <div
+                className={`absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted to-transparent rounded-r-xl pointer-events-none transition-opacity duration-200 ${
+                  showRightFade ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            </div>
           </div>
+
+          {/* 予約リスト */}
+          <section className="px-5">
+            {filteredReservations.length === 0 ? (
+              <EmptyState
+                icon={statusFilter === '帰宅済' ? "solar:check-circle-bold" : "solar:calendar-linear"}
+                title={statusFilter === 'all'
+                    ? dashboardEmptyState.title
+                    : statusFilter === '帰宅済'
+                      ? '帰宅済みのワンちゃんはいません'
+                      : `${getReservationStatusLabel(statusFilter, currentBusinessType)}のワンちゃんはいません`}
+                description={statusFilter === 'all'
+                  ? dashboardEmptyState.description
+                  : '他のステータスを確認してください'}
+                illustration={statusFilter === 'all' ? '/images/dog-waiting.webp' : undefined}
+                action={statusFilter === 'all'
+                  ? {
+                    label: dashboardEmptyState.actionLabel,
+                    onClick: handleNavigateNewReservation,
+                    icon: 'solar:add-circle-bold'
+                  }
+                  : undefined}
+              />
+            ) : (
+              <div className="space-y-4">
+                {groupedReservations.map(([time, reservations]) => (
+                  <div key={time}>
+                    {/* 時間ヘッダー - より大きく目立つように */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-2 min-w-[60px]">
+                        <Icon icon="solar:clock-circle-bold" className="size-5 text-primary" />
+                        <span className="text-base font-bold text-foreground">
+                          {time}
+                        </span>
+                      </div>
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs text-muted-foreground">{reservations.length}件</span>
+                    </div>
+
+                    {/* その時間の予約 - シンプルな展開式カード */}
+                    <div className="space-y-2">
+                      {reservations.map((reservation) => (
+                        <ReservationCard
+                          key={reservation.id}
+                          reservation={reservation}
+                          isExpanded={expandedCard === reservation.id}
+                          onToggle={() => handleToggleCard(reservation.id)}
+                          onCheckIn={handleCheckIn}
+                          onCheckOut={handleCheckOut}
+                          onNavigatePreVisit={handleNavigatePreVisit}
+                          onNavigateTraining={handleNavigateTraining}
+                          onNavigateRecord={handleNavigateRecord}
+                          onNavigateJournal={handleNavigateJournalCreate}
+                          checkingIn={checkingIn}
+                          recordLabel={recordLabel}
+                          businessType={currentBusinessType}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* クイックアクション */}
+        {data && (
+          <aside className="px-5 mt-4 lg:mt-0 lg:px-0 lg:w-72 lg:shrink-0 lg:sticky lg:top-4 lg:self-start">
+            <section className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-1 lg:gap-2">
+              {/* 今日の点検記録 */}
+              <QuickActionCard
+                onClick={handleNavigateInspection}
+                icon={data?.todayInspectionRecord ? 'solar:check-circle-bold' : 'solar:clipboard-check-bold'}
+                iconClassName={data?.todayInspectionRecord ? 'bg-chart-2/20 text-chart-2' : 'bg-chart-5/20 text-chart-5'}
+                containerClassName={data?.todayInspectionRecord ? 'bg-chart-2/10 border-chart-2/20 hover:bg-chart-2/15' : 'bg-chart-5/10 border-chart-5/20 hover:bg-chart-5/15'}
+                title="今日の点検記録"
+                titleClassName={data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}
+                description={data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
+              />
+
+              {/* 未入力のカルテ/連絡帳 */}
+              {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
+                <QuickActionCard
+                  onClick={handleNavigateIncompleteRecord}
+                  icon="solar:clipboard-text-bold"
+                  iconClassName="bg-destructive/20 text-destructive"
+                  containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
+                  title={`未入力の${recordLabel}`}
+                  titleClassName="text-destructive"
+                  description={`${data.incompleteJournals.slice(0, 2).map((j) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
+                  badge={(
+                    <div className="flex items-center justify-center bg-destructive text-white text-xs font-bold size-7 rounded-full shrink-0">
+                      {data.incompleteJournals.length}
+                    </div>
+                  )}
+                />
+              )}
+
+              {/* お知らせ発信 */}
+              <QuickActionCard
+                onClick={handleNavigateAnnouncements}
+                icon="solar:mailbox-bold"
+                iconClassName="bg-primary/20 text-primary"
+                containerClassName="bg-primary/10 border-primary/20 hover:bg-primary/15"
+                title="お知らせ発信"
+                titleClassName="text-primary"
+                description={`公開中: ${data?.announcementStats?.published || 0}件 / 下書き: ${data?.announcementStats?.draft || 0}件`}
+              />
+
+              {/* 確認事項 */}
+              {data?.alerts && data.alerts.length > 0 && (
+                <QuickActionCard
+                  onClick={handleToggleAlerts}
+                  icon="solar:bell-bold"
+                  iconClassName="bg-chart-4/20 text-chart-4"
+                  containerClassName="bg-chart-4/10 border-chart-4/20 hover:bg-chart-4/15"
+                  title="確認事項"
+                  titleClassName="text-chart-4"
+                  description={alertSummary}
+                  badge={(
+                    <div className="flex items-center justify-center bg-chart-4 text-white text-xs font-bold size-7 rounded-full shrink-0">
+                      {data.alerts.length}
+                    </div>
+                  )}
+                />
+              )}
+            </section>
+          </aside>
         )}
-      </section>
-
-      {/* クイックアクション */}
-      {data && (
-        <section className="px-5 mt-4 space-y-2">
-          {/* 今日の点検記録 */}
-          <QuickActionCard
-            onClick={handleNavigateInspection}
-            icon={data?.todayInspectionRecord ? 'solar:check-circle-bold' : 'solar:clipboard-check-bold'}
-            iconClassName={data?.todayInspectionRecord ? 'bg-chart-2/20 text-chart-2' : 'bg-chart-5/20 text-chart-5'}
-            containerClassName={data?.todayInspectionRecord ? 'bg-chart-2/10 border-chart-2/20 hover:bg-chart-2/15' : 'bg-chart-5/10 border-chart-5/20 hover:bg-chart-5/15'}
-            title="今日の点検記録"
-            titleClassName={data?.todayInspectionRecord ? 'text-chart-2' : 'text-chart-5'}
-            description={data?.todayInspectionRecord ? '入力済み（タップして確認・編集）' : '点検記録を入力してください'}
-          />
-
-          {/* 未入力のカルテ/連絡帳 */}
-          {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
-            <QuickActionCard
-              onClick={handleNavigateIncompleteRecord}
-              icon="solar:clipboard-text-bold"
-              iconClassName="bg-destructive/20 text-destructive"
-              containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
-              title={`未入力の${recordLabel}`}
-              titleClassName="text-destructive"
-              description={`${data.incompleteJournals.slice(0, 2).map((j) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
-              badge={(
-                <div className="flex items-center justify-center bg-destructive text-white text-xs font-bold size-7 rounded-full shrink-0">
-                  {data.incompleteJournals.length}
-                </div>
-              )}
-            />
-          )}
-
-          {/* お知らせ発信 */}
-          <QuickActionCard
-            onClick={handleNavigateAnnouncements}
-            icon="solar:mailbox-bold"
-            iconClassName="bg-primary/20 text-primary"
-            containerClassName="bg-primary/10 border-primary/20 hover:bg-primary/15"
-            title="お知らせ発信"
-            titleClassName="text-primary"
-            description={`公開中: ${data?.announcementStats?.published || 0}件 / 下書き: ${data?.announcementStats?.draft || 0}件`}
-          />
-
-          {/* 確認事項 */}
-          {data?.alerts && data.alerts.length > 0 && (
-            <QuickActionCard
-              onClick={handleToggleAlerts}
-              icon="solar:bell-bold"
-              iconClassName="bg-chart-4/20 text-chart-4"
-              containerClassName="bg-chart-4/10 border-chart-4/20 hover:bg-chart-4/15"
-              title="確認事項"
-              titleClassName="text-chart-4"
-              description={alertSummary}
-              badge={(
-                <div className="flex items-center justify-center bg-chart-4 text-white text-xs font-bold size-7 rounded-full shrink-0">
-                  {data.alerts.length}
-                </div>
-              )}
-            />
-          )}
-        </section>
-      )}
+      </div>
 
       {/* 確認事項モーダル */}
       <AlertsModal isOpen={alertsModalOpen} onClose={handleHideAlerts} />
