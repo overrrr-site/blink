@@ -26,6 +26,8 @@ import { liffFetcher } from '../lib/swr';
 import { useLiffAuthStore } from '../store/authStore';
 import { getBusinessTypeLabel } from '../../utils/businessTypeColors';
 import { getStatusLabel } from '../../domain/businessTypeConfig';
+import type { DaycarePreVisitData } from '../../types/daycarePreVisit'
+import { DAYCARE_LABELS } from '../../types/daycarePreVisit'
 
 interface Reservation {
   id: number;
@@ -35,13 +37,7 @@ interface Reservation {
   dog_photo: string;
   status: string;
   has_pre_visit_input: boolean;
-  morning_urination: boolean | null;
-  morning_defecation: boolean | null;
-  afternoon_urination: boolean | null;
-  afternoon_defecation: boolean | null;
-  breakfast_status: string | null;
-  health_status: string | null;
-  pre_visit_notes: string | null;
+  daycare_data?: DaycarePreVisitData | null;
 }
 
 const SWIPE_THRESHOLD = 50;
@@ -50,13 +46,6 @@ function getReservationsForDate(reservations: Reservation[], date: Date): Reserv
   return reservations.filter(function(r) {
     return isSameDay(parseISO(r.reservation_date), date);
   });
-}
-
-function hasNoExcretionRecords(reservation: Reservation): boolean {
-  return !reservation.morning_urination &&
-         !reservation.morning_defecation &&
-         !reservation.afternoon_urination &&
-         !reservation.afternoon_defecation;
 }
 
 function getStatusBadgeClass(status: string): string {
@@ -393,57 +382,41 @@ export default function ReservationsCalendar(): JSX.Element {
                         <Icon icon="solar:clipboard-text-bold" width="14" height="14" />
                         事前入力
                       </h4>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {/* 排泄情報 */}
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">排泄</span>
+                      {reservation.daycare_data && (
+                        <div className="text-xs space-y-2">
                           <div className="flex flex-wrap gap-1">
-                            {reservation.morning_urination && (
-                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
-                                朝オシッコ
+                            {reservation.daycare_data.energy === 'poor' && (
+                              <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px]">元気なし</span>
+                            )}
+                            {reservation.daycare_data.appetite === 'poor' && (
+                              <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px]">食欲なし</span>
+                            )}
+                            {reservation.daycare_data.poop !== 'normal' && (
+                              <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px]">
+                                {DAYCARE_LABELS.poop[reservation.daycare_data.poop]}
                               </span>
                             )}
-                            {reservation.morning_defecation && (
-                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
-                                朝ウンチ
+                            {reservation.daycare_data.pee !== 'normal' && (
+                              <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px]">
+                                {DAYCARE_LABELS.pee[reservation.daycare_data.pee]}
                               </span>
                             )}
-                            {reservation.afternoon_urination && (
-                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
-                                昨夜オシッコ
-                              </span>
+                            {reservation.daycare_data.vomiting && (
+                              <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px]">嘔吐あり</span>
                             )}
-                            {reservation.afternoon_defecation && (
-                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">
-                                昨夜ウンチ
-                              </span>
+                            {reservation.daycare_data.itching && (
+                              <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px]">かゆみあり</span>
                             )}
-                            {hasNoExcretionRecords(reservation) && (
-                              <span className="text-muted-foreground text-[10px]">なし</span>
+                            {reservation.daycare_data.energy === 'good' && reservation.daycare_data.appetite === 'good' &&
+                             reservation.daycare_data.poop === 'normal' && reservation.daycare_data.pee === 'normal' &&
+                             !reservation.daycare_data.vomiting && !reservation.daycare_data.itching && (
+                              <span className="bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded text-[10px]">健康 良好</span>
                             )}
                           </div>
-                        </div>
-                        {/* 食事 */}
-                        {reservation.breakfast_status && (
-                          <div className="space-y-1">
-                            <span className="text-muted-foreground">朝ごはん</span>
-                            <p className="font-medium">{reservation.breakfast_status}</p>
-                          </div>
-                        )}
-                      </div>
-                      {/* 体調・連絡事項 */}
-                      {(reservation.health_status || reservation.pre_visit_notes) && (
-                        <div className="text-xs space-y-1 pt-1 border-t border-chart-3/10">
-                          {reservation.health_status && (
-                            <div>
-                              <span className="text-muted-foreground">体調: </span>
-                              <span>{reservation.health_status}</span>
-                            </div>
-                          )}
-                          {reservation.pre_visit_notes && (
-                            <div>
-                              <span className="text-muted-foreground">連絡: </span>
-                              <span>{reservation.pre_visit_notes}</span>
+                          {reservation.daycare_data.notes && (
+                            <div className="text-xs pt-1 border-t border-chart-3/10">
+                              <span className="text-muted-foreground">コメント: </span>
+                              <span>{reservation.daycare_data.notes}</span>
                             </div>
                           )}
                         </div>
