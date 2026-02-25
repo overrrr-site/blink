@@ -6,7 +6,8 @@ import { getAxiosErrorMessage } from '../../utils/error';
 import { useToast } from '../../components/Toast'
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import type { MealEntry } from '../../types/meal';
+import type { DaycarePreVisitData } from '../../types/daycarePreVisit';
+import { DEFAULT_DAYCARE_DATA } from '../../types/daycarePreVisit';
 import { useLiffAuthStore } from '../store/authStore';
 import type { RecordType } from '../../types/record';
 
@@ -19,14 +20,7 @@ interface PreVisitReservation {
   service_type?: 'daycare' | 'grooming' | 'hotel';
   pre_visit_service_type?: 'daycare' | 'grooming' | 'hotel';
   has_pre_visit_input: boolean;
-  morning_urination?: boolean;
-  morning_defecation?: boolean;
-  afternoon_urination?: boolean;
-  afternoon_defecation?: boolean;
-  breakfast_status?: string;
-  health_status?: string;
-  pre_visit_notes?: string;
-  meal_data?: MealEntry[];
+  daycare_data?: DaycarePreVisitData | null;
   grooming_data?: GroomingPreVisitData;
   hotel_data?: HotelPreVisitData;
 }
@@ -60,17 +54,6 @@ interface HotelPreVisitData {
   special_notes?: string;
   emergency_contact_confirmed?: boolean;
 }
-
-const DEFAULT_DAYCARE_DATA = {
-  morning_urination: false,
-  morning_defecation: false,
-  afternoon_urination: false,
-  afternoon_defecation: false,
-  breakfast_status: '',
-  health_status: '',
-  notes: '',
-  meal_data: [] as MealEntry[],
-};
 
 const DEFAULT_GROOMING_DATA: GroomingPreVisitData = {
   counseling: {
@@ -115,6 +98,138 @@ function normalizeGroomingPreVisitData(raw: unknown): GroomingPreVisitData {
       day_of_notes: source.pre_visit?.day_of_notes || '',
     },
   };
+}
+
+function RadioRow<T extends string>({
+  label,
+  name,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  name: string
+  value: T
+  options: { value: T; label: string; danger?: boolean }[]
+  onChange: (value: T) => void
+}) {
+  return (
+    <div className="flex items-center gap-3 py-3 border-b border-border/50 last:border-b-0">
+      <span className="text-sm font-medium w-20 shrink-0">{label}</span>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => (
+          <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name={name}
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+              className="sr-only"
+            />
+            <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+              value === opt.value
+                ? opt.danger ? 'border-destructive bg-destructive' : 'border-primary bg-primary'
+                : 'border-muted-foreground/30'
+            }`}>
+              {value === opt.value && <div className="size-2 rounded-full bg-white" />}
+            </div>
+            <span className={`text-sm ${opt.danger && value === opt.value ? 'text-destructive font-medium' : ''}`}>{opt.label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BooleanRow({
+  label,
+  name,
+  value,
+  detail,
+  onValueChange,
+  onDetailChange,
+  detailPlaceholder,
+}: {
+  label: string
+  name: string
+  value: boolean
+  detail?: string
+  onValueChange: (v: boolean) => void
+  onDetailChange: (v: string) => void
+  detailPlaceholder?: string
+}) {
+  return (
+    <div className="py-3 border-b border-border/50 last:border-b-0">
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium w-20 shrink-0">{label}</span>
+        <div className="flex gap-2">
+          {[false, true].map((opt) => (
+            <label key={String(opt)} className="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name={name} checked={value === opt} onChange={() => onValueChange(opt)} className="sr-only" />
+              <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                value === opt
+                  ? opt ? 'border-destructive bg-destructive' : 'border-primary bg-primary'
+                  : 'border-muted-foreground/30'
+              }`}>
+                {value === opt && <div className="size-2 rounded-full bg-white" />}
+              </div>
+              <span className={`text-sm ${opt && value === opt ? 'text-destructive font-medium' : ''}`}>{opt ? 'あり' : 'なし'}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      {value && (
+        <input
+          type="text"
+          value={detail ?? ''}
+          onChange={(e) => onDetailChange(e.target.value)}
+          placeholder={detailPlaceholder ?? '詳細を入力'}
+          className="mt-2 ml-[calc(5rem+0.75rem)] w-[calc(100%-5rem-0.75rem)] px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[40px]
+                     focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+        />
+      )}
+    </div>
+  )
+}
+
+function TimeInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string | undefined
+  onChange: (v: string) => void
+}) {
+  const [hour, minute] = (value || '').split(':')
+  const handleChange = (h: string, m: string) => {
+    if (h || m) onChange(`${h || ''}:${m || ''}`)
+    else onChange('')
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium w-20 shrink-0">{label}</span>
+      <input
+        type="number"
+        min={0} max={23}
+        value={hour ?? ''}
+        onChange={(e) => handleChange(e.target.value, minute ?? '')}
+        placeholder="--"
+        className="w-16 px-2 py-2 rounded-lg border border-border bg-input text-center text-sm min-h-[40px]"
+      />
+      <span className="text-sm">時</span>
+      <input
+        type="number"
+        min={0} max={59}
+        value={minute ?? ''}
+        onChange={(e) => handleChange(hour ?? '', e.target.value)}
+        placeholder="--"
+        className="w-16 px-2 py-2 rounded-lg border border-border bg-input text-center text-sm min-h-[40px]"
+      />
+      <span className="text-sm">分頃</span>
+    </div>
+  )
 }
 
 // チェックボックスコンポーネント
@@ -185,16 +300,10 @@ export default function PreVisitInput() {
           // 既存の事前入力データがあれば、保存されている業種に応じて読み込む
           if (res.has_pre_visit_input) {
             const savedServiceType: RecordType = res.pre_visit_service_type || res.service_type || 'daycare';
-            if (savedServiceType === 'daycare') {
+            if (savedServiceType === 'daycare' && res.daycare_data) {
               setDaycareData({
-                morning_urination: res.morning_urination ?? false,
-                morning_defecation: res.morning_defecation ?? false,
-                afternoon_urination: res.afternoon_urination ?? false,
-                afternoon_defecation: res.afternoon_defecation ?? false,
-                breakfast_status: res.breakfast_status ?? '',
-                health_status: res.health_status ?? '',
-                notes: res.pre_visit_notes ?? '',
-                meal_data: res.meal_data ?? [],
+                ...DEFAULT_DAYCARE_DATA,
+                ...res.daycare_data,
               });
             }
             if (savedServiceType === 'grooming') {
@@ -230,14 +339,7 @@ export default function PreVisitInput() {
 
       if (serviceType === 'daycare') {
         Object.assign(payload, {
-          morning_urination: daycareData.morning_urination,
-          morning_defecation: daycareData.morning_defecation,
-          afternoon_urination: daycareData.afternoon_urination,
-          afternoon_defecation: daycareData.afternoon_defecation,
-          breakfast_status: daycareData.breakfast_status,
-          health_status: daycareData.health_status,
-          notes: daycareData.notes,
-          meal_data: daycareData.meal_data.length > 0 ? daycareData.meal_data : null,
+          daycare_data: daycareData,
         });
       }
 
@@ -276,29 +378,6 @@ export default function PreVisitInput() {
     }
   };
 
-  const addMealEntry = () => {
-    setDaycareData(prev => ({
-      ...prev,
-      meal_data: [...prev.meal_data, { time: '', food_name: '', amount: '' }],
-    }));
-  };
-
-  const updateMealEntry = (index: number, field: keyof MealEntry, value: string) => {
-    setDaycareData(prev => ({
-      ...prev,
-      meal_data: prev.meal_data.map((entry, i) =>
-        i === index ? { ...entry, [field]: value } : entry
-      ),
-    }));
-  };
-
-  const removeMealEntry = (index: number) => {
-    setDaycareData(prev => ({
-      ...prev,
-      meal_data: prev.meal_data.filter((_, i) => i !== index),
-    }));
-  };
-
   const updateHotelFeeding = (field: 'morning' | 'evening' | 'snack', value: string) => {
     setHotelData(prev => ({
       ...prev,
@@ -327,16 +406,10 @@ export default function PreVisitInput() {
         params: { service_type: serviceType },
       });
       const lastRecord = response.data;
-      if (serviceType === 'daycare') {
+      if (serviceType === 'daycare' && lastRecord.daycare_data) {
         setDaycareData({
-          morning_urination: lastRecord.morning_urination ?? false,
-          morning_defecation: lastRecord.morning_defecation ?? false,
-          afternoon_urination: lastRecord.afternoon_urination ?? false,
-          afternoon_defecation: lastRecord.afternoon_defecation ?? false,
-          breakfast_status: lastRecord.breakfast_status ?? '',
-          health_status: lastRecord.health_status ?? '',
-          notes: lastRecord.notes ?? '',
-          meal_data: lastRecord.meal_data ?? [],
+          ...DEFAULT_DAYCARE_DATA,
+          ...lastRecord.daycare_data,
         });
       }
       if (serviceType === 'grooming') {
@@ -445,171 +518,146 @@ export default function PreVisitInput() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {serviceType === 'daycare' && (
           <>
-            {/* 排泄 */}
+            {/* お迎え予定 */}
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
               <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-                <Icon icon="solar:toilet-paper-bold" width="20" height="20" className="text-chart-3" />
-                排泄
+                <Icon icon="solar:clock-circle-bold" width="20" height="20" className="text-chart-4" />
+                お迎え予定
               </h2>
-              <p className="text-xs text-muted-foreground mb-3">
-                前日夜〜今朝の排泄状況をお知らせください
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <CheckboxItem
-                  id="morning_urination"
-                  label="今朝オシッコした"
-                  checked={daycareData.morning_urination}
-                  onChange={(checked) => setDaycareData({ ...daycareData, morning_urination: checked })}
+              <RadioRow
+                label="時間"
+                name="pickup_time"
+                value={daycareData.pickup_time}
+                options={[
+                  { value: '17:00' as const, label: '17時' },
+                  { value: '17:30' as const, label: '17時半' },
+                  { value: '18:00' as const, label: '18時' },
+                  { value: 'other' as const, label: 'その他' },
+                ]}
+                onChange={(v) => setDaycareData({ ...daycareData, pickup_time: v })}
+              />
+              {daycareData.pickup_time === 'other' && (
+                <input
+                  type="text"
+                  value={daycareData.pickup_time_other ?? ''}
+                  onChange={(e) => setDaycareData({ ...daycareData, pickup_time_other: e.target.value })}
+                  placeholder="お迎え時間を入力"
+                  className="mt-2 w-full px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[40px]
+                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                 />
-                <CheckboxItem
-                  id="morning_defecation"
-                  label="今朝ウンチした"
-                  checked={daycareData.morning_defecation}
-                  onChange={(checked) => setDaycareData({ ...daycareData, morning_defecation: checked })}
-                />
-                <CheckboxItem
-                  id="afternoon_urination"
-                  label="昨夜オシッコした"
-                  checked={daycareData.afternoon_urination}
-                  onChange={(checked) => setDaycareData({ ...daycareData, afternoon_urination: checked })}
-                />
-                <CheckboxItem
-                  id="afternoon_defecation"
-                  label="昨夜ウンチした"
-                  checked={daycareData.afternoon_defecation}
-                  onChange={(checked) => setDaycareData({ ...daycareData, afternoon_defecation: checked })}
-                />
-              </div>
+              )}
             </section>
 
-            {/* 食事 */}
-            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
-                <Icon icon="solar:bowl-bold" width="20" height="20" className="text-chart-2" />
-                食事
-              </h2>
-              <div className="mb-4">
-                <label htmlFor="breakfast_status" className="block text-sm font-medium mb-2">
-                  朝ごはんの食べ具合
-                </label>
-                <select
-                  id="breakfast_status"
-                  value={daycareData.breakfast_status}
-                  onChange={(e) => setDaycareData({ ...daycareData, breakfast_status: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
-                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  aria-describedby="breakfast-hint"
-                >
-                  <option value="">選択してください</option>
-                  <option value="完食">完食</option>
-                  <option value="少し残した">少し残した</option>
-                  <option value="半分以下">半分以下</option>
-                  <option value="食べていない">食べていない</option>
-                </select>
-                <p id="breakfast-hint" className="text-xs text-muted-foreground mt-1.5">
-                  いつもと比べた食欲をお選びください
-                </p>
-              </div>
-
-              {/* ごはん記録 */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  ごはん記録 <span className="text-muted-foreground font-normal">(任意)</span>
-                </label>
-
-                {daycareData.meal_data.map((entry, index) => (
-                  <div key={index} className="bg-muted/50 rounded-xl p-3 mb-2 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-muted-foreground">ごはん {index + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeMealEntry(index)}
-                        className="text-destructive text-xs font-medium min-h-[32px] px-2 active:scale-90 transition-all"
-                      >
-                        削除
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="いつ（例: 朝8時）"
-                      value={entry.time}
-                      onChange={(e) => updateMealEntry(index, 'time', e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
-                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                    />
-                    <input
-                      type="text"
-                      placeholder="フード名（例: ロイカナ）"
-                      value={entry.food_name}
-                      onChange={(e) => updateMealEntry(index, 'food_name', e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
-                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                    />
-                    <input
-                      type="text"
-                      placeholder="量（例: 50g）"
-                      value={entry.amount}
-                      onChange={(e) => updateMealEntry(index, 'amount', e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-input text-sm min-h-[44px]
-                             focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                    />
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={addMealEntry}
-                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground font-medium
-                         flex items-center justify-center gap-1.5 active:bg-muted active:scale-[0.98] transition-all"
-                >
-                  <Icon icon="solar:add-circle-linear" width="18" height="18" />
-                  ごはんを追加
-                </button>
-              </div>
-            </section>
-
-            {/* 体調 */}
+            {/* 健康状態 */}
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
               <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
                 <Icon icon="solar:heart-pulse-bold" width="20" height="20" className="text-destructive" />
-                体調
+                健康状態
               </h2>
-              <div>
-                <label htmlFor="health_status" className="block text-sm font-medium mb-2">
-                  体調の変化 <span className="text-muted-foreground font-normal">(任意)</span>
-                </label>
-                <textarea
-                  id="health_status"
-                  value={daycareData.health_status}
-                  onChange={(e) => setDaycareData({ ...daycareData, health_status: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
-                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  placeholder="例: 昨日から少し元気がない、咳をしている等"
-                />
+              <RadioRow
+                label="元気"
+                name="energy"
+                value={daycareData.energy}
+                options={[
+                  { value: 'good' as const, label: 'あり' },
+                  { value: 'poor' as const, label: 'なし', danger: true },
+                ]}
+                onChange={(v) => setDaycareData({ ...daycareData, energy: v })}
+              />
+              {daycareData.energy === 'poor' && (
+                <input type="text" value={daycareData.energy_detail ?? ''} onChange={(e) => setDaycareData({ ...daycareData, energy_detail: e.target.value })} placeholder="詳細を入力" className="mb-2 ml-[calc(5rem+0.75rem)] w-[calc(100%-5rem-0.75rem)] px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[40px] focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
+              )}
+              <RadioRow
+                label="食欲"
+                name="appetite"
+                value={daycareData.appetite}
+                options={[
+                  { value: 'good' as const, label: 'あり' },
+                  { value: 'poor' as const, label: 'なし', danger: true },
+                ]}
+                onChange={(v) => setDaycareData({ ...daycareData, appetite: v })}
+              />
+              {daycareData.appetite === 'poor' && (
+                <input type="text" value={daycareData.appetite_detail ?? ''} onChange={(e) => setDaycareData({ ...daycareData, appetite_detail: e.target.value })} placeholder="詳細を入力" className="mb-2 ml-[calc(5rem+0.75rem)] w-[calc(100%-5rem-0.75rem)] px-3 py-2 rounded-lg border border-border bg-input text-sm min-h-[40px] focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
+              )}
+              <RadioRow
+                label="うんち"
+                name="poop"
+                value={daycareData.poop}
+                options={[
+                  { value: 'normal' as const, label: '問題なし' },
+                  { value: 'soft' as const, label: '軟便', danger: true },
+                  { value: 'bloody' as const, label: '血便', danger: true },
+                ]}
+                onChange={(v) => setDaycareData({ ...daycareData, poop: v })}
+              />
+              <RadioRow
+                label="おしっこ"
+                name="pee"
+                value={daycareData.pee}
+                options={[
+                  { value: 'normal' as const, label: '問題なし' },
+                  { value: 'dark' as const, label: '色が濃い', danger: true },
+                  { value: 'bloody' as const, label: '血尿', danger: true },
+                ]}
+                onChange={(v) => setDaycareData({ ...daycareData, pee: v })}
+              />
+              <BooleanRow
+                label="嘔吐"
+                name="vomiting"
+                value={daycareData.vomiting}
+                detail={daycareData.vomiting_detail}
+                onValueChange={(v) => setDaycareData({ ...daycareData, vomiting: v })}
+                onDetailChange={(v) => setDaycareData({ ...daycareData, vomiting_detail: v })}
+                detailPlaceholder="嘔吐の詳細を入力"
+              />
+              <BooleanRow
+                label="かゆみ"
+                name="itching"
+                value={daycareData.itching}
+                detail={daycareData.itching_detail}
+                onValueChange={(v) => setDaycareData({ ...daycareData, itching: v })}
+                onDetailChange={(v) => setDaycareData({ ...daycareData, itching_detail: v })}
+                detailPlaceholder="かゆみの詳細を入力"
+              />
+              <BooleanRow
+                label="投薬"
+                name="medication"
+                value={daycareData.medication}
+                detail={daycareData.medication_detail}
+                onValueChange={(v) => setDaycareData({ ...daycareData, medication: v })}
+                onDetailChange={(v) => setDaycareData({ ...daycareData, medication_detail: v })}
+                detailPlaceholder="薬名・タイミングなど"
+              />
+            </section>
+
+            {/* 最後の排泄・食事 */}
+            <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
+              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+                <Icon icon="solar:clock-circle-bold" width="20" height="20" className="text-chart-2" />
+                最後の排泄・食事
+              </h2>
+              <div className="space-y-3">
+                <TimeInput label="うんち" value={daycareData.last_poop_time} onChange={(v) => setDaycareData({ ...daycareData, last_poop_time: v })} />
+                <TimeInput label="おしっこ" value={daycareData.last_pee_time} onChange={(v) => setDaycareData({ ...daycareData, last_pee_time: v })} />
+                <TimeInput label="ごはん" value={daycareData.last_meal_time} onChange={(v) => setDaycareData({ ...daycareData, last_meal_time: v })} />
               </div>
             </section>
 
-            {/* 連絡事項 */}
+            {/* ご家庭からのコメント */}
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
               <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
                 <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-chart-4" />
-                連絡事項
+                ご家庭からのコメント
               </h2>
-              <div>
-                <label htmlFor="notes" className="block text-sm font-medium mb-2">
-                  その他の連絡事項 <span className="text-muted-foreground font-normal">(任意)</span>
-                </label>
-                <textarea
-                  id="notes"
-                  value={daycareData.notes}
-                  onChange={(e) => setDaycareData({ ...daycareData, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
-                         focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  placeholder="例: 今日は17時お迎えが少し遅れます等"
-                />
-              </div>
+              <textarea
+                value={daycareData.notes ?? ''}
+                onChange={(e) => setDaycareData({ ...daycareData, notes: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground resize-none
+                           focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="スタッフに伝えたいことがあればご記入ください"
+              />
             </section>
           </>
         )}
