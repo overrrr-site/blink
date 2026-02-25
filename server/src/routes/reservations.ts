@@ -166,7 +166,7 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
              o.name as owner_name,
              hr.room_name,
              hr.room_size,
-             pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
+             pvi.daycare_data,
              CASE WHEN j.id IS NOT NULL THEN true ELSE false END as has_journal
       FROM reservations r
       JOIN dogs d ON r.dog_id = d.id
@@ -310,10 +310,7 @@ router.get('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
               d.name as dog_name, d.photo_url as dog_photo,
               o.name as owner_name, o.phone as owner_phone,
               hr.room_name, hr.room_size,
-              pvi.morning_urination, pvi.morning_defecation,
-              pvi.afternoon_urination, pvi.afternoon_defecation,
-              pvi.breakfast_status, pvi.health_status, pvi.notes as pre_visit_notes,
-              pvi.meal_data, pvi.service_type as pre_visit_service_type,
+              pvi.daycare_data, pvi.service_type as pre_visit_service_type,
               pvi.grooming_data, pvi.hotel_data,
               COALESCE(stats.visit_count, 0) as visit_count,
               next.next_visit_date

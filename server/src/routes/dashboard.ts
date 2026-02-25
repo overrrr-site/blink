@@ -58,7 +58,7 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
                 r.end_datetime,
                 d.name as dog_name, d.photo_url as dog_photo,
                 o.name as owner_name,
-                pvi.breakfast_status, pvi.health_status, pvi.notes,
+                pvi.daycare_data,
                 EXISTS (
                   SELECT 1 FROM journals j
                   WHERE j.reservation_id = r.id
