@@ -7,6 +7,8 @@ import api from '../api/client'
 import { fetcher } from '../lib/swr'
 import { getStatusLabel } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
+import type { DaycarePreVisitData } from '../types/daycarePreVisit'
+import { DAYCARE_LABELS } from '../types/daycarePreVisit'
 import {
   getServiceTypeRenderFlags,
   hasReservationPreVisitInput,
@@ -28,14 +30,7 @@ interface ReservationDetailData {
   service_type?: 'daycare' | 'grooming' | 'hotel'
   room_name?: string | null
   room_size?: string | null
-  morning_urination?: boolean
-  morning_defecation?: boolean
-  afternoon_urination?: boolean
-  afternoon_defecation?: boolean
-  breakfast_status?: string | null
-  health_status?: string | null
-  pre_visit_notes?: string | null
-  meal_data?: Array<{ time: string; food_name: string; amount: string }> | null
+  daycare_data?: DaycarePreVisitData | null
   pre_visit_service_type?: string | null
   grooming_data?: GroomingPreVisitData | null
   hotel_data?: HotelPreVisitData | null
@@ -229,67 +224,59 @@ const ReservationDetail = () => {
         {hasPreVisitInput && (
           <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
             <h3 className="text-lg font-bold mb-4">事前入力</h3>
-            {serviceTypeRenderFlags.showDaycare && (
+            {serviceTypeRenderFlags.showDaycare && reservation.daycare_data && (
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-muted-foreground">排泄（前日夜〜当日朝）</label>
+                  <label className="text-xs text-muted-foreground">お迎え予定</label>
+                  <p className="text-base font-medium">
+                    {DAYCARE_LABELS.pickup_time[reservation.daycare_data.pickup_time] ?? reservation.daycare_data.pickup_time_other ?? '未設定'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">健康状態</label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {reservation.morning_urination && (
-                      <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
-                        朝オシッコ
-                      </span>
-                    )}
-                    {reservation.morning_defecation && (
-                      <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
-                        朝ウンチ
-                      </span>
-                    )}
-                    {reservation.afternoon_urination && (
-                      <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
-                        昨夜オシッコ
-                      </span>
-                    )}
-                    {reservation.afternoon_defecation && (
-                      <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-1 rounded">
-                        昨夜ウンチ
-                      </span>
-                    )}
-                    {!reservation.morning_urination && !reservation.morning_defecation &&
-                     !reservation.afternoon_urination && !reservation.afternoon_defecation && (
-                      <span className="text-xs text-muted-foreground">なし</span>
-                    )}
+                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.energy === 'poor' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                      元気: {DAYCARE_LABELS.energy[reservation.daycare_data.energy]}
+                      {reservation.daycare_data.energy === 'poor' && reservation.daycare_data.energy_detail && ` (${reservation.daycare_data.energy_detail})`}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.appetite === 'poor' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                      食欲: {DAYCARE_LABELS.appetite[reservation.daycare_data.appetite]}
+                      {reservation.daycare_data.appetite === 'poor' && reservation.daycare_data.appetite_detail && ` (${reservation.daycare_data.appetite_detail})`}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.poop !== 'normal' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                      うんち: {DAYCARE_LABELS.poop[reservation.daycare_data.poop]}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.pee !== 'normal' ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                      おしっこ: {DAYCARE_LABELS.pee[reservation.daycare_data.pee]}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.vomiting ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                      嘔吐: {reservation.daycare_data.vomiting ? 'あり' : 'なし'}
+                      {reservation.daycare_data.vomiting && reservation.daycare_data.vomiting_detail && ` (${reservation.daycare_data.vomiting_detail})`}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${reservation.daycare_data.itching ? 'bg-destructive/10 text-destructive' : 'bg-chart-2/10 text-chart-2'}`}>
+                      かゆみ: {reservation.daycare_data.itching ? 'あり' : 'なし'}
+                      {reservation.daycare_data.itching && reservation.daycare_data.itching_detail && ` (${reservation.daycare_data.itching_detail})`}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded bg-chart-2/10 text-chart-2`}>
+                      お薬: {reservation.daycare_data.medication ? 'あり' : 'なし'}
+                      {reservation.daycare_data.medication && reservation.daycare_data.medication_detail && ` (${reservation.daycare_data.medication_detail})`}
+                    </span>
                   </div>
                 </div>
-                {reservation.breakfast_status && (
+                {(reservation.daycare_data.last_poop_time || reservation.daycare_data.last_pee_time || reservation.daycare_data.last_meal_time) && (
                   <div>
-                    <label className="text-xs text-muted-foreground">朝ごはんの食べ具合</label>
-                    <p className="text-base font-medium">{reservation.breakfast_status}</p>
-                  </div>
-                )}
-                {reservation.meal_data && reservation.meal_data.length > 0 && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">ごはん記録</label>
-                    <div className="mt-1 space-y-1">
-                      {reservation.meal_data.map((meal, index) => (
-                        <div key={index} className="flex items-center gap-2 text-sm">
-                          {meal.time && <span className="text-muted-foreground">{meal.time}</span>}
-                          <span className="font-medium">{meal.food_name}</span>
-                          {meal.amount && <span className="text-muted-foreground">{meal.amount}</span>}
-                        </div>
-                      ))}
+                    <label className="text-xs text-muted-foreground">最後の排泄・食事</label>
+                    <div className="text-sm mt-1 space-y-0.5">
+                      {reservation.daycare_data.last_poop_time && <p>うんち: {reservation.daycare_data.last_poop_time.replace(':', '時')}分頃</p>}
+                      {reservation.daycare_data.last_pee_time && <p>おしっこ: {reservation.daycare_data.last_pee_time.replace(':', '時')}分頃</p>}
+                      {reservation.daycare_data.last_meal_time && <p>ごはん: {reservation.daycare_data.last_meal_time.replace(':', '時')}分頃</p>}
                     </div>
                   </div>
                 )}
-                {reservation.health_status && (
+                {reservation.daycare_data.notes && (
                   <div>
-                    <label className="text-xs text-muted-foreground">体調の変化</label>
-                    <p className="text-base font-medium">{reservation.health_status}</p>
-                  </div>
-                )}
-                {reservation.pre_visit_notes && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">連絡事項</label>
-                    <p className="text-base font-medium">{reservation.pre_visit_notes}</p>
+                    <label className="text-xs text-muted-foreground">コメント</label>
+                    <p className="text-base font-medium whitespace-pre-wrap">{reservation.daycare_data.notes}</p>
                   </div>
                 )}
               </div>
