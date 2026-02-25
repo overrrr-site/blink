@@ -3,6 +3,8 @@ import { formatDateFullWithWeekday } from '../../utils/date'
 import { getBusinessTypeColors } from '../../utils/businessTypeColors'
 import { getBusinessTypeConfig, getStatusLabel } from '../../domain/businessTypeConfig'
 import type { RecordType } from '../../types/record'
+import type { DaycarePreVisitData } from '../../types/daycarePreVisit'
+import { DAYCARE_LABELS } from '../../types/daycarePreVisit'
 
 type ReservationItem = {
   id: number
@@ -27,14 +29,7 @@ type PreVisitItem = {
   reservation_date: string
   reservation_time: string
   service_type?: string
-  morning_urination?: boolean
-  morning_defecation?: boolean
-  afternoon_urination?: boolean
-  afternoon_defecation?: boolean
-  breakfast_status?: string
-  health_status?: string
-  notes?: string
-  meal_data?: any
+  daycare_data?: DaycarePreVisitData | null
   grooming_data?: any
   hotel_data?: any
 }
@@ -222,33 +217,45 @@ export default function HistoryTabs({
                       <span className="text-xs text-muted-foreground">{pviTime}</span>
                     </div>
                     <div className="space-y-1.5">
-                      {pvi.health_status && (
-                        <div className="flex gap-2 text-xs">
-                          <span className="text-muted-foreground shrink-0">体調:</span>
-                          <span className="text-foreground">{pvi.health_status}</span>
-                        </div>
-                      )}
-                      {pvi.breakfast_status && (
-                        <div className="flex gap-2 text-xs">
-                          <span className="text-muted-foreground shrink-0">朝ごはん:</span>
-                          <span className="text-foreground">{pvi.breakfast_status}</span>
-                        </div>
-                      )}
-                      {(pvi.morning_urination || pvi.morning_defecation) && (
-                        <div className="flex gap-2 text-xs">
-                          <span className="text-muted-foreground shrink-0">朝の排泄:</span>
-                          <span className="text-foreground">
-                            {[pvi.morning_urination && 'オシッコ', pvi.morning_defecation && 'ウンチ'].filter(Boolean).join('・')}
-                          </span>
-                        </div>
-                      )}
-                      {pvi.notes && (
-                        <div className="flex gap-2 text-xs">
-                          <span className="text-muted-foreground shrink-0">連絡事項:</span>
-                          <span className="text-foreground">{pvi.notes}</span>
-                        </div>
-                      )}
-                      {!pvi.health_status && !pvi.breakfast_status && !pvi.notes && !pvi.morning_urination && !pvi.morning_defecation && (
+                      {pvi.daycare_data ? (
+                        <>
+                          <div className="flex flex-wrap gap-1">
+                            {pvi.daycare_data.energy === 'poor' && (
+                              <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">元気なし</span>
+                            )}
+                            {pvi.daycare_data.appetite === 'poor' && (
+                              <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">食欲なし</span>
+                            )}
+                            {pvi.daycare_data.poop !== 'normal' && (
+                              <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
+                                {DAYCARE_LABELS.poop[pvi.daycare_data.poop]}
+                              </span>
+                            )}
+                            {pvi.daycare_data.pee !== 'normal' && (
+                              <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
+                                {DAYCARE_LABELS.pee[pvi.daycare_data.pee]}
+                              </span>
+                            )}
+                            {pvi.daycare_data.vomiting && (
+                              <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">嘔吐あり</span>
+                            )}
+                            {pvi.daycare_data.itching && (
+                              <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">かゆみあり</span>
+                            )}
+                            {pvi.daycare_data.energy === 'good' && pvi.daycare_data.appetite === 'good' &&
+                             pvi.daycare_data.poop === 'normal' && pvi.daycare_data.pee === 'normal' &&
+                             !pvi.daycare_data.vomiting && !pvi.daycare_data.itching && (
+                              <span className="text-[10px] bg-chart-2/10 text-chart-2 px-1.5 py-0.5 rounded">健康状態 良好</span>
+                            )}
+                          </div>
+                          {pvi.daycare_data.notes && (
+                            <div className="flex gap-2 text-xs">
+                              <span className="text-muted-foreground shrink-0">コメント:</span>
+                              <span className="text-foreground">{pvi.daycare_data.notes}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
                         <p className="text-xs text-muted-foreground">入力内容なし</p>
                       )}
                     </div>
