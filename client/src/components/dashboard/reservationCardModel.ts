@@ -9,9 +9,9 @@ interface ReservationStatusSource {
 }
 
 interface ReservationPreVisitSource {
-  notes?: string | null
-  health_status?: string | null
-  breakfast_status?: string | null
+  daycare_data?: unknown | null
+  grooming_data?: unknown | null
+  hotel_data?: unknown | null
 }
 
 export function getDisplayStatus(reservation: ReservationStatusSource): DashboardDisplayStatus {
@@ -36,5 +36,5 @@ export function getReservationStatusLabel(
 }
 
 export function hasPreVisitInput(reservation: ReservationPreVisitSource): boolean {
-  return Boolean(reservation.notes || reservation.health_status || reservation.breakfast_status)
+  return Boolean(reservation.daycare_data || reservation.grooming_data || reservation.hotel_data)
 }

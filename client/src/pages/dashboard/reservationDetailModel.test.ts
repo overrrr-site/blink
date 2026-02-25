@@ -30,13 +30,21 @@ describe('reservationDetail model', () => {
     })
   })
 
-  it('matches existing pre-visit input decision for textual data', () => {
+  it('returns false when no pre-visit data', () => {
     expect(hasReservationPreVisitInput({})).toBe(false)
-    expect(hasReservationPreVisitInput({ pre_visit_notes: '連絡あり' })).toBe(true)
   })
 
-  it('treats explicit boolean answers as pre-visit input even when false', () => {
-    expect(hasReservationPreVisitInput({ morning_urination: false })).toBe(true)
-    expect(hasReservationPreVisitInput({ afternoon_defecation: false })).toBe(true)
+  it('returns true when daycare_data is present', () => {
+    expect(hasReservationPreVisitInput({
+      daycare_data: { pickup_time: '17:00', energy: 'good', appetite: 'good', poop: 'normal', pee: 'normal', vomiting: false, itching: false, medication: false }
+    })).toBe(true)
+  })
+
+  it('returns true when grooming_data is present', () => {
+    expect(hasReservationPreVisitInput({ grooming_data: { counseling: {} } })).toBe(true)
+  })
+
+  it('returns true when hotel_data is present', () => {
+    expect(hasReservationPreVisitInput({ hotel_data: { feeding_schedule: {} } })).toBe(true)
   })
 })
