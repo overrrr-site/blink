@@ -35,6 +35,7 @@ interface DogWithOwner extends Dog {
 }
 
 const PAGE_SIZE = 50
+const HEADER_CLASS = 'px-5 pt-6 pb-4 bg-background sticky top-0 z-10 safe-area-pt'
 
 const OwnerCard = React.memo(function OwnerCard({
   owner,
@@ -187,8 +188,11 @@ const Customers = () => {
   if (isLoading) {
     return (
       <div className="pb-6">
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
-          <h1 className="text-lg font-bold font-heading">顧客管理</h1>
+        <header className={HEADER_CLASS}>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold font-heading text-foreground">顧客管理</h1>
+            <BusinessTypeSwitcher variant="pill" />
+          </div>
         </header>
         <div className="px-5 pt-4">
           <div className="h-12 bg-muted rounded-xl mb-4 animate-pulse" />
@@ -201,8 +205,11 @@ const Customers = () => {
   if (error) {
     return (
       <div className="pb-6">
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
-          <h1 className="text-lg font-bold font-heading">顧客管理</h1>
+        <header className={HEADER_CLASS}>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold font-heading text-foreground">顧客管理</h1>
+            <BusinessTypeSwitcher variant="pill" />
+          </div>
         </header>
         <div className="px-5 pt-10">
           <EmptyState
@@ -222,16 +229,16 @@ const Customers = () => {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 safe-area-pt">
+      <header className={HEADER_CLASS}>
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold font-heading">顧客管理</h1>
+          <h1 className="text-2xl font-bold font-heading text-foreground">顧客管理</h1>
           <BusinessTypeSwitcher variant="pill" />
         </div>
       </header>
 
       <div className="px-5 pt-4 space-y-4">
         {/* 検索バー */}
-        <div className="relative">
+        <div className="relative md:max-w-md">
           <Icon icon="solar:magnifer-linear"
             width={20} height={20}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -303,6 +310,7 @@ const Customers = () => {
               icon="solar:users-group-rounded-linear"
               title={searchQuery ? '検索結果がありません' : '飼い主が登録されていません'}
               description={searchQuery ? '検索条件を変更してください' : '新しい飼い主を登録しましょう'}
+              illustration={!searchQuery ? '/images/dog-waiting.webp' : undefined}
               action={
                 !searchQuery
                   ? {
@@ -314,7 +322,7 @@ const Customers = () => {
               }
             />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0">
               {owners.map((owner) => (
                 <OwnerCard key={owner.id} owner={owner} onNavigate={handleNavigateOwner} />
               ))}
@@ -327,9 +335,10 @@ const Customers = () => {
               icon="solar:paw-print-linear"
               title={searchQuery ? '検索結果がありません' : 'ワンちゃんが登録されていません'}
               description={searchQuery ? '検索条件を変更してください' : '飼い主を登録してワンちゃんを追加しましょう'}
+              illustration={!searchQuery ? '/images/dog-waiting.webp' : undefined}
             />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0">
               {allDogs.map((dog) => (
                 <DogCard key={dog.id} dog={dog} onNavigate={handleNavigateDog} />
               ))}
