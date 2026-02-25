@@ -4,6 +4,7 @@ import { getAvatarUrl } from '../utils/image'
 import { LazyImage } from './LazyImage'
 import { getDashboardStatusLabels } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
+import type { DaycarePreVisitData } from '../types/daycarePreVisit'
 import {
   getDisplayStatus,
   getReservationStatusLabel,
@@ -22,11 +23,9 @@ export interface ReservationCardData {
   checked_in_at?: string
   has_journal?: boolean
   // 飼い主からの事前入力
-  pvi_morning_urination?: boolean
-  pvi_morning_defecation?: boolean
-  breakfast_status?: string
-  health_status?: string
-  notes?: string
+  daycare_data?: DaycarePreVisitData | null
+  grooming_data?: unknown | null
+  hotel_data?: unknown | null
   end_datetime?: string
   service_type?: string
 }
@@ -188,16 +187,42 @@ const ReservationCard = React.memo(function ReservationCard({
                 <Icon icon="solar:clipboard-text-bold" className="size-4 mr-1" />
                 飼い主さんからの連絡
               </p>
-              {reservation.health_status && (
-                <p className="text-xs text-foreground">{reservation.health_status}</p>
-              )}
-              {reservation.notes && (
-                <p className="text-xs text-foreground">{reservation.notes}</p>
-              )}
-              {reservation.breakfast_status && (
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  朝ごはん: {reservation.breakfast_status}
-                </p>
+              {reservation.daycare_data && (
+                <>
+                  {reservation.daycare_data.energy === 'poor' && (
+                    <p className="text-xs text-destructive font-medium">
+                      元気: なし{reservation.daycare_data.energy_detail ? ` (${reservation.daycare_data.energy_detail})` : ''}
+                    </p>
+                  )}
+                  {reservation.daycare_data.appetite === 'poor' && (
+                    <p className="text-xs text-destructive font-medium">
+                      食欲: なし{reservation.daycare_data.appetite_detail ? ` (${reservation.daycare_data.appetite_detail})` : ''}
+                    </p>
+                  )}
+                  {reservation.daycare_data.poop !== 'normal' && (
+                    <p className="text-xs text-destructive font-medium">
+                      うんち: {reservation.daycare_data.poop === 'soft' ? '軟便' : '血便'}
+                    </p>
+                  )}
+                  {reservation.daycare_data.pee !== 'normal' && (
+                    <p className="text-xs text-destructive font-medium">
+                      おしっこ: {reservation.daycare_data.pee === 'dark' ? '色が濃い' : '血尿'}
+                    </p>
+                  )}
+                  {reservation.daycare_data.vomiting && (
+                    <p className="text-xs text-destructive font-medium">
+                      嘔吐あり{reservation.daycare_data.vomiting_detail ? ` (${reservation.daycare_data.vomiting_detail})` : ''}
+                    </p>
+                  )}
+                  {reservation.daycare_data.itching && (
+                    <p className="text-xs text-destructive font-medium">
+                      かゆみあり{reservation.daycare_data.itching_detail ? ` (${reservation.daycare_data.itching_detail})` : ''}
+                    </p>
+                  )}
+                  {reservation.daycare_data.notes && (
+                    <p className="text-xs text-foreground mt-1">{reservation.daycare_data.notes}</p>
+                  )}
+                </>
               )}
             </div>
           )}
