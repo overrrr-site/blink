@@ -37,10 +37,7 @@ router.get('/pre-visit-inputs/latest/:dogId', async function(req, res) {
     }
 
     const result = await pool.query(
-      `SELECT pvi.morning_urination, pvi.morning_defecation,
-              pvi.afternoon_urination, pvi.afternoon_defecation,
-              pvi.breakfast_status, pvi.health_status, pvi.notes,
-              pvi.meal_data, pvi.service_type, pvi.grooming_data, pvi.hotel_data
+      `SELECT pvi.service_type, pvi.daycare_data, pvi.grooming_data, pvi.hotel_data
        FROM pre_visit_inputs pvi
        JOIN reservations r ON pvi.reservation_id = r.id
        WHERE r.dog_id = $1
@@ -70,14 +67,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
     const {
       reservation_id,
       service_type,
-      morning_urination,
-      morning_defecation,
-      afternoon_urination,
-      afternoon_defecation,
-      breakfast_status,
-      health_status,
-      notes,
-      meal_data,
+      daycare_data,
       grooming_data,
       hotel_data,
     } = req.body;
@@ -108,51 +98,26 @@ router.post('/pre-visit-inputs', async function(req, res) {
     const reservationServiceType = reservationCheck.rows[0]?.service_type;
     const finalServiceType = parsedServiceType ?? reservationServiceType ?? 'daycare';
 
-    // 空文字列はDBのCHECK制約に違反するためnullに変換
-    const safeBreakfastStatus = breakfast_status || null;
-    const safeHealthStatus = health_status || null;
-    const mealDataJson = meal_data ? JSON.stringify(meal_data) : null;
+    const daycareDataJson = daycare_data ? JSON.stringify(daycare_data) : null;
     const groomingDataJson = grooming_data ? JSON.stringify(grooming_data) : null;
     const hotelDataJson = hotel_data ? JSON.stringify(hotel_data) : null;
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
       const result = await client.query(
         `INSERT INTO pre_visit_inputs (
-          reservation_id, morning_urination, morning_defecation,
-          afternoon_urination, afternoon_defecation,
-          breakfast_status, health_status, notes, meal_data,
-          service_type, grooming_data, hotel_data
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          reservation_id, service_type, daycare_data, grooming_data, hotel_data
+        ) VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (reservation_id) DO UPDATE SET
-          morning_urination = EXCLUDED.morning_urination,
-          morning_defecation = EXCLUDED.morning_defecation,
-          afternoon_urination = EXCLUDED.afternoon_urination,
-          afternoon_defecation = EXCLUDED.afternoon_defecation,
-          breakfast_status = EXCLUDED.breakfast_status,
-          health_status = EXCLUDED.health_status,
-          notes = EXCLUDED.notes,
-          meal_data = EXCLUDED.meal_data,
           service_type = EXCLUDED.service_type,
+          daycare_data = EXCLUDED.daycare_data,
           grooming_data = EXCLUDED.grooming_data,
           hotel_data = EXCLUDED.hotel_data,
           submitted_at = CURRENT_TIMESTAMP
         RETURNING *`,
-        [
-          reservation_id,
-          morning_urination,
-          morning_defecation,
-          afternoon_urination,
-          afternoon_defecation,
-          safeBreakfastStatus,
-          safeHealthStatus,
-          notes || null,
-          mealDataJson,
-          finalServiceType,
-          groomingDataJson,
-          hotelDataJson,
-        ]
+        [reservation_id, finalServiceType, daycareDataJson, groomingDataJson, hotelDataJson]
       );
 
       await client.query(
