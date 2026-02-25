@@ -353,6 +353,10 @@ const ReservationsCalendar = () => {
           </div>
         </div>
 
+      </header>
+
+      <main className="px-5 md:flex md:gap-6">
+        <div className={selectedDate ? 'md:w-1/2 lg:w-2/5 md:shrink-0' : 'lg:max-w-xl'}>
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
           {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => (
             <span
@@ -365,10 +369,6 @@ const ReservationsCalendar = () => {
             </span>
           ))}
         </div>
-      </header>
-
-      <main className="px-5 md:flex md:gap-6">
-        <div className="md:w-1/2 lg:w-2/5 md:shrink-0">
         <div className="grid grid-cols-7 gap-1 mb-6 md:mb-0">
           {visibleDays.map((day, index) => {
             const dayKey = day ? toDateKey(day) : `empty-${calendarRows.length}-${index}`
