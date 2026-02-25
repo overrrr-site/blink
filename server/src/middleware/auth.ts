@@ -117,22 +117,35 @@ export async function authenticate(
       return;
     }
 
-    // 3. スタッフ情報をデータベースから取得
+    // 3. スタッフ情報をデータベースから取得（INNER JOINで有効な店舗関連のみ）
     const result = await pool.query(
       `SELECT s.*, ss.store_id, st.subscription_status, st.subscription_end_date
        FROM staff s
-       LEFT JOIN staff_stores ss ON s.id = ss.staff_id
-       LEFT JOIN stores st ON st.id = ss.store_id
-       WHERE s.auth_user_id = $1`,
+       INNER JOIN staff_stores ss ON s.id = ss.staff_id
+       INNER JOIN stores st ON st.id = ss.store_id
+       WHERE s.auth_user_id = $1
+       ORDER BY ss.store_id DESC
+       LIMIT 1`,
       [authUserId]
     );
 
     if (result.rows.length === 0) {
-      console.error(`認証エラー: スタッフが見つかりません (auth_user_id: ${authUserId})`);
-      res.status(403).json({
-        error: 'スタッフとして登録されていません。管理者に連絡してください。',
-        details: `auth_user_id: ${authUserId} に対応するスタッフが見つかりません`
-      });
+      // INNER JOINで見つからない場合、staffレコード自体の存在を確認
+      const staffOnly = await pool.query(
+        `SELECT id FROM staff WHERE auth_user_id = $1`,
+        [authUserId]
+      );
+      if (staffOnly.rows.length > 0) {
+        console.error(`認証エラー: スタッフは存在するが店舗未関連 (auth_user_id: ${authUserId}, staff_id: ${staffOnly.rows[0].id})`);
+        res.status(403).json({
+          error: '店舗に関連付けられていません。管理者に連絡してください。',
+        });
+      } else {
+        console.error(`認証エラー: スタッフが見つかりません (auth_user_id: ${authUserId})`);
+        res.status(403).json({
+          error: 'スタッフとして登録されていません。管理者に連絡してください。',
+        });
+      }
       return;
     }
 

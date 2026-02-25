@@ -115,8 +115,10 @@ VALUES
   (4, 4, 1, 1, CURRENT_DATE - INTERVAL '3 days', 66, '成功', '自ら指定の場所', '成功', '自ら指定の場所', 'ももちゃん、トレーニングの成果が出てきています。「おすわり」「まて」がとても上手になりました！', CURRENT_DATE),
   (5, 5, 4, 1, CURRENT_DATE - INTERVAL '3 days', 35, '成功', '誘導して指定の場所', '成功', '自ら指定の場所', 'マロンちゃん、今日は大きな犬がいなかったので落ち着いて過ごせました。午後は日向ぼっこを楽しんでいました。', CURRENT_DATE + INTERVAL '5 days');
 
--- シーケンスのリセット
-SELECT setval('owners_id_seq', (SELECT MAX(id) FROM owners));
-SELECT setval('dogs_id_seq', (SELECT MAX(id) FROM dogs));
-SELECT setval('reservations_id_seq', (SELECT MAX(id) FROM reservations));
-SELECT setval('journals_id_seq', (SELECT MAX(id) FROM journals));
+-- シーケンスのリセット（明示的IDでINSERTしたテーブルは必須）
+SELECT setval('stores_id_seq', (SELECT COALESCE(MAX(id), 0) FROM stores));
+SELECT setval('staff_id_seq', (SELECT COALESCE(MAX(id), 0) FROM staff));
+SELECT setval('owners_id_seq', (SELECT COALESCE(MAX(id), 0) FROM owners));
+SELECT setval('dogs_id_seq', (SELECT COALESCE(MAX(id), 0) FROM dogs));
+SELECT setval('reservations_id_seq', (SELECT COALESCE(MAX(id), 0) FROM reservations));
+SELECT setval('journals_id_seq', (SELECT COALESCE(MAX(id), 0) FROM journals));

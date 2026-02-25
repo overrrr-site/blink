@@ -1,7 +1,7 @@
 import express from 'express';
 import pool from '../db/connection.js';
 import { supabase } from '../db/supabase.js';
-import { authenticate, requireOwner, AuthRequest } from '../middleware/auth.js';
+import { authenticate, requireOwner, AuthRequest, invalidateStaffCache } from '../middleware/auth.js';
 import { requireStoreId, sendBadRequest, sendServerError } from '../utils/response.js';
 
 const router = express.Router();
@@ -111,6 +111,9 @@ router.post('/register', async (req, res) => {
       );
 
       await client.query('COMMIT');
+
+      // 登録直後にキャッシュを無効化（古いデータが返されるのを防止）
+      invalidateStaffCache(authUserId);
 
       res.status(201).json({ success: true, message: 'アカウントが作成されました' });
     } catch (dbError) {

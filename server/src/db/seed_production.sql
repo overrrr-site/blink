@@ -269,17 +269,18 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = CURRENT_TIMESTAMP;
 
 -- ============================================
--- 9. シーケンスのリセット（オプション）
+-- 9. シーケンスのリセット（必須）
 -- ============================================
--- IDの連番をリセットしたい場合に実行
+-- 明示的IDでINSERTした場合、SERIALシーケンスが進まないためリセットが必要。
+-- これがないと次のINSERT（IDなし）で既存IDと衝突する。
 
--- SELECT setval('stores_id_seq', (SELECT MAX(id) FROM stores));
--- SELECT setval('staff_id_seq', (SELECT MAX(id) FROM staff));
--- SELECT setval('owners_id_seq', (SELECT MAX(id) FROM owners));
--- SELECT setval('dogs_id_seq', (SELECT MAX(id) FROM dogs));
--- SELECT setval('contracts_id_seq', (SELECT MAX(id) FROM contracts));
--- SELECT setval('reservations_id_seq', (SELECT MAX(id) FROM reservations));
--- SELECT setval('journals_id_seq', (SELECT MAX(id) FROM journals));
+SELECT setval('stores_id_seq', (SELECT COALESCE(MAX(id), 0) FROM stores));
+SELECT setval('staff_id_seq', (SELECT COALESCE(MAX(id), 0) FROM staff));
+SELECT setval('owners_id_seq', (SELECT COALESCE(MAX(id), 0) FROM owners));
+SELECT setval('dogs_id_seq', (SELECT COALESCE(MAX(id), 0) FROM dogs));
+SELECT setval('contracts_id_seq', (SELECT COALESCE(MAX(id), 0) FROM contracts));
+SELECT setval('reservations_id_seq', (SELECT COALESCE(MAX(id), 0) FROM reservations));
+SELECT setval('journals_id_seq', (SELECT COALESCE(MAX(id), 0) FROM journals));
 
 -- ============================================
 -- 完了メッセージ
