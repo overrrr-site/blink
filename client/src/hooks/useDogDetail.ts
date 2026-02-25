@@ -1,5 +1,6 @@
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
+import type { DaycarePreVisitData } from '../types/daycarePreVisit'
 
 interface DogReservationItem {
   id: number
@@ -24,7 +25,7 @@ interface DogPreVisitItem {
   reservation_date: string
   reservation_time: string
   service_type?: string
-  daycare_data?: unknown
+  daycare_data?: DaycarePreVisitData | null
   grooming_data?: unknown
   hotel_data?: unknown
 }
