@@ -12,6 +12,7 @@ import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 import ReservationCard from '../components/ReservationCard'
 import type { ReservationCardData } from '../components/ReservationCard'
 import CalendarCell from '../components/reservations/CalendarCell'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 function toDateKey(date: Date): string {
   const year = date.getFullYear()
@@ -50,6 +51,7 @@ const ReservationsCalendar = () => {
   const [updating, setUpdating] = useState<number | null>(null)
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const [calendarMode, setCalendarMode] = useState<'month' | 'week'>('month')
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const mainRef = useRef<HTMLElement | null>(null)
   const navigate = useNavigate()
   const { showToast } = useToast()
@@ -92,13 +94,16 @@ const ReservationsCalendar = () => {
     void fetchReservations()
   }, [fetchReservations])
 
-  // 日付選択が変わったら展開カードをリセット＆週表示に切替
+  // 日付選択が変わったら展開カードをリセット＆週表示に切替（モバイルのみ）
   useEffect(() => {
     setExpandedCard(null)
-    if (selectedDate) {
+    if (selectedDate && !isDesktop) {
       setCalendarMode('week')
     }
-  }, [selectedDate])
+    if (isDesktop) {
+      setCalendarMode('month')
+    }
+  }, [selectedDate, isDesktop])
 
   // プルトゥリフレッシュ
   useEffect(() => {
@@ -338,7 +343,7 @@ const ReservationsCalendar = () => {
               <Icon icon="solar:alt-arrow-right-linear"
                 className="size-6 text-muted-foreground" />
             </button>
-            {selectedDate && (
+            {selectedDate && !isDesktop && (
               <button
                 onClick={() => setCalendarMode(prev => prev === 'month' ? 'week' : 'month')}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg active:scale-95 transition-all"
