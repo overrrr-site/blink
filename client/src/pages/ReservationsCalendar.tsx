@@ -272,9 +272,9 @@ const ReservationsCalendar = () => {
     status: r.status || '予定',
     checked_in_at: r.checked_in_at,
     has_journal: r.has_journal,
-    breakfast_status: r.breakfast_status,
-    health_status: r.health_status,
-    notes: r.notes,
+    daycare_data: r.daycare_data ?? null,
+    grooming_data: r.grooming_data ?? null,
+    hotel_data: r.hotel_data ?? null,
     end_datetime: r.end_datetime,
     service_type: r.service_type,
   })
@@ -367,8 +367,9 @@ const ReservationsCalendar = () => {
         </div>
       </header>
 
-      <main className="px-5">
-        <div className="grid grid-cols-7 gap-1 mb-6">
+      <main className="px-5 md:flex md:gap-6">
+        <div className="md:w-1/2 md:shrink-0">
+        <div className="grid grid-cols-7 gap-1 mb-6 md:mb-0">
           {visibleDays.map((day, index) => {
             const dayKey = day ? toDateKey(day) : `empty-${calendarRows.length}-${index}`
             const reservationCount = day ? (reservationsByDate.get(dayKey)?.length ?? 0) : 0
@@ -388,9 +389,10 @@ const ReservationsCalendar = () => {
             )
           })}
         </div>
+        </div>
 
         {selectedDate && (
-          <section>
+          <section className="md:w-1/2 md:min-w-0">
             <div className="mb-4">
               <h2 className="text-lg font-bold font-heading flex items-center gap-2">
                 <Icon icon="solar:calendar-bold" className="text-primary size-5" />

@@ -24,14 +24,7 @@ interface DogPreVisitItem {
   reservation_date: string
   reservation_time: string
   service_type?: string
-  morning_urination?: boolean
-  morning_defecation?: boolean
-  afternoon_urination?: boolean
-  afternoon_defecation?: boolean
-  breakfast_status?: string
-  health_status?: string
-  notes?: string
-  meal_data?: unknown
+  daycare_data?: unknown
   grooming_data?: unknown
   hotel_data?: unknown
 }
