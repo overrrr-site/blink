@@ -21,6 +21,12 @@ import {
   getFilterOptions,
   type StatusFilter,
 } from './dashboard/model'
+import { useOnboardingState } from '../hooks/useOnboardingState'
+import WelcomeModal from '../components/onboarding/WelcomeModal'
+import StaffWelcome from '../components/onboarding/StaffWelcome'
+import SetupWizard from '../components/onboarding/SetupWizard'
+import SetupProgress from '../components/onboarding/SetupProgress'
+import CoachMark from '../components/onboarding/CoachMark'
 
 type Reservation = ReservationCardData
 
@@ -70,11 +76,19 @@ function Dashboard(): JSX.Element {
   const [checkingIn, setCheckingIn] = useState<number | null>(null)
   const [expandedCard, setExpandedCard] = useState<number | null>(null)
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
+  const [showStaffWelcome, setShowStaffWelcome] = useState(false)
+  const [showSetupWizard, setShowSetupWizard] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const mainRef = useRef<HTMLElement | null>(null)
   const { showRightFade } = useScrollFade(scrollRef)
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const {
+    onboarding,
+    showWelcome,
+    showSetupBanner,
+    updateOnboarding,
+  } = useOnboardingState()
   const {
     effectiveBusinessType,
     recordLabel,
@@ -225,6 +239,45 @@ function Dashboard(): JSX.Element {
   return (
     <div className="pb-6">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
+
+      {/* オンボーディング: ウェルカムモーダル */}
+      {showWelcome && (
+        <WelcomeModal
+          onSelectAdmin={async () => {
+            await updateOnboarding({ role: 'admin' })
+            setShowSetupWizard(true)
+          }}
+          onSelectStaff={async () => {
+            await updateOnboarding({ role: 'staff' })
+            setShowStaffWelcome(true)
+          }}
+          onSkip={async () => {
+            await updateOnboarding({ dismissed: true })
+          }}
+        />
+      )}
+
+      {/* オンボーディング: スタッフ向けウェルカム */}
+      {showStaffWelcome && (
+        <StaffWelcome onStart={() => setShowStaffWelcome(false)} />
+      )}
+
+      {/* オンボーディング: セットアップウィザード */}
+      {showSetupWizard && (
+        <SetupWizard onClose={() => setShowSetupWizard(false)} />
+      )}
+
+      {/* オンボーディング: 未完了セットアップバナー */}
+      {showSetupBanner && onboarding && (
+        <div className="px-5 pt-2">
+          <SetupProgress
+            lineStatus={onboarding.setup.line}
+            gcalStatus={onboarding.setup.google_calendar}
+            onResume={() => setShowSetupWizard(true)}
+          />
+        </div>
+      )}
+
       <div className="lg:flex lg:gap-8">
         <div className="lg:flex-1 lg:min-w-0">
           {/* ステータスフィルター */}
@@ -396,6 +449,18 @@ function Dashboard(): JSX.Element {
 
       {/* 確認事項モーダル */}
       <AlertsModal isOpen={alertsModalOpen} onClose={handleHideAlerts} />
+
+      {/* CoachMark ヒント */}
+      <CoachMark
+        id="tip-card-expand"
+        target='[data-coach="reservation-card"]'
+        message="カードをタップすると連絡帳を確認できます"
+      />
+      <CoachMark
+        id="tip-abnormal-badge"
+        target='[data-coach="abnormal-badge"]'
+        message="赤いバッジは要注意のサイン"
+      />
     </div>
   )
 }

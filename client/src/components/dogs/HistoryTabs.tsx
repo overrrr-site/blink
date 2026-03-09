@@ -61,7 +61,7 @@ export default function HistoryTabs({
     : reservations
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden" data-coach="history-tabs">
       <div className="border-b border-border">
         <div className="flex">
           <button

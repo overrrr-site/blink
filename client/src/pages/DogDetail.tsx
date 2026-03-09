@@ -11,6 +11,7 @@ import { useDogDetail } from '../hooks/useDogDetail'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
 import { LazyImage } from '../components/LazyImage'
 import { getDetailThumbnailUrl } from '../utils/image'
+import CoachMark from '../components/onboarding/CoachMark'
 
 function DogDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
@@ -156,6 +157,12 @@ function DogDetail(): JSX.Element {
           />
         </div>
       </main>
+
+      <CoachMark
+        id="tip-history-tab"
+        target='[data-coach="history-tabs"]'
+        message="過去の来園記録と連絡帳を時系列で確認できます"
+      />
     </div>
   )
 }

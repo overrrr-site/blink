@@ -6,7 +6,7 @@ import { useBusinessTypeStore } from '../store/businessTypeStore'
 import { getAvailableBusinessTypes, getEffectiveBusinessType } from '../utils/businessTypeAccess'
 import { getRandomGreeting } from '../utils/greetings'
 import { getRecordLabel } from '../utils/businessTypeColors'
-import OnboardingGuide from './OnboardingGuide'
+
 import BusinessTypeSwitcher from './BusinessTypeSwitcher'
 import logoImage from '../assets/logo.png'
 
@@ -281,7 +281,6 @@ function Layout(): JSX.Element {
         </div>
       </nav>
 
-      <OnboardingGuide />
     </div>
   )
 }

@@ -18,7 +18,7 @@ describe('businessTypeConfig', () => {
 
     expect(daycare.title).toContain('登園')
     expect(grooming.title).toContain('予約')
-    expect(all.title).toContain('予定')
+    expect(all.title).toContain('予約')
   })
 
   it('uses business type config for dashboard empty state', () => {
@@ -28,6 +28,6 @@ describe('businessTypeConfig', () => {
 
     expect(daycare.title).toContain('登園')
     expect(hotel.title).toContain('お預かり')
-    expect(all.title).toContain('予定')
+    expect(all.title).toContain('予約')
   })
 })

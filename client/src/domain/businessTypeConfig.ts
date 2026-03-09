@@ -142,8 +142,8 @@ export const BUSINESS_TYPE_CONFIG: Record<RecordType, BusinessTypeConfig> = {
 }
 
 export const EMPTY_STATE_ALL: EmptyStateConfig = {
-  title: '今日の予定はありません',
-  description: '新しい予約を追加しましょう',
+  title: '今日の予約はまだありません',
+  description: '予約が登録されると、ここに犬の名前と飼い主さんからの連絡帳が表示されます',
   actionLabel: '予約を追加',
 }
 

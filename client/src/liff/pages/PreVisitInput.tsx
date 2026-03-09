@@ -273,6 +273,9 @@ function CheckboxItem({
   );
 }
 
+const GUIDE_BANNER_KEY = 'blink_previsit_guide_dismissed'
+const SECTION_HINTS_KEY = 'blink_previsit_section_hints_dismissed'
+
 export default function PreVisitInput() {
   const { reservationId } = useParams<{ reservationId: string }>();
   const navigate = useNavigate();
@@ -286,6 +289,9 @@ export default function PreVisitInput() {
   const [daycareData, setDaycareData] = useState(DEFAULT_DAYCARE_DATA);
   const [groomingData, setGroomingData] = useState<GroomingPreVisitData>(DEFAULT_GROOMING_DATA);
   const [hotelData, setHotelData] = useState<HotelPreVisitData>(DEFAULT_HOTEL_DATA);
+  const [showGuideBanner, setShowGuideBanner] = useState(() => !localStorage.getItem(GUIDE_BANNER_KEY));
+  const [showSectionHints] = useState(() => !localStorage.getItem(SECTION_HINTS_KEY));
+  const [hasLastRecord, setHasLastRecord] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchReservation = async () => {
@@ -316,6 +322,18 @@ export default function PreVisitInput() {
               });
             }
           }
+
+          // 前回データの有無を確認
+          if (res.dog_id) {
+            try {
+              await liffClient.get(`/pre-visit-inputs/latest/${res.dog_id}`, {
+                params: { service_type: selectedBusinessType || 'daycare' },
+              });
+              setHasLastRecord(true);
+            } catch {
+              setHasLastRecord(false);
+            }
+          }
         }
       } catch {
       } finally {
@@ -324,7 +342,14 @@ export default function PreVisitInput() {
     };
 
     fetchReservation();
-  }, [reservationId]);
+  }, [reservationId, selectedBusinessType]);
+
+  // セクション補足テキストを初回表示後に記録
+  useEffect(() => {
+    if (!loading && showSectionHints) {
+      localStorage.setItem(SECTION_HINTS_KEY, '1');
+    }
+  }, [loading, showSectionHints]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -493,37 +518,70 @@ export default function PreVisitInput() {
         </div>
       </div>
 
-      {/* 前回と同じボタン */}
-      <button
-        type="button"
-        onClick={handleFillFromLastRecord}
-        disabled={loadingLastRecord}
-        className="w-full py-3 rounded-xl border-2 border-primary/30 text-primary text-sm font-bold
-                   flex items-center justify-center gap-2 active:bg-primary/5 active:scale-[0.98] transition-all
-                   disabled:opacity-50 mb-6"
-      >
-        {loadingLastRecord ? (
-          <>
-            <Icon icon="solar:spinner-bold" width="18" height="18" className="animate-spin" />
-            読み込み中...
-          </>
-        ) : (
-          <>
-            <Icon icon="solar:copy-bold" width="18" height="18" />
-            前回と同じ
-          </>
-        )}
-      </button>
+      {/* 初回ガイダンスバナー */}
+      {showGuideBanner && (
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-4 relative">
+          <button
+            type="button"
+            onClick={() => {
+              setShowGuideBanner(false);
+              localStorage.setItem(GUIDE_BANNER_KEY, '1');
+            }}
+            className="absolute top-3 right-3 text-muted-foreground"
+            aria-label="閉じる"
+          >
+            <Icon icon="solar:close-circle-bold" width="20" height="20" />
+          </button>
+          <p className="text-sm font-bold text-foreground mb-1">
+            連絡帳の書き方
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed pr-6">
+            各項目を入力して「送信する」を押すと、園のスタッフに共有されます。
+            いつもと変わりなければそのまま送信できます。
+          </p>
+        </div>
+      )}
+
+      {/* 前回データ引き継ぎ */}
+      {hasLastRecord ? (
+        <button
+          type="button"
+          onClick={handleFillFromLastRecord}
+          disabled={loadingLastRecord}
+          className="w-full py-3 rounded-xl border-2 border-primary/30 text-primary text-sm font-bold
+                     flex items-center justify-center gap-2 active:bg-primary/5 active:scale-[0.98] transition-all
+                     disabled:opacity-50 mb-6"
+        >
+          {loadingLastRecord ? (
+            <>
+              <Icon icon="solar:spinner-bold" width="18" height="18" className="animate-spin" />
+              読み込み中...
+            </>
+          ) : (
+            <>
+              <Icon icon="solar:copy-bold" width="18" height="18" />
+              前回の入力内容を引き継ぐ
+            </>
+          )}
+        </button>
+      ) : hasLastRecord === false ? (
+        <p className="text-xs text-muted-foreground text-center mb-6">
+          初期値が入っています。必要に応じて変更してください。
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {serviceType === 'daycare' && (
           <>
             {/* お迎え予定 */}
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+              <h2 className="text-base font-bold font-heading mb-2 flex items-center gap-2">
                 <Icon icon="solar:clock-circle-bold" width="20" height="20" className="text-chart-4" />
                 お迎え予定
               </h2>
+              {showSectionHints && (
+                <p className="text-xs text-muted-foreground mb-3">お迎えの予定時間を選んでください</p>
+              )}
               <RadioRow
                 label="時間"
                 name="pickup_time"
@@ -550,10 +608,13 @@ export default function PreVisitInput() {
 
             {/* 健康状態 */}
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+              <h2 className="text-base font-bold font-heading mb-2 flex items-center gap-2">
                 <Icon icon="solar:heart-pulse-bold" width="20" height="20" className="text-destructive" />
                 健康状態
               </h2>
+              {showSectionHints && (
+                <p className="text-xs text-muted-foreground mb-3">今朝の様子を教えてください。普段通りなら「あり」「問題なし」のままでOKです</p>
+              )}
               <RadioRow
                 label="元気"
                 name="energy"
@@ -633,10 +694,13 @@ export default function PreVisitInput() {
 
             {/* 最後の排泄・食事 */}
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+              <h2 className="text-base font-bold font-heading mb-2 flex items-center gap-2">
                 <Icon icon="solar:clock-circle-bold" width="20" height="20" className="text-chart-2" />
                 最後の排泄・食事
               </h2>
+              {showSectionHints && (
+                <p className="text-xs text-muted-foreground mb-3">最後にした時間がわかれば入力してください。不明なら空欄でOKです</p>
+              )}
               <div className="space-y-3">
                 <TimeInput label="うんち" value={daycareData.last_poop_time} onChange={(v) => setDaycareData({ ...daycareData, last_poop_time: v })} />
                 <TimeInput label="おしっこ" value={daycareData.last_pee_time} onChange={(v) => setDaycareData({ ...daycareData, last_pee_time: v })} />
@@ -646,10 +710,13 @@ export default function PreVisitInput() {
 
             {/* ご家庭からのコメント */}
             <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
-              <h2 className="text-base font-bold font-heading mb-4 flex items-center gap-2">
+              <h2 className="text-base font-bold font-heading mb-2 flex items-center gap-2">
                 <Icon icon="solar:chat-round-dots-bold" width="20" height="20" className="text-chart-4" />
                 ご家庭からのコメント
               </h2>
+              {showSectionHints && (
+                <p className="text-xs text-muted-foreground mb-3">スタッフに伝えたいことがあれば自由に記入してください</p>
+              )}
               <textarea
                 value={daycareData.notes ?? ''}
                 onChange={(e) => setDaycareData({ ...daycareData, notes: e.target.value })}

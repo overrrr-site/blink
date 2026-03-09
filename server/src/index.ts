@@ -29,6 +29,7 @@ import aiRoutes from './routes/ai.js';
 import storesRoutes from './routes/stores.js';
 import storeSettingsRoutes from './routes/storeSettings.js';
 import staffRoutes from './routes/staff.js';
+import onboardingRoutes from './routes/onboarding.js';
 import courseMastersRoutes from './routes/courseMasters.js';
 import trainingMastersRoutes from './routes/trainingMasters.js';
 import trainingProfilesRoutes from './routes/trainingProfiles.js';
@@ -48,6 +49,7 @@ import notificationsRoutes from './routes/notifications.js';
 import billingRoutes from './routes/billing.js';
 import announcementsRoutes from './routes/announcements.js';
 import exportsRoutes from './routes/exports.js';
+import uxEventsRoutes from './routes/uxEvents.js';
 
 // Routes - Cron (Vercel Cron Jobs)
 import cronRoutes from './routes/cron.js';
@@ -138,6 +140,7 @@ app.use('/api/ai', aiRoutes);
 
 app.use('/api/stores', storesRoutes);
 app.use('/api/store-settings', storeSettingsRoutes);
+app.use('/api/staff/me/onboarding', onboardingRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/course-masters', courseMastersRoutes);
 app.use('/api/training-masters', trainingMastersRoutes);
@@ -162,6 +165,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/announcements', announcementsRoutes);
 app.use('/api/exports', exportsRoutes);
+app.use('/api/ux-events', uxEventsRoutes);
 
 // ---------------------------------------------------------------------------
 // API Routes - Cron (独自認証のためauthenticateミドルウェア不要)

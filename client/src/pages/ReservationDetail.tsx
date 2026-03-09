@@ -16,6 +16,7 @@ import {
 } from './dashboard/reservationDetailModel'
 import { LazyImage } from '../components/LazyImage'
 import { getDetailThumbnailUrl } from '../utils/image'
+import CoachMark from '../components/onboarding/CoachMark'
 
 interface ReservationDetailData {
   id: number
@@ -235,7 +236,7 @@ const ReservationDetail = () => {
         {/* Right column: pre-visit data */}
         <div className="space-y-4">
           {hasPreVisitInput && (
-            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm" data-coach="previsit-section">
               <h3 className="text-lg font-bold mb-4">事前入力</h3>
               {serviceTypeRenderFlags.showDaycare && reservation.daycare_data && (
                 <div className="space-y-3">
@@ -411,8 +412,24 @@ const ReservationDetail = () => {
               )}
             </div>
           )}
+          {!hasPreVisitInput && (
+            <div className="bg-muted/30 rounded-2xl p-6 border border-border text-center">
+              <p className="text-sm text-muted-foreground">
+                飼い主さんからの連絡帳はまだ届いていません
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                飼い主がLINEから入力すると、ここに自動的に表示されます
+              </p>
+            </div>
+          )}
         </div>
       </main>
+
+      <CoachMark
+        id="tip-previsit-section"
+        target='[data-coach="previsit-section"]'
+        message="飼い主が朝入力した健康チェック情報です"
+      />
     </div>
   )
 }
