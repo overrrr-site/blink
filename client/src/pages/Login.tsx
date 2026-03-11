@@ -3,12 +3,13 @@ import axios from 'axios'
 import { Icon } from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import { supabase } from '../lib/supabase'
 import { ONBOARDING_BUSINESS_TYPES } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
 import logoImage from '../assets/logo.png'
 
 function Login(): JSX.Element {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -17,6 +18,7 @@ function Login(): JSX.Element {
   const [selectedTypes, setSelectedTypes] = useState<RecordType[]>([])
   const [primaryType, setPrimaryType] = useState<RecordType | null>(null)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const login = useAuthStore((s) => s.login)
@@ -36,9 +38,21 @@ function Login(): JSX.Element {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccessMessage('')
     setLoading(true)
 
     try {
+      if (mode === 'forgot') {
+        const frontendUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${frontendUrl}/auth/callback`,
+        })
+        // セキュリティのため、エラー有無に関わらず同じメッセージを表示
+        setSuccessMessage('メールを送信しました。受信トレイをご確認ください。')
+        setLoading(false)
+        return
+      }
+
       if (mode === 'register') {
         if (selectedTypes.length === 0) {
           setError('業態を1つ以上選択してください')
@@ -75,6 +89,7 @@ function Login(): JSX.Element {
   const switchMode = () => {
     setMode(mode === 'login' ? 'register' : 'login')
     setError('')
+    setSuccessMessage('')
   }
 
   const isRegister = mode === 'register'
@@ -83,13 +98,13 @@ function Login(): JSX.Element {
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
       <header className="px-5 pt-8 pb-6 text-center">
         <img src={logoImage} alt="Blink" className="h-16 mx-auto mb-2" />
-        <p className="text-sm text-muted-foreground mt-1">犬の幼稚園・保育園 顧客管理システム</p>
+        <p className="text-sm text-muted-foreground mt-1">ペットのお店の 予約管理システム</p>
       </header>
 
       <main className="flex-1 px-5 pb-8">
         <div className="bg-card rounded-3xl p-6 border border-border shadow-sm max-w-md mx-auto">
           <h2 className="text-lg font-bold font-heading text-center mb-6">
-            {isRegister ? '新規店舗登録' : 'スタッフログイン'}
+            {mode === 'forgot' ? 'パスワード再設定' : isRegister ? '新規店舗登録' : 'スタッフログイン'}
           </h2>
 
           {error && (
@@ -98,7 +113,57 @@ function Login(): JSX.Element {
             </div>
           )}
 
+          {successMessage && (
+            <div className="mb-4 p-3 bg-chart-2/10 text-chart-2 rounded-xl text-sm flex items-start gap-2">
+              <Icon icon="solar:check-circle-bold" width="20" height="20" className="shrink-0 mt-0.5" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* パスワード再設定モード */}
+            {mode === 'forgot' && (
+              <>
+                <p className="text-sm text-muted-foreground text-center mb-4">
+                  登録済みのメールアドレスを入力してください。パスワード再設定用のメールをお送りします。
+                </p>
+                <div>
+                  <label className="block text-sm font-medium mb-2">メールアドレス</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 flex items-center justify-center text-muted-foreground pointer-events-none">
+                      <Icon icon="solar:letter-bold" width="20" height="20" />
+                    </span>
+                    <input
+                      type="email"
+                      placeholder="example@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[48px]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 min-h-[48px]"
+                >
+                  {loading ? '送信中...' : '再設定メールを送信'}
+                </button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setError(''); setSuccessMessage('') }}
+                    className="text-sm text-primary hover:underline font-medium"
+                  >
+                    ログインに戻る
+                  </button>
+                </div>
+              </>
+            )}
+
             {/* 登録モード: 店舗名・お名前 */}
             {isRegister && (
               <>
@@ -139,6 +204,7 @@ function Login(): JSX.Element {
             )}
 
             {/* メールアドレス */}
+            {mode !== 'forgot' && (
             <div>
               <label className="block text-sm font-medium mb-2">メールアドレス</label>
               <div className="relative flex items-center">
@@ -155,8 +221,10 @@ function Login(): JSX.Element {
                 />
               </div>
             </div>
+            )}
 
             {/* パスワード */}
+            {mode !== 'forgot' && (
             <div>
               <label className="block text-sm font-medium mb-2">パスワード</label>
               <div className="relative flex items-center">
@@ -183,10 +251,24 @@ function Login(): JSX.Element {
                     height="20" />
                 </button>
               </div>
+
+              {/* パスワードをお忘れですか？リンク */}
+              {mode === 'login' && (
+                <div className="text-right mt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError(''); setSuccessMessage('') }}
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    パスワードをお忘れですか？
+                  </button>
+                </div>
+              )}
             </div>
+            )}
 
             {/* 登録モード: 業態選択 */}
-            {isRegister && (
+            {mode !== 'forgot' && isRegister && (
               <div>
                 <label className="block text-sm font-medium mb-2">業態を選択してください</label>
                 <div className="space-y-2">
@@ -261,6 +343,7 @@ function Login(): JSX.Element {
             )}
 
             {/* 送信ボタン */}
+            {mode !== 'forgot' && (
             <button
               type="submit"
               disabled={loading || (isRegister && selectedTypes.length === 0) || (isRegister && selectedTypes.length > 1 && !primaryType)}
@@ -271,9 +354,11 @@ function Login(): JSX.Element {
                 : (isRegister ? '登録する' : 'ログイン')
               }
             </button>
+            )}
           </form>
 
           {/* モード切り替え */}
+          {mode !== 'forgot' && (
           <div className="mt-4 text-center">
             <button
               type="button"
@@ -286,8 +371,10 @@ function Login(): JSX.Element {
               }
             </button>
           </div>
+          )}
         </div>
 
+        {mode !== 'forgot' && (
         <div className="bg-accent/30 rounded-2xl p-4 mt-8 max-w-md mx-auto">
           <div className="flex items-start gap-3">
             <span className="text-accent-foreground mt-0.5">
@@ -306,6 +393,7 @@ function Login(): JSX.Element {
             </div>
           </div>
         </div>
+        )}
       </main>
     </div>
   )

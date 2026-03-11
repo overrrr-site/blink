@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
-import { Icon } from '@/components/Icon'
 import { SWRConfig } from 'swr'
 import { useAuthStore, selectIsAuthenticated, selectUser } from './store/authStore'
 import { fetcher } from './lib/swr'
@@ -11,6 +10,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const Login = lazy(() => import('./pages/Login'))
 const AuthCallback = lazy(() => import('./pages/AuthCallback'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const OwnerDetail = lazy(() => import('./pages/OwnerDetail'))
 const DogDetail = lazy(() => import('./pages/DogDetail'))
@@ -48,10 +48,9 @@ const DogTrainingProfile = lazy(() => import('./pages/DogTrainingProfile'))
 
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-spin text-primary">
-        <Icon icon="solar:spinner-line-duotone" width="48" height="48" />
-      </div>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+      <img src="/images/dog-running.webp" alt="" width={160} className="animate-bounce-x" />
+      <p className="text-sm text-muted-foreground">読み込み中...</p>
     </div>
   )
 }
@@ -105,6 +104,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<Terms />} />
               <Route

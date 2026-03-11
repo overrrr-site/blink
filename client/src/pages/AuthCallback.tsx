@@ -10,13 +10,20 @@ const AuthCallback = () => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // パスワードリカバリーイベントの監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/auth/reset-password', { replace: true })
+      }
+    })
+
     const handleCallback = async () => {
       try {
-        
+
         // OAuthコールバックからセッションを取得
         // URLハッシュフラグメント（#access_token=...）を処理
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
+
         if (sessionError) {
           throw sessionError
         }
@@ -26,14 +33,27 @@ const AuthCallback = () => {
           const hashParams = new URLSearchParams(window.location.hash.substring(1))
           const accessToken = hashParams.get('access_token')
           const refreshToken = hashParams.get('refresh_token')
-          
+
+          // リカバリートークンの場合はリダイレクトを待つ
+          const hashType = hashParams.get('type')
+          if (hashType === 'recovery') {
+            // onAuthStateChange が PASSWORD_RECOVERY を検出してリダイレクトするのを待つ
+            if (accessToken && refreshToken) {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              })
+            }
+            return
+          }
+
           if (accessToken && refreshToken) {
             // セッションを設定
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
             })
-            
+
             if (error) {
               throw error
             }
@@ -63,6 +83,8 @@ const AuthCallback = () => {
     }
 
     handleCallback()
+
+    return () => subscription.unsubscribe()
   }, [navigate, fetchStaffInfo])
 
   if (error) {
