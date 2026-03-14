@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_API_URL?: string
   readonly VITE_LIFF_ID?: string
   readonly VITE_FRONTEND_URL?: string
+  readonly VITE_CLARITY_PROJECT_ID?: string
 }
 
 interface ImportMeta {

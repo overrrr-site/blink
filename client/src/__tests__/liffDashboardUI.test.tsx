@@ -8,6 +8,13 @@ import { useLiffAuthStore } from '../liff/store/authStore'
 const navigateMock = vi.fn()
 const useSWRMock = vi.fn()
 
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 vi.mock('swr', () => ({
   default: (key: string) => useSWRMock(key),
 }))
@@ -68,7 +75,7 @@ describe('LIFF dashboard UI', () => {
   })
 
   it('renders dashboard cards and keeps a single h1 in home', () => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatLocalDate(new Date())
     const mutateOwner = vi.fn()
     const mutateSummary = vi.fn()
     const ownerPayload = {
@@ -150,7 +157,7 @@ describe('LIFF dashboard UI', () => {
   })
 
   it('separates calendar states and uses compact day cells', () => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatLocalDate(new Date())
 
     useSWRMock.mockImplementation((key: string) => {
       if (key.startsWith('/reservations?')) {

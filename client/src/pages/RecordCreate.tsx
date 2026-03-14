@@ -30,6 +30,7 @@ import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
 import { calculateAge } from '../utils/dog'
 import { LazyImage } from '../components/LazyImage'
 import { getListThumbnailUrl } from '../utils/image'
+import { endUxSession, getUxIdentity, startUxSession, trackUxEvent } from '../lib/uxAnalytics'
 
 interface Dog {
   id: number
@@ -92,11 +93,43 @@ const RecordCreate = () => {
   const { reservationId } = useParams()
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
+  const uxSessionIdRef = useRef<string>(startUxSession('record'))
+  const sessionEndedRef = useRef(false)
   const isCreatingFromReservation = Boolean(reservationId)
   const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
   const activeBusinessType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
   const recordLabel = getRecordLabel(activeBusinessType)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
+
+  const finishSession = useCallback((result: 'success' | 'drop' | 'error', step = 'record_submit') => {
+    if (sessionEndedRef.current) return
+    sessionEndedRef.current = true
+    endUxSession({
+      flow: 'record',
+      sessionId: uxSessionIdRef.current,
+      result,
+      step,
+    })
+  }, [])
+
+  const trackRecordEvent = useCallback((
+    eventName: 'route_view' | 'cta_click' | 'form_error' | 'submit_success' | 'submit_fail' | 'api_slow',
+    step: string,
+    meta?: Record<string, string | number | boolean>,
+  ) => {
+    const identity = getUxIdentity()
+    trackUxEvent({
+      eventName,
+      flow: 'record',
+      step,
+      sessionId: uxSessionIdRef.current,
+      path: window.location.pathname,
+      storeId: identity.storeId || storeId,
+      staffIdHash: identity.staffIdHash,
+      timestamp: new Date().toISOString(),
+      meta,
+    })
+  }, [storeId])
 
   // Dog selection
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
@@ -221,6 +254,14 @@ const RecordCreate = () => {
     }
   }, [selectedDogId, recordType, showToast])
 
+  useEffect(() => {
+    trackRecordEvent('route_view', reservationId ? 'record_create_from_reservation' : 'record_create')
+
+    return () => {
+      finishSession('drop', 'record_abandon')
+    }
+  }, [finishSession, reservationId, trackRecordEvent])
+
   const aiContext = useMemo(() => ({
     recordType,
     dogName: selectedDog?.name,
@@ -303,6 +344,11 @@ const RecordCreate = () => {
     const res = await recordsApi.create(formData)
     const recordId = res.data.id
 
+    trackRecordEvent('submit_success', shareAfter ? 'record_share_submit' : 'record_save_submit', {
+      share_after: shareAfter,
+    })
+    finishSession('success', shareAfter ? 'record_share_submit' : 'record_save_submit')
+
     if (shareAfter) {
       await recordsApi.share(recordId)
       showToast(`${recordLabel}を共有しました`, 'success')
@@ -325,7 +371,9 @@ const RecordCreate = () => {
     reservationId,
     selectedDogId,
     sendAIFeedback,
+    finishSession,
     showToast,
+    trackRecordEvent,
   ])
 
   const handlePhotoAdded = async (photoUrl: string, type: 'regular' | 'concern') => {
@@ -383,11 +431,26 @@ const RecordCreate = () => {
     handleGenerateReport,
   } = useRecordEditorCore({
     validate: validateEditor,
-    onValidationError: (message) => showToast(message, 'error'),
-    onSave: () => createRecord(false),
-    onShare: () => createRecord(true),
-    onSaveError: () => showToast('保存に失敗しました', 'error'),
-    onShareError: () => showToast('保存に失敗しました', 'error'),
+    onValidationError: (message) => {
+      trackRecordEvent('form_error', 'record_validation_error')
+      showToast(message, 'error')
+    },
+    onSave: () => {
+      trackRecordEvent('cta_click', 'record_save_click', { mode: 'save' })
+      return createRecord(false)
+    },
+    onShare: () => {
+      trackRecordEvent('cta_click', 'record_share_click', { mode: 'share' })
+      return createRecord(true)
+    },
+    onSaveError: () => {
+      trackRecordEvent('submit_fail', 'record_save_submit', { mode: 'save' })
+      showToast('保存に失敗しました', 'error')
+    },
+    onShareError: () => {
+      trackRecordEvent('submit_fail', 'record_share_submit', { mode: 'share' })
+      showToast('保存に失敗しました', 'error')
+    },
     confirmShare: () => confirm({
       title: '送信確認',
       message: '飼い主に送信しますか？',

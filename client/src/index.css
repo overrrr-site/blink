@@ -52,6 +52,15 @@ label {
   display: none;
 }
 
+/* ビーグルイラスト用アニメーション */
+@keyframes bounce-x {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+.animate-bounce-x {
+  animation: bounce-x 1.2s ease-in-out infinite;
+}
+
 /* 印刷用スタイル */
 @media print {
   @page {
@@ -192,6 +201,11 @@ label {
   /* カード背景を白に */
   .bg-card {
     background-color: white !important;
+  }
+
+  /* サイドバーを非表示 */
+  aside {
+    display: none !important;
   }
 
   /* ナビゲーション要素を非表示 */

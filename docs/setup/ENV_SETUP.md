@@ -130,6 +130,28 @@ VITE_FRONTEND_URL=https://your-app.vercel.app
 
 # Sentry DSN（フロントエンド）
 VITE_SENTRY_DSN=https://xxx@o0.ingest.sentry.io/000000
+
+# Microsoft Clarity Project ID（UXヒートマップ/セッションリプレイ）
+VITE_CLARITY_PROJECT_ID=your-clarity-project-id
+```
+
+### Microsoft Clarity Data Export（UXレポート統合）
+
+```env
+# Clarity Data Export API トークン（Bearer）
+CLARITY_EXPORT_API_TOKEN=your-clarity-export-api-token
+
+# APIエンドポイント（通常は変更不要）
+CLARITY_EXPORT_API_URL=https://www.clarity.ms/export-data/api/v1/project-live-insights
+
+# 集計期間（1〜3日）
+CLARITY_EXPORT_NUM_OF_DAYS=1
+
+# 同期間隔（分）。Clarity APIは1日10回上限のため180分以上を推奨
+CLARITY_EXPORT_SYNC_INTERVAL_MINUTES=180
+
+# レポートに反映する有効スナップショットの最大経過時間（時間）
+CLARITY_EXPORT_MAX_AGE_HOURS=168
 ```
 
 ## 設定手順
@@ -218,6 +240,13 @@ Vercelダッシュボード → Settings → Environment Variables で設定:
 | SENTRY_ORG | △ | Sentry org（既定: blink-pet） |
 | SENTRY_PROJECT | △ | Sentry project（既定: blink-frontend） |
 | VITE_SENTRY_DSN | △ | Sentry（フロントエンド） |
+| VITE_CLARITY_PROJECT_ID | △ | Microsoft Clarity Project ID |
+| CLARITY_EXPORT_API_TOKEN | △ | Clarity Data Export APIトークン |
+| CLARITY_EXPORT_API_URL | △ | Clarity Data Export APIエンドポイント |
+| CLARITY_EXPORT_NUM_OF_DAYS | △ | Clarity集計日数（1〜3） |
+| CLARITY_EXPORT_SYNC_INTERVAL_MINUTES | △ | Clarity同期間隔（分） |
+| CLARITY_EXPORT_MAX_AGE_HOURS | △ | Clarityデータの有効期間（時間） |
+| UX_REPORT_DIR | △ | UXレポート出力先（未指定時: `docs/ux-reports`） |
 | GOOGLE_CLIENT_ID | △ | カレンダー連携（オプション） |
 | GOOGLE_CLIENT_SECRET | △ | カレンダー連携（オプション） |
 | GOOGLE_REDIRECT_URI | △ | カレンダー連携（オプション） |

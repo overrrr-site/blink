@@ -1,5 +1,7 @@
 import express from 'express';
 import { sendReservationReminders, sendVaccineAlerts } from '../services/notificationService.js';
+import { processPendingUxReportJobs } from '../services/uxReportService.js';
+import { syncClarityInsightsIfDue } from '../services/clarityExportService.js';
 
 const router = express.Router();
 
@@ -55,6 +57,35 @@ router.get('/daily-notifications', async (_req, res) => {
     });
   } catch (error) {
     console.error('Cron daily-notifications error:', error);
+    res.status(500).json({
+      ok: false,
+      error: 'Internal server error',
+    });
+  }
+});
+
+/**
+ * GET /api/cron/ux-report
+ * UXイベントから改善レポートを生成（pendingジョブを処理）
+ */
+router.get('/ux-report', async (_req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const clarity = await syncClarityInsightsIfDue();
+    const result = await processPendingUxReportJobs();
+    const duration = Date.now() - startTime;
+
+    res.json({
+      ok: true,
+      duration: `${duration}ms`,
+      clarity_sync: clarity,
+      processed: result.processed,
+      failed: result.failed,
+      output_paths: result.outputPaths,
+    });
+  } catch (error) {
+    console.error('Cron ux-report error:', error);
     res.status(500).json({
       ok: false,
       error: 'Internal server error',

@@ -1,5 +1,4 @@
 import { useEffect, Suspense, lazy } from 'react';
-import { Icon } from '../components/Icon'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from './store/authStore';
 import { initLiff } from './utils/liff';
@@ -26,10 +25,9 @@ const Terms = lazy(() => import('./pages/Terms'));
 // ページ遷移時のローディング表示
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-spin text-primary">
-        <Icon icon="solar:spinner-line-duotone" width="40" height="40" />
-      </div>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+      <img src="/images/dog-running.webp" alt="" width={128} className="animate-bounce-x" />
+      <p className="text-sm text-muted-foreground">読み込み中...</p>
     </div>
   );
 }

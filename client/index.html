@@ -15,7 +15,13 @@
     <title>Blink - 顧客管理システム</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#FAFAF9;gap:12px">
+        <img src="/images/dog-running.webp" alt="" width="160" style="animation:splash-bounce-x 1.2s ease-in-out infinite" />
+        <p style="font-size:14px;color:#57534E;font-family:'Nunito Sans',sans-serif">読み込み中...</p>
+      </div>
+      <style>@keyframes splash-bounce-x{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}</style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useReservationCreateData } from '../hooks/useReservationCreateData'
 import { useReservationCreate } from '../hooks/useReservationCreate'
 import { useDogFilter } from '../hooks/useDogFilter'
+import { endUxSession, getUxIdentity, startUxSession, trackUxEvent } from '../lib/uxAnalytics'
 import StepIndicator from '../components/reservations/StepIndicator'
 import DogSelectStep from '../components/reservations/DogSelectStep'
 import DateTimeStep from '../components/reservations/DateTimeStep'
@@ -14,6 +15,19 @@ const ReservationCreate = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const dateParam = searchParams.get('date')
+  const uxSessionIdRef = useRef<string>(startUxSession('reservation'))
+  const sessionEndedRef = useRef(false)
+
+  const finishSession = (result: 'success' | 'drop' | 'error') => {
+    if (sessionEndedRef.current) return
+    sessionEndedRef.current = true
+    endUxSession({
+      flow: 'reservation',
+      sessionId: uxSessionIdRef.current,
+      result,
+      step: 'reservation_create',
+    })
+  }
 
   const { loading, dogs, recentReservations, invalidate } = useReservationCreateData()
   const [searchQuery, setSearchQuery] = useState('')
@@ -34,6 +48,8 @@ const ReservationCreate = () => {
       invalidate()
       navigate('/reservations')
     },
+    uxSessionId: uxSessionIdRef.current,
+    onSessionEnd: (result) => finishSession(result),
   })
 
   const { filteredDogs, recentDogs } = useDogFilter({
@@ -43,6 +59,46 @@ const ReservationCreate = () => {
   })
 
   const selectedDog = dogs.find((d) => d.id === selectedDogId)
+
+  useEffect(() => {
+    const { storeId, staffIdHash } = getUxIdentity()
+    trackUxEvent({
+      eventName: 'route_view',
+      flow: 'reservation',
+      step: 'reservation_create',
+      sessionId: uxSessionIdRef.current,
+      path: window.location.pathname,
+      storeId,
+      staffIdHash,
+      timestamp: new Date().toISOString(),
+    })
+
+    return () => {
+      finishSession('drop')
+    }
+  }, [])
+
+  const trackStepMove = (nextStep: 1 | 2 | 3, action: 'step_change' | 'next' | 'back') => {
+    const { storeId, staffIdHash } = getUxIdentity()
+    trackUxEvent({
+      eventName: 'cta_click',
+      flow: 'reservation',
+      step: `reservation_step_${nextStep}`,
+      sessionId: uxSessionIdRef.current,
+      path: window.location.pathname,
+      storeId,
+      staffIdHash,
+      timestamp: new Date().toISOString(),
+      meta: {
+        action,
+      },
+    })
+  }
+
+  const moveStep = (nextStep: 1 | 2 | 3, action: 'step_change' | 'next' | 'back') => {
+    trackStepMove(nextStep, action)
+    setCurrentStep(nextStep)
+  }
 
   if (loading) {
     return (
@@ -70,7 +126,7 @@ const ReservationCreate = () => {
         currentStep={currentStep}
         canGoToStep2={Boolean(form.reservation_date && form.reservation_time)}
         canGoToStep3={Boolean(selectedDogId)}
-        onStepChange={setCurrentStep}
+        onStepChange={(step) => moveStep(step, 'step_change')}
       />
 
       <form onSubmit={handleSubmit} className="px-5 pt-4 space-y-4">
@@ -79,7 +135,7 @@ const ReservationCreate = () => {
           <DateTimeStep
             form={form}
             onChange={handleChange}
-            onNext={() => setCurrentStep(2)}
+            onNext={() => moveStep(2, 'next')}
           />
         )}
 
@@ -99,8 +155,8 @@ const ReservationCreate = () => {
               setSearchQuery(value)
               setShowRecentOnly(false)
             }}
-            onBack={() => setCurrentStep(1)}
-            onNext={() => setCurrentStep(3)}
+            onBack={() => moveStep(1, 'back')}
+            onNext={() => moveStep(3, 'next')}
           />
         )}
 
@@ -110,7 +166,7 @@ const ReservationCreate = () => {
             form={form}
             selectedDogName={selectedDog?.name || ''}
             onChange={handleChange}
-            onBack={() => setCurrentStep(2)}
+            onBack={() => moveStep(2, 'back')}
           />
         )}
       </form>

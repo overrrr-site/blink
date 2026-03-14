@@ -68,7 +68,7 @@ const ReservationCard = React.memo(function ReservationCard({
   const labels = getDashboardStatusLabels(businessType)
 
   return (
-    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden" data-coach="reservation-card">
       <div
         role="button"
         tabIndex={0}
@@ -182,7 +182,7 @@ const ReservationCard = React.memo(function ReservationCard({
       {isExpanded && (
         <div className="border-t border-border">
           {hasPreVisitInput(reservation) && (
-            <div className="bg-chart-3/5 px-4 py-3">
+            <div className="bg-chart-3/5 px-4 py-3" data-coach="abnormal-badge">
               <p className="text-xs font-bold text-chart-3 mb-1">
                 <Icon icon="solar:clipboard-text-bold" className="size-4 mr-1" />
                 飼い主さんからの連絡

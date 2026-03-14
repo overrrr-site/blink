@@ -42,6 +42,8 @@ const MIGRATIONS = [
   { file: '035_billing_webhook.sql',                  label: 'PAY.JP Webhook スキーマ' },
   { file: '038_owner_announcement_reads.sql',         label: '飼い主お知らせ既読スキーマ' },
   { file: '041_training_evaluation_mode.sql',          label: 'トレーニング評価モード設定' },
+  { file: '043_ux_analytics.sql',                     label: 'UX分析イベント・レポートジョブ' },
+  { file: '044_clarity_export_snapshots.sql',         label: 'Clarityエクスポートスナップショット' },
 ] as const;
 
 async function runMigration(file: string, label: string): Promise<void> {
