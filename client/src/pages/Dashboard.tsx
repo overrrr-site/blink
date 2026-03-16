@@ -383,7 +383,7 @@ function Dashboard(): JSX.Element {
 
         {/* クイックアクション */}
         {data && (
-          <aside className="px-5 mt-4 lg:mt-0 lg:px-0 lg:w-72 lg:shrink-0 lg:sticky lg:top-4 lg:self-start">
+          <aside className="px-5 mt-4 lg:mt-2 lg:px-0 lg:w-72 lg:shrink-0 lg:sticky lg:top-4 lg:self-start">
             <section className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-1 lg:gap-2">
               {/* 今日の点検記録 */}
               <QuickActionCard

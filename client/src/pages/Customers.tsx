@@ -56,15 +56,15 @@ const OwnerCard = React.memo(function OwnerCard({
           {owner.name.charAt(0)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <h3 className="font-bold text-base truncate">{owner.name}</h3>
+          <h3 className="font-bold text-base truncate">{owner.name}</h3>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground">{owner.phone}</p>
             {isLineLinked && (
               <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border border-chart-2/30 bg-chart-2/10 text-chart-2 whitespace-nowrap">
                 LINE連携済
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">{owner.phone}</p>
         </div>
           <div className="flex items-center gap-1">
           {(owner.dogs ?? []).slice(0, 3).map((dog) => (
