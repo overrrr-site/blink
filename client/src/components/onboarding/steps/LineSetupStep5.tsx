@@ -10,7 +10,7 @@ interface StepProps {
 }
 
 function StepHeader({ step }: { step: number }) {
-  const percent = Math.round((step / 5) * 100)
+  const percent = Math.round((step / 4) * 100)
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-2">
@@ -18,7 +18,7 @@ function StepHeader({ step }: { step: number }) {
           LINE連携セットアップ
         </p>
         <p className="text-xs font-medium text-muted-foreground">
-          Step {step}/5
+          Step {step}/4
         </p>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -54,7 +54,7 @@ export default function LineSetupStep5({ onBack, onComplete }: StepProps) {
       if (!statusData.hasLineCredentials) {
         setTestStatus('error')
         setErrorMessage(
-          'LINE APIの認証情報が見つかりません。Step 3で入力した情報を確認してください。'
+          'LINE APIの認証情報が見つかりません。Step 2で入力した情報を確認してください。'
         )
         return
       }
@@ -82,7 +82,7 @@ export default function LineSetupStep5({ onBack, onComplete }: StepProps) {
   return (
     <>
       <div className="px-1 py-2 flex-1">
-        <StepHeader step={5} />
+        <StepHeader step={4} />
 
         <h3 className="text-base font-bold text-foreground mb-1">
           接続テスト

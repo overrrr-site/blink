@@ -10,7 +10,7 @@ interface StepProps {
 }
 
 function StepHeader({ step }: { step: number }) {
-  const percent = Math.round((step / 5) * 100)
+  const percent = Math.round((step / 4) * 100)
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-2">
@@ -18,7 +18,7 @@ function StepHeader({ step }: { step: number }) {
           LINE連携セットアップ
         </p>
         <p className="text-xs font-medium text-muted-foreground">
-          Step {step}/5
+          Step {step}/4
         </p>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -55,7 +55,7 @@ export default function LineSetupStep4({ onNext, onBack }: StepProps) {
   return (
     <>
       <div className="px-1 py-2 flex-1">
-        <StepHeader step={4} />
+        <StepHeader step={3} />
 
         <h3 className="text-base font-bold text-foreground mb-1">
           Webhook URLの設定

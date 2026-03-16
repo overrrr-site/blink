@@ -3,7 +3,6 @@ import { Icon } from '../Icon'
 import { BTN_PRIMARY, BTN_TERTIARY } from '../../utils/styles'
 import { useOnboardingState, type SetupStatus } from '../../hooks/useOnboardingState'
 import LineSetupStep1 from './steps/LineSetupStep1'
-import LineSetupStep2 from './steps/LineSetupStep2'
 import LineSetupStep3 from './steps/LineSetupStep3'
 import LineSetupStep4 from './steps/LineSetupStep4'
 import LineSetupStep5 from './steps/LineSetupStep5'
@@ -100,22 +99,15 @@ export default function SetupWizard({ onClose }: SetupWizardProps) {
           <div className="flex-1 px-5 py-6">
             {lineStep === 1 && (
               <LineSetupStep1
-                onNext={() => setLineStep(2)}
-                onBack={() => { setLineStep(1); setActiveView('overview') }}
-                onComplete={() => handleStepComplete('line')}
-              />
-            )}
-            {lineStep === 2 && (
-              <LineSetupStep2
                 onNext={() => setLineStep(3)}
-                onBack={() => setLineStep(1)}
+                onBack={() => { setLineStep(1); setActiveView('overview') }}
                 onComplete={() => handleStepComplete('line')}
               />
             )}
             {lineStep === 3 && (
               <LineSetupStep3
                 onNext={() => setLineStep(4)}
-                onBack={() => setLineStep(2)}
+                onBack={() => setLineStep(1)}
                 onComplete={() => handleStepComplete('line')}
               />
             )}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef, type RefObject } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
@@ -276,7 +276,6 @@ const RecordCreate = () => {
 
   const {
     aiSuggestions: recordAISuggestions,
-    reportInputTrace,
     setReportTone,
     handleAISuggestionAction,
     handleAISuggestionDismiss,
@@ -291,8 +290,6 @@ const RecordCreate = () => {
   })
 
   const reportSuggestion = aiSettings.aiAssistantEnabled ? recordAISuggestions['report-draft'] : null
-  const missingInputCount = reportInputTrace.filter((item) => item.status === 'missing').length
-  const firstMissingField = reportInputTrace.find((item) => item.status === 'missing')?.key
   const conditionSummary = condition?.overall
     ? CONDITION_SUMMARY[condition.overall] || '入力あり'
     : '未入力'
@@ -379,47 +376,6 @@ const RecordCreate = () => {
   const handlePhotoAdded = async (photoUrl: string, type: 'regular' | 'concern') => {
     if (!aiSettings.aiAssistantEnabled || recordType !== 'grooming' || type !== 'regular') return
     await analyzePhotoConcern(photoUrl)
-  }
-
-  const scrollToSection = (ref: RefObject<HTMLDivElement>) => {
-    window.setTimeout(() => {
-      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 80)
-  }
-
-  const handleJumpToField = (fieldKey: string) => {
-    if (fieldKey === 'daycare_training' || fieldKey === 'daycare_activities' || fieldKey === 'grooming_parts') {
-      scrollToSection(recordMainSectionRef)
-      return
-    }
-    if (fieldKey === 'photos') {
-      scrollToSection(photosSectionRef)
-      return
-    }
-    if (fieldKey === 'condition') {
-      setCollapsed((s) => ({ ...s, condition: false }))
-      scrollToSection(conditionSectionRef)
-    }
-    if (fieldKey === 'health_check') {
-      setCollapsed((s) => ({ ...s, health: false }))
-      scrollToSection(healthSectionRef)
-    }
-    if (fieldKey === 'hotel_stay') {
-      scrollToSection(hotelStaySectionRef)
-      return
-    }
-    if (fieldKey === 'hotel_care_logs') {
-      setCollapsed((s) => ({ ...s, careLogs: false }))
-      scrollToSection(hotelCareSectionRef)
-      return
-    }
-    if (fieldKey === 'internal_notes') {
-      scrollToSection(internalMemoSectionRef)
-      return
-    }
-    if (fieldKey === 'report_text') {
-      scrollToSection(reportSectionRef)
-    }
   }
 
   const {
@@ -636,12 +592,9 @@ const RecordCreate = () => {
             onNotesChange={setNotes}
             aiEnabled={aiSettings.aiAssistantEnabled}
             reportSuggestion={reportSuggestion}
-            missingInputCount={missingInputCount}
-            firstMissingField={firstMissingField}
             selectedReportTone={selectedReportTone}
             reportSectionRef={reportSectionRef}
             internalMemoSectionRef={internalMemoSectionRef}
-            onJumpToField={handleJumpToField}
             onGenerateReport={handleGenerateReport}
             onToneSelect={setSelectedReportTone}
             onAISuggestionAction={(editedText) => handleAISuggestionAction('report-draft', editedText)}

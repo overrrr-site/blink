@@ -14,12 +14,9 @@ interface CreateReportComposerProps extends BaseReportComposerProps {
   mode: 'create'
   aiEnabled: boolean
   reportSuggestion: AISuggestionData | null
-  missingInputCount: number
-  firstMissingField?: string
   selectedReportTone: 'formal' | 'casual'
   reportSectionRef: RefObject<HTMLDivElement>
   internalMemoSectionRef: RefObject<HTMLDivElement>
-  onJumpToField: (fieldKey: string) => void
   onGenerateReport: () => void
   onToneSelect: (tone: 'formal' | 'casual') => void
   onAISuggestionAction: (editedText?: string) => void
@@ -62,22 +59,9 @@ export default function RecordReportComposer(props: RecordReportComposerProps) {
     <>
       {props.aiEnabled ? (
         <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold text-foreground">AIで報告文を作成</p>
-              <p className="text-xs text-muted-foreground mt-1">上の入力内容をもとに生成します</p>
-            </div>
-            {props.missingInputCount > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (props.firstMissingField) props.onJumpToField(props.firstMissingField)
-                }}
-                className="shrink-0 rounded-full bg-chart-4/10 px-2.5 py-1 text-[11px] font-bold text-chart-4 hover:bg-chart-4/20 active:scale-95 transition-all"
-              >
-                未入力 {props.missingInputCount}項目
-              </button>
-            )}
+          <div>
+            <p className="text-sm font-bold text-foreground">AIで報告文を作成</p>
+            <p className="text-xs text-muted-foreground mt-1">上の入力内容をもとに生成します</p>
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">

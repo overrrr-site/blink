@@ -24,7 +24,7 @@ export default function RecordSaveFooter({
   const isShared = shareLabel === '共有済み'
   const primaryColor = getBusinessTypeColors(recordType).primary
   const containerClass = mode === 'create'
-    ? 'fixed bottom-[72px] inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb shadow-[0_-4px_16px_rgba(0,0,0,0.08)]'
+    ? 'fixed bottom-[72px] md:bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb shadow-[0_-4px_16px_rgba(0,0,0,0.08)]'
     : 'fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 safe-area-pb'
 
   return (

@@ -21,7 +21,7 @@ export default function OptionalSection({ title, collapsed, onToggle, summary, c
       >
         <span className="text-sm font-bold text-foreground">{title}</span>
         <span className="flex items-center gap-2 min-w-0">
-          {collapsed && summary && (
+          {summary && (
             <span className="text-xs text-muted-foreground truncate max-w-[55vw] text-right">{summary}</span>
           )}
           <Icon
