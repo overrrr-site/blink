@@ -44,6 +44,7 @@ const MIGRATIONS = [
   { file: '041_training_evaluation_mode.sql',          label: 'トレーニング評価モード設定' },
   { file: '043_ux_analytics.sql',                     label: 'UX分析イベント・レポートジョブ' },
   { file: '044_clarity_export_snapshots.sql',         label: 'Clarityエクスポートスナップショット' },
+  { file: '046_rls_security_ux_and_clarity.sql',      label: 'UX分析・Clarity RLSセキュリティ' },
 ] as const;
 
 async function runMigration(file: string, label: string): Promise<void> {
