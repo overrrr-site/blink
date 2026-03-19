@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Icon } from '../Icon'
 import { useTrialStore } from '../../store/trialStore'
 import { useToast } from '../Toast'
@@ -20,18 +19,16 @@ interface TrialStepCardProps {
 }
 
 export function TrialStepCard({ step }: TrialStepCardProps) {
-  const navigate = useNavigate()
-
   // Completed state
   if (step.completed) {
     return (
-      <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-60">
-        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg opacity-50">
+        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <span className="text-sm text-muted-foreground line-through">{step.title}</span>
+        <span className="text-xs text-muted-foreground line-through">{step.title}</span>
       </div>
     )
   }
@@ -39,11 +36,11 @@ export function TrialStepCard({ step }: TrialStepCardProps) {
   // Locked state
   if (!step.unlocked) {
     return (
-      <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-40">
-        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-          <Icon icon="solar:lock-bold" className="size-3.5 text-muted-foreground" />
+      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg opacity-30">
+        <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+          <Icon icon="solar:lock-bold" className="size-3 text-muted-foreground" />
         </div>
-        <span className="text-sm text-muted-foreground">{step.title}</span>
+        <span className="text-xs text-muted-foreground">{step.title}</span>
       </div>
     )
   }
@@ -57,33 +54,24 @@ export function TrialStepCard({ step }: TrialStepCardProps) {
     return <CheckLiffAppStep step={step} />
   }
 
-  // Active (current) state - default
+  // Active (current) state - コンパクト表示（ナビゲーションはコーチマークが担当）
   return (
     <div
-      className="border-2 border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3"
+      className="border border-primary/30 bg-primary/5 rounded-lg px-3 py-2.5 space-y-1"
       data-trial-step={step.step_key}
     >
-      <div className="flex items-center gap-3">
-        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-white">{step.step_number}</span>
+      <div className="flex items-center gap-2">
+        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span className="text-[10px] font-bold text-white">{step.step_number}</span>
         </div>
-        <span className="text-sm font-bold text-foreground">{step.title}</span>
+        <span className="text-xs font-bold text-foreground">{step.title}</span>
       </div>
-      <p className="text-xs text-muted-foreground pl-9">{step.description}</p>
-      {step.action_url && (
-        <button
-          onClick={() => navigate(step.action_url)}
-          className="ml-9 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[36px]"
-        >
-          {step.title.replace(/しよう$|してみよう$/, 'する')}
-          <Icon icon="solar:arrow-right-linear" className="size-3.5 ml-1 inline-block" />
-        </button>
-      )}
+      <p className="text-[11px] text-muted-foreground pl-7 leading-relaxed">{step.description}</p>
     </div>
   )
 }
 
-/** Step3: LINE連携 - 店舗コード表示 + 友だち追加手順 */
+/** LINE連携 - 店舗コード表示 + 友だち追加手順 */
 function LinkLineAccountStep({ step }: { step: GuideStep }) {
   const { trialStoreCode } = useTrialStore()
   const { showToast } = useToast()
@@ -101,60 +89,44 @@ function LinkLineAccountStep({ step }: { step: GuideStep }) {
   }
 
   return (
-    <div className="border-2 border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-white">{step.step_number}</span>
+    <div className="border border-primary/30 bg-primary/5 rounded-lg px-3 py-2.5 space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span className="text-[10px] font-bold text-white">{step.step_number}</span>
         </div>
-        <span className="text-sm font-bold text-foreground">{step.title}</span>
+        <span className="text-xs font-bold text-foreground">{step.title}</span>
       </div>
 
-      <div className="pl-9 space-y-3">
-        <p className="text-xs text-muted-foreground">{step.description}</p>
-
-        {/* 手順 */}
-        <div className="space-y-2">
-          <div className="flex items-start gap-2">
-            <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">1</span>
-            <span className="text-xs text-foreground">Blink公式LINEを友だち追加</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">2</span>
-            <span className="text-xs text-foreground">以下の店舗コードをLINEに送信</span>
-          </div>
+      <div className="pl-7 space-y-2">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span><b className="text-primary">①</b> 公式LINEを友だち追加</span>
+          <span><b className="text-primary">②</b> 店舗コードを送信</span>
         </div>
 
         {/* 店舗コード表示（コピー可能） */}
         <button
           onClick={handleCopy}
-          className="w-full flex items-center justify-between gap-2 bg-card border border-border rounded-lg px-3 py-2.5 hover:bg-muted transition-colors group"
+          className="w-full flex items-center justify-between gap-2 bg-card border border-border rounded-lg px-3 py-2 hover:bg-muted transition-colors group"
         >
           <code className="text-sm font-bold text-foreground tracking-wider">{trialStoreCode}</code>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground group-hover:text-foreground transition-colors">
             {copied ? (
-              <>
-                <Icon icon="solar:check-circle-bold" className="size-4 text-green-500" />
-                <span className="text-green-600">コピー済み</span>
-              </>
+              <Icon icon="solar:check-circle-bold" className="size-4 text-green-500" />
             ) : (
-              <>
-                <Icon icon="solar:copy-linear" className="size-4" />
-                <span>コピー</span>
-              </>
+              <Icon icon="solar:copy-linear" className="size-4" />
             )}
           </span>
         </button>
 
         <p className="text-[10px] text-muted-foreground">
-          <Icon icon="solar:info-circle-linear" className="size-3 inline-block mr-0.5 -mt-0.5" />
-          LINEで店舗コードを送信すると、自動でこのステップが完了します
+          LINEで送信すると自動で完了します
         </p>
       </div>
     </div>
   )
 }
 
-/** Step7: LIFF確認 - LINEのBlink画面を開く + 手動完了 */
+/** LIFF確認 - LINEのBlink画面を開く + 手動完了 */
 function CheckLiffAppStep({ step }: { step: GuideStep }) {
   const { completeStep } = useTrialStore()
   const [completing, setCompleting] = useState(false)
@@ -166,31 +138,26 @@ function CheckLiffAppStep({ step }: { step: GuideStep }) {
   }
 
   return (
-    <div className="border-2 border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-white">{step.step_number}</span>
+    <div className="border border-primary/30 bg-primary/5 rounded-lg px-3 py-2.5 space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span className="text-[10px] font-bold text-white">{step.step_number}</span>
         </div>
-        <span className="text-sm font-bold text-foreground">{step.title}</span>
+        <span className="text-xs font-bold text-foreground">{step.title}</span>
       </div>
 
-      <div className="pl-9 space-y-3">
-        <p className="text-xs text-muted-foreground">{step.description}</p>
-
-        <div className="space-y-2">
-          <p className="text-xs text-foreground">
-            <Icon icon="simple-icons:line" className="size-4 inline-block mr-1 -mt-0.5 text-[#06C755]" />
-            LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認してみましょう。
-          </p>
-        </div>
+      <div className="pl-7 space-y-2">
+        <p className="text-[11px] text-muted-foreground">
+          <Icon icon="simple-icons:line" className="size-3.5 inline-block mr-0.5 -mt-0.5 text-[#06C755]" />
+          LINEのBlinkで連絡帳を確認しましょう
+        </p>
 
         <button
           onClick={handleComplete}
           disabled={completing}
-          className="w-full px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[36px] disabled:opacity-50"
+          className="w-full px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[32px] disabled:opacity-50"
         >
-          {completing ? '処理中...' : '確認しました'}
-          {!completing && <Icon icon="solar:check-circle-bold" className="size-3.5 ml-1 inline-block" />}
+          {completing ? '処理中...' : '確認しました ✓'}
         </button>
       </div>
     </div>
