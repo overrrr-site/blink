@@ -1,6 +1,6 @@
 import { Icon } from '@/components/Icon'
 import { useNavigate } from 'react-router-dom'
-import { getBusinessTypeColors, getBusinessTypeLabel } from '@/utils/businessTypeColors'
+import { getBusinessTypeColors, getBusinessTypeLabel } from '@/domain/businessTypeConfig'
 import type { RecordType } from '@/types/record'
 
 type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'error'

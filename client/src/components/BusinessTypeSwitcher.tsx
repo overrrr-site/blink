@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Icon } from './Icon'
 import { useAuthStore, selectUser } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
-import { getBusinessTypeColors, getBusinessTypeLabel, getBusinessTypeIcon } from '../utils/businessTypeColors'
-import { getAvailableBusinessTypes } from '../utils/businessTypeAccess'
+import { getBusinessTypeColors, getBusinessTypeLabel, getBusinessTypeIcon, getAvailableBusinessTypes } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
 
 const ALL_BUSINESS_TYPES: RecordType[] = ['daycare', 'grooming', 'hotel']

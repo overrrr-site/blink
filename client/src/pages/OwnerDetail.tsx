@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import type { RecordType } from '../types/record'
-import { getBusinessTypeColors, getBusinessTypeLabel } from '../utils/businessTypeColors'
+import { getBusinessTypeColors, getBusinessTypeLabel } from '../domain/businessTypeConfig'
 import { LazyImage } from '../components/LazyImage'
 import { getDetailThumbnailUrl } from '../utils/image'
 

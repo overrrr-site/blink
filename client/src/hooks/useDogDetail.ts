@@ -12,9 +12,9 @@ interface DogReservationItem {
   has_pre_visit?: boolean
 }
 
-interface DogJournalItem {
+interface DogRecordItem {
   id: number
-  journal_date: string
+  record_date: string
   comment?: string | null
   staff_name?: string | null
 }
@@ -43,7 +43,7 @@ interface DogDetailData {
   health?: Record<string, unknown>
   personality?: Record<string, unknown>
   reservations?: DogReservationItem[]
-  journals?: DogJournalItem[]
+  records?: DogRecordItem[]
   preVisitHistory?: DogPreVisitItem[]
 }
 
@@ -79,10 +79,10 @@ export function useDogDetail(id?: string) {
           ...reservation,
           owner_name: reservation.owner_name ?? '',
         })),
-        journals: (dog.journals ?? []).map((journal) => ({
-          ...journal,
-          comment: journal.comment ?? undefined,
-          staff_name: journal.staff_name ?? undefined,
+        records: (dog.records ?? []).map((record) => ({
+          ...record,
+          comment: record.comment ?? undefined,
+          staff_name: record.staff_name ?? undefined,
         })),
         preVisitHistory: dog.preVisitHistory ?? [],
       }

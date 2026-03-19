@@ -6,7 +6,7 @@ import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { getRecordLabel } from '../utils/businessTypeColors'
+import { getRecordLabel } from '../domain/businessTypeConfig'
 import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
 import { useAuthStore } from '../store/authStore'
 import type { RecordType } from '../types/record'
@@ -103,7 +103,7 @@ const RecordCreate = () => {
   const [recordSaved, setRecordSaved] = useState(false)
 
   // トライアルガイド: 連絡帳保存完了で Step 4 自動完了
-  useTrialStepCompletion('write_journal', recordSaved)
+  useTrialStepCompletion('write_record', recordSaved)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
 
   const finishSession = useCallback((result: 'success' | 'drop' | 'error', step = 'record_submit') => {

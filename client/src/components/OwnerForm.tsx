@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Icon } from './Icon'
 import { INPUT_CLASS } from '../utils/styles'
-import { getBusinessTypeColors, getBusinessTypeLabel } from '../utils/businessTypeColors'
+import { getBusinessTypeColors, getBusinessTypeLabel } from '../domain/businessTypeConfig'
 import type { RecordType } from '../types/record'
 
 export interface OwnerFormValues {

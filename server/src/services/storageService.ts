@@ -117,7 +117,7 @@ export async function uploadMultipleToSupabaseStorage(
  */
 export async function uploadBase64ToSupabaseStorage(
   base64Data: string,
-  category: string = 'journals'
+  category: string = 'records'
 ): Promise<{ url: string; path: string } | null> {
   const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
   if (!matches) {
@@ -138,7 +138,7 @@ export async function uploadBase64ToSupabaseStorage(
  */
 export async function uploadMultipleBase64ToSupabaseStorage(
   base64DataArray: string[],
-  category: string = 'journals'
+  category: string = 'records'
 ): Promise<string[]> {
   const uploads = await Promise.all(
     base64DataArray.map(async (base64Data) => {

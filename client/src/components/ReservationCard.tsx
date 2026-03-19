@@ -21,7 +21,7 @@ export interface ReservationCardData {
   reservation_time: string
   status: '予定' | '登園済' | '降園済' | 'キャンセル'
   checked_in_at?: string
-  has_journal?: boolean
+  has_record?: boolean
   // 飼い主からの事前入力
   daycare_data?: DaycarePreVisitData | null
   grooming_data?: unknown | null
@@ -42,7 +42,6 @@ interface ReservationCardProps {
   onNavigatePreVisit?: (id: number) => void
   onNavigateTraining: (dogId: number) => void
   onNavigateRecord: (id: number) => void
-  onNavigateJournal?: (id: number) => void
   checkingIn?: number | null
   recordLabel: string
   businessType: RecordType | null
@@ -57,7 +56,6 @@ const ReservationCard = React.memo(function ReservationCard({
   onNavigatePreVisit,
   onNavigateTraining,
   onNavigateRecord,
-  onNavigateJournal,
   checkingIn,
   recordLabel,
   businessType,
@@ -142,9 +140,9 @@ const ReservationCard = React.memo(function ReservationCard({
               {labels.checkIn}
             </button>
           )}
-          {isPresent && !reservation.has_journal && onNavigateJournal && (
+          {isPresent && !reservation.has_record && onNavigateRecord && (
             <button
-              onClick={() => onNavigateJournal(reservation.id)}
+              onClick={() => onNavigateRecord(reservation.id)}
               className="flex items-center gap-1 bg-chart-2 text-white px-3 py-2 rounded-lg text-xs font-bold min-h-[44px] whitespace-nowrap active:scale-[0.98] transition-all"
               aria-label={`${recordLabel}を作成`}
             >
@@ -152,7 +150,7 @@ const ReservationCard = React.memo(function ReservationCard({
               {recordLabel}
             </button>
           )}
-          {isPresent && reservation.has_journal && onCheckOut && (
+          {isPresent && reservation.has_record && onCheckOut && (
             <button
               onClick={() => onCheckOut(reservation.id)}
               disabled={checkingIn === reservation.id}

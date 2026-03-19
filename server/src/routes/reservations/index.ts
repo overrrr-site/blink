@@ -1,154 +1,31 @@
 import express from 'express';
-import pool from '../db/connection.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
-import { cacheControl } from '../middleware/cache.js';
+import pool from '../../db/connection.js';
+import { authenticate, AuthRequest } from '../../middleware/auth.js';
+import { cacheControl } from '../../middleware/cache.js';
 import {
   requireStoreId,
   sendBadRequest,
   sendForbidden,
   sendNotFound,
   sendServerError,
-} from '../utils/response.js';
-import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
-import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../utils/businessTypes.js';
+} from '../../utils/response.js';
+import { isNonEmptyString, isNumberLike } from '../../utils/validation.js';
+import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../../utils/businessTypes.js';
 import {
   syncCalendarOnCreate,
   syncCalendarOnUpdate,
   syncCalendarOnDelete,
-} from '../services/reservationsService.js';
-import { logExportAction } from '../services/exportLogService.js';
-
-function toIsoDateString(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function getMonthDateRange(month: string): { start: string; end: string } | null {
-  const [yearPart, monthPart] = month.split('-');
-  const year = Number(yearPart);
-  const monthNumber = Number(monthPart);
-
-  if (!Number.isFinite(year) || !Number.isFinite(monthNumber) || monthNumber < 1 || monthNumber > 12) {
-    return null;
-  }
-
-  const monthIndex = monthNumber - 1;
-  const start = new Date(Date.UTC(year, monthIndex, 1));
-  const end = new Date(Date.UTC(year, monthIndex + 1, 1));
-
-  return { start: toIsoDateString(start), end: toIsoDateString(end) };
-}
-
-function escapeCsvValue(value: unknown): string {
-  const text = value === null || value === undefined ? '' : String(value);
-  const escaped = text.replace(/"/g, '""');
-  return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped;
-}
-
-function buildCsv(headers: string[], rows: unknown[][]): string {
-  const lines = [
-    headers.map(escapeCsvValue).join(','),
-    ...rows.map((row) => row.map(escapeCsvValue).join(',')),
-  ];
-  return `\uFEFF${lines.join('\n')}`;
-}
-
-function pad2(value: number): string {
-  return String(value).padStart(2, '0');
-}
-
-function normalizeDate(value: unknown): string | null {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`;
-  }
-  const text = String(value ?? '').trim();
-  const match = text.match(/^(\d{4}-\d{2}-\d{2})$/);
-  return match ? match[1] : null;
-}
-
-function normalizeTime(value: unknown): string | null {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return `${pad2(value.getHours())}:${pad2(value.getMinutes())}`;
-  }
-  const text = String(value ?? '').trim();
-  const match = text.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-  return match ? match[0] : null;
-}
-
-function normalizeDateTime(value: unknown): string | null {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())} ${pad2(value.getHours())}:${pad2(value.getMinutes())}:${pad2(value.getSeconds())}`;
-  }
-  const text = String(value ?? '').trim();
-  const match = text.match(/^(\d{4}-\d{2}-\d{2})[T\s]([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?/);
-  if (!match) {
-    return null;
-  }
-  const [, datePart, hourPart, minutePart, secondPart] = match;
-  return `${datePart} ${hourPart}:${minutePart}:${secondPart ?? '00'}`;
-}
-
-function parseDateTimeRange(input: {
-  reservationDate: unknown;
-  reservationTime: unknown;
-  endDatetime?: unknown;
-}): { startAt: string; endAt: string } | null {
-  const reservationDateText = normalizeDate(input.reservationDate);
-  const reservationTimeText = normalizeTime(input.reservationTime);
-  if (!reservationDateText || !reservationTimeText) {
-    return null;
-  }
-
-  const startAtText = `${reservationDateText} ${reservationTimeText}:00`;
-  const endAtText = input.endDatetime ? normalizeDateTime(input.endDatetime) : null;
-  if (!endAtText) {
-    return null;
-  }
-
-  const startAt = new Date(`${reservationDateText}T${reservationTimeText}:00`);
-  const endAt = new Date(endAtText.replace(' ', 'T'));
-  if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
-    return null;
-  }
-
-  if (endAt <= startAt) {
-    return null;
-  }
-
-  return {
-    startAt: startAtText,
-    endAt: endAtText,
-  };
-}
-
-async function findRoomConflict(params: {
-  storeId: number;
-  roomId: number;
-  startAt: string;
-  endAt: string;
-  excludeReservationId?: number;
-  queryable?: { query: (sql: string, values?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }> };
-}): Promise<number | null> {
-  const queryable = params.queryable ?? pool;
-  const result = await queryable.query(
-    `SELECT id
-     FROM reservations
-     WHERE store_id = $1
-       AND room_id = $2
-       AND status != 'キャンセル'
-       AND ($3::int IS NULL OR id != $3)
-       AND COALESCE(end_datetime, (reservation_date::timestamp + reservation_time::time + INTERVAL '1 day')) > $4::timestamp
-       AND (reservation_date::timestamp + reservation_time::time) < $5::timestamp
-     ORDER BY reservation_date, reservation_time
-     LIMIT 1`,
-    [params.storeId, params.roomId, params.excludeReservationId ?? null, params.startAt, params.endAt]
-  );
-
-  const id = result.rows[0]?.id;
-  return typeof id === 'number' ? id : null;
-}
+} from '../../services/reservationsService.js';
+import { getMonthDateRange, parseDateTimeRange, findRoomConflict } from './utils.js';
+import availabilityRouter from './availability.js';
+import exportRouter from './export.js';
 
 const router = express.Router();
 router.use(authenticate);
+
+// サブルーターをマウント
+router.use(availabilityRouter);
+router.use(exportRouter);
 
 // 予約一覧取得（日付指定）
 router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Promise<void> {
@@ -167,7 +44,7 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
              hr.room_name,
              hr.room_size,
              pvi.daycare_data,
-             CASE WHEN j.id IS NOT NULL THEN true ELSE false END as has_journal
+             CASE WHEN j.id IS NOT NULL THEN true ELSE false END as has_record
       FROM reservations r
       JOIN dogs d ON r.dog_id = d.id
       JOIN owners o ON d.owner_id = o.id
@@ -204,14 +81,14 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
     query += ` ORDER BY r.reservation_date, r.reservation_time`;
 
     const result = await pool.query(query, params);
-    
+
     // デバッグ用ログ（開発環境 + LOG_LEVEL=debug の場合のみ）
     if (process.env.NODE_ENV === 'development' && process.env.LOG_LEVEL === 'debug') {
-      console.log('📅 Reservations query:', { 
-        month, 
+      console.log('📅 Reservations query:', {
+        month,
         date,
         storeId: req.storeId,
-        params, 
+        params,
         count: result.rows.length,
         sample: result.rows.slice(0, 2).map(r => ({
           id: r.id,
@@ -220,78 +97,10 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
         }))
       });
     }
-    
+
     res.json(result.rows);
   } catch (error) {
     sendServerError(res, '予約一覧の取得に失敗しました', error);
-  }
-});
-
-// ホテル部屋空き状況取得
-router.get('/hotel-availability', async function(req: AuthRequest, res): Promise<void> {
-  try {
-    if (!requireStoreId(req, res)) {
-      return;
-    }
-
-    const { checkin_datetime, checkout_datetime, exclude_reservation_id } = req.query as {
-      checkin_datetime?: string;
-      checkout_datetime?: string;
-      exclude_reservation_id?: string;
-    };
-
-    if (!isNonEmptyString(checkin_datetime) || !isNonEmptyString(checkout_datetime)) {
-      sendBadRequest(res, 'checkin_datetimeとcheckout_datetimeが必要です');
-      return;
-    }
-
-    const startDate = new Date(checkin_datetime);
-    const endDate = new Date(checkout_datetime);
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || startDate >= endDate) {
-      sendBadRequest(res, 'チェックイン・チェックアウト日時が不正です');
-      return;
-    }
-
-    const excludeId = isNumberLike(exclude_reservation_id) ? Number(exclude_reservation_id) : null;
-
-    const result = await pool.query(
-      `SELECT hr.id,
-              hr.room_name,
-              hr.room_size,
-              hr.capacity,
-              hr.display_order,
-              c.id as conflict_reservation_id
-       FROM hotel_rooms hr
-       LEFT JOIN LATERAL (
-         SELECT r.id
-         FROM reservations r
-         WHERE r.store_id = $1
-           AND r.room_id = hr.id
-           AND r.status != 'キャンセル'
-           AND ($4::int IS NULL OR r.id != $4)
-           AND COALESCE(r.end_datetime, (r.reservation_date::timestamp + r.reservation_time::time + INTERVAL '1 day')) > $2::timestamp
-           AND (r.reservation_date::timestamp + r.reservation_time::time) < $3::timestamp
-         ORDER BY r.reservation_date, r.reservation_time
-         LIMIT 1
-       ) c ON true
-       WHERE hr.store_id = $1
-         AND hr.enabled = TRUE
-       ORDER BY hr.display_order ASC, hr.id ASC`,
-      [req.storeId, checkin_datetime, checkout_datetime, excludeId]
-    );
-
-    const rooms = result.rows.map((row) => ({
-      id: row.id,
-      room_name: row.room_name,
-      room_size: row.room_size,
-      capacity: row.capacity,
-      is_available: !row.conflict_reservation_id,
-      conflict_reservation_id: row.conflict_reservation_id ?? null,
-    }));
-
-    res.json(rooms);
-  } catch (error) {
-    sendServerError(res, 'ホテル部屋の空き状況取得に失敗しました', error);
   }
 });
 
@@ -600,7 +409,7 @@ router.put('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
         if (contractResult.rows.length > 0) {
           const contract = contractResult.rows[0];
           await client.query(
-            `UPDATE contracts 
+            `UPDATE contracts
              SET remaining_sessions = remaining_sessions - 1,
                  updated_at = CURRENT_TIMESTAMP
              WHERE id = $1`,
@@ -629,203 +438,6 @@ router.put('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
     }
   } catch (error) {
     sendServerError(res, '予約の更新に失敗しました', error);
-  }
-});
-
-// 予約履歴をCSV形式でエクスポート
-router.get('/export.csv', async function(req: AuthRequest, res): Promise<void> {
-  try {
-    if (!requireStoreId(req, res)) {
-      return;
-    }
-
-    const { date_from, date_to, service_type, status, dog_id } = req.query as {
-      date_from?: string;
-      date_to?: string;
-      service_type?: string;
-      status?: string;
-      dog_id?: string;
-    };
-
-    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
-    if (serviceTypeError) {
-      sendBadRequest(res, serviceTypeError);
-      return;
-    }
-
-    let query = `
-      SELECT r.id,
-             r.reservation_date,
-             r.reservation_time,
-             r.end_datetime,
-             r.status,
-             r.service_type,
-             d.name AS dog_name,
-             o.name AS owner_name,
-             hr.room_name,
-             r.memo,
-             r.created_at
-      FROM reservations r
-      JOIN dogs d ON r.dog_id = d.id
-      JOIN owners o ON d.owner_id = o.id
-      LEFT JOIN hotel_rooms hr ON r.room_id = hr.id
-      WHERE r.store_id = $1
-    `;
-    const params: Array<string | number> = [req.storeId!];
-
-    query += appendBusinessTypeFilter(params, 'r.service_type', serviceType);
-
-    if (isNonEmptyString(date_from)) {
-      query += ` AND r.reservation_date >= $${params.length + 1}`;
-      params.push(date_from);
-    }
-    if (isNonEmptyString(date_to)) {
-      query += ` AND r.reservation_date <= $${params.length + 1}`;
-      params.push(date_to);
-    }
-    if (isNonEmptyString(status)) {
-      query += ` AND r.status = $${params.length + 1}`;
-      params.push(status);
-    }
-    if (isNumberLike(dog_id)) {
-      query += ` AND r.dog_id = $${params.length + 1}`;
-      params.push(Number(dog_id));
-    }
-
-    query += ` ORDER BY r.reservation_date DESC, r.reservation_time DESC, r.id DESC`;
-
-    const result = await pool.query(query, params);
-    const headers = [
-      '予約ID',
-      '予約日',
-      '予約時刻',
-      '終了予定',
-      'ステータス',
-      '業態',
-      '犬名',
-      '飼い主名',
-      '部屋',
-      'メモ',
-      '作成日時',
-    ];
-    const rows = result.rows.map((row) => [
-      row.id,
-      row.reservation_date ? new Date(row.reservation_date).toISOString().slice(0, 10) : '',
-      row.reservation_time ? String(row.reservation_time).slice(0, 5) : '',
-      row.end_datetime ? new Date(row.end_datetime).toISOString().slice(0, 16).replace('T', ' ') : '',
-      row.status,
-      row.service_type,
-      row.dog_name,
-      row.owner_name,
-      row.room_name ?? '',
-      row.memo ?? '',
-      row.created_at ? new Date(row.created_at).toISOString().slice(0, 16).replace('T', ' ') : '',
-    ]);
-
-    await logExportAction({
-      storeId: req.storeId!,
-      staffId: req.userId,
-      exportType: 'reservations',
-      outputFormat: 'csv',
-      filters: { date_from, date_to, service_type: serviceType ?? null, status: status ?? null, dog_id: dog_id ?? null },
-    });
-
-    const csv = buildCsv(headers, rows);
-    const filename = `reservations-${new Date().toISOString().slice(0, 10)}.csv`;
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(csv);
-  } catch (error) {
-    sendServerError(res, '予約CSVエクスポートに失敗しました', error);
-  }
-});
-
-// 予約をiCS形式でエクスポート
-router.get('/export.ics', async function(req: AuthRequest, res): Promise<void> {
-  try {
-    if (!requireStoreId(req, res)) {
-      return;
-    }
-
-    const { month, date } = req.query;
-
-    // 店舗情報を取得
-    const storeResult = await pool.query(
-      `SELECT name, address FROM stores WHERE id = $1`,
-      [req.storeId]
-    );
-    const store = storeResult.rows[0] || { name: '店舗', address: '' };
-
-    let query = `
-      SELECT r.*, d.name as dog_name, o.name as owner_name
-      FROM reservations r
-      JOIN dogs d ON r.dog_id = d.id
-      JOIN owners o ON d.owner_id = o.id
-      WHERE r.store_id = $1 AND r.status != 'キャンセル'
-    `;
-    const params: (string | number)[] =[req.storeId];
-
-    if (date) {
-      query += ` AND r.reservation_date = $2`;
-      params.push(String(date));
-    } else if (month) {
-      const range = getMonthDateRange(String(month));
-      if (range) {
-        query += ` AND r.reservation_date >= $2 AND r.reservation_date < $3`;
-        params.push(range.start, range.end);
-      }
-    }
-
-    query += ` ORDER BY r.reservation_date, r.reservation_time`;
-
-    const result = await pool.query(query, params);
-
-    // iCS形式に変換
-    const icsLines: string[] = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//PetCarte//Admin//JP',
-      'CALSCALE:GREGORIAN',
-      'METHOD:PUBLISH',
-      `X-WR-CALNAME:${store.name} 予約一覧`,
-    ];
-
-    for (const reservation of result.rows) {
-      const dateStr = reservation.reservation_date.toISOString().split('T')[0].replace(/-/g, '');
-      const startTime = (reservation.reservation_time || '09:00').replace(':', '') + '00';
-      const endTime = (reservation.pickup_time || '17:00').replace(':', '') + '00';
-
-      const uid = `reservation-${reservation.id}@petcarte`;
-      const summary = `${reservation.dog_name}（${reservation.owner_name}様）`;
-      const description = [
-        `予約ID: ${reservation.id}`,
-        `犬名: ${reservation.dog_name}`,
-        `飼い主: ${reservation.owner_name}`,
-        `ステータス: ${reservation.status || '予定'}`,
-        reservation.memo ? `メモ: ${reservation.memo}` : '',
-      ].filter(Boolean).join('\\n');
-
-      icsLines.push(
-        'BEGIN:VEVENT',
-        `UID:${uid}`,
-        `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-        `DTSTART;TZID=Asia/Tokyo:${dateStr}T${startTime}`,
-        `DTEND;TZID=Asia/Tokyo:${dateStr}T${endTime}`,
-        `SUMMARY:${summary}`,
-        `DESCRIPTION:${description}`,
-        store.address ? `LOCATION:${store.address}` : '',
-        'END:VEVENT'
-      );
-    }
-
-    icsLines.push('END:VCALENDAR');
-    const icsContent = icsLines.filter(Boolean).join('\r\n');
-
-    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="reservations.ics"');
-    res.send(icsContent);
-  } catch (error) {
-    sendServerError(res, 'カレンダーエクスポートに失敗しました', error);
   }
 });
 

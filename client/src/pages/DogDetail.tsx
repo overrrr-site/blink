@@ -16,7 +16,7 @@ import CoachMark from '../components/onboarding/CoachMark'
 function DogDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [historyTab, setHistoryTab] = useState<'reservations' | 'journals' | 'preVisit'>('reservations')
+  const [historyTab, setHistoryTab] = useState<'reservations' | 'records' | 'preVisit'>('reservations')
   const { dog, loading, contracts, loadingContracts } = useDogDetail(id)
   const { selectedBusinessType } = useBusinessTypeStore()
 
@@ -148,12 +148,12 @@ function DogDetail(): JSX.Element {
           <HistoryTabs
             activeTab={historyTab}
             reservations={dog.reservations || []}
-            journals={dog.journals || []}
+            records={dog.records || []}
             preVisitHistory={dog.preVisitHistory || []}
             selectedBusinessType={selectedBusinessType}
             onTabChange={setHistoryTab}
             onOpenReservation={(reservationId) => navigate(`/reservations/${reservationId}`)}
-            onOpenJournal={(journalId) => navigate(`/journals/${journalId}`)}
+            onOpenRecord={(recordId) => navigate(`/records/${recordId}`)}
           />
         </div>
       </main>

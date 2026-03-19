@@ -17,9 +17,9 @@ interface ReservationData {
   service_type?: string | null;
 }
 
-interface JournalData {
+interface LegacyRecordData {
   id: number;
-  journal_date: string;
+  record_date: string;
   dog_name: string;
   staff_name?: string | null;
   morning_toilet_status?: string | null;
@@ -210,7 +210,7 @@ export function createQuickReply(businessTypes?: BusinessType[]): QuickReply {
   return {
     items: [
       { type: 'action', action: { type: 'postback', label: '予約確認', data: 'action=view_reservations' } },
-      { type: 'action', action: { type: 'postback', label: recordLabel, data: 'action=view_journals' } },
+      { type: 'action', action: { type: 'postback', label: recordLabel, data: 'action=view_records' } },
       { type: 'action', action: { type: 'postback', label: '契約情報', data: 'action=view_contracts' } },
       { type: 'action', action: { type: 'postback', label: 'ヘルプ', data: 'action=help' } },
     ],
@@ -274,24 +274,24 @@ export function createReservationFlexMessage(reservation: ReservationData): Flex
 }
 
 /**
- * 日誌カードのFlexメッセージを作成
+ * 記録カードのFlexメッセージを作成（レガシー形式）
  */
-export function createJournalFlexMessage(journal: JournalData): FlexMessage {
-  const journalDate = format(new Date(journal.journal_date), 'yyyy年M月d日(E)', { locale: ja });
-  const commentPreview = journal.comment ? truncateText(journal.comment, 50) : 'コメントなし';
+export function createLegacyRecordFlexMessage(record: LegacyRecordData): FlexMessage {
+  const recordDate = format(new Date(record.record_date), 'yyyy年M月d日(E)', { locale: ja });
+  const commentPreview = record.comment ? truncateText(record.comment, 50) : 'コメントなし';
 
   const bodyItems: Array<FlexComponent | null> = [
-    { type: 'text', text: journalDate, weight: 'bold', size: 'md' },
-    { type: 'text', text: `🐕 ${journal.dog_name}`, size: 'sm', color: '#666666' },
-    journal.staff_name ? { type: 'text', text: `👤 ${journal.staff_name}`, size: 'sm', color: '#666666' } : null,
+    { type: 'text', text: recordDate, weight: 'bold', size: 'md' },
+    { type: 'text', text: `🐕 ${record.dog_name}`, size: 'sm', color: '#666666' },
+    record.staff_name ? { type: 'text', text: `👤 ${record.staff_name}`, size: 'sm', color: '#666666' } : null,
     { type: 'separator', margin: 'md' },
-    journal.morning_toilet_status ? { type: 'text', text: `午前のトイレ: ${journal.morning_toilet_status}`, size: 'sm', margin: 'sm' } : null,
-    journal.afternoon_toilet_status ? { type: 'text', text: `午後のトイレ: ${journal.afternoon_toilet_status}`, size: 'sm', margin: 'sm' } : null,
+    record.morning_toilet_status ? { type: 'text', text: `午前のトイレ: ${record.morning_toilet_status}`, size: 'sm', margin: 'sm' } : null,
+    record.afternoon_toilet_status ? { type: 'text', text: `午後のトイレ: ${record.afternoon_toilet_status}`, size: 'sm', margin: 'sm' } : null,
     { type: 'text', text: commentPreview, size: 'sm', color: '#666666', wrap: true, margin: 'md' },
   ];
 
   const bubble = createHeaderBubble({
-    headerText: '📝 日誌',
+    headerText: '📝 記録',
     headerColor: '#3B82F6',
     bodyContents: [
       { type: 'box', layout: 'vertical', spacing: 'sm', contents: compactFlexItems(bodyItems) },
@@ -301,12 +301,12 @@ export function createJournalFlexMessage(journal: JournalData): FlexMessage {
         type: 'button',
         style: 'primary',
         height: 'sm',
-        action: { type: 'uri', label: '詳細を見る', uri: buildLiffUrl(`/home/records/${journal.id}`) },
+        action: { type: 'uri', label: '詳細を見る', uri: buildLiffUrl(`/home/records/${record.id}`) },
       },
     ],
   });
 
-  return { type: 'flex', altText: `${journalDate} - ${journal.dog_name}の日誌`, contents: bubble };
+  return { type: 'flex', altText: `${recordDate} - ${record.dog_name}の記録`, contents: bubble };
 }
 
 /**
@@ -397,23 +397,23 @@ export function createReservationReminderFlexMessage(reservation: {
 }
 
 /**
- * 日誌更新通知用Flexメッセージを作成
+ * 記録更新通知用Flexメッセージを作成
  */
-export function createJournalNotificationFlexMessage(journal: {
+export function createRecordNotificationLegacyFlexMessage(record: {
   id: number;
-  journal_date: string;
+  record_date: string;
   dog_name: string;
   comment?: string | null;
   photos?: string[] | null;
 }): FlexMessage {
-  const journalDate = format(new Date(journal.journal_date), 'M月d日(E)', { locale: ja });
-  const commentPreview = journal.comment ? truncateText(journal.comment, 80) : null;
-  const hasPhotos = journal.photos && journal.photos.length > 0;
+  const recordDate = format(new Date(record.record_date), 'M月d日(E)', { locale: ja });
+  const commentPreview = record.comment ? truncateText(record.comment, 80) : null;
+  const hasPhotos = record.photos && record.photos.length > 0;
 
   const bodyItems: Array<FlexComponent | null> = [
-    createLabelValueRow('日付', journalDate, { valueBold: true }),
-    createLabelValueRow('ワンちゃん', journal.dog_name),
-    hasPhotos ? createLabelValueRow('写真', `📷 ${journal.photos!.length}枚`, { valueColor: '#10B981' }) : null,
+    createLabelValueRow('日付', recordDate, { valueBold: true }),
+    createLabelValueRow('ワンちゃん', record.dog_name),
+    hasPhotos ? createLabelValueRow('写真', `📷 ${record.photos!.length}枚`, { valueColor: '#10B981' }) : null,
     { type: 'separator', margin: 'md' },
     commentPreview
       ? { type: 'text', text: commentPreview, size: 'sm', color: '#333333', wrap: true, margin: 'md' }
@@ -421,7 +421,7 @@ export function createJournalNotificationFlexMessage(journal: {
   ];
 
   const bubble = createHeaderBubble({
-    headerText: '📝 今日の日誌が届きました',
+    headerText: '📝 今日の記録が届きました',
     headerColor: '#3B82F6',
     bodyContents: [
       { type: 'box', layout: 'vertical', spacing: 'sm', contents: compactFlexItems(bodyItems) },
@@ -431,14 +431,14 @@ export function createJournalNotificationFlexMessage(journal: {
         type: 'button',
         style: 'primary',
         height: 'sm',
-        action: { type: 'uri', label: '日誌を見る', uri: buildLiffUrl(`/home/records/${journal.id}`) },
+        action: { type: 'uri', label: '記録を見る', uri: buildLiffUrl(`/home/records/${record.id}`) },
       },
     ],
   });
 
   return {
     type: 'flex',
-    altText: `📝 ${journal.dog_name}ちゃんの日誌が届きました`,
+    altText: `📝 ${record.dog_name}ちゃんの記録が届きました`,
     contents: bubble,
     quickReply: createQuickReply(),
   };

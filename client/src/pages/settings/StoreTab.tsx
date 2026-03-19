@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAuthStore, selectUser } from '../../store/authStore'
 import { useBusinessTypeStore } from '../../store/businessTypeStore'
-import { getAvailableBusinessTypes, isBusinessTypeVisible } from '../../utils/businessTypeAccess'
+import { getAvailableBusinessTypes, isBusinessTypeVisible } from '../../domain/businessTypeConfig'
 import type { RecordType } from '../../types/record'
 import StoreInfoSection from './store/StoreInfoSection'
 import BusinessHoursSection from './store/BusinessHoursSection'

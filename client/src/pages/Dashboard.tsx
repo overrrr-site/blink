@@ -31,16 +31,16 @@ import CoachMark from '../components/onboarding/CoachMark'
 
 type Reservation = ReservationCardData
 
-interface IncompleteJournal {
+interface IncompleteRecord {
   reservation_id: number
   reservation_date: string
-  journal_date: string
+  record_date: string
   reservation_time: string
   dog_id: number
   dog_name: string
   dog_photo?: string
   owner_name: string
-  journal_id: number | null
+  record_id: number | null
   comment: string | null
 }
 
@@ -62,7 +62,7 @@ interface InspectionRecord {
 
 interface DashboardData {
   todayReservations: Reservation[]
-  incompleteJournals: IncompleteJournal[]
+  incompleteRecords: IncompleteRecord[]
   alerts: DashboardAlert[]
   todayInspectionRecord: InspectionRecord | null
   capacity?: number
@@ -165,10 +165,6 @@ function Dashboard(): JSX.Element {
   }, [navigate])
 
   const handleNavigateRecord = useCallback((id: number) => {
-    navigate(`/records/create/${id}`)
-  }, [navigate])
-
-  const handleNavigateJournalCreate = useCallback((id: number) => {
     navigate(`/records/create/${id}`)
   }, [navigate])
 
@@ -371,7 +367,6 @@ function Dashboard(): JSX.Element {
                           onNavigatePreVisit={handleNavigatePreVisit}
                           onNavigateTraining={handleNavigateTraining}
                           onNavigateRecord={handleNavigateRecord}
-                          onNavigateJournal={handleNavigateJournalCreate}
                           checkingIn={checkingIn}
                           recordLabel={recordLabel}
                           businessType={currentBusinessType}
@@ -401,7 +396,7 @@ function Dashboard(): JSX.Element {
               />
 
               {/* 未入力のカルテ/連絡帳 */}
-              {data?.incompleteJournals && data.incompleteJournals.length > 0 && (
+              {data?.incompleteRecords && data.incompleteRecords.length > 0 && (
                 <QuickActionCard
                   onClick={handleNavigateIncompleteRecord}
                   icon="solar:clipboard-text-bold"
@@ -409,10 +404,10 @@ function Dashboard(): JSX.Element {
                   containerClassName="bg-destructive/10 border-destructive/20 hover:bg-destructive/15"
                   title={`未入力の${recordLabel}`}
                   titleClassName="text-destructive"
-                  description={`${data.incompleteJournals.slice(0, 2).map((j) => j.dog_name).join('、')}${data.incompleteJournals.length > 2 ? ` 他${data.incompleteJournals.length - 2}件` : ''}`}
+                  description={`${data.incompleteRecords.slice(0, 2).map((j) => j.dog_name).join('、')}${data.incompleteRecords.length > 2 ? ` 他${data.incompleteRecords.length - 2}件` : ''}`}
                   badge={(
                     <div className="flex items-center justify-center bg-destructive text-white text-xs font-bold size-7 rounded-full shrink-0">
-                      {data.incompleteJournals.length}
+                      {data.incompleteRecords.length}
                     </div>
                   )}
                 />

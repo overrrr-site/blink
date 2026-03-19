@@ -208,3 +208,78 @@ export function getDashboardStatusLabels(businessType: RecordType | null): Dashb
 export function isSimpleStatusType(businessType: RecordType | null): boolean {
   return businessType === 'grooming'
 }
+
+export const EMPTY_STATE_MESSAGES: Record<RecordType | 'all', { title: string; description: string; actionLabel: string }> = {
+  daycare: BUSINESS_TYPE_CONFIG.daycare.emptyState,
+  grooming: BUSINESS_TYPE_CONFIG.grooming.emptyState,
+  hotel: BUSINESS_TYPE_CONFIG.hotel.emptyState,
+  all: EMPTY_STATE_ALL,
+}
+
+export const STATUS_LABELS: Record<RecordType, Record<string, string>> = {
+  daycare: BUSINESS_TYPE_CONFIG.daycare.statusLabels,
+  grooming: BUSINESS_TYPE_CONFIG.grooming.statusLabels,
+  hotel: BUSINESS_TYPE_CONFIG.hotel.statusLabels,
+}
+
+interface BusinessTypeAccessParams {
+  storeBusinessTypes?: RecordType[] | null
+  assignedBusinessTypes?: RecordType[] | null
+  isOwner?: boolean | null
+}
+
+export function getAvailableBusinessTypes({
+  storeBusinessTypes,
+  assignedBusinessTypes,
+  isOwner,
+}: BusinessTypeAccessParams): RecordType[] {
+  const storeTypes = (storeBusinessTypes ?? []).filter(Boolean)
+
+  if (storeTypes.length === 0) {
+    return []
+  }
+
+  if (isOwner) {
+    return storeTypes
+  }
+
+  if (Array.isArray(assignedBusinessTypes) && assignedBusinessTypes.length > 0) {
+    return storeTypes.filter((type) => assignedBusinessTypes.includes(type))
+  }
+
+  return storeTypes
+}
+
+interface EffectiveBusinessTypeParams {
+  selectedBusinessType: RecordType | null
+  primaryBusinessType?: RecordType
+  availableBusinessTypes: RecordType[]
+}
+
+export function getEffectiveBusinessType({
+  selectedBusinessType,
+  primaryBusinessType,
+  availableBusinessTypes,
+}: EffectiveBusinessTypeParams): RecordType | undefined {
+  if (selectedBusinessType && availableBusinessTypes.includes(selectedBusinessType)) {
+    return selectedBusinessType
+  }
+
+  if (primaryBusinessType && availableBusinessTypes.includes(primaryBusinessType)) {
+    return primaryBusinessType
+  }
+
+  return availableBusinessTypes[0]
+}
+
+export function isBusinessTypeVisible(
+  selectedBusinessType: RecordType | null,
+  availableBusinessTypes: RecordType[],
+  type: RecordType,
+): boolean {
+  if (selectedBusinessType) {
+    return selectedBusinessType === type
+  }
+
+  return availableBusinessTypes.includes(type)
+}

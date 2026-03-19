@@ -179,7 +179,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       personality: personalityResult.rows[0] || null,
       contract: contractResult.rows[0] || null,
       reservations: reservationsResult.rows || [],
-      journals: recordsResult.rows || [],
+      records: recordsResult.rows || [],
       preVisitHistory: preVisitResult.rows || [],
     });
   } catch (error) {

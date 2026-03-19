@@ -39,7 +39,7 @@ interface GoogleCalendarStatus {
 
 interface NotificationSettings {
   reminder_before_visit: boolean
-  journal_notification: boolean
+  record_notification: boolean
   vaccine_alert: boolean
   line_notification_enabled: boolean
   email_notification_enabled: boolean
@@ -53,7 +53,7 @@ interface StoreLineStatus {
 
 const defaultNotificationSettings: NotificationSettings = {
   reminder_before_visit: true,
-  journal_notification: true,
+  record_notification: true,
   vaccine_alert: true,
   line_notification_enabled: false,
   email_notification_enabled: false,
@@ -507,8 +507,8 @@ function IntegrationTab() {
               <span className="text-[10px] text-muted-foreground">日誌作成時に飼い主へ通知</span>
             </div>
             <ToggleSwitch
-              checked={notificationSettings.journal_notification}
-              onChange={() => updateNotificationSetting('journal_notification', !notificationSettings.journal_notification)}
+              checked={notificationSettings.record_notification}
+              onChange={() => updateNotificationSetting('record_notification', !notificationSettings.record_notification)}
             />
           </div>
           <div className="flex items-center justify-between">

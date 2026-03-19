@@ -1,7 +1,7 @@
 import { Icon } from '../../components/Icon'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
-import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel, getBusinessTypeIcon } from '../../utils/businessTypeColors';
+import { getBusinessTypeColors, getBusinessTypeLabel, getRecordLabel, getBusinessTypeIcon } from '../../domain/businessTypeConfig';
 import logoImage from '../../assets/logo.png';
 import type { RecordType } from '../../types/record';
 

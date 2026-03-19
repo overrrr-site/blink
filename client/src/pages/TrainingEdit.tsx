@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { mutate } from 'swr'
 import { Icon } from '../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
@@ -87,6 +88,7 @@ function TrainingEdit(): JSX.Element {
         await api.post('/training-masters', payload)
       }
 
+      await mutate('/training-masters')
       navigate('/settings')
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } }

@@ -1,5 +1,5 @@
 /**
- * A single meal entry used in journals and pre-visit inputs.
+ * A single meal entry used in records and pre-visit inputs.
  */
 export interface MealEntry {
   time: string

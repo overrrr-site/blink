@@ -5,7 +5,7 @@ import ReservationFormFields from '../components/ReservationFormFields';
 import ReservationFooter from '../components/ReservationFooter';
 import { useLiffReservationCreate } from '../hooks/useLiffReservationCreate';
 import { useLiffAuthStore } from '../store/authStore';
-import { getBusinessTypeLabel } from '../../utils/businessTypeColors';
+import { getBusinessTypeLabel } from '../../domain/businessTypeConfig';
 
 export default function ReservationCreate() {
   const navigate = useNavigate();

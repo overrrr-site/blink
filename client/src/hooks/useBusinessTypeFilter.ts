@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useBusinessTypeStore } from '../store/businessTypeStore'
-import { getAvailableBusinessTypes, getEffectiveBusinessType } from '../utils/businessTypeAccess'
 import {
+  getAvailableBusinessTypes,
+  getEffectiveBusinessType,
   getDashboardEmptyStateMessage,
   getEmptyStateMessage,
   getRecordLabel,

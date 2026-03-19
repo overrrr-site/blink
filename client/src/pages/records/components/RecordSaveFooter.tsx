@@ -1,6 +1,6 @@
 import type { RecordType } from '@/types/record'
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/utils/styles'
-import { getBusinessTypeColors } from '@/utils/businessTypeColors'
+import { getBusinessTypeColors } from '@/domain/businessTypeConfig'
 
 interface RecordSaveFooterProps {
   mode: 'create' | 'detail'

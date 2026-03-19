@@ -276,7 +276,7 @@ const ReservationsCalendar = () => {
     reservation_time: r.reservation_time || '',
     status: r.status || '予定',
     checked_in_at: r.checked_in_at,
-    has_journal: r.has_journal,
+    has_record: r.has_record,
     daycare_data: r.daycare_data ?? null,
     grooming_data: r.grooming_data ?? null,
     hotel_data: r.hotel_data ?? null,

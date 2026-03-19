@@ -41,7 +41,7 @@ export function SkeletonReservationCard(): JSX.Element {
   )
 }
 
-export function SkeletonJournalCard(): JSX.Element {
+export function SkeletonRecordCard(): JSX.Element {
   return (
     <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
       <div className="flex items-center gap-3 mb-2">
@@ -60,10 +60,10 @@ export function SkeletonJournalCard(): JSX.Element {
 const SKELETON_COMPONENTS = {
   card: SkeletonCard,
   reservation: SkeletonReservationCard,
-  journal: SkeletonJournalCard,
+  record: SkeletonRecordCard,
 } as const
 
-export function SkeletonList({ count = 3, type = 'card' }: { count?: number; type?: 'card' | 'reservation' | 'journal' }): JSX.Element {
+export function SkeletonList({ count = 3, type = 'card' }: { count?: number; type?: 'card' | 'reservation' | 'record' }): JSX.Element {
   const Component = SKELETON_COMPONENTS[type]
 
   return (

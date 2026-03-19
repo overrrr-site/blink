@@ -1,7 +1,6 @@
 import { Icon } from '../Icon'
 import { formatDateFullWithWeekday } from '../../utils/date'
-import { getBusinessTypeColors } from '../../utils/businessTypeColors'
-import { getBusinessTypeConfig, getStatusLabel } from '../../domain/businessTypeConfig'
+import { getBusinessTypeColors, getBusinessTypeConfig, getStatusLabel } from '../../domain/businessTypeConfig'
 import type { RecordType } from '../../types/record'
 import type { DaycarePreVisitData } from '../../types/daycarePreVisit'
 import { DAYCARE_LABELS } from '../../types/daycarePreVisit'
@@ -16,9 +15,9 @@ type ReservationItem = {
   has_pre_visit?: boolean
 }
 
-type JournalItem = {
+type RecordItem = {
   id: number
-  journal_date: string
+  record_date: string
   staff_name?: string
   comment?: string
 }
@@ -35,25 +34,25 @@ type PreVisitItem = {
 }
 
 type HistoryTabsProps = {
-  activeTab: 'reservations' | 'journals' | 'preVisit'
+  activeTab: 'reservations' | 'records' | 'preVisit'
   reservations: ReservationItem[]
-  journals: JournalItem[]
+  records: RecordItem[]
   preVisitHistory: PreVisitItem[]
   selectedBusinessType?: RecordType | null
-  onTabChange: (tab: 'reservations' | 'journals' | 'preVisit') => void
+  onTabChange: (tab: 'reservations' | 'records' | 'preVisit') => void
   onOpenReservation: (id: number) => void
-  onOpenJournal: (id: number) => void
+  onOpenRecord: (id: number) => void
 }
 
 export default function HistoryTabs({
   activeTab,
   reservations,
-  journals,
+  records,
   preVisitHistory,
   selectedBusinessType,
   onTabChange,
   onOpenReservation,
-  onOpenJournal,
+  onOpenRecord,
 }: HistoryTabsProps) {
   // 業種フィルタが選択されている場合、予約をフィルタリング
   const filteredReservations = selectedBusinessType
@@ -75,9 +74,9 @@ export default function HistoryTabs({
             利用履歴
           </button>
           <button
-            onClick={() => onTabChange('journals')}
+            onClick={() => onTabChange('records')}
             className={`flex-1 py-3 text-sm font-bold active:scale-[0.98] transition-all ${
-              activeTab === 'journals'
+              activeTab === 'records'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-muted-foreground'
             }`}
@@ -166,26 +165,26 @@ export default function HistoryTabs({
               <p className="text-sm">利用履歴はありません</p>
             </div>
           )
-        ) : activeTab === 'journals' ? (
-          journals.length > 0 ? (
+        ) : activeTab === 'records' ? (
+          records.length > 0 ? (
             <div className="space-y-3">
-              {journals.map((journal) => {
-                const journalDate = journal.journal_date?.split('T')[0] || journal.journal_date
+              {records.map((record) => {
+                const recordDate = record.record_date?.split('T')[0] || record.record_date
                 return (
                   <div
-                    key={journal.id}
-                    onClick={() => onOpenJournal(journal.id)}
+                    key={record.id}
+                    onClick={() => onOpenRecord(record.id)}
                     className="flex items-center justify-between p-3 bg-muted/30 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-bold">{formatDateFullWithWeekday(journalDate)}</p>
-                        {journal.staff_name && (
-                          <span className="text-xs text-muted-foreground">担当: {journal.staff_name}</span>
+                        <p className="text-sm font-bold">{formatDateFullWithWeekday(recordDate)}</p>
+                        {record.staff_name && (
+                          <span className="text-xs text-muted-foreground">担当: {record.staff_name}</span>
                         )}
                       </div>
-                      {journal.comment && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{journal.comment}</p>
+                      {record.comment && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{record.comment}</p>
                       )}
                     </div>
                     <Icon icon="solar:alt-arrow-right-linear" className="size-5 text-muted-foreground" />

@@ -3,7 +3,7 @@ import { sendLineMessage, sendLineFlexMessage } from './lineMessagingService.js'
 import { sendEmail } from './emailService.js';
 import {
   createReservationReminderFlexMessage,
-  createJournalNotificationFlexMessage,
+  createRecordNotificationLegacyFlexMessage,
   createRecordNotificationFlexMessage,
   getReservationReminderCopy,
   createVaccineAlertFlexMessage,
@@ -16,14 +16,14 @@ export type OwnerContact = { lineId: string | null; email: string | null };
 export interface NotificationData {
   storeId: number;
   ownerId: number;
-  notificationType: 'reminder' | 'journal' | 'record' | 'vaccine_alert';
+  notificationType: 'reminder' | 'record' | 'vaccine_alert';
   title: string;
   message: string;
 }
 
 type NotificationSettingsRow = {
   reminder_before_visit?: boolean;
-  journal_notification?: boolean;
+  record_notification?: boolean;
   vaccine_alert?: boolean;
   line_notification_enabled?: boolean;
   email_notification_enabled?: boolean;
@@ -75,9 +75,8 @@ function shouldSendByType(
   switch (type) {
     case 'reminder':
       return settings.reminder_before_visit === true;
-    case 'journal':
     case 'record':
-      return settings.journal_notification === true;
+      return settings.record_notification === true;
     case 'vaccine_alert':
       return settings.vaccine_alert === true;
     default:
@@ -195,7 +194,7 @@ export async function sendNotificationWithSettings(
 export async function sendNotification(data: NotificationData): Promise<void> {
   try {
     const settingsResult = await pool.query<NotificationSettingsRow>(
-      `SELECT reminder_before_visit, journal_notification, vaccine_alert,
+      `SELECT reminder_before_visit, record_notification, vaccine_alert,
               line_notification_enabled, email_notification_enabled
        FROM notification_settings WHERE store_id = $1`,
       [data.storeId]
@@ -315,18 +314,18 @@ export async function sendReservationReminders(): Promise<{ sent: number; failed
 /**
  * 日誌通知を送信（Flexメッセージ対応）
  */
-export async function sendJournalNotification(
+export async function sendRecordNotificationLegacy(
   storeId: number,
   ownerId: number,
   dogName: string,
-  journalDate: string,
-  journalId?: number,
+  recordDate: string,
+  recordId?: number,
   comment?: string | null,
   photos?: string[] | null
 ): Promise<void> {
   try {
     const settingsResult = await pool.query<NotificationSettingsRow>(
-      `SELECT journal_notification, line_notification_enabled, email_notification_enabled
+      `SELECT record_notification, line_notification_enabled, email_notification_enabled
        FROM notification_settings WHERE store_id = $1`,
       [storeId]
     );
@@ -337,19 +336,19 @@ export async function sendJournalNotification(
     }
 
     const settings = settingsResult.rows[0];
-    if (!settings.journal_notification) {
-      console.log(`日誌通知が無効です: store_id=${storeId}`);
+    if (!settings.record_notification) {
+      console.log(`記録通知が無効です: store_id=${storeId}`);
       return;
     }
 
     const contactMap = await getOwnerContactBatch([ownerId]);
     const contact = contactMap.get(ownerId) ?? null;
 
-    const title = '日誌が更新されました';
-    const message = `${dogName}ちゃんの${journalDate}の日誌が更新されました。`;
+    const title = '記録が更新されました';
+    const message = `${dogName}ちゃんの${recordDate}の記録が更新されました。`;
 
-    const flexMessage = journalId
-      ? createJournalNotificationFlexMessage({ id: journalId, journal_date: journalDate, dog_name: dogName, comment, photos })
+    const flexMessage = recordId
+      ? createRecordNotificationLegacyFlexMessage({ id: recordId, record_date: recordDate, dog_name: dogName, comment, photos })
       : undefined;
 
     const { sent, sentVia } = await deliverNotification({
@@ -362,12 +361,12 @@ export async function sendJournalNotification(
     });
 
     await insertNotificationLog({
-      data: { storeId, ownerId, notificationType: 'journal', title, message },
+      data: { storeId, ownerId, notificationType: 'record', title, message },
       sentVia,
       sent,
     });
   } catch (error) {
-    console.error('Error sending journal notification:', error);
+    console.error('Error sending record notification:', error);
   }
 }
 
@@ -388,7 +387,7 @@ export async function sendRecordNotification(
 ): Promise<void> {
   try {
     const settingsResult = await pool.query<NotificationSettingsRow>(
-      `SELECT journal_notification, line_notification_enabled, email_notification_enabled
+      `SELECT record_notification, line_notification_enabled, email_notification_enabled
        FROM notification_settings WHERE store_id = $1`,
       [storeId]
     );
@@ -399,7 +398,7 @@ export async function sendRecordNotification(
     }
 
     const settings = settingsResult.rows[0];
-    if (!settings.journal_notification) {
+    if (!settings.record_notification) {
       console.log(`カルテ通知が無効です: store_id=${storeId}`);
       return;
     }

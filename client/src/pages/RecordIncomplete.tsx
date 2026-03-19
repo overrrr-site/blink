@@ -18,7 +18,7 @@ interface Reservation {
   dog_photo?: string
   owner_name: string
   reservation_date: string
-  journal_date?: string
+  record_date?: string
   reservation_time: string
 }
 
@@ -37,15 +37,15 @@ function RecordIncomplete(): JSX.Element {
     : serviceTypeParam
 
   useEffect(() => {
-    fetchReservationsWithoutJournal()
+    fetchReservationsWithoutRecord()
   }, [effectiveServiceTypeParam])
 
-  async function fetchReservationsWithoutJournal(): Promise<void> {
+  async function fetchReservationsWithoutRecord(): Promise<void> {
     setLoading(true)
     try {
       const response = await api.get(effectiveServiceTypeParam ? `/dashboard?${effectiveServiceTypeParam}` : '/dashboard')
-      const incompleteJournals = response.data.incompleteJournals || []
-      setReservations(incompleteJournals)
+      const incompleteRecords = response.data.incompleteRecords || []
+      setReservations(incompleteRecords)
     } catch {
     } finally {
       setLoading(false)
@@ -57,7 +57,7 @@ function RecordIncomplete(): JSX.Element {
   }
 
   function getReservationDate(reservation: Reservation): string {
-    return reservation.reservation_date || reservation.journal_date || ''
+    return reservation.reservation_date || reservation.record_date || ''
   }
 
   function formatReservationTime(time?: string): string {

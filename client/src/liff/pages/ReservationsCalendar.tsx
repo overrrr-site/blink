@@ -24,8 +24,7 @@ import { getAvatarUrl } from '../../utils/image';
 import useSWR from 'swr';
 import { liffFetcher } from '../lib/swr';
 import { useLiffAuthStore } from '../store/authStore';
-import { getBusinessTypeLabel } from '../../utils/businessTypeColors';
-import { getStatusLabel } from '../../domain/businessTypeConfig';
+import { getBusinessTypeLabel, getStatusLabel } from '../../domain/businessTypeConfig';
 import type { DaycarePreVisitData } from '../../types/daycarePreVisit'
 import { DAYCARE_LABELS } from '../../types/daycarePreVisit'
 

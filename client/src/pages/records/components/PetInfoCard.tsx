@@ -1,5 +1,5 @@
 import { Icon } from '@/components/Icon'
-import { getBusinessTypeColors } from '@/utils/businessTypeColors'
+import { getBusinessTypeColors } from '@/domain/businessTypeConfig'
 import { LazyImage } from '@/components/LazyImage'
 import { getDetailThumbnailUrl } from '@/utils/image'
 import type { RecordType } from '@/types/record'

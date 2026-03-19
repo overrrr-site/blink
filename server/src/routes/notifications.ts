@@ -44,7 +44,7 @@ router.put('/settings', async (req: AuthRequest, res) => {
     const {
       reminder_before_visit,
       reminder_before_visit_days,
-      journal_notification,
+      record_notification,
       vaccine_alert,
       vaccine_alert_days,
       line_notification_enabled,
@@ -56,14 +56,14 @@ router.put('/settings', async (req: AuthRequest, res) => {
     const result = await pool.query(
       `INSERT INTO notification_settings (
         store_id, reminder_before_visit, reminder_before_visit_days,
-        journal_notification, vaccine_alert, vaccine_alert_days,
+        record_notification, vaccine_alert, vaccine_alert_days,
         line_notification_enabled, email_notification_enabled, line_bot_enabled,
         auto_share_record
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       ON CONFLICT (store_id) DO UPDATE SET
         reminder_before_visit = COALESCE(EXCLUDED.reminder_before_visit, notification_settings.reminder_before_visit),
         reminder_before_visit_days = COALESCE(EXCLUDED.reminder_before_visit_days, notification_settings.reminder_before_visit_days),
-        journal_notification = COALESCE(EXCLUDED.journal_notification, notification_settings.journal_notification),
+        record_notification = COALESCE(EXCLUDED.record_notification, notification_settings.record_notification),
         vaccine_alert = COALESCE(EXCLUDED.vaccine_alert, notification_settings.vaccine_alert),
         vaccine_alert_days = COALESCE(EXCLUDED.vaccine_alert_days, notification_settings.vaccine_alert_days),
         line_notification_enabled = COALESCE(EXCLUDED.line_notification_enabled, notification_settings.line_notification_enabled),
@@ -76,7 +76,7 @@ router.put('/settings', async (req: AuthRequest, res) => {
         req.storeId,
         reminder_before_visit ?? true,
         reminder_before_visit_days ?? 1,
-        journal_notification ?? true,
+        record_notification ?? true,
         vaccine_alert ?? true,
         vaccine_alert_days ?? 14,
         line_notification_enabled ?? false,
@@ -293,7 +293,7 @@ router.get('/line-status', async (req: AuthRequest, res) => {
 
     // 通知設定確認
     const settingsResult = await pool.query(
-      `SELECT line_notification_enabled, journal_notification 
+      `SELECT line_notification_enabled, record_notification 
        FROM notification_settings WHERE store_id = $1`,
       [req.storeId]
     );
@@ -310,7 +310,7 @@ router.get('/line-status', async (req: AuthRequest, res) => {
     res.json({
       hasLineCredentials: hasCredentials,
       lineNotificationEnabled: settings?.line_notification_enabled ?? false,
-      journalNotificationEnabled: settings?.journal_notification ?? true,
+      recordNotificationEnabled: settings?.record_notification ?? true,
       linkedOwnersCount: parseInt(linkedOwnersResult.rows[0]?.count || '0'),
     });
   } catch (error) {

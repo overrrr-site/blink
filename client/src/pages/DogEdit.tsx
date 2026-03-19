@@ -9,7 +9,7 @@ import DogEditPersonality from '../components/dogs/DogEditPersonality'
 import type { DogFormData, DogHealthData, DogPersonalityData } from '../components/dogs/types'
 import SwipeDownHeader from '../components/SwipeDownHeader'
 
-interface JournalPhoto {
+interface RecordPhoto {
   url: string
   date: string
 }
@@ -22,7 +22,7 @@ const DogEdit = () => {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
-  const [journalPhotos, setJournalPhotos] = useState<JournalPhoto[]>([])
+  const [recordPhotos, setRecordPhotos] = useState<RecordPhoto[]>([])
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const mixedVaccineInputRef = useRef<HTMLInputElement>(null)
@@ -106,13 +106,13 @@ const DogEdit = () => {
     }
   }
 
-  // 日誌から写真を取得（軽量API使用）
-  const fetchJournalPhotos = async () => {
+  // 記録から写真を取得（軽量API使用）
+  const fetchRecordPhotos = async () => {
     setLoadingPhotos(true)
     try {
       // 専用の軽量APIエンドポイントを使用
-      const response = await api.get(`/journals/photos/${id}`)
-      setJournalPhotos(response.data)
+      const response = await api.get(`/records/photos/${id}`)
+      setRecordPhotos(response.data)
     } catch {
     } finally {
       setLoadingPhotos(false)
@@ -149,15 +149,15 @@ const DogEdit = () => {
     }
   }
 
-  // 日誌の写真を選択
-  const handleSelectJournalPhoto = (url: string) => {
+  // 記録の写真を選択
+  const handleSelectRecordPhoto = (url: string) => {
     setForm(prev => ({ ...prev, photo_url: url }))
     setShowPhotoModal(false)
   }
 
   // 写真選択モーダルを開く
   const openPhotoModal = () => {
-    fetchJournalPhotos()
+    fetchRecordPhotos()
     setShowPhotoModal(true)
   }
 
@@ -340,7 +340,7 @@ const DogEdit = () => {
         </div>
       </form>
 
-      {/* 日誌写真選択モーダル */}
+      {/* 記録写真選択モーダル */}
       {showPhotoModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <div 
@@ -349,7 +349,7 @@ const DogEdit = () => {
           ></div>
           <div className="relative bg-background rounded-t-3xl w-full max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom">
             <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between safe-area-pt">
-              <h3 className="text-lg font-bold">日誌の写真から選択</h3>
+              <h3 className="text-lg font-bold">記録の写真から選択</h3>
               <button
                 onClick={() => setShowPhotoModal(false)}
                 className="size-10 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted active:scale-95 transition-all"
@@ -363,24 +363,24 @@ const DogEdit = () => {
                 <div className="flex items-center justify-center py-12">
                   <Icon icon="solar:spinner-bold" width="32" height="32" className="animate-spin text-primary" />
                 </div>
-              ) : journalPhotos.length === 0 ? (
+              ) : recordPhotos.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Icon icon="solar:gallery-linear" width="48" height="48" className="text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground">日誌に写真がありません</p>
-                  <p className="text-xs text-muted-foreground mt-1">日誌作成時に写真を追加すると、ここに表示されます</p>
+                  <p className="text-sm text-muted-foreground">記録に写真がありません</p>
+                  <p className="text-xs text-muted-foreground mt-1">記録作成時に写真を追加すると、ここに表示されます</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
-                  {journalPhotos.map((photo, index) => (
+                  {recordPhotos.map((photo, index) => (
                     <button
                       key={index}
                       type="button"
-                      onClick={() => handleSelectJournalPhoto(photo.url)}
+                      onClick={() => handleSelectRecordPhoto(photo.url)}
                       className="aspect-square rounded-xl overflow-hidden border-2 border-transparent hover:border-primary active:scale-[0.98] transition-all"
                     >
                       <img
                         src={getFileUrl(photo.url)}
-                        alt={`日誌写真 ${index + 1}`}
+                        alt={`記録写真 ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>

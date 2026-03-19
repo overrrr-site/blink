@@ -161,7 +161,7 @@ const CONTRACT_DEFS: ContractDef[] = [
   { dogIdx: 8, type: '月謝制',     course: '週2回コース',  totalSessions: null, remaining: null, monthly: 8,    price: 44000 },
 ];
 
-const JOURNAL_COMMENTS = [
+const RECORD_COMMENTS = [
   '今日は他のお友達とたくさん遊びました！特にボール遊びが楽しかったようで、しっぽを振りながら走り回っていました。午後はぐっすりお昼寝をして、夕方にはまた元気に遊んでいました。',
   'トレーニングに集中して取り組めました。「おすわり」「まて」がしっかりできるようになってきています。散歩中の引っ張りも少なくなり、飼い主さんの横を上手に歩けています。',
   '初めて会うお友達がいましたが、自分から近づいて挨拶できました！社会化が進んでいますね。おやつの時間もきちんと「まて」ができ、とてもお利口でした。',
@@ -393,7 +393,7 @@ async function seedDemo(): Promise<void> {
     [STORE_ID, todayStr],
   );
 
-  // journals テーブルは records に統合済みのため、日誌シードは省略
+  // records テーブルに統合済みのため、旧日誌シードは省略
 
   // トレーニング項目マスタ
   for (const t of TRAINING_ITEMS) {

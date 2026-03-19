@@ -8,7 +8,7 @@ import { useConfirmDialog } from '../../../hooks/useConfirmDialog'
 import ConfirmDialog from '../../../components/ConfirmDialog'
 import api from '../../../api/client'
 import { fetcher } from '../../../lib/swr'
-import { getBusinessTypeColors, getBusinessTypeIcon, getBusinessTypeLabel } from '../../../utils/businessTypeColors'
+import { getBusinessTypeColors, getBusinessTypeIcon, getBusinessTypeLabel } from '../../../domain/businessTypeConfig'
 import type { RecordType } from '../../../types/record'
 
 interface StaffItem {

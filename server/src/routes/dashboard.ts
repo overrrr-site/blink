@@ -17,7 +17,7 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
 
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toISOString();
-    // 未入力日誌の検索範囲を過去30日に制限（パフォーマンス改善）
+    // 未入力記録の検索範囲を過去30日に制限（パフォーマンス改善）
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // 業種フィルタ
@@ -42,7 +42,7 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
 
     const [
       reservationsResult,
-      incompleteJournalsResult,
+      incompleteRecordsResult,
       alertsResult,
       inspectionRecordResult,
       announcementStatsResult
@@ -63,7 +63,7 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
                   SELECT 1 FROM records rec
                   WHERE rec.reservation_id = r.id
                     AND rec.deleted_at IS NULL
-                ) as has_journal
+                ) as has_record
          FROM reservations r
          JOIN dogs d ON r.dog_id = d.id
          JOIN owners o ON d.owner_id = o.id
@@ -73,19 +73,19 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
         reservationParams
       )),
 
-      timedQuery('incompleteJournals', () => {
+      timedQuery('incompleteRecords', () => {
         const incompleteParams: Array<string | number> = [req.storeId, thirtyDaysAgo, today];
         const incompleteServiceTypeCondition = appendBusinessTypeFilter(incompleteParams, 'r.service_type', serviceType);
         return pool.query(
           `SELECT r.id as reservation_id,
                   r.reservation_date,
-                  r.reservation_date as journal_date,
+                  r.reservation_date as record_date,
                   r.reservation_time,
                   r.dog_id,
                   d.name as dog_name,
                   d.photo_url as dog_photo,
                   o.name as owner_name,
-                  rec.id as journal_id,
+                  rec.id as record_id,
                   rec.report_text as comment
            FROM reservations r
            JOIN dogs d ON r.dog_id = d.id
@@ -155,7 +155,7 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
 
     res.json({
       todayReservations: reservationsResult.rows,
-      incompleteJournals: incompleteJournalsResult.rows,
+      incompleteRecords: incompleteRecordsResult.rows,
       alerts: alertsResult.rows,
       todayInspectionRecord: inspectionRecordResult.rows[0] || null,
       announcementStats: {

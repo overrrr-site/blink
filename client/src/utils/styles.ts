@@ -24,3 +24,5 @@ export const TOUCH_TARGET = 'min-h-[48px] min-w-[48px]'
 
 export const ICON_BUTTON =
   'min-h-[48px] min-w-[48px] flex items-center justify-center rounded-full'
+
+export const AI_COLOR = '#6366F1'

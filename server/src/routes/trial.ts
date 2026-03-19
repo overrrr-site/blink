@@ -17,7 +17,7 @@ const GUIDE_STEPS = [
   { step_number: 1, step_key: 'view_dashboard', title: 'ダッシュボードを見てみよう', description: 'まずはBlinkの全体像を確認しましょう', action_url: '/dashboard' },
   { step_number: 2, step_key: 'register_customer', title: '犬と飼い主を登録しよう', description: 'あなた自身を飼い主として登録してみましょう。愛犬の情報も入力します', action_url: '/owners/new' },
   { step_number: 3, step_key: 'create_reservation', title: '予約を入れてみよう', description: '登録した犬の予約を入れてみましょう', action_url: '/reservations/new' },
-  { step_number: 4, step_key: 'write_journal', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書いてみましょう。飼い主さんに届きます', action_url: '/records/new' },
+  { step_number: 4, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書いてみましょう。飼い主さんに届きます', action_url: '/records/new' },
   { step_number: 5, step_key: 'send_line_notification', title: 'LINEで通知を送ってみよう', description: '連絡帳を書いて「共有」すると、飼い主のLINEに届きます', action_url: '/records' },
 ];
 

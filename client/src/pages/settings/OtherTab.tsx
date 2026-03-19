@@ -7,12 +7,12 @@ import { useToast } from '../../components/Toast'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
-type ExportType = 'owners' | 'dogs' | 'journals'
+type ExportType = 'owners' | 'dogs' | 'records'
 
 const EXPORT_ITEMS: { type: ExportType; icon: string; label: string }[] = [
   { type: 'owners', icon: 'solar:users-group-rounded-bold', label: '飼い主データ' },
   { type: 'dogs', icon: 'mdi:dog', label: 'ワンちゃんデータ' },
-  { type: 'journals', icon: 'solar:notebook-bold', label: '日誌データ' },
+  { type: 'records', icon: 'solar:notebook-bold', label: '日誌データ' },
 ]
 
 function OtherTab() {
@@ -80,11 +80,11 @@ function OtherTab() {
           filename = '犬一覧'
           break
         }
-        case 'journals': {
-          const res = await api.get<Array<Record<string, unknown>>>('/journals')
+        case 'records': {
+          const res = await api.get<Array<Record<string, unknown>>>('/records')
           data = res.data.map((j) => ({
             ID: Number(j.id),
-            日付: String(j.journal_date || ''),
+            日付: String(j.record_date || ''),
             犬名: String(j.dog_name || ''),
             飼い主: String(j.owner_name || ''),
             担当: String(j.staff_name || ''),

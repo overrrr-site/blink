@@ -110,7 +110,7 @@ const HELP_SECTIONS: HelpSection[] = [
     ],
   },
   {
-    id: 'journals',
+    id: 'records',
     title: '日誌作成',
     icon: 'solar:notebook-bold',
     content: [
