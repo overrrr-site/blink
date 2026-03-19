@@ -51,14 +51,15 @@ async function runMigration() {
           await pool.query(statement);
           const preview = statement.replace(/\s+/g, ' ').substring(0, 60);
           console.log(`✅ 実行完了: ${preview}...`);
-        } catch (error: any) {
+        } catch (error: unknown) {
           // 既に存在する場合はスキップ
-          if (error.code === '42P07' || error.code === '42701' || error.code === '42P16') {
+          const pgError = error as { code?: string; message?: string };
+          if (pgError.code === '42P07' || pgError.code === '42701' || pgError.code === '42P16') {
             const preview = statement.replace(/\s+/g, ' ').substring(0, 60);
             console.log(`ℹ️  スキップ (既に存在): ${preview}...`);
           } else {
             const preview = statement.replace(/\s+/g, ' ').substring(0, 100);
-            console.error(`❌ エラー: ${error.message}`);
+            console.error(`❌ エラー: ${pgError.message}`);
             console.error(`   SQL: ${preview}...`);
           }
         }
@@ -67,8 +68,8 @@ async function runMigration() {
 
     console.log('\n✅ マイグレーションが完了しました！');
     process.exit(0);
-  } catch (error: any) {
-    console.error('❌ マイグレーション実行エラー:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ マイグレーション実行エラー:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

@@ -212,7 +212,7 @@ router.post('/link/request', async function(req, res) {
       message: '確認コードを送信しました',
       maskedEmail: maskEmail(owner.email),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '紐付けリクエストの処理に失敗しました', error);
   }
 });
@@ -312,7 +312,7 @@ router.post('/link/verify', async function(req, res) {
       },
       message: 'LINEアカウントの紐付けが完了しました',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '紐付け確認の処理に失敗しました', error);
   }
 });

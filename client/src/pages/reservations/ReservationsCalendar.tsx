@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
-import api from '../api/client'
-import { useBusinessTypeFilter } from '../hooks/useBusinessTypeFilter'
-import BusinessTypeSwitcher from '../components/BusinessTypeSwitcher'
-import OverflowMenu from '../components/OverflowMenu'
-import { useToast } from '../components/Toast'
-import { usePullToRefresh } from '../hooks/usePullToRefresh'
-import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
-import ReservationCard from '../components/ReservationCard'
-import type { ReservationCardData } from '../components/ReservationCard'
-import CalendarCell from '../components/reservations/CalendarCell'
-import { useMediaQuery } from '../hooks/useMediaQuery'
+import api from '../../api/client'
+import { useBusinessTypeFilter } from '../../hooks/useBusinessTypeFilter'
+import BusinessTypeSwitcher from '../../components/BusinessTypeSwitcher'
+import OverflowMenu from '../../components/OverflowMenu'
+import { useToast } from '../../components/Toast'
+import { usePullToRefresh } from '../../hooks/usePullToRefresh'
+import PullToRefreshIndicator from '../../components/PullToRefreshIndicator'
+import ReservationCard from '../../components/ReservationCard'
+import type { ReservationCardData } from '../../components/ReservationCard'
+import CalendarCell from '../../components/reservations/CalendarCell'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 
 function toDateKey(date: Date): string {
   const year = date.getFullYear()
@@ -43,7 +43,7 @@ function toReservationDateKey(value: unknown): string | null {
 
 const ReservationsCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [reservations, setReservations] = useState<any[]>([])
+  const [reservations, setReservations] = useState<ReservationCardData[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
   const [draggedReservation, setDraggedReservation] = useState<number | null>(null)
@@ -266,7 +266,7 @@ const ReservationsCalendar = () => {
   }
 
   // カレンダーの予約データを ReservationCardData に変換
-  const toCardData = (r: any): ReservationCardData => ({
+  const toCardData = (r: ReservationCardData): ReservationCardData => ({
     id: r.id,
     dog_id: r.dog_id,
     dog_name: r.dog_name,

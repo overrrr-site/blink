@@ -80,7 +80,7 @@ router.get('/qr-code', authenticate, async function(req: AuthRequest, res) {
       qrCode: qrToken,
       storeId,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'QRコードの生成に失敗しました', error);
   }
 });
@@ -177,7 +177,7 @@ router.post('/check-in', async function(req, res) {
       message: '登園が完了しました',
       reservation: result.rows[0],
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '登園処理に失敗しました', error);
   }
 });
@@ -256,7 +256,7 @@ router.post('/check-out', async function(req, res) {
       message: '降園が完了しました',
       reservation: result.rows[0],
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '退園処理に失敗しました', error);
   }
 });

@@ -53,7 +53,7 @@ router.get('/pre-visit-inputs/latest/:dogId', async function(req, res) {
     }
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '最新登園前入力の取得に失敗しました', error);
   }
 });
@@ -136,7 +136,7 @@ router.post('/pre-visit-inputs', async function(req, res) {
     } finally {
       client.release();
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '登園前入力の保存に失敗しました', error);
   }
 });

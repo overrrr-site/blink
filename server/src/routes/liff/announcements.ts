@@ -29,7 +29,7 @@ router.get('/announcements', async function(req, res) {
     );
 
     res.json(result.rows);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'お知らせの取得に失敗しました', error);
   }
 });
@@ -71,7 +71,7 @@ router.post('/announcements/:id/read', async function(req, res) {
     );
 
     res.status(201).json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'お知らせ既読登録に失敗しました', error);
   }
 });
@@ -106,7 +106,7 @@ router.get('/announcements/:id', async function(req, res) {
     }
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'お知らせの取得に失敗しました', error);
   }
 });

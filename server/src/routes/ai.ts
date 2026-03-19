@@ -58,12 +58,12 @@ router.post('/analyze-photo', async (req: AuthRequest, res) => {
         dog_name,
       });
       return res.json(result);
-    } catch (apiError: any) {
+    } catch (apiError: unknown) {
       console.error('Gemini API error:', apiError);
       sendServerError(res, '写真解析に失敗しました', apiError);
       return;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '写真解析に失敗しました', error);
   }
 });

@@ -220,11 +220,11 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
           plan: plan,
         },
       });
-    } catch (payjpError: any) {
+    } catch (payjpError: unknown) {
       console.error('PAY.JP error:', payjpError);
       res.status(400).json({
         error: '決済処理に失敗しました',
-        details: payjpError.message || 'Unknown error',
+        details: payjpError instanceof Error ? payjpError.message : 'Unknown error',
       });
     }
   } catch (error) {
@@ -268,11 +268,11 @@ router.post('/update-card', async (req: AuthRequest, res) => {
       });
 
       res.json({ success: true, message: 'カード情報を更新しました' });
-    } catch (payjpError: any) {
+    } catch (payjpError: unknown) {
       console.error('PAY.JP update card error:', payjpError);
       res.status(400).json({
         error: 'カード情報の更新に失敗しました',
-        details: payjpError.message || 'Unknown error',
+        details: payjpError instanceof Error ? payjpError.message : 'Unknown error',
       });
     }
   } catch (error) {
@@ -307,11 +307,11 @@ router.post('/cancel', async (req: AuthRequest, res) => {
       );
 
       res.json({ success: true, message: 'サブスクリプションをキャンセルしました' });
-    } catch (payjpError: any) {
+    } catch (payjpError: unknown) {
       console.error('PAY.JP cancel error:', payjpError);
       res.status(400).json({
         error: 'キャンセル処理に失敗しました',
-        details: payjpError.message || 'Unknown error',
+        details: payjpError instanceof Error ? payjpError.message : 'Unknown error',
       });
     }
   } catch (error) {

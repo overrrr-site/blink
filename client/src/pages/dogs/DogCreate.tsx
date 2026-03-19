@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
-import api from '../api/client'
-import { useToast } from '../components/Toast'
+import api from '../../api/client'
+import { useToast } from '../../components/Toast'
 
 const DogCreate = () => {
   const { ownerId } = useParams<{ ownerId: string }>()

@@ -26,7 +26,7 @@ router.post('/', express.text({ type: '*/*' }), async (req, res) => {
 
     // Parse body (same pattern as existing lineWebhook.ts)
     let bodyString: string;
-    let parsed: any;
+    let parsed: { events: Array<{ type?: string; source?: { userId?: string }; replyToken?: string; message?: { type?: string; text?: string } }> };
     if (typeof req.body === 'string') {
       bodyString = req.body;
       try { parsed = JSON.parse(req.body); } catch { parsed = { events: [] }; }
@@ -56,7 +56,7 @@ router.post('/', express.text({ type: '*/*' }), async (req, res) => {
 
       // Handle text messages
       if (event.type === 'message' && event.message?.type === 'text') {
-        const text = event.message.text.trim().toUpperCase();
+        const text = (event.message.text || '').trim().toUpperCase();
 
         // Store code pattern: STORE-XXXXXX
         if (text.startsWith('STORE-')) {

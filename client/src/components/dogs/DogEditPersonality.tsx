@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import type { ChangeEvent } from 'react'
 import { Icon } from '../Icon'
-import type { DogPersonalityData } from './types'
+import type { DogPersonalityData } from '../../types/dog'
 
 interface DogEditPersonalityProps {
   data: DogPersonalityData

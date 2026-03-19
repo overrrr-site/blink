@@ -19,8 +19,8 @@ function createResponseMock() {
   } as unknown as Response
 }
 
-function getRouteHandler(router: any, path: string, method: 'get' | 'post') {
-  const layer = router.stack.find((stackLayer: any) => (
+function getRouteHandler(router: { stack: Array<{ route?: { path: string; methods?: Record<string, boolean>; stack?: Array<{ handle: (req: Request, res: Response) => Promise<void> }> } }> }, path: string, method: 'get' | 'post') {
+  const layer = router.stack.find((stackLayer: { route?: { path: string; methods?: Record<string, boolean> } }) => (
     stackLayer.route?.path === path
     && stackLayer.route?.methods?.[method]
   ))

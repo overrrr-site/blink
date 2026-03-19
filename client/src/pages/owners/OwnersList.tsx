@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import api from '../api/client'
+import api from '../../api/client'
 
 type TabType = 'owners' | 'dogs'
 

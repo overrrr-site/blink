@@ -102,8 +102,8 @@ async function migrateStaffToSupabase() {
         )
 
         console.log(`    ✅ 完了\n`)
-      } catch (error: any) {
-        console.error(`    ❌ エラー: ${error.message}\n`)
+      } catch (error: unknown) {
+        console.error(`    ❌ エラー: ${error instanceof Error ? error.message : String(error)}\n`)
       }
     }
 

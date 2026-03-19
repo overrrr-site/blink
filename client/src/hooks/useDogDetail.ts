@@ -26,8 +26,8 @@ interface DogPreVisitItem {
   reservation_time: string
   service_type?: string
   daycare_data?: DaycarePreVisitData | null
-  grooming_data?: unknown
-  hotel_data?: unknown
+  grooming_data?: Record<string, unknown> | null
+  hotel_data?: Record<string, unknown> | null
 }
 
 interface DogDetailData {

@@ -200,7 +200,7 @@ router.get('/guide', authenticate, async (req: AuthRequest, res) => {
 
     // ステップ定義とDB進捗をマージ
     const steps = GUIDE_STEPS.map((def) => {
-      const dbStep = stepsResult.rows.find((row: any) => row.step_key === def.step_key);
+      const dbStep = stepsResult.rows.find((row: { step_key: string; unlocked_at?: string; completed_at?: string }) => row.step_key === def.step_key);
       return {
         ...def,
         unlocked_at: dbStep?.unlocked_at || null,

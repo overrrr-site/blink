@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { mutate } from 'swr'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
-import api from '../api/client'
-import PageHeader from '../components/PageHeader'
-import LoadingSpinner from '../components/LoadingSpinner'
-import SaveButton from '../components/SaveButton'
-import { useToast } from '../components/Toast'
+import api from '../../api/client'
+import PageHeader from '../../components/PageHeader'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import SaveButton from '../../components/SaveButton'
+import { useToast } from '../../components/Toast'
 
 const TRAINING_CATEGORIES = [
   '基本トレーニング',

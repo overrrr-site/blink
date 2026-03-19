@@ -117,7 +117,7 @@ export async function analyzePhotoForRecord(input: {
   dog_name?: string;
 }): Promise<{
   analysis: string;
-  health_concerns: any[];
+  health_concerns: Array<{ area?: string; issue?: string; severity?: string }>;
   coat_condition?: string;
   overall_health?: string;
   activity?: string;
@@ -130,7 +130,7 @@ export async function analyzePhotoForRecord(input: {
     payload: {
       photoUrl?: string;
       label: string;
-      concerns: any[];
+      concerns: Array<{ area?: string; issue?: string; severity?: string }>;
     };
   };
 }> {
@@ -166,7 +166,14 @@ export async function analyzePhotoForRecord(input: {
       temperature: 0.3,
     });
 
-    let analysisResult: any = {};
+    let analysisResult: {
+      summary?: string;
+      concerns?: Array<{ area?: string; issue?: string; severity?: string }>;
+      coat_condition?: string;
+      overall_health?: string;
+      activity?: string;
+      mood?: string;
+    } = {};
     try {
       const jsonMatch = rawText?.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -462,7 +469,7 @@ export async function fetchTrainingLabels(storeId: number): Promise<Record<strin
     [storeId]
   );
   const customLabels: Record<string, string> = {};
-  labelResult.rows.forEach((row: any) => {
+  labelResult.rows.forEach((row: { item_key: string; item_label: string }) => {
     customLabels[row.item_key] = row.item_label;
   });
   return customLabels;

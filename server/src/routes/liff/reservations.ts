@@ -63,7 +63,7 @@ router.get('/reservations', async function(req, res) {
     const result = await pool.query(query, params);
     const { data, total } = extractTotalCount(result.rows as Record<string, unknown>[]);
     res.json(buildPaginatedResponse(data, total, pagination));
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '予約情報の取得に失敗しました', error);
   }
 });
@@ -153,7 +153,7 @@ router.get('/reservations/export.ics', async function(req, res) {
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="reservations.ics"');
     res.send(icsContent);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'カレンダーエクスポートに失敗しました', error);
   }
 });
@@ -182,7 +182,7 @@ router.get('/reservations/:id', async function(req, res) {
     }
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '予約情報の取得に失敗しました', error);
   }
 });
@@ -237,7 +237,7 @@ router.get('/availability', async function(req, res) {
 
     // 日付ごとの予約数をマップに変換
     const reservationMap = new Map<string, number>();
-    reservationsResult.rows.forEach((row: any) => {
+    reservationsResult.rows.forEach((row: { reservation_date: string; reservation_count: string }) => {
       reservationMap.set(row.reservation_date, parseInt(row.reservation_count));
     });
 
@@ -277,7 +277,7 @@ router.get('/availability', async function(req, res) {
       businessHours,
       closedDays,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '空き状況の取得に失敗しました', error);
   }
 });
@@ -401,7 +401,7 @@ router.post('/reservations', async function(req, res) {
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '予約の作成に失敗しました', error);
   }
 });
@@ -440,7 +440,7 @@ router.put('/reservations/:id', async function(req, res) {
     );
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '予約の更新に失敗しました', error);
   }
 });
@@ -474,7 +474,7 @@ router.put('/reservations/:id/cancel', async function(req, res) {
     );
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '予約のキャンセルに失敗しました', error);
   }
 });

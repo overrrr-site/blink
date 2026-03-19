@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import axios from 'axios'
+import api from '../api/client'
 import type { GuideStep, TrialGuideData, CompleteStepResponse } from '../types/trial'
 
 interface TrialState {
@@ -41,7 +41,7 @@ export const useTrialStore = create<TrialState>((set, get) => ({
 
   fetchGuide: async () => {
     try {
-      const { data } = await axios.get('/api/trial/guide')
+      const { data } = await api.get('/trial/guide')
       if (data.success && data.data) {
         const guide: TrialGuideData = data.data
         set({
@@ -61,7 +61,7 @@ export const useTrialStore = create<TrialState>((set, get) => ({
 
   completeStep: async (stepKey: string) => {
     try {
-      const { data } = await axios.post(`/api/trial/guide/${stepKey}/complete`)
+      const { data } = await api.post(`/trial/guide/${stepKey}/complete`)
       if (data.success && data.data) {
         const result: CompleteStepResponse = data.data
 

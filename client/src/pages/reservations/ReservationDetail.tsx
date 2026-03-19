@@ -1,22 +1,22 @@
 import { useCallback } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import useSWR from 'swr'
-import api from '../api/client'
-import { fetcher } from '../lib/swr'
-import { getStatusLabel } from '../domain/businessTypeConfig'
-import type { RecordType } from '../types/record'
-import type { DaycarePreVisitData } from '../types/daycarePreVisit'
-import { DAYCARE_LABELS } from '../types/daycarePreVisit'
+import api from '../../api/client'
+import { fetcher } from '../../lib/swr'
+import { getStatusLabel } from '../../domain/businessTypeConfig'
+import type { RecordType } from '../../types/record'
+import type { DaycarePreVisitData } from '../../types/daycarePreVisit'
+import { DAYCARE_LABELS } from '../../types/daycarePreVisit'
 import {
   getServiceTypeRenderFlags,
   hasReservationPreVisitInput,
   normalizeReservationServiceType,
-} from './dashboard/reservationDetailModel'
-import { LazyImage } from '../components/LazyImage'
-import { getDetailThumbnailUrl } from '../utils/image'
-import CoachMark from '../components/onboarding/CoachMark'
+} from '../dashboard/reservationDetailModel'
+import { LazyImage } from '../../components/LazyImage'
+import { getDetailThumbnailUrl } from '../../utils/image'
+import CoachMark from '../../components/onboarding/CoachMark'
 
 interface ReservationDetailData {
   id: number

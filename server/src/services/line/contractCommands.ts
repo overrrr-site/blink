@@ -31,7 +31,7 @@ export async function sendContracts(
       return;
     }
 
-    const dogIds = dogsResult.rows.map((d: any) => d.id);
+    const dogIds = dogsResult.rows.map((d: { id: number }) => d.id);
 
     const contractsResult = await pool.query(
       `SELECT c.*, d.name as dog_name
@@ -76,7 +76,7 @@ export async function sendContracts(
 /**
  * 契約の残回数を計算（月謝制の場合はnull）
  */
-export async function calculateRemainingSessionsForContract(contract: any): Promise<number | null> {
+export async function calculateRemainingSessionsForContract(contract: { contract_type: string; dog_id: number; created_at: string; valid_until?: string; total_sessions?: number }): Promise<number | null> {
   if (contract.contract_type === '月謝制') return null;
 
   const usedResult = await pool.query(

@@ -64,7 +64,7 @@ const storage = useSupabaseStorage
       }
     });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (_req: express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // 許可するファイルタイプ
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
   if (allowedTypes.includes(file.mimetype)) {
@@ -124,8 +124,8 @@ router.post('/', upload.single('file'), async (req: AuthRequest, res) => {
       size: req.file.size,
       storage: 'local',
     });
-  } catch (error: any) {
-    sendServerError(res, error.message || 'ファイルのアップロードに失敗しました', error);
+  } catch (error: unknown) {
+    sendServerError(res, error instanceof Error ? error.message : 'ファイルのアップロードに失敗しました', error);
   }
 });
 
@@ -168,8 +168,8 @@ router.post('/multiple', upload.array('files', 10), async (req: AuthRequest, res
       files,
       storage: 'local',
     });
-  } catch (error: any) {
-    sendServerError(res, error.message || 'ファイルのアップロードに失敗しました', error);
+  } catch (error: unknown) {
+    sendServerError(res, error instanceof Error ? error.message : 'ファイルのアップロードに失敗しました', error);
   }
 });
 
@@ -212,8 +212,8 @@ router.delete('/', async (req: AuthRequest, res) => {
     } else {
       sendNotFound(res, 'ファイルが見つかりません');
     }
-  } catch (error: any) {
-    sendServerError(res, error.message || 'ファイルの削除に失敗しました', error);
+  } catch (error: unknown) {
+    sendServerError(res, error instanceof Error ? error.message : 'ファイルの削除に失敗しました', error);
   }
 });
 

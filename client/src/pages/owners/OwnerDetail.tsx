@@ -1,12 +1,12 @@
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
-import PageHeader from '../components/PageHeader'
+import PageHeader from '../../components/PageHeader'
 import useSWR from 'swr'
-import { fetcher } from '../lib/swr'
-import type { RecordType } from '../types/record'
-import { getBusinessTypeColors, getBusinessTypeLabel } from '../domain/businessTypeConfig'
-import { LazyImage } from '../components/LazyImage'
-import { getDetailThumbnailUrl } from '../utils/image'
+import { fetcher } from '../../lib/swr'
+import type { RecordType } from '../../types/record'
+import { getBusinessTypeColors, getBusinessTypeLabel } from '../../domain/businessTypeConfig'
+import { LazyImage } from '../../components/LazyImage'
+import { getDetailThumbnailUrl } from '../../utils/image'
 
 interface OwnerDog {
   id: number

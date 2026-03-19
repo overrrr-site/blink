@@ -11,7 +11,7 @@ import {
 import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
 import { cacheControl } from '../middleware/cache.js';
 
-async function upsertDogHealth(dogId: number, health: any): Promise<void> {
+async function upsertDogHealth(dogId: number, health: Record<string, unknown> | null | undefined): Promise<void> {
   if (!health) return;
 
   await pool.query(
@@ -51,7 +51,7 @@ async function upsertDogHealth(dogId: number, health: any): Promise<void> {
   );
 }
 
-async function upsertDogPersonality(dogId: number, personality: any): Promise<void> {
+async function upsertDogPersonality(dogId: number, personality: Record<string, unknown> | null | undefined): Promise<void> {
   if (!personality) return;
 
   await pool.query(

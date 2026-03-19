@@ -55,7 +55,7 @@ router.get('/records', async function(req, res) {
     const result = await pool.query(query, params);
     const { data, total } = extractTotalCount(result.rows as Record<string, unknown>[]);
     res.json(buildPaginatedResponse(data, total, pagination));
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'カルテ情報の取得に失敗しました', error);
   }
 });
@@ -87,7 +87,7 @@ router.get('/records/:id', async function(req, res) {
     }
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'カルテの取得に失敗しました', error);
   }
 });

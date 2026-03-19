@@ -14,7 +14,6 @@ import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import ReservationCard from '../components/ReservationCard'
-import type { ReservationCardData } from '../components/ReservationCard'
 import QuickActionCard from '../components/dashboard/QuickActionCard'
 import { getReservationStatusLabel } from '../components/dashboard/reservationCardModel'
 import {
@@ -22,55 +21,13 @@ import {
   getFilterOptions,
   type StatusFilter,
 } from './dashboard/model'
+import type { DashboardData } from '../types/dashboard'
 import { useOnboardingState } from '../hooks/useOnboardingState'
 import WelcomeModal from '../components/onboarding/WelcomeModal'
 import StaffWelcome from '../components/onboarding/StaffWelcome'
 import SetupWizard from '../components/onboarding/SetupWizard'
 import SetupProgress from '../components/onboarding/SetupProgress'
 import CoachMark from '../components/onboarding/CoachMark'
-
-type Reservation = ReservationCardData
-
-interface IncompleteRecord {
-  reservation_id: number
-  reservation_date: string
-  record_date: string
-  reservation_time: string
-  dog_id: number
-  dog_name: string
-  dog_photo?: string
-  owner_name: string
-  record_id: number | null
-  comment: string | null
-}
-
-interface DashboardAlert {
-  dog_id: number
-  dog_name: string
-  dog_gender?: string
-  owner_name: string
-  alert_type: 'mixed_vaccine_expired' | 'rabies_vaccine_expiring'
-  mixed_vaccine_date?: string
-}
-
-interface InspectionRecord {
-  id: number
-  store_id: number
-  inspection_date: string
-  [key: string]: unknown
-}
-
-interface DashboardData {
-  todayReservations: Reservation[]
-  incompleteRecords: IncompleteRecord[]
-  alerts: DashboardAlert[]
-  todayInspectionRecord: InspectionRecord | null
-  capacity?: number
-  announcementStats?: {
-    published: number
-    draft: number
-  }
-}
 
 function Dashboard(): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')

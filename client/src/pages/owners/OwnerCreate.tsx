@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
-import api from '../api/client'
-import { useToast } from '../components/Toast'
-import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
-import { useAuthStore } from '../store/authStore'
-import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
-import type { RecordType } from '../types/record'
+import api from '../../api/client'
+import { useToast } from '../../components/Toast'
+import OwnerForm, { OwnerFormValues } from '../../components/OwnerForm'
+import { useAuthStore } from '../../store/authStore'
+import { useTrialStepCompletion } from '../../hooks/useTrialStepCompletion'
+import type { RecordType } from '../../types/record'
 
 const OwnerCreate = () => {
   const navigate = useNavigate()

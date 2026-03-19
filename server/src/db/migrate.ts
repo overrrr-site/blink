@@ -22,12 +22,13 @@ async function runMigration() {
     console.log('✅ マイグレーション 005_store_info.sql の実行が完了しました');
     
     process.exit(0);
-  } catch (error: any) {
-    if (error.code === '42701') {
+  } catch (error: unknown) {
+    const pgError = error as { code?: string; message?: string };
+    if (pgError.code === '42701') {
       console.log('ℹ️  カラムは既に存在します');
       process.exit(0);
     } else {
-      console.error('❌ マイグレーションの実行に失敗しました:', error.message);
+      console.error('❌ マイグレーションの実行に失敗しました:', pgError.message);
       process.exit(1);
     }
   }

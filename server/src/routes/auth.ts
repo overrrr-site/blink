@@ -166,7 +166,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       assignedBusinessTypes: req.staffData.assigned_business_types,
       ...storeInfo,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, 'スタッフ情報の取得に失敗しました', error);
   }
 });

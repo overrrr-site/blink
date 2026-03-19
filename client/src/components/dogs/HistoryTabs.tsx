@@ -29,8 +29,8 @@ type PreVisitItem = {
   reservation_time: string
   service_type?: string
   daycare_data?: DaycarePreVisitData | null
-  grooming_data?: any
-  hotel_data?: any
+  grooming_data?: Record<string, unknown> | null
+  hotel_data?: Record<string, unknown> | null
 }
 
 type HistoryTabsProps = {

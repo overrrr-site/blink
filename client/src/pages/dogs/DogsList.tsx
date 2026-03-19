@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import useSWR from 'swr'
-import { fetcher } from '../lib/swr'
-import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { fetcher } from '../../lib/swr'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 
 interface Dog {
   id: number

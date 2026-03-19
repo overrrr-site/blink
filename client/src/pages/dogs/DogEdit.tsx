@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
-import api from '../api/client'
-import { useToast } from '../components/Toast'
-import DogEditBasicInfo from '../components/dogs/DogEditBasicInfo'
-import DogEditHealth from '../components/dogs/DogEditHealth'
-import DogEditPersonality from '../components/dogs/DogEditPersonality'
-import type { DogFormData, DogHealthData, DogPersonalityData } from '../components/dogs/types'
-import SwipeDownHeader from '../components/SwipeDownHeader'
+import api from '../../api/client'
+import { useToast } from '../../components/Toast'
+import DogEditBasicInfo from '../../components/dogs/DogEditBasicInfo'
+import DogEditHealth from '../../components/dogs/DogEditHealth'
+import DogEditPersonality from '../../components/dogs/DogEditPersonality'
+import type { DogFormData, DogHealthData, DogPersonalityData } from '../../types/dog'
+import SwipeDownHeader from '../../components/SwipeDownHeader'
 
 interface RecordPhoto {
   url: string

@@ -15,7 +15,7 @@ import authRoutes from './routes/auth.js';
 import ownersRoutes from './routes/owners.js';
 import dogsRoutes from './routes/dogs.js';
 import reservationsRoutes from './routes/reservations/index.js';
-import recordsRoutes from './routes/records.js';
+import recordsRoutes from './routes/records/index.js';
 import preVisitInputsRoutes from './routes/preVisitInputs.js';
 import contractsRoutes from './routes/contracts.js';
 import inspectionRecordsRoutes from './routes/inspectionRecords.js';

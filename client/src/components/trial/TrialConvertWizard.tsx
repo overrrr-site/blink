@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../../api/client'
 import { INPUT_CLASS, BTN_PRIMARY, BTN_SECONDARY } from '../../utils/styles'
 
 interface DeletedCounts {
@@ -51,7 +51,7 @@ export function TrialConvertWizard() {
     setConverting(true)
     setError('')
     try {
-      const { data } = await axios.post('/api/trial/convert', {
+      const { data } = await api.post('/trial/convert', {
         ...lineConfig,
         confirm_delete_all: true,
       })
@@ -59,8 +59,9 @@ export function TrialConvertWizard() {
         setDeletedCounts(data.data.deleted_counts)
         setStep(5)
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || '切り替えに失敗しました')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } }
+      setError(axiosErr.response?.data?.error || '切り替えに失敗しました')
     } finally {
       setConverting(false)
     }

@@ -92,7 +92,7 @@ function findConsistentTrainingItems(
 }
 
 export async function getAISuggestions(recordId: string, storeId: number): Promise<{
-  record: any | null;
+  record: RecordContext | null;
   suggestions: AISuggestion[];
 }> {
   const recordResult = await pool.query(
@@ -218,7 +218,7 @@ export async function getAISuggestions(recordId: string, storeId: number): Promi
     for (const item of healthItems) {
       const currentValue = asString(context.health_check?.[item]);
       if (currentValue && abnormalValues.includes(currentValue)) {
-        const count = historyResult.rows.filter((row: any) => {
+        const count = historyResult.rows.filter((row: { health_check?: Record<string, unknown> }) => {
           const historyValue = asString(row.health_check?.[item]);
           return !!historyValue && abnormalValues.includes(historyValue);
         }).length;

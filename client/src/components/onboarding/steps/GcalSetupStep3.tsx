@@ -47,9 +47,10 @@ export default function GcalSetupStep3({ onBack, onComplete }: StepProps) {
         const { data } = await api.get('/google-calendar/status')
         if (cancelled) return
         setStatus(data)
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return
-        setError(err?.response?.data?.message || '接続状態の確認に失敗しました')
+        const axiosErr = err as { response?: { data?: { message?: string } } }
+        setError(axiosErr?.response?.data?.message || '接続状態の確認に失敗しました')
       } finally {
         if (!cancelled) setLoading(false)
       }

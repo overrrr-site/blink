@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Icon } from '../components/Icon'
+import { Icon } from '../../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
-import api from '../api/client'
-import { useToast } from '../components/Toast'
-import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
-import { useAuthStore } from '../store/authStore'
-import type { RecordType } from '../types/record'
-import SwipeDownHeader from '../components/SwipeDownHeader'
+import api from '../../api/client'
+import { useToast } from '../../components/Toast'
+import OwnerForm, { OwnerFormValues } from '../../components/OwnerForm'
+import { useAuthStore } from '../../store/authStore'
+import type { RecordType } from '../../types/record'
+import SwipeDownHeader from '../../components/SwipeDownHeader'
 
 const OwnerEdit = () => {
   const { id } = useParams<{ id: string }>()

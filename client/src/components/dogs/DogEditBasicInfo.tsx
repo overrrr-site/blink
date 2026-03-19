@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import type { ChangeEvent, RefObject } from 'react'
 import { Icon } from '../Icon'
-import type { DogFormData } from './types'
+import type { DogFormData } from '../../types/dog'
 
 interface DogEditBasicInfoProps {
   data: DogFormData

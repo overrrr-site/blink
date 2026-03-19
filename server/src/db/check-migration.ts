@@ -14,15 +14,15 @@ async function checkMigration() {
       console.log('❌ business_hours と closed_days カラムが見つかりません');
     } else {
       console.log('✅ 追加されたカラム:');
-      result.rows.forEach((row: any) => {
+      result.rows.forEach((row: { column_name: string; data_type: string }) => {
         console.log(`   - ${row.column_name}: ${row.data_type}`);
       });
     }
     
     await pool.end();
     process.exit(0);
-  } catch (error: any) {
-    console.error('❌ 確認に失敗しました:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ 確認に失敗しました:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

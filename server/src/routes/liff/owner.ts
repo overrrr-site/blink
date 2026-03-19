@@ -114,7 +114,7 @@ router.get('/me', async function(req, res) {
       contracts,
       nextReservation: nextReservationResult.rows[0] || null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendServerError(res, '飼い主情報の取得に失敗しました', error);
   }
 });

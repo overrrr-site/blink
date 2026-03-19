@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../../api/client'
 
 export function TrialExpiredOverlay() {
   const navigate = useNavigate()
@@ -10,7 +10,7 @@ export function TrialExpiredOverlay() {
   const handleExtend = async () => {
     setExtending(true)
     try {
-      await axios.post('/api/trial/extend', { days: 14 })
+      await api.post('/trial/extend', { days: 14 })
       setExtended(true)
       setTimeout(() => window.location.reload(), 1500)
     } catch {
