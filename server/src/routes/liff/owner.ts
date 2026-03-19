@@ -1,6 +1,6 @@
 import express from 'express';
 import pool from '../../db/connection.js';
-import { sendNotFound, sendServerError } from '../../utils/response.js';
+import { sendNotFound, sendServerError, sendUnauthorized } from '../../utils/response.js';
 import { requireOwnerToken } from './common.js';
 import { isBusinessType, normalizeBusinessTypes, type BusinessType } from '../../utils/businessTypes.js';
 
@@ -88,7 +88,8 @@ router.get('/me', async function(req, res) {
     console.log(`[LIFF /me] total queries: ${Date.now() - queryStart}ms`);
 
     if (ownerResult.rows.length === 0) {
-      sendNotFound(res, '飼い主が見つかりません');
+      // トークンは有効だがDBに飼い主が存在しない（データリセット等）→ 401で再ログインを促す
+      sendUnauthorized(res, '飼い主が見つかりません');
       return;
     }
 
