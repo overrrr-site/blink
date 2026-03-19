@@ -393,46 +393,7 @@ async function seedDemo(): Promise<void> {
     [STORE_ID, todayStr],
   );
 
-  let journalCount = 0;
-  for (let i = 0; i < pastReservations.rows.length; i++) {
-    // 最新2件は日誌未入力にする（ダッシュボードの未入力アラート用）
-    if (i < 2) continue;
-
-    const r = pastReservations.rows[i];
-    const result = await pool.query(
-      `INSERT INTO journals (reservation_id, dog_id, staff_id, journal_date, visit_count,
-         morning_toilet_status, morning_toilet_location, afternoon_toilet_status, afternoon_toilet_location,
-         training_data, comment, photos)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-       ON CONFLICT DO NOTHING RETURNING id`,
-      [
-        r.id,
-        r.dog_id,
-        staffIds[i % 3],
-        r.reservation_date,
-        Math.floor(Math.random() * 20) + 1,
-        '成功',
-        toiletLocations[i % 3],
-        '成功',
-        toiletLocations[(i + 1) % 3],
-        JSON.stringify({
-          basicTraining: [
-            { item_key: 'sit', item_label: 'おすわり', achievement: '○' },
-            { item_key: 'wait', item_label: 'まて', achievement: i % 2 === 0 ? '○' : '△' },
-            { item_key: 'come', item_label: 'おいで', achievement: '○' },
-          ],
-          socialization: [
-            { item_key: 'other_dogs', item_label: '他犬との交流', achievement: '○' },
-            { item_key: 'human_interaction', item_label: '人との交流', achievement: '○' },
-          ],
-        }),
-        JOURNAL_COMMENTS[i % JOURNAL_COMMENTS.length],
-        JSON.stringify([DOG_PHOTOS[i % DOG_PHOTOS.length], DOG_PHOTOS[(i + 1) % DOG_PHOTOS.length]]),
-      ],
-    );
-    if (result.rows.length > 0) journalCount++;
-  }
-  console.log(`  ✅ 日誌 ${journalCount}件`);
+  // journals テーブルは records に統合済みのため、日誌シードは省略
 
   // トレーニング項目マスタ
   for (const t of TRAINING_ITEMS) {
@@ -508,7 +469,7 @@ async function rollback(): Promise<void> {
 
   // seed-demo で追加したデータを削除（残すべきデータ以外）
   await pool.query(
-    `DELETE FROM journals WHERE staff_id IN (SELECT id FROM staff WHERE email = ANY($1::text[]))`,
+    `DELETE FROM records WHERE staff_id IN (SELECT id FROM staff WHERE email = ANY($1::text[]))`,
     [demoStaffEmails],
   );
   await pool.query(`DELETE FROM store_announcements WHERE store_id = $1`, [STORE_ID]);
@@ -529,7 +490,7 @@ async function rollback(): Promise<void> {
     const demoDogIds = demoDogs.rows.map((r: { id: number }) => r.id);
 
     if (demoDogIds.length > 0) {
-      await pool.query(`DELETE FROM journals WHERE dog_id = ANY($1::int[])`, [demoDogIds]);
+      await pool.query(`DELETE FROM records WHERE dog_id = ANY($1::int[])`, [demoDogIds]);
       await pool.query(`DELETE FROM pre_visit_inputs WHERE reservation_id IN (SELECT id FROM reservations WHERE dog_id = ANY($1::int[]))`, [demoDogIds]);
       await pool.query(`DELETE FROM reservations WHERE dog_id = ANY($1::int[])`, [demoDogIds]);
       await pool.query(`DELETE FROM contracts WHERE dog_id = ANY($1::int[])`, [demoDogIds]);

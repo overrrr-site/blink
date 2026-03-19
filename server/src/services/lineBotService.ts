@@ -5,7 +5,6 @@ import { getStoreLineClient } from './lineMessagingService.js';
 import { decrypt } from '../utils/encryption.js';
 import {
   createReservationFlexMessage,
-  createJournalFlexMessage,
   createContractFlexMessage,
   createRecordFlexMessage,
   createHelpMessage,
@@ -629,7 +628,7 @@ async function confirmCancelReservation(
 }
 
 /**
- * 記録一覧を送信（journals + records テーブルを統合）
+ * 記録一覧を送信（recordsテーブルのみ）
  */
 async function sendJournals(
   client: Client,
@@ -640,26 +639,8 @@ async function sendJournals(
   try {
     const config = getChatbotConfig(ctx.primaryBusinessType);
 
-    // journals（daycare業種がある場合のみ後方互換で取得）
-    const journalPromise = ctx.businessTypes.includes('daycare')
-      ? pool.query(
-          `SELECT j.id, j.journal_date, j.journal_date as date, 'journal' as source, 'daycare' as source_type,
-                  d.name as dog_name, j.comment,
-                  d.photo_url as dog_photo, s.name as staff_name,
-                  j.morning_toilet_status, j.afternoon_toilet_status
-           FROM journals j
-           JOIN dogs d ON j.dog_id = d.id
-           LEFT JOIN staff s ON j.staff_id = s.id
-           WHERE d.owner_id = $1
-           ORDER BY j.journal_date DESC, j.created_at DESC
-           LIMIT 5`,
-          [ctx.ownerId]
-        )
-      : Promise.resolve({ rows: [] });
-
-    // records（status='shared'、飼い主の業種に合致するもの）
-    const recordPromise = pool.query(
-      `SELECT r.id, r.record_date as date, 'record' as source, r.record_type as source_type,
+    const result = await pool.query(
+      `SELECT r.id, r.record_date as date, r.record_type as source_type,
               d.name as dog_name, (r.notes->>'report_text') as comment
        FROM records r
        JOIN dogs d ON r.dog_id = d.id
@@ -672,14 +653,7 @@ async function sendJournals(
       [ctx.ownerId, ctx.businessTypes]
     );
 
-    const [journalResult, recordResult] = await Promise.all([journalPromise, recordPromise]);
-
-    // マージして日付降順、最新5件
-    const allEntries = [...journalResult.rows, ...recordResult.rows]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
-
-    if (allEntries.length === 0) {
+    if (result.rows.length === 0) {
       await client.replyMessage(replyToken, {
         type: 'text',
         text: `📝 ${config.recordLabel}はまだ作成されていません。`,
@@ -690,15 +664,11 @@ async function sendJournals(
 
     await client.replyMessage(replyToken, {
       type: 'text',
-      text: `📝 ${config.recordLabel}一覧です（最新${allEntries.length}件）`,
+      text: `📝 ${config.recordLabel}一覧です（最新${result.rows.length}件）`,
     });
 
-    for (const entry of allEntries) {
-      if (entry.source === 'journal') {
-        await client.pushMessage(lineUserId, createJournalFlexMessage(entry), false);
-      } else {
-        await client.pushMessage(lineUserId, createRecordFlexMessage(entry), false);
-      }
+    for (const entry of result.rows) {
+      await client.pushMessage(lineUserId, createRecordFlexMessage(entry), false);
     }
 
     await client.pushMessage(lineUserId, {
@@ -707,13 +677,13 @@ async function sendJournals(
       quickReply: createQuickReply(ctx.businessTypes),
     }, false);
   } catch (error) {
-    console.error('Error sending journals:', error);
+    console.error('Error sending records:', error);
     await sendErrorFallback(client, lineUserId, '申し訳ございません、記録情報の取得に失敗しました。');
   }
 }
 
 /**
- * 日誌詳細を送信
+ * 記録詳細を送信
  */
 async function sendJournalDetail(
   client: Client,
@@ -724,11 +694,11 @@ async function sendJournalDetail(
 ): Promise<void> {
   try {
     const result = await pool.query(
-      `SELECT j.*, d.name as dog_name, d.photo_url as dog_photo, s.name as staff_name
-       FROM journals j
-       JOIN dogs d ON j.dog_id = d.id
-       LEFT JOIN staff s ON j.staff_id = s.id
-       WHERE j.id = $1 AND d.owner_id = $2`,
+      `SELECT r.*, d.name as dog_name, d.photo_url as dog_photo, s.name as staff_name
+       FROM records r
+       JOIN dogs d ON r.dog_id = d.id
+       LEFT JOIN staff s ON r.staff_id = s.id
+       WHERE r.id = $1 AND d.owner_id = $2 AND r.deleted_at IS NULL`,
       [journalId, ctx.ownerId]
     );
 
@@ -741,19 +711,18 @@ async function sendJournalDetail(
       return;
     }
 
-    const journal = result.rows[0];
-    const journalDate = format(new Date(journal.journal_date), 'yyyy年M月d日(E)', { locale: ja });
+    const record = result.rows[0];
+    const recordDate = format(new Date(record.record_date), 'yyyy年M月d日(E)', { locale: ja });
 
     const lines: string[] = [
-      `📝 ${journalDate}`,
+      `📝 ${recordDate}`,
       '',
-      `🐕 ${journal.dog_name}`,
+      `🐕 ${record.dog_name}`,
     ];
-    if (journal.staff_name) lines.push(`👤 ${journal.staff_name}`);
+    if (record.staff_name) lines.push(`👤 ${record.staff_name}`);
     lines.push('');
-    if (journal.morning_toilet_status) lines.push(`午前のトイレ: ${journal.morning_toilet_status}`);
-    if (journal.afternoon_toilet_status) lines.push(`午後のトイレ: ${journal.afternoon_toilet_status}`);
-    if (journal.comment) lines.push('', journal.comment);
+    const reportText = record.notes?.report_text;
+    if (reportText) lines.push(reportText);
 
     await client.replyMessage(replyToken, {
       type: 'text',
@@ -761,7 +730,7 @@ async function sendJournalDetail(
       quickReply: createQuickReply(ctx.businessTypes),
     });
   } catch (error) {
-    console.error('Error sending journal detail:', error);
+    console.error('Error sending record detail:', error);
     await sendErrorFallback(client, lineUserId, '申し訳ございません、記録情報の取得に失敗しました。');
   }
 }

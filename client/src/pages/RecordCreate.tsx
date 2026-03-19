@@ -18,6 +18,7 @@ import PhotosForm from './records/components/PhotosForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
 import AISettingsScreen from './records/components/AISettingsScreen'
+import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
 import RecordTypeSection from './records/components/RecordTypeSection'
 import HotelForm from './records/components/HotelForm'
 import RecordReportComposer from './records/components/RecordReportComposer'
@@ -99,6 +100,10 @@ const RecordCreate = () => {
   const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
   const activeBusinessType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
   const recordLabel = getRecordLabel(activeBusinessType)
+  const [recordSaved, setRecordSaved] = useState(false)
+
+  // トライアルガイド: 連絡帳保存完了で Step 4 自動完了
+  useTrialStepCompletion('write_journal', recordSaved)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
 
   const finishSession = useCallback((result: 'success' | 'drop' | 'error', step = 'record_submit') => {
@@ -352,6 +357,7 @@ const RecordCreate = () => {
     } else {
       showToast(`${recordLabel}を保存しました`, 'success')
     }
+    setRecordSaved(true)
     await sendAIFeedback(notes.report_text)
     navigate(`/records/${recordId}`, { replace: true })
   }, [

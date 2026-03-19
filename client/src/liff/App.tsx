@@ -14,8 +14,6 @@ const ReservationsCalendar = lazy(() => import('./pages/ReservationsCalendar'));
 const ReservationCreate = lazy(() => import('./pages/ReservationCreate'));
 const ReservationEdit = lazy(() => import('./pages/ReservationEdit'));
 const PreVisitInput = lazy(() => import('./pages/PreVisitInput'));
-// JournalList は RecordList に移行済み
-const JournalDetail = lazy(() => import('./pages/JournalDetail'));
 const RecordList = lazy(() => import('./pages/RecordList'));
 const RecordDetail = lazy(() => import('./pages/RecordDetail'));
 const Announcements = lazy(() => import('./pages/Announcements'));
@@ -82,8 +80,6 @@ function App() {
               <Route path="reservations/new" element={<ReservationCreate />} />
               <Route path="reservations/:id/edit" element={<ReservationEdit />} />
               <Route path="pre-visit/:reservationId" element={<PreVisitInput />} />
-              <Route path="journals" element={<Navigate to="/home/records" replace />} />
-              <Route path="journals/:id" element={<JournalDetail />} />
               <Route path="records" element={<RecordList />} />
               <Route path="records/:id" element={<RecordDetail />} />
               <Route path="announcements" element={<Announcements />} />

@@ -174,7 +174,7 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
       LEFT JOIN hotel_rooms hr ON r.room_id = hr.id
       LEFT JOIN pre_visit_inputs pvi ON r.id = pvi.reservation_id
       LEFT JOIN LATERAL (
-        SELECT j.id FROM journals j WHERE j.reservation_id = r.id LIMIT 1
+        SELECT j.id FROM records j WHERE j.reservation_id = r.id AND j.deleted_at IS NULL LIMIT 1
       ) j ON true
       WHERE r.store_id = $1
     `;

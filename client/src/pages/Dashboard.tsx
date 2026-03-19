@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast'
 import { useScrollFade } from '../hooks/useScrollFade'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
+import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
 import ReservationCard from '../components/ReservationCard'
@@ -78,6 +79,9 @@ function Dashboard(): JSX.Element {
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const [showStaffWelcome, setShowStaffWelcome] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
+
+  // トライアルガイド: ダッシュボード表示で Step 1 自動完了
+  useTrialStepCompletion('view_dashboard', true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const mainRef = useRef<HTMLElement | null>(null)
   const { showRightFade } = useScrollFade(scrollRef)

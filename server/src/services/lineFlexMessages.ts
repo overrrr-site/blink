@@ -301,7 +301,7 @@ export function createJournalFlexMessage(journal: JournalData): FlexMessage {
         type: 'button',
         style: 'primary',
         height: 'sm',
-        action: { type: 'uri', label: '詳細を見る', uri: buildLiffUrl(`/home/journals/${journal.id}`) },
+        action: { type: 'uri', label: '詳細を見る', uri: buildLiffUrl(`/home/records/${journal.id}`) },
       },
     ],
   });
@@ -431,7 +431,7 @@ export function createJournalNotificationFlexMessage(journal: {
         type: 'button',
         style: 'primary',
         height: 'sm',
-        action: { type: 'uri', label: '日誌を見る', uri: buildLiffUrl(`/home/journals/${journal.id}`) },
+        action: { type: 'uri', label: '日誌を見る', uri: buildLiffUrl(`/home/records/${journal.id}`) },
       },
     ],
   });

@@ -16,12 +16,9 @@ const OwnerDetail = lazy(() => import('./pages/OwnerDetail'))
 const DogDetail = lazy(() => import('./pages/DogDetail'))
 const ReservationsCalendar = lazy(() => import('./pages/ReservationsCalendar'))
 const ReservationDetail = lazy(() => import('./pages/ReservationDetail'))
-const JournalCreate = lazy(() => import('./pages/JournalCreate'))
-const JournalDetail = lazy(() => import('./pages/JournalDetail'))
-const JournalNew = lazy(() => import('./pages/JournalNew'))
-// journals routes are redirected to records; lazy imports kept only for direct journal detail/create
 
 const RecordList = lazy(() => import('./pages/RecordList'))
+const RecordIncomplete = lazy(() => import('./pages/RecordIncomplete'))
 const RecordCreate = lazy(() => import('./pages/RecordCreate'))
 const RecordDetail = lazy(() => import('./pages/RecordDetail'))
 const Settings = lazy(() => import('./pages/Settings'))
@@ -45,6 +42,7 @@ const AnnouncementList = lazy(() => import('./pages/AnnouncementList'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Terms = lazy(() => import('./pages/Terms'))
 const DogTrainingProfile = lazy(() => import('./pages/DogTrainingProfile'))
+const TrialConvertPage = lazy(() => import('./pages/TrialConvertPage'))
 
 function PageLoader() {
   return (
@@ -140,18 +138,14 @@ function App() {
                 <Route path="/reservations/hotel/create" element={<HotelReservationCreate />} />
                 <Route path="/reservations/:id" element={<ReservationDetail />} />
                 <Route path="/records" element={<RecordList />} />
-                <Route path="/records/incomplete" element={<JournalNew />} />
+                <Route path="/records/incomplete" element={<RecordIncomplete />} />
                 <Route path="/records/new" element={<RecordCreate />} />
                 <Route path="/records/:id" element={<RecordDetail />} />
                 <Route path="/records/create/:reservationId" element={<RecordCreate />} />
-                {/* 旧日誌URLからカルテへのリダイレクト */}
-                <Route path="/journals" element={<Navigate to="/records" replace />} />
-                <Route path="/journals/new" element={<Navigate to="/records/incomplete" replace />} />
-                <Route path="/journals/:id" element={<JournalDetail />} />
-                <Route path="/journals/create/:reservationId" element={<JournalCreate />} />
                 <Route path="/inspection-records" element={<InspectionRecordList />} />
                 <Route path="/announcements" element={<AnnouncementList />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/settings/convert" element={<OwnerRoute><TrialConvertPage /></OwnerRoute>} />
                 <Route path="/billing" element={<OwnerRoute><Billing /></OwnerRoute>} />
                 <Route path="/help" element={<Help />} />
               </Route>

@@ -15,7 +15,6 @@ import authRoutes from './routes/auth.js';
 import ownersRoutes from './routes/owners.js';
 import dogsRoutes from './routes/dogs.js';
 import reservationsRoutes from './routes/reservations.js';
-import journalsRoutes from './routes/journals.js';
 import recordsRoutes from './routes/records.js';
 import preVisitInputsRoutes from './routes/preVisitInputs.js';
 import contractsRoutes from './routes/contracts.js';
@@ -40,7 +39,11 @@ import hotelRoomsRoutes from './routes/hotelRooms.js';
 // Routes - LIFF (LINE Front-end Framework)
 import liffRoutes from './routes/liff/index.js';
 import lineWebhookRoutes from './routes/lineWebhook.js';
+import lineWebhookTrialRoutes from './routes/lineWebhookTrial.js';
 import billingWebhookRoutes from './routes/billingWebhook.js';
+
+// Routes - Trial
+import trialRoutes from './routes/trial.js';
 
 // Routes - Integrations & utilities
 import googleCalendarRoutes from './routes/googleCalendar.js';
@@ -79,6 +82,7 @@ app.use(requestLogger);
 // LINE Webhook は express.text() で raw body を受け取るため、
 // express.json() より先に登録する必要がある。
 app.use('/api/line/webhook', lineWebhookRoutes);
+app.use('/api/line/webhook/trial', lineWebhookTrialRoutes);
 
 // PAY.JP Webhook も raw body を受け取るため express.json() より先に登録
 app.use('/api/billing/webhook', express.text({ type: '*/*' }));
@@ -113,6 +117,7 @@ app.get('/health', (_req, res) => {
 // ---------------------------------------------------------------------------
 
 app.use('/api/auth', authRoutes);
+app.use('/api/trial', trialRoutes);
 
 // ---------------------------------------------------------------------------
 // API Routes - Core CRUD
@@ -121,7 +126,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/owners', ownersRoutes);
 app.use('/api/dogs', dogsRoutes);
 app.use('/api/reservations', reservationsRoutes);
-app.use('/api/journals', journalsRoutes);
 app.use('/api/records', recordsRoutes);
 app.use('/api/pre-visit-inputs', preVisitInputsRoutes);
 app.use('/api/contracts', contractsRoutes);

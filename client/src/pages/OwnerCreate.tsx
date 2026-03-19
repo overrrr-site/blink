@@ -5,13 +5,18 @@ import api from '../api/client'
 import { useToast } from '../components/Toast'
 import OwnerForm, { OwnerFormValues } from '../components/OwnerForm'
 import { useAuthStore } from '../store/authStore'
+import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
 import type { RecordType } from '../types/record'
 
 const OwnerCreate = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState(false)
   const businessTypes = useAuthStore((s) => s.user?.businessTypes) as RecordType[] | undefined
+
+  // トライアルガイド: 飼い主登録完了で Step 2 自動完了
+  useTrialStepCompletion('register_customer', saved)
   const [dogInfo, setDogInfo] = useState({
     name: '',
     breed: '',
@@ -66,6 +71,7 @@ const OwnerCreate = () => {
         }
       }
 
+      setSaved(true)
       navigate(`/owners/${ownerId}`)
     } catch {
       showToast('登録に失敗しました', 'error')

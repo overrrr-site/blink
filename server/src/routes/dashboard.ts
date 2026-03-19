@@ -60,10 +60,9 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
                 o.name as owner_name,
                 pvi.daycare_data,
                 EXISTS (
-                  SELECT 1 FROM journals j
-                  WHERE j.reservation_id = r.id
-                    AND j.comment IS NOT NULL
-                    AND j.comment != ''
+                  SELECT 1 FROM records rec
+                  WHERE rec.reservation_id = r.id
+                    AND rec.deleted_at IS NULL
                 ) as has_journal
          FROM reservations r
          JOIN dogs d ON r.dog_id = d.id
@@ -86,16 +85,16 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
                   d.name as dog_name,
                   d.photo_url as dog_photo,
                   o.name as owner_name,
-                  j.id as journal_id,
-                  j.comment
+                  rec.id as journal_id,
+                  rec.report_text as comment
            FROM reservations r
            JOIN dogs d ON r.dog_id = d.id
            JOIN owners o ON d.owner_id = o.id
-           LEFT JOIN journals j ON r.id = j.reservation_id
+           LEFT JOIN records rec ON r.id = rec.reservation_id AND rec.deleted_at IS NULL
            WHERE r.store_id = $1
              AND r.reservation_date BETWEEN $2 AND $3
              AND r.status IN ('登園済', '降園済')
-             AND (j.id IS NULL OR j.comment IS NULL OR j.comment = '')${incompleteServiceTypeCondition}
+             AND (rec.id IS NULL)${incompleteServiceTypeCondition}
            ORDER BY r.reservation_date DESC
            LIMIT 10`,
           incompleteParams

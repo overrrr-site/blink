@@ -8,6 +8,10 @@ import { getRandomGreeting } from '../utils/greetings'
 import { getRecordLabel } from '../utils/businessTypeColors'
 
 import BusinessTypeSwitcher from './BusinessTypeSwitcher'
+import { TrialBanner } from './trial/TrialBanner'
+import { TrialGuideOverlay } from './trial/TrialGuideOverlay'
+import { TrialExpiredOverlay } from './trial/TrialExpiredOverlay'
+import { useTrialStore } from '../store/trialStore'
 import logoImage from '../assets/logo.png'
 
 const NAV_ITEMS = [
@@ -79,6 +83,11 @@ function Layout(): JSX.Element {
   const { selectedBusinessType, syncFromUser } = useBusinessTypeStore()
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())
+  const { isTrial, daysRemaining, fetchGuide } = useTrialStore()
+
+  useEffect(() => {
+    fetchGuide()
+  }, [fetchGuide])
 
   const availableBusinessTypes = useMemo(() => getAvailableBusinessTypes({
     storeBusinessTypes: user?.businessTypes,
@@ -198,11 +207,16 @@ function Layout(): JSX.Element {
         </header>
       )}
 
+      <TrialBanner />
+
       <main id="main-content" className="flex-1 overflow-y-auto pb-24 lg:pb-6 md:px-8 lg:ml-64 lg:px-12">
         <div className="max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>
+
+      <TrialGuideOverlay />
+      {isTrial && daysRemaining <= 0 && <TrialExpiredOverlay />}
 
       {fabOpen && (
         <div

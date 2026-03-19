@@ -22,7 +22,7 @@ interface Reservation {
   reservation_time: string
 }
 
-function JournalNew(): JSX.Element {
+function RecordIncomplete(): JSX.Element {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -141,4 +141,4 @@ function JournalNew(): JSX.Element {
   )
 }
 
-export default JournalNew
+export default RecordIncomplete

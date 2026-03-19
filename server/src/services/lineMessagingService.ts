@@ -16,14 +16,38 @@ async function getStoreLineCredentials(storeId: number): Promise<{
 } | null> {
   try {
     const result = await pool.query(
-      `SELECT line_channel_id, line_channel_secret, line_channel_access_token
+      `SELECT line_channel_id, line_channel_secret, line_channel_access_token, is_trial
        FROM stores
        WHERE id = $1`,
       [storeId]
     );
 
     const store = result.rows[0];
-    if (!store?.line_channel_id || !store.line_channel_secret || !store.line_channel_access_token) {
+    if (!store) {
+      console.warn(`店舗ID ${storeId} が見つかりません`);
+      return null;
+    }
+
+    // トライアルモードの場合は環境変数からトライアル用credential返却
+    if (store.is_trial) {
+      const trialChannelId = process.env.TRIAL_LINE_CHANNEL_ID;
+      const trialChannelSecret = process.env.TRIAL_LINE_CHANNEL_SECRET;
+      const trialAccessToken = process.env.TRIAL_LINE_CHANNEL_ACCESS_TOKEN;
+
+      if (!trialChannelId || !trialChannelSecret || !trialAccessToken) {
+        console.warn('トライアル用LINE認証情報が環境変数に設定されていません');
+        return null;
+      }
+
+      return {
+        channelId: trialChannelId,
+        channelSecret: trialChannelSecret,
+        channelAccessToken: trialAccessToken,
+      };
+    }
+
+    // 本契約の場合は従来通りDBから復号して返却
+    if (!store.line_channel_id || !store.line_channel_secret || !store.line_channel_access_token) {
       console.warn(`店舗ID ${storeId} のLINE認証情報が見つからないか未設定です`);
       return null;
     }

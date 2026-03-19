@@ -5,6 +5,7 @@ import { useReservationCreateData } from '../hooks/useReservationCreateData'
 import { useReservationCreate } from '../hooks/useReservationCreate'
 import { useDogFilter } from '../hooks/useDogFilter'
 import { endUxSession, getUxIdentity, startUxSession, trackUxEvent } from '../lib/uxAnalytics'
+import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
 import StepIndicator from '../components/reservations/StepIndicator'
 import DogSelectStep from '../components/reservations/DogSelectStep'
 import DateTimeStep from '../components/reservations/DateTimeStep'
@@ -32,6 +33,10 @@ const ReservationCreate = () => {
   const { loading, dogs, recentReservations, invalidate } = useReservationCreateData()
   const [searchQuery, setSearchQuery] = useState('')
   const [showRecentOnly, setShowRecentOnly] = useState(false)
+  const [reservationSaved, setReservationSaved] = useState(false)
+
+  // トライアルガイド: 予約作成完了で Step 3 自動完了
+  useTrialStepCompletion('create_reservation', reservationSaved)
 
   const {
     form,
@@ -45,6 +50,7 @@ const ReservationCreate = () => {
   } = useReservationCreate({
     dateParam,
     onSuccess: () => {
+      setReservationSaved(true)
       invalidate()
       navigate('/reservations')
     },

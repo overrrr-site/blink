@@ -132,7 +132,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       return;
     }
 
-    const [healthResult, personalityResult, contractResult, reservationsResult, journalsResult, preVisitResult] = await Promise.all([
+    const [healthResult, personalityResult, contractResult, reservationsResult, recordsResult, preVisitResult] = await Promise.all([
       pool.query(`SELECT * FROM dog_health WHERE dog_id = $1`, [id]),
       pool.query(`SELECT * FROM dog_personality WHERE dog_id = $1`, [id]),
       pool.query(`SELECT * FROM contracts WHERE dog_id = $1 ORDER BY created_at DESC LIMIT 1`, [id]),
@@ -150,15 +150,15 @@ router.get('/:id', async (req: AuthRequest, res) => {
         [id, req.storeId]
       ),
       pool.query(
-        `SELECT j.*, 
+        `SELECT rec.*,
                 r.reservation_date,
                 r.reservation_time,
                 s.name as staff_name
-         FROM journals j
-         LEFT JOIN reservations r ON j.reservation_id = r.id
-         LEFT JOIN staff s ON j.staff_id = s.id
-         WHERE j.dog_id = $1
-         ORDER BY j.journal_date DESC, j.created_at DESC
+         FROM records rec
+         LEFT JOIN reservations r ON rec.reservation_id = r.id
+         LEFT JOIN staff s ON rec.staff_id = s.id
+         WHERE rec.dog_id = $1 AND rec.deleted_at IS NULL
+         ORDER BY rec.created_at DESC
          LIMIT 50`,
         [id]
       ),
@@ -179,7 +179,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       personality: personalityResult.rows[0] || null,
       contract: contractResult.rows[0] || null,
       reservations: reservationsResult.rows || [],
-      journals: journalsResult.rows || [],
+      journals: recordsResult.rows || [],
       preVisitHistory: preVisitResult.rows || [],
     });
   } catch (error) {

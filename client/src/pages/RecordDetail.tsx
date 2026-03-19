@@ -13,6 +13,7 @@ import OptionalSection from './records/components/OptionalSection'
 import PhotosForm from './records/components/PhotosForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
+import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
 import AISettingsScreen from './records/components/AISettingsScreen'
 import RecordTypeSection from './records/components/RecordTypeSection'
 import RecordReportComposer from './records/components/RecordReportComposer'
@@ -34,6 +35,10 @@ const RecordDetail = () => {
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
+  const [lineNotificationSent, setLineNotificationSent] = useState(false)
+
+  // トライアルガイド: 連絡帳を飼い主に送信（=LINE通知）で Step 5 自動完了
+  useTrialStepCompletion('send_line_notification', lineNotificationSent)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
   const recordLabel = getRecordLabel(primaryBusinessType)
 
@@ -189,6 +194,7 @@ const RecordDetail = () => {
     await recordsApi.share(id)
     await mutate()
     await sendAIFeedback(notes.report_text)
+    setLineNotificationSent(true)
     showToast('飼い主に送信しました', 'success')
   }, [condition, daycareData, groomingData, healthCheck, hotelData, id, mutate, notes, photos, record?.record_type, sendAIFeedback, showToast])
 

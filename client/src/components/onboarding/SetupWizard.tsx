@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from '../Icon'
 import { BTN_PRIMARY, BTN_TERTIARY } from '../../utils/styles'
 import { useOnboardingState, type SetupStatus } from '../../hooks/useOnboardingState'
+import { useTrialStore } from '../../store/trialStore'
 import LineSetupStep1 from './steps/LineSetupStep1'
 import LineSetupStep3 from './steps/LineSetupStep3'
 import LineSetupStep4 from './steps/LineSetupStep4'
@@ -32,8 +33,10 @@ export default function SetupWizard({ onClose }: SetupWizardProps) {
   const [activeView, setActiveView] = useState<ActiveView>('overview')
   const [lineStep, setLineStep] = useState(1)
   const [gcalStep, setGcalStep] = useState(1)
+  const { isTrial } = useTrialStore()
 
-  const lineStatus = onboarding?.setup.line ?? 'not_started'
+  // トライアル中はLINEセットアップをスキップ扱い
+  const lineStatus = isTrial ? 'completed' as SetupStatus : (onboarding?.setup.line ?? 'not_started')
   const gcalStatus = onboarding?.setup.google_calendar ?? 'not_started'
   const progress = getProgressPercent(lineStatus, gcalStatus)
   const allComplete = lineStatus === 'completed' && gcalStatus === 'completed'

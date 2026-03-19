@@ -34,10 +34,50 @@ router.post('/auth', async function(req, res) {
     console.log('🔐 DBクエリ完了:', Date.now() - startTime, 'ms');
 
     if (ownerResult.rows.length === 0) {
-      // 飼い主が見つからない場合は新規登録が必要
-      return res.status(404).json({
-        error: 'LINEアカウントが登録されていません',
-        requiresRegistration: true
+      // trial_line_linksでトライアル店舗の紐付けを確認
+      const trialResult = await pool.query(
+        `SELECT o.*, s.name as store_name, s.address as store_address
+         FROM trial_line_links tll
+         JOIN owners o ON o.id = tll.owner_id
+         JOIN stores s ON s.id = tll.store_id AND s.is_trial = true
+         WHERE tll.line_user_id = $1
+         LIMIT 1`,
+        [lineUserId]
+      );
+
+      if (trialResult.rows.length === 0) {
+        // 飼い主が見つからない場合は新規登録が必要
+        return res.status(404).json({
+          error: 'LINEアカウントが登録されていません',
+          requiresRegistration: true
+        });
+      }
+
+      // トライアル店舗の飼い主として認証
+      const trialOwner = trialResult.rows[0];
+      const trialToken = jwt.sign(
+        {
+          ownerId: trialOwner.id,
+          storeId: trialOwner.store_id,
+          lineUserId: lineUserId,
+          type: 'owner',
+        },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '30d' }
+      );
+
+      console.log('🔐 LIFF trial auth完了:', Date.now() - startTime, 'ms');
+
+      return res.json({
+        token: trialToken,
+        owner: {
+          id: trialOwner.id,
+          name: trialOwner.name,
+          storeId: trialOwner.store_id,
+          storeName: trialOwner.store_name,
+          storeAddress: trialOwner.store_address || '',
+          lineUserId: lineUserId,
+        },
       });
     }
 
@@ -85,7 +125,9 @@ router.post('/link/request', async function(req, res) {
 
     // 電話番号で飼い主を検索
     const ownerResult = await pool.query(
-      `SELECT o.* FROM owners o WHERE o.phone = $1 LIMIT 1`,
+      `SELECT o.*, s.name as store_name FROM owners o
+       JOIN stores s ON o.store_id = s.id
+       WHERE o.phone = $1`,
       [phone]
     );
 
@@ -95,12 +137,26 @@ router.post('/link/request', async function(req, res) {
       });
     }
 
+    // 同じ電話番号の顧客が複数店舗に存在する場合
+    if (ownerResult.rows.length > 1) {
+      return res.status(409).json({
+        error: 'この電話番号は複数の店舗で登録されています。店舗にお問い合わせください。',
+      });
+    }
+
     const owner = ownerResult.rows[0];
 
     // 既にLINE IDが紐付いている場合
     if (owner.line_id && owner.line_id === lineUserId) {
       return res.status(400).json({
         error: 'このLINEアカウントは既に紐付けられています',
+      });
+    }
+
+    // 既に別のLINE IDが紐付いている場合
+    if (owner.line_id && owner.line_id !== lineUserId) {
+      return res.status(400).json({
+        error: '既に別のLINEアカウントが紐付けられています。店舗にお問い合わせください。',
       });
     }
 
@@ -205,13 +261,19 @@ router.post('/link/verify', async function(req, res) {
 
     // 電話番号で飼い主を取得
     const ownerResult = await pool.query(
-      `SELECT o.* FROM owners o WHERE o.phone = $1 LIMIT 1`,
+      `SELECT o.* FROM owners o WHERE o.phone = $1`,
       [phone]
     );
 
     if (ownerResult.rows.length === 0) {
       sendNotFound(res, '飼い主が見つかりません');
       return;
+    }
+
+    if (ownerResult.rows.length > 1) {
+      return res.status(409).json({
+        error: 'この電話番号は複数の店舗で登録されています。店舗にお問い合わせください。',
+      });
     }
 
     const owner = ownerResult.rows[0];
