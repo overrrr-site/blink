@@ -1,8 +1,7 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 import { fetcher } from '../lib/swr'
-import { recordsApi } from '../api/records'
 import { useToast } from '../components/Toast'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -24,14 +23,15 @@ import HotelForm from './records/components/HotelForm'
 import RecordReportComposer from './records/components/RecordReportComposer'
 import RecordSaveFooter from './records/components/RecordSaveFooter'
 import { useRecordFormState } from './records/hooks/useRecordFormState'
-import { useRecordEditorCore } from './records/hooks/useRecordEditorCore'
-import { buildCreateRecordPayload, validateRecordForm } from './records/utils/recordForm'
 import { useAISettings } from './records/hooks/useAISettings'
 import { useRecordAISuggestions } from './records/hooks/useRecordAISuggestions'
 import { calculateAge } from '../utils/dog'
 import { LazyImage } from '../components/LazyImage'
 import { getListThumbnailUrl } from '../utils/image'
-import { endUxSession, getUxIdentity, startUxSession, trackUxEvent } from '../lib/uxAnalytics'
+import { useRecordCreateAnalytics } from './records/hooks/useRecordCreateAnalytics'
+import { useRecordReservationSource } from './records/hooks/useRecordReservationSource'
+import { useCopyPreviousRecord } from './records/hooks/useCopyPreviousRecord'
+import { useRecordCreateActions } from './records/hooks/useRecordCreateActions'
 
 interface Dog {
   id: number
@@ -40,38 +40,6 @@ interface Dog {
   birth_date: string
   photo_url: string | null
   owner_name: string
-}
-
-interface ReservationSource {
-  dog_id?: number
-  service_type?: RecordType
-  reservation_date?: string
-  reservation_time?: string | null
-  end_datetime?: string | null
-  service_details?: {
-    special_care?: string
-  } | null
-  memo?: string | null
-  notes?: string | null
-}
-
-function formatToDatetimeLocal(value?: string | null): string {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
-
-function combineDateAndTime(date?: string, time?: string | null): string {
-  if (!date) return ''
-  const timeValue = time && /^\d{2}:\d{2}$/.test(time) ? time : '00:00'
-  return `${date}T${timeValue}`
 }
 
 const CONDITION_SUMMARY: Record<string, string> = {
@@ -94,9 +62,6 @@ const RecordCreate = () => {
   const { reservationId } = useParams()
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
-  const uxSessionIdRef = useRef<string>(startUxSession('record'))
-  const sessionEndedRef = useRef(false)
-  const isCreatingFromReservation = Boolean(reservationId)
   const { selectedBusinessType, effectiveBusinessType } = useBusinessTypeFilter()
   const activeBusinessType = (selectedBusinessType || effectiveBusinessType || 'daycare') as RecordType
   const recordLabel = getRecordLabel(activeBusinessType)
@@ -105,36 +70,7 @@ const RecordCreate = () => {
   // トライアルガイド: 連絡帳保存完了で Step 4 自動完了
   useTrialStepCompletion('write_record', recordSaved)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
-
-  const finishSession = useCallback((result: 'success' | 'drop' | 'error', step = 'record_submit') => {
-    if (sessionEndedRef.current) return
-    sessionEndedRef.current = true
-    endUxSession({
-      flow: 'record',
-      sessionId: uxSessionIdRef.current,
-      result,
-      step,
-    })
-  }, [])
-
-  const trackRecordEvent = useCallback((
-    eventName: 'route_view' | 'cta_click' | 'form_error' | 'submit_success' | 'submit_fail' | 'api_slow',
-    step: string,
-    meta?: Record<string, string | number | boolean>,
-  ) => {
-    const identity = getUxIdentity()
-    trackUxEvent({
-      eventName,
-      flow: 'record',
-      step,
-      sessionId: uxSessionIdRef.current,
-      path: window.location.pathname,
-      storeId: identity.storeId || storeId,
-      staffIdHash: identity.staffIdHash,
-      timestamp: new Date().toISOString(),
-      meta,
-    })
-  }, [storeId])
+  const { finishSession, trackRecordEvent } = useRecordCreateAnalytics({ reservationId, storeId })
 
   // Dog selection
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null)
@@ -163,9 +99,7 @@ const RecordCreate = () => {
   } = useRecordFormState()
 
   // UI state
-  const [copyLoading, setCopyLoading] = useState(false)
   const [collapsed, setCollapsed] = useState({ condition: true, health: true, careLogs: true })
-  const [reservationLookupDone, setReservationLookupDone] = useState(!isCreatingFromReservation)
   const recordMainSectionRef = useRef<HTMLDivElement>(null)
   const photosSectionRef = useRef<HTMLDivElement>(null)
   const conditionSectionRef = useRef<HTMLDivElement>(null)
@@ -174,10 +108,6 @@ const RecordCreate = () => {
   const hotelCareSectionRef = useRef<HTMLDivElement>(null)
   const reportSectionRef = useRef<HTMLDivElement>(null)
   const internalMemoSectionRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    setReservationLookupDone(!isCreatingFromReservation)
-  }, [isCreatingFromReservation, reservationId])
 
   // Fetch dogs list
   const { data: dogs = [] } = useSWR<Dog[]>('/dogs?limit=200', fetcher)
@@ -199,73 +129,30 @@ const RecordCreate = () => {
     saveAISettings,
   } = useAISettings()
 
-  // Fetch reservation data if creating from reservation
   const {
-    error: reservationSourceError,
-  } = useSWR<ReservationSource>(
-    reservationId ? `/reservations/${reservationId}` : null,
-    fetcher,
-    {
-      onSuccess: (data: ReservationSource) => {
-        if (typeof data?.dog_id === 'number' && data.dog_id > 0) {
-          setSelectedDogId(data.dog_id)
-        }
-        // ホテルカルテの自動入力
-        if (data?.service_type === 'hotel' && activeBusinessType === 'hotel') {
-          setHotelData((prev) => {
-            if (prev.check_in || prev.check_out_scheduled) return prev
+    reservationSourceError,
+    waitingReservationSource,
+  } = useRecordReservationSource({
+    reservationId,
+    activeBusinessType,
+    setSelectedDogId,
+    setHotelData,
+  })
 
-            const checkIn = formatToDatetimeLocal(combineDateAndTime(data.reservation_date, data.reservation_time))
-            const checkOut = formatToDatetimeLocal(data.end_datetime)
-            const diffMs = checkIn && checkOut
-              ? new Date(checkOut).getTime() - new Date(checkIn).getTime()
-              : 0
-            const computedNights = diffMs > 0 ? Math.ceil(diffMs / 86_400_000) : 1
-
-            return {
-              ...prev,
-              check_in: checkIn,
-              check_out_scheduled: checkOut,
-              nights: Math.max(1, computedNights),
-              special_care: data.service_details?.special_care || data.memo || data.notes || prev.special_care || '',
-            }
-          })
-        }
-        setReservationLookupDone(true)
-      },
-      onError: () => {
-        setReservationLookupDone(true)
-      },
-    }
-  )
-  const waitingReservationSource = isCreatingFromReservation && !reservationLookupDone
-
-  const handleCopyPrevious = useCallback(async () => {
-    if (!selectedDogId) return
-    setCopyLoading(true)
-    try {
-      const res = await recordsApi.getLatest(selectedDogId, recordType)
-      const prev = res.data
-      if (prev.daycare_data) setDaycareData(prev.daycare_data)
-      if (prev.grooming_data) setGroomingData(prev.grooming_data)
-      if (prev.hotel_data) setHotelData(prev.hotel_data)
-      if (prev.condition) setCondition(prev.condition)
-      if (prev.health_check) setHealthCheck(prev.health_check)
-      showToast('前回のデータをコピーしました', 'success')
-    } catch {
-      showToast(`前回の${recordLabel}がありません`, 'info')
-    } finally {
-      setCopyLoading(false)
-    }
-  }, [selectedDogId, recordType, showToast])
-
-  useEffect(() => {
-    trackRecordEvent('route_view', reservationId ? 'record_create_from_reservation' : 'record_create')
-
-    return () => {
-      finishSession('drop', 'record_abandon')
-    }
-  }, [finishSession, reservationId, trackRecordEvent])
+  const {
+    copyLoading: isCopyLoading,
+    handleCopyPrevious,
+  } = useCopyPreviousRecord({
+    selectedDogId,
+    recordType,
+    recordLabel,
+    showToast,
+    setDaycareData,
+    setGroomingData,
+    setHotelData,
+    setCondition,
+    setHealthCheck,
+  })
 
   const aiContext = useMemo(() => ({
     recordType,
@@ -310,122 +197,40 @@ const RecordCreate = () => {
     ? `${hotelCareLogCount}件${latestHotelCare ? ` / 最新: ${latestHotelCare}` : ''}`
     : '未入力'
 
-  const validateEditor = useCallback((mode: 'save' | 'share') => {
-    if (!selectedDogId) {
-      return { ok: false, errors: ['ワンちゃんを選択してください'] }
-    }
-    return validateRecordForm({
-      recordType,
-      groomingData,
-      daycareData,
-      hotelData,
-      photos,
-      notes,
-      condition,
-      healthCheck,
-    }, mode)
-  }, [selectedDogId, recordType, groomingData, daycareData, hotelData, photos, notes, condition, healthCheck])
-
-  const createRecord = useCallback(async (shareAfter: boolean) => {
-    if (!selectedDogId) return
-
-    const formData = buildCreateRecordPayload({
-      dogId: selectedDogId,
-      reservationId,
-      recordType,
-      status: shareAfter ? 'shared' : 'saved',
-      daycareData,
-      groomingData,
-      hotelData,
-      photos,
-      notes,
-      condition,
-      healthCheck,
-    })
-
-    const res = await recordsApi.create(formData)
-    const recordId = res.data.id
-
-    trackRecordEvent('submit_success', shareAfter ? 'record_share_submit' : 'record_save_submit', {
-      share_after: shareAfter,
-    })
-    finishSession('success', shareAfter ? 'record_share_submit' : 'record_save_submit')
-
-    if (shareAfter) {
-      await recordsApi.share(recordId)
-      showToast(`${recordLabel}を共有しました`, 'success')
-    } else {
-      showToast(`${recordLabel}を保存しました`, 'success')
-    }
-    setRecordSaved(true)
-    await sendAIFeedback(notes.report_text)
-    navigate(`/records/${recordId}`, { replace: true })
-  }, [
-    condition,
-    daycareData,
-    groomingData,
-    healthCheck,
-    hotelData,
-    navigate,
-    notes,
-    photos,
-    recordLabel,
-    recordType,
-    reservationId,
-    selectedDogId,
-    sendAIFeedback,
-    finishSession,
-    showToast,
-    trackRecordEvent,
-  ])
-
-  const handlePhotoAdded = async (photoUrl: string, type: 'regular' | 'concern') => {
-    if (!aiSettings.aiAssistantEnabled || recordType !== 'grooming' || type !== 'regular') return
-    await analyzePhotoConcern(photoUrl)
-  }
-
   const {
     saving,
-    reportTone: selectedReportTone,
-    setReportTone: setSelectedReportTone,
+    selectedReportTone,
+    setSelectedReportTone,
     handleSave,
     handleShare,
     handleGenerateReport,
-  } = useRecordEditorCore({
-    validate: validateEditor,
-    onValidationError: (message) => {
-      trackRecordEvent('form_error', 'record_validation_error')
-      showToast(message, 'error')
-    },
-    onSave: () => {
-      trackRecordEvent('cta_click', 'record_save_click', { mode: 'save' })
-      return createRecord(false)
-    },
-    onShare: () => {
-      trackRecordEvent('cta_click', 'record_share_click', { mode: 'share' })
-      return createRecord(true)
-    },
-    onSaveError: () => {
-      trackRecordEvent('submit_fail', 'record_save_submit', { mode: 'save' })
-      showToast('保存に失敗しました', 'error')
-    },
-    onShareError: () => {
-      trackRecordEvent('submit_fail', 'record_share_submit', { mode: 'share' })
-      showToast('保存に失敗しました', 'error')
-    },
-    confirmShare: () => confirm({
-      title: '送信確認',
-      message: '飼い主に送信しますか？',
-      confirmLabel: '送信',
-      cancelLabel: 'キャンセル',
-      variant: 'default',
-    }),
-    validateShareBeforeConfirm: false,
+    handlePhotoAdded,
+  } = useRecordCreateActions({
+    selectedDogId,
+    reservationId,
+    recordType,
+    recordLabel,
+    aiAssistantEnabled: aiSettings.aiAssistantEnabled,
+    daycareData,
+    groomingData,
+    hotelData,
+    photos,
+    notes,
+    condition,
+    healthCheck,
+    navigate,
+    showToast,
+    confirm,
+    finishSession,
+    trackRecordEvent,
+    sendAIFeedback,
+    analyzePhotoConcern,
     onToneChange: setReportTone,
-    onGenerateReport: (tone) => handleAISuggestionAction('report-draft', undefined, {
+    onGenerateReportSuggestion: (tone) => handleAISuggestionAction('report-draft', undefined, {
       regenerate: true,
       tone,
     }),
+    onRecordSaved: () => setRecordSaved(true),
   })
 
   return (
@@ -498,7 +303,7 @@ const RecordCreate = () => {
             photoUrl={selectedDog.photo_url}
             recordType={recordType}
             onCopyPrevious={handleCopyPrevious}
-            copyLoading={copyLoading}
+            copyLoading={isCopyLoading}
           />
 
           <p className="mx-4 mt-3 text-xs text-muted-foreground">

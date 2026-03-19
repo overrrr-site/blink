@@ -1,87 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Suspense, lazy } from 'react'
 import { SWRConfig } from 'swr'
-import { useAuthStore, selectIsAuthenticated, selectUser } from './store/authStore'
 import { fetcher } from './lib/swr'
 import { ToastProvider } from './components/Toast'
-import Layout from './components/Layout'
-import { ErrorBoundary } from './components/ErrorBoundary'
-
-const LandingPage = lazy(() => import('./pages/LandingPage'))
-const Login = lazy(() => import('./pages/Login'))
-const AuthCallback = lazy(() => import('./pages/AuthCallback'))
-const ResetPassword = lazy(() => import('./pages/ResetPassword'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const OwnerDetail = lazy(() => import('./pages/owners/OwnerDetail'))
-const DogDetail = lazy(() => import('./pages/dogs/DogDetail'))
-const ReservationsCalendar = lazy(() => import('./pages/reservations/ReservationsCalendar'))
-const ReservationDetail = lazy(() => import('./pages/reservations/ReservationDetail'))
-
-const RecordList = lazy(() => import('./pages/RecordList'))
-const RecordIncomplete = lazy(() => import('./pages/RecordIncomplete'))
-const RecordCreate = lazy(() => import('./pages/RecordCreate'))
-const RecordDetail = lazy(() => import('./pages/RecordDetail'))
-const Settings = lazy(() => import('./pages/Settings'))
-const OwnerCreate = lazy(() => import('./pages/owners/OwnerCreate'))
-const OwnerEdit = lazy(() => import('./pages/owners/OwnerEdit'))
-const DogCreate = lazy(() => import('./pages/dogs/DogCreate'))
-const DogEdit = lazy(() => import('./pages/dogs/DogEdit'))
-const ReservationCreate = lazy(() => import('./pages/reservations/ReservationCreate'))
-const GroomingReservationCreate = lazy(() => import('./pages/reservations/GroomingReservationCreate'))
-const HotelReservationCreate = lazy(() => import('./pages/reservations/HotelReservationCreate'))
-const Customers = lazy(() => import('./pages/Customers'))
-const ContractEdit = lazy(() => import('./pages/ContractEdit'))
-const StaffEdit = lazy(() => import('./pages/StaffEdit'))
-const CourseEdit = lazy(() => import('./pages/CourseEdit'))
-const TrainingEdit = lazy(() => import('./pages/training/TrainingEdit'))
-const GroomingMenuEdit = lazy(() => import('./pages/GroomingMenuEdit'))
-const Billing = lazy(() => import('./pages/Billing'))
-const Help = lazy(() => import('./pages/Help'))
-const InspectionRecordList = lazy(() => import('./pages/InspectionRecordList'))
-const AnnouncementList = lazy(() => import('./pages/AnnouncementList'))
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
-const Terms = lazy(() => import('./pages/Terms'))
-const DogTrainingProfile = lazy(() => import('./pages/dogs/DogTrainingProfile'))
-const TrialConvertPage = lazy(() => import('./pages/TrialConvertPage'))
-
-function PageLoader() {
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
-      <img src="/images/dog-running.webp" alt="" width={160} className="animate-bounce-x" />
-      <p className="text-sm text-muted-foreground">読み込み中...</p>
-    </div>
-  )
-}
-
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore(selectIsAuthenticated)
-  const isLoading = useAuthStore((s) => s.isLoading)
-
-  if (isLoading) {
-    return <PageLoader />
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />
-  }
-
-  return children
-}
-
-function OwnerRoute({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore(selectUser)
-  const isLoading = useAuthStore((s) => s.isLoading)
-
-  if (isLoading) {
-    return <PageLoader />
-  }
-
-  if (!user?.isOwner) {
-    return <Navigate to="/settings" replace />
-  }
-
-  return children
-}
+import { AppRouter } from './app/AppRouter'
 
 function App() {
   return (
@@ -95,64 +15,7 @@ function App() {
           errorRetryCount: 2,
         }}
       >
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <ErrorBoundary>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/auth/reset-password" element={<ResetPassword />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route
-                element={
-                  <PrivateRoute>
-                    <Layout />
-                  </PrivateRoute>
-                }
-              >
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/owners" element={<Navigate to="/customers" replace />} />
-                <Route path="/owners/new" element={<OwnerCreate />} />
-                <Route path="/owners/:id" element={<OwnerDetail />} />
-                <Route path="/owners/:id/edit" element={<OwnerEdit />} />
-                <Route path="/owners/:ownerId/dogs/new" element={<DogCreate />} />
-                <Route path="/dogs" element={<Navigate to="/customers" replace />} />
-                <Route path="/dogs/:id" element={<DogDetail />} />
-                <Route path="/dogs/:id/edit" element={<DogEdit />} />
-                <Route path="/dogs/:dogId/training" element={<DogTrainingProfile />} />
-                <Route path="/dogs/:dogId/contracts/new" element={<ContractEdit />} />
-                <Route path="/dogs/:dogId/contracts/:id" element={<ContractEdit />} />
-                <Route path="/settings/staff/:id" element={<OwnerRoute><StaffEdit /></OwnerRoute>} />
-                <Route path="/settings/courses/new" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
-                <Route path="/settings/courses/:id" element={<OwnerRoute><CourseEdit /></OwnerRoute>} />
-                <Route path="/settings/training/new" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
-                <Route path="/settings/training/:id" element={<OwnerRoute><TrainingEdit /></OwnerRoute>} />
-                <Route path="/settings/grooming-menu/new" element={<OwnerRoute><GroomingMenuEdit /></OwnerRoute>} />
-                <Route path="/settings/grooming-menu/:id" element={<OwnerRoute><GroomingMenuEdit /></OwnerRoute>} />
-                <Route path="/reservations" element={<ReservationsCalendar />} />
-                <Route path="/reservations/new" element={<ReservationCreate />} />
-                <Route path="/reservations/grooming/create" element={<GroomingReservationCreate />} />
-                <Route path="/reservations/hotel/create" element={<HotelReservationCreate />} />
-                <Route path="/reservations/:id" element={<ReservationDetail />} />
-                <Route path="/records" element={<RecordList />} />
-                <Route path="/records/incomplete" element={<RecordIncomplete />} />
-                <Route path="/records/new" element={<RecordCreate />} />
-                <Route path="/records/:id" element={<RecordDetail />} />
-                <Route path="/records/create/:reservationId" element={<RecordCreate />} />
-                <Route path="/inspection-records" element={<InspectionRecordList />} />
-                <Route path="/announcements" element={<AnnouncementList />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/settings/convert" element={<OwnerRoute><TrialConvertPage /></OwnerRoute>} />
-                <Route path="/billing" element={<OwnerRoute><Billing /></OwnerRoute>} />
-                <Route path="/help" element={<Help />} />
-              </Route>
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </BrowserRouter>
+        <AppRouter />
       </SWRConfig>
     </ToastProvider>
   )
