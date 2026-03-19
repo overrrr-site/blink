@@ -16,7 +16,7 @@ const generateStoreCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 6);
 const GUIDE_STEPS = [
   { step_number: 1, step_key: 'view_dashboard', title: 'ダッシュボードを確認', description: 'ダッシュボードを開くだけでOKです', action_url: '/dashboard' },
   { step_number: 2, step_key: 'register_customer', title: '飼い主を登録しよう', description: 'あなた自身の情報で飼い主と犬を1件登録します', action_url: '/owners/new' },
-  { step_number: 3, step_key: 'link_line_account', title: 'LINEアカウントを連携', description: 'Blink公式LINEを友だち追加し、店舗コードを送信して連携します', action_url: '' },
+  { step_number: 3, step_key: 'link_line_account', title: 'LINE通知を受け取る設定', description: 'デモ用LINE公式アカウントを友だち追加し、店舗コードを送信します', action_url: '' },
   { step_number: 4, step_key: 'create_reservation', title: '予約を作成しよう', description: '登録した犬の予約を作成します', action_url: '/reservations/new' },
   { step_number: 5, step_key: 'setup_training', title: 'トレーニング項目を設定', description: '犬のトレーニング評価項目をカスタマイズします', action_url: '/settings/training' },
   { step_number: 6, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書きます', action_url: '/records/new' },

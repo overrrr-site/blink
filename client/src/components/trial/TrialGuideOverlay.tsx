@@ -70,28 +70,34 @@ export function TrialGuideOverlay() {
 
         {/* Panel */}
         <div className="bg-card border-t lg:border-l border-border shadow-lg lg:shadow-none lg:h-full overflow-y-auto">
-          <div className="p-3 space-y-3 max-h-[50vh] lg:max-h-none overflow-y-auto">
+          <div className="p-4 space-y-4 max-h-[60vh] lg:max-h-none overflow-y-auto">
             {/* Header */}
-            <div className="space-y-1.5">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <Icon icon="solar:paw-bold" className="size-4 text-primary" />
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Icon icon="solar:paw-bold" className="size-5 text-primary" />
                 Blinkを体験しよう
               </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                操作すると自動でステップが進みます
+              </p>
 
               {/* Progress bar */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>進捗</span>
+                  <span>{completedCount}/{totalSteps}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full transition-all duration-500"
                     style={{ width: `${(completedCount / totalSteps) * 100}%` }}
                   />
                 </div>
-                <span className="text-[11px] text-muted-foreground font-medium tabular-nums">{completedCount}/{totalSteps}</span>
               </div>
             </div>
 
             {/* Steps */}
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {steps.map(step => (
                 <TrialStepCard
                   key={step.step_key}

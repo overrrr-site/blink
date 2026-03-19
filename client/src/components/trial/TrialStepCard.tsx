@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from '../Icon'
 import { useTrialStore } from '../../store/trialStore'
 import { useToast } from '../Toast'
+import lineDemoQr from '../../assets/line-demo-qr.png'
 
 interface GuideStep {
   step_number: number
@@ -71,7 +72,7 @@ export function TrialStepCard({ step }: TrialStepCardProps) {
   )
 }
 
-/** LINE連携 - 店舗コード表示 + 友だち追加手順 */
+/** LINE通知設定 - QRコード + 店舗コード表示 */
 function LinkLineAccountStep({ step }: { step: GuideStep }) {
   const { trialStoreCode } = useTrialStore()
   const { showToast } = useToast()
@@ -97,10 +98,20 @@ function LinkLineAccountStep({ step }: { step: GuideStep }) {
         <span className="text-xs font-bold text-foreground">{step.title}</span>
       </div>
 
-      <div className="pl-7 space-y-2">
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-          <span><b className="text-primary">①</b> 公式LINEを友だち追加</span>
-          <span><b className="text-primary">②</b> 店舗コードを送信</span>
+      <div className="pl-7 space-y-2.5">
+        {/* 手順 */}
+        <div className="space-y-1.5 text-[11px] text-muted-foreground">
+          <p><b className="text-primary">①</b> 下のQRからデモ用LINE公式アカウントを友だち追加</p>
+          <p><b className="text-primary">②</b> トーク画面で店舗コードを送信</p>
+        </div>
+
+        {/* QRコード */}
+        <div className="flex justify-center">
+          <img
+            src={lineDemoQr}
+            alt="デモ用LINE公式アカウントのQRコード"
+            className="w-28 h-28 rounded-lg border border-border"
+          />
         </div>
 
         {/* 店舗コード表示（コピー可能） */}
@@ -113,13 +124,16 @@ function LinkLineAccountStep({ step }: { step: GuideStep }) {
             {copied ? (
               <Icon icon="solar:check-circle-bold" className="size-4 text-green-500" />
             ) : (
-              <Icon icon="solar:copy-linear" className="size-4" />
+              <>
+                <Icon icon="solar:copy-linear" className="size-4" />
+                <span>コピー</span>
+              </>
             )}
           </span>
         </button>
 
         <p className="text-[10px] text-muted-foreground">
-          LINEで送信すると自動で完了します
+          LINEで店舗コードを送信すると自動で完了します
         </p>
       </div>
     </div>
