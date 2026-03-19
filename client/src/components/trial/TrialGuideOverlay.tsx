@@ -70,7 +70,7 @@ export function TrialGuideOverlay() {
 
         {/* Panel */}
         <div className="bg-card border-t lg:border-l border-border shadow-lg lg:shadow-none lg:h-full overflow-y-auto">
-          <div className="p-4 space-y-4 max-h-[60vh] lg:max-h-none overflow-y-auto">
+          <div className="p-5 space-y-5 max-h-[60vh] lg:max-h-none overflow-y-auto">
             {/* Header */}
             <div className="space-y-2">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -97,7 +97,7 @@ export function TrialGuideOverlay() {
             </div>
 
             {/* Steps */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {steps.map(step => (
                 <TrialStepCard
                   key={step.step_key}

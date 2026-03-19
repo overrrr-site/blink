@@ -255,22 +255,22 @@ function Dashboard(): JSX.Element {
       {/* トライアル: コーチマーク（ステップ2: 飼い主登録） */}
       <TrialCoachMark
         stepKey="register_customer"
-        target='[data-trial-target="register-customer"]'
-        message="ここから飼い主を登録しましょう"
+        target='[data-guide="nav-customers"]'
+        message="「顧客」から飼い主を登録しましょう"
       />
 
       {/* トライアル: コーチマーク（ステップ4: 予約作成） */}
       <TrialCoachMark
         stepKey="create_reservation"
-        target='[data-trial-target="create-reservation"]'
-        message="ここから予約を追加しましょう"
+        target='[data-guide="nav-reservations"]'
+        message="「予定」から予約を追加しましょう"
       />
 
       {/* トライアル: コーチマーク（ステップ5: トレーニング設定） */}
       <TrialCoachMark
         stepKey="setup_training"
         target='[data-guide="nav-settings"]'
-        message="設定からトレーニング項目をカスタマイズしましょう"
+        message="「設定」からトレーニング項目をカスタマイズしましょう"
       />
 
       {/* トライアル: コーチマーク（ステップ6: 連絡帳作成） */}

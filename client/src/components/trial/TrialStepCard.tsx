@@ -23,7 +23,7 @@ export function TrialStepCard({ step }: TrialStepCardProps) {
   // Completed state
   if (step.completed) {
     return (
-      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg opacity-50">
+      <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg opacity-50">
         <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -37,7 +37,7 @@ export function TrialStepCard({ step }: TrialStepCardProps) {
   // Locked state
   if (!step.unlocked) {
     return (
-      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg opacity-30">
+      <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg opacity-30">
         <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
           <Icon icon="solar:lock-bold" className="size-3 text-muted-foreground" />
         </div>
