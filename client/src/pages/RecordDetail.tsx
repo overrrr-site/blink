@@ -14,7 +14,7 @@ import PhotosForm from './records/components/PhotosForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
 import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
-import TrialCoachMark from '../components/trial/TrialCoachMark'
+
 import AISettingsScreen from './records/components/AISettingsScreen'
 import RecordTypeSection from './records/components/RecordTypeSection'
 import RecordReportComposer from './records/components/RecordReportComposer'
@@ -304,17 +304,6 @@ const RecordDetail = () => {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <TrialCoachMark
-        stepKey="send_line_notification"
-        target='[data-trial-step="send_line_notification"]'
-        message="ここを押すとあなたのLINEに届きます"
-        position="top"
-      />
-      <TrialCoachMark
-        stepKey="write_internal_notes"
-        target='[data-trial-target="internal-notes"]'
-        message="スタッフ間の内部メモを入力しましょう（飼い主には非公開）"
-      />
       <RecordHeader
         petName={record.dog_name}
         recordType={record.record_type}
