@@ -28,6 +28,9 @@ import StaffWelcome from '../components/onboarding/StaffWelcome'
 import SetupWizard from '../components/onboarding/SetupWizard'
 import SetupProgress from '../components/onboarding/SetupProgress'
 import CoachMark from '../components/onboarding/CoachMark'
+import TrialIntroModal from '../components/trial/TrialIntroModal'
+import TrialCoachMark from '../components/trial/TrialCoachMark'
+import { useTrialStore } from '../store/trialStore'
 
 function Dashboard(): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -36,6 +39,8 @@ function Dashboard(): JSX.Element {
   const [alertsModalOpen, setAlertsModalOpen] = useState(false)
   const [showStaffWelcome, setShowStaffWelcome] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
+  const [showTrialIntro, setShowTrialIntro] = useState(false)
+  const { isTrial } = useTrialStore()
 
   // トライアルガイド: ダッシュボード表示で Step 1 自動完了
   useTrialStepCompletion('view_dashboard', true)
@@ -202,7 +207,11 @@ function Dashboard(): JSX.Element {
         <WelcomeModal
           onSelectAdmin={async () => {
             await updateOnboarding({ role: 'admin' })
-            setShowSetupWizard(true)
+            if (isTrial) {
+              setShowTrialIntro(true)
+            } else {
+              setShowSetupWizard(true)
+            }
           }}
           onSelectStaff={async () => {
             await updateOnboarding({ role: 'staff' })
@@ -214,18 +223,26 @@ function Dashboard(): JSX.Element {
         />
       )}
 
+      {/* トライアル: デモモード説明ポップアップ */}
+      {showTrialIntro && (
+        <TrialIntroModal
+          onStart={() => setShowTrialIntro(false)}
+          onSkip={() => setShowTrialIntro(false)}
+        />
+      )}
+
       {/* オンボーディング: スタッフ向けウェルカム */}
       {showStaffWelcome && (
         <StaffWelcome onStart={() => setShowStaffWelcome(false)} />
       )}
 
-      {/* オンボーディング: セットアップウィザード */}
-      {showSetupWizard && (
+      {/* オンボーディング: セットアップウィザード（トライアル中は非表示） */}
+      {showSetupWizard && !isTrial && (
         <SetupWizard onClose={() => setShowSetupWizard(false)} />
       )}
 
-      {/* オンボーディング: 未完了セットアップバナー */}
-      {showSetupBanner && onboarding && (
+      {/* オンボーディング: 未完了セットアップバナー（トライアル中は非表示） */}
+      {showSetupBanner && !isTrial && onboarding && (
         <div className="px-5 pt-2">
           <SetupProgress
             lineStatus={onboarding.setup.line}
@@ -234,6 +251,20 @@ function Dashboard(): JSX.Element {
           />
         </div>
       )}
+
+      {/* トライアル: コーチマーク（ステップ2: 飼い主登録） */}
+      <TrialCoachMark
+        stepKey="register_customer"
+        target='[data-trial-step="register_customer"]'
+        message="ここから自分を飼い主として登録しましょう"
+      />
+
+      {/* トライアル: コーチマーク（ステップ4: 予約作成） */}
+      <TrialCoachMark
+        stepKey="create_reservation"
+        target='[data-trial-step="create_reservation"]'
+        message="登録した犬の予約を入れてみましょう"
+      />
 
       <div className="lg:flex lg:gap-8">
         <div className="lg:flex-1 lg:min-w-0">

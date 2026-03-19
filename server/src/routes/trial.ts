@@ -14,11 +14,13 @@ const generateStoreCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 6);
 
 // ガイドステップ定義
 const GUIDE_STEPS = [
-  { step_number: 1, step_key: 'view_dashboard', title: 'ダッシュボードを見てみよう', description: 'まずはBlinkの全体像を確認しましょう', action_url: '/dashboard' },
-  { step_number: 2, step_key: 'register_customer', title: '犬と飼い主を登録しよう', description: 'あなた自身を飼い主として登録してみましょう。愛犬の情報も入力します', action_url: '/owners/new' },
-  { step_number: 3, step_key: 'create_reservation', title: '予約を入れてみよう', description: '登録した犬の予約を入れてみましょう', action_url: '/reservations/new' },
-  { step_number: 4, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書いてみましょう。飼い主さんに届きます', action_url: '/records/new' },
-  { step_number: 5, step_key: 'send_line_notification', title: 'LINEで通知を送ってみよう', description: '連絡帳を書いて「共有」すると、飼い主のLINEに届きます', action_url: '/records' },
+  { step_number: 1, step_key: 'view_dashboard', title: 'ダッシュボードを確認', description: 'ダッシュボードを開くだけでOKです', action_url: '/dashboard' },
+  { step_number: 2, step_key: 'register_customer', title: '自分を飼い主として登録', description: 'あなた自身の情報で飼い主と犬を1件登録します', action_url: '/owners/new' },
+  { step_number: 3, step_key: 'link_line_account', title: 'LINEアカウントを連携', description: 'Blink公式LINEを友だち追加し、店舗コードを送信して連携します', action_url: '' },
+  { step_number: 4, step_key: 'create_reservation', title: '予約を入れてみよう', description: '登録した犬の予約を作成します', action_url: '/reservations/new' },
+  { step_number: 5, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書きます', action_url: '/records/new' },
+  { step_number: 6, step_key: 'send_line_notification', title: 'LINEで通知を送ってみよう', description: '連絡帳を共有すると、あなたのLINEに届きます', action_url: '/records' },
+  { step_number: 7, step_key: 'check_liff_app', title: 'ユーザー側の画面を確認', description: 'LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認します', action_url: '' },
 ];
 
 // -------------------------
@@ -185,7 +187,7 @@ router.get('/guide', authenticate, async (req: AuthRequest, res) => {
     const store = storeResult.rows[0];
 
     // ガイド進捗取得
-    const stepsResult = await pool.query(
+    let stepsResult = await pool.query(
       `SELECT * FROM trial_guide_progress WHERE store_id = $1 ORDER BY step_number`,
       [req.storeId]
     );
@@ -196,6 +198,33 @@ router.get('/guide', authenticate, async (req: AuthRequest, res) => {
       const expiresAt = new Date(store.trial_expires_at);
       const now = new Date();
       daysRemaining = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    }
+
+    // link_line_account ステップの自動完了チェック
+    const linkStep = stepsResult.rows.find((row: { step_key: string; completed_at?: string; unlocked_at?: string }) =>
+      row.step_key === 'link_line_account'
+    );
+    if (linkStep && linkStep.unlocked_at && !linkStep.completed_at) {
+      const linkCheck = await pool.query(
+        'SELECT id FROM trial_line_links WHERE store_id = $1 LIMIT 1',
+        [req.storeId]
+      );
+      if (linkCheck.rows.length > 0) {
+        // 自動完了 + 次ステップアンロック
+        await pool.query(
+          `UPDATE trial_guide_progress SET completed_at = NOW() WHERE store_id = $1 AND step_key = 'link_line_account'`,
+          [req.storeId]
+        );
+        await pool.query(
+          `UPDATE trial_guide_progress SET unlocked_at = NOW() WHERE store_id = $1 AND step_key = 'create_reservation' AND unlocked_at IS NULL`,
+          [req.storeId]
+        );
+        // 更新後のデータを再取得
+        stepsResult = await pool.query(
+          `SELECT * FROM trial_guide_progress WHERE store_id = $1 ORDER BY step_number`,
+          [req.storeId]
+        );
+      }
     }
 
     // ステップ定義とDB進捗をマージ

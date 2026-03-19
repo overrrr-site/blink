@@ -1,6 +1,7 @@
 import useSWR from 'swr'
 import api from '../api/client'
 import { fetcher } from '../lib/swr'
+import { useTrialStore } from '../store/trialStore'
 
 export type StaffRole = 'admin' | 'staff'
 export type SetupStatus = 'not_started' | 'in_progress' | 'completed' | 'skipped'
@@ -19,6 +20,7 @@ export interface OnboardingState {
 const ONBOARDING_KEY = '/staff/me/onboarding'
 
 export function useOnboardingState() {
+  const { isTrial } = useTrialStore()
   const { data, error, isLoading, mutate } = useSWR<OnboardingState>(
     ONBOARDING_KEY,
     fetcher,
@@ -46,7 +48,7 @@ export function useOnboardingState() {
     (data.setup.line !== 'completed' || data.setup.google_calendar !== 'completed')
 
   const showWelcome = data ? data.role === null && !data.dismissed : false
-  const showSetupBanner = data ? isSetupIncomplete && !data.dismissed : false
+  const showSetupBanner = data ? isSetupIncomplete && !data.dismissed && !isTrial : false
 
   return {
     onboarding: data,

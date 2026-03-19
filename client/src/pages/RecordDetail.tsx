@@ -14,6 +14,7 @@ import PhotosForm from './records/components/PhotosForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
 import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
+import TrialCoachMark from '../components/trial/TrialCoachMark'
 import AISettingsScreen from './records/components/AISettingsScreen'
 import RecordTypeSection from './records/components/RecordTypeSection'
 import RecordReportComposer from './records/components/RecordReportComposer'
@@ -37,7 +38,7 @@ const RecordDetail = () => {
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
   const [lineNotificationSent, setLineNotificationSent] = useState(false)
 
-  // トライアルガイド: 連絡帳を飼い主に送信（=LINE通知）で Step 5 自動完了
+  // トライアルガイド: 連絡帳を飼い主に送信（=LINE通知）で Step 6 自動完了
   useTrialStepCompletion('send_line_notification', lineNotificationSent)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
   const recordLabel = getRecordLabel(primaryBusinessType)
@@ -297,6 +298,12 @@ const RecordDetail = () => {
 
   return (
     <div className="min-h-screen bg-background pb-32">
+      <TrialCoachMark
+        stepKey="send_line_notification"
+        target='[data-trial-step="send_line_notification"]'
+        message="ここを押すとあなたのLINEに届きます"
+        position="top"
+      />
       <RecordHeader
         petName={record.dog_name}
         recordType={record.record_type}

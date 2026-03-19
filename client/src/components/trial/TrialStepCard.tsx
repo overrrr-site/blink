@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Icon } from '../Icon'
+import { useTrialStore } from '../../store/trialStore'
+import { useToast } from '../Toast'
 
 interface GuideStep {
   step_number: number
@@ -37,16 +41,65 @@ export function TrialStepCard({ step }: TrialStepCardProps) {
     return (
       <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-40">
         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-          <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
+          <Icon icon="solar:lock-bold" className="size-3.5 text-muted-foreground" />
         </div>
         <span className="text-sm text-muted-foreground">{step.title}</span>
       </div>
     )
   }
 
-  // Active (current) state
+  // Active (current) state - special UI for certain steps
+  if (step.step_key === 'link_line_account') {
+    return <LinkLineAccountStep step={step} />
+  }
+
+  if (step.step_key === 'check_liff_app') {
+    return <CheckLiffAppStep step={step} />
+  }
+
+  // Active (current) state - default
+  return (
+    <div
+      className="border-2 border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3"
+      data-trial-step={step.step_key}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span className="text-xs font-bold text-white">{step.step_number}</span>
+        </div>
+        <span className="text-sm font-bold text-foreground">{step.title}</span>
+      </div>
+      <p className="text-xs text-muted-foreground pl-9">{step.description}</p>
+      {step.action_url && (
+        <button
+          onClick={() => navigate(step.action_url)}
+          className="ml-9 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[36px]"
+        >
+          {step.title.replace(/しよう$|してみよう$/, 'する')}
+          <Icon icon="solar:arrow-right-linear" className="size-3.5 ml-1 inline-block" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** Step3: LINE連携 - 店舗コード表示 + 友だち追加手順 */
+function LinkLineAccountStep({ step }: { step: GuideStep }) {
+  const { trialStoreCode } = useTrialStore()
+  const { showToast } = useToast()
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(trialStoreCode)
+      setCopied(true)
+      showToast('店舗コードをコピーしました', 'success')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      showToast('コピーに失敗しました', 'error')
+    }
+  }
+
   return (
     <div className="border-2 border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-3">
@@ -55,13 +108,91 @@ export function TrialStepCard({ step }: TrialStepCardProps) {
         </div>
         <span className="text-sm font-bold text-foreground">{step.title}</span>
       </div>
-      <p className="text-xs text-muted-foreground pl-9">{step.description}</p>
-      <button
-        onClick={() => navigate(step.action_url)}
-        className="ml-9 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[36px]"
-      >
-        {step.title.replace(/しよう$|してみよう$/, 'する')} →
-      </button>
+
+      <div className="pl-9 space-y-3">
+        <p className="text-xs text-muted-foreground">{step.description}</p>
+
+        {/* 手順 */}
+        <div className="space-y-2">
+          <div className="flex items-start gap-2">
+            <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <span className="text-xs text-foreground">Blink公式LINEを友だち追加</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <span className="text-xs text-foreground">以下の店舗コードをLINEに送信</span>
+          </div>
+        </div>
+
+        {/* 店舗コード表示（コピー可能） */}
+        <button
+          onClick={handleCopy}
+          className="w-full flex items-center justify-between gap-2 bg-card border border-border rounded-lg px-3 py-2.5 hover:bg-muted transition-colors group"
+        >
+          <code className="text-sm font-bold text-foreground tracking-wider">{trialStoreCode}</code>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+            {copied ? (
+              <>
+                <Icon icon="solar:check-circle-bold" className="size-4 text-green-500" />
+                <span className="text-green-600">コピー済み</span>
+              </>
+            ) : (
+              <>
+                <Icon icon="solar:copy-linear" className="size-4" />
+                <span>コピー</span>
+              </>
+            )}
+          </span>
+        </button>
+
+        <p className="text-[10px] text-muted-foreground">
+          <Icon icon="solar:info-circle-linear" className="size-3 inline-block mr-0.5 -mt-0.5" />
+          LINEで店舗コードを送信すると、自動でこのステップが完了します
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** Step7: LIFF確認 - LINEのBlink画面を開く + 手動完了 */
+function CheckLiffAppStep({ step }: { step: GuideStep }) {
+  const { completeStep } = useTrialStore()
+  const [completing, setCompleting] = useState(false)
+
+  async function handleComplete() {
+    setCompleting(true)
+    await completeStep('check_liff_app')
+    setCompleting(false)
+  }
+
+  return (
+    <div className="border-2 border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span className="text-xs font-bold text-white">{step.step_number}</span>
+        </div>
+        <span className="text-sm font-bold text-foreground">{step.title}</span>
+      </div>
+
+      <div className="pl-9 space-y-3">
+        <p className="text-xs text-muted-foreground">{step.description}</p>
+
+        <div className="space-y-2">
+          <p className="text-xs text-foreground">
+            <Icon icon="mdi:line" className="size-4 inline-block mr-1 -mt-0.5 text-[#06C755]" />
+            LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認してみましょう。
+          </p>
+        </div>
+
+        <button
+          onClick={handleComplete}
+          disabled={completing}
+          className="w-full px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[36px] disabled:opacity-50"
+        >
+          {completing ? '処理中...' : '確認しました'}
+          {!completing && <Icon icon="solar:check-circle-bold" className="size-3.5 ml-1 inline-block" />}
+        </button>
+      </div>
     </div>
   )
 }

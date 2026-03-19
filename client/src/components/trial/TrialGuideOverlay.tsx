@@ -1,14 +1,18 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { Icon } from '../Icon'
 import { useTrialStore } from '../../store/trialStore'
 import { TrialStepCard } from './TrialStepCard'
 import { TrialStepCelebration } from './TrialStepCelebration'
 import { TrialAllCompleteCelebration } from './TrialAllCompleteCelebration'
+
+const POLL_INTERVAL = 10_000 // 10秒
 
 export function TrialGuideOverlay() {
   const {
     isTrial,
     guideCompleted,
     steps,
+    currentStep,
     showCelebration,
     showAllCompleteCelebration,
     celebrationStepKey,
@@ -16,10 +20,26 @@ export function TrialGuideOverlay() {
     dismissCelebration,
     dismissAllCompleteCelebration,
   } = useTrialStore()
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     fetchGuide()
   }, [fetchGuide])
+
+  // link_line_account ステップ中はポーリングで自動完了を検知
+  useEffect(() => {
+    if (currentStep?.step_key === 'link_line_account') {
+      intervalRef.current = setInterval(() => {
+        fetchGuide()
+      }, POLL_INTERVAL)
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [currentStep?.step_key, fetchGuide])
 
   // Not in trial or guide completed - don't show
   if (!isTrial || guideCompleted) return null
@@ -54,8 +74,12 @@ export function TrialGuideOverlay() {
             {/* Header */}
             <div className="space-y-2">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <span>🐕</span> Blinkを体験しよう
+                <Icon icon="solar:paw-bold" className="size-5 text-primary" />
+                Blinkを体験しよう
               </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                操作すると自動でステップが進みます
+              </p>
 
               {/* Progress bar */}
               <div className="space-y-1">

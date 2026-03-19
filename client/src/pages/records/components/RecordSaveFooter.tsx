@@ -40,6 +40,7 @@ export default function RecordSaveFooter({
         <button
           onClick={onShare}
           disabled={saving || shareDisabled}
+          data-trial-step="send_line_notification"
           className={`flex-1 ${BTN_PRIMARY}`}
           style={{
             background: isShared
