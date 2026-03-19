@@ -232,18 +232,17 @@ router.get('/guide', authenticate, async (req: AuthRequest, res) => {
       const dbStep = stepsResult.rows.find((row: { step_key: string; unlocked_at?: string; completed_at?: string }) => row.step_key === def.step_key);
       return {
         ...def,
-        unlocked_at: dbStep?.unlocked_at || null,
+        unlocked: !!dbStep?.unlocked_at,
+        completed: !!dbStep?.completed_at,
         completed_at: dbStep?.completed_at || null,
-        is_unlocked: !!dbStep?.unlocked_at,
-        is_completed: !!dbStep?.completed_at,
       };
     });
 
     // 全ステップ完了チェック
-    const guideCompleted = steps.every((s) => s.is_completed);
+    const guideCompleted = steps.every((s) => s.completed);
 
     // 現在のステップ（最初のアンロック済み＆未完了）
-    const currentStep = steps.find((s) => s.is_unlocked && !s.is_completed) || null;
+    const currentStep = steps.find((s) => s.unlocked && !s.completed) || null;
 
     res.json({
       success: true,
