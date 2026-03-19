@@ -10,6 +10,7 @@ import BusinessTypeSwitcher from './BusinessTypeSwitcher'
 import { TrialBanner } from './trial/TrialBanner'
 import { TrialGuideOverlay } from './trial/TrialGuideOverlay'
 import { TrialExpiredOverlay } from './trial/TrialExpiredOverlay'
+import TrialCoachMark from './trial/TrialCoachMark'
 import { useTrialStore } from '../store/trialStore'
 import logoImage from '../assets/logo.png'
 
@@ -220,6 +221,13 @@ function Layout(): JSX.Element {
       </main>
 
       <TrialGuideOverlay />
+
+      {/* トライアル: ナビ誘導コーチマーク（全ページ共通） */}
+      <TrialCoachMark stepKey="register_customer" target='[data-guide="nav-customers"]' message="「顧客」から飼い主を登録しましょう" />
+      <TrialCoachMark stepKey="create_reservation" target='[data-guide="nav-reservations"]' message="「予定」から予約を追加しましょう" />
+      <TrialCoachMark stepKey="setup_training" target='[data-guide="nav-settings"]' message="「設定」からトレーニング項目を設定しましょう" />
+      <TrialCoachMark stepKey="write_record" target='[data-trial-target="write-record"]' message="連絡帳を作成しましょう" />
+
       {isTrial && daysRemaining <= 0 && <TrialExpiredOverlay />}
 
       {fabOpen && (

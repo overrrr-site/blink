@@ -29,7 +29,7 @@ import SetupWizard from '../components/onboarding/SetupWizard'
 import SetupProgress from '../components/onboarding/SetupProgress'
 import CoachMark from '../components/onboarding/CoachMark'
 import TrialIntroModal from '../components/trial/TrialIntroModal'
-import TrialCoachMark from '../components/trial/TrialCoachMark'
+
 import { useTrialStore } from '../store/trialStore'
 
 function Dashboard(): JSX.Element {
@@ -251,34 +251,6 @@ function Dashboard(): JSX.Element {
           />
         </div>
       )}
-
-      {/* トライアル: コーチマーク（ステップ2: 飼い主登録） */}
-      <TrialCoachMark
-        stepKey="register_customer"
-        target='[data-guide="nav-customers"]'
-        message="「顧客」から飼い主を登録しましょう"
-      />
-
-      {/* トライアル: コーチマーク（ステップ4: 予約作成） */}
-      <TrialCoachMark
-        stepKey="create_reservation"
-        target='[data-guide="nav-reservations"]'
-        message="「予定」から予約を追加しましょう"
-      />
-
-      {/* トライアル: コーチマーク（ステップ5: トレーニング設定） */}
-      <TrialCoachMark
-        stepKey="setup_training"
-        target='[data-guide="nav-settings"]'
-        message="「設定」からトレーニング項目をカスタマイズしましょう"
-      />
-
-      {/* トライアル: コーチマーク（ステップ6: 連絡帳作成） */}
-      <TrialCoachMark
-        stepKey="write_record"
-        target='[data-trial-target="write-record"]'
-        message="連絡帳を作成して今日の様子を記録しましょう"
-      />
 
       <div className="lg:flex lg:gap-8">
         <div className="lg:flex-1 lg:min-w-0">
