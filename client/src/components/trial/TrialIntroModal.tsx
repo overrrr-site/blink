@@ -54,7 +54,7 @@ export default function TrialIntroModal({ onStart, onSkip }: TrialIntroModalProp
             text="連絡帳を作成・共有"
           />
           <FeatureItem
-            icon="mdi:line"
+            icon="simple-icons:line"
             text="LINEでの通知受信を確認"
           />
         </div>

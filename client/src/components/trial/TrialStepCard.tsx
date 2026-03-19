@@ -179,7 +179,7 @@ function CheckLiffAppStep({ step }: { step: GuideStep }) {
 
         <div className="space-y-2">
           <p className="text-xs text-foreground">
-            <Icon icon="mdi:line" className="size-4 inline-block mr-1 -mt-0.5 text-[#06C755]" />
+            <Icon icon="simple-icons:line" className="size-4 inline-block mr-1 -mt-0.5 text-[#06C755]" />
             LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認してみましょう。
           </p>
         </div>
