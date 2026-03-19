@@ -192,6 +192,45 @@ router.get('/guide', authenticate, async (req: AuthRequest, res) => {
       [req.storeId]
     );
 
+    // ガイド進捗が存在しない場合は自動初期化（トライアルアカウントの復旧用）
+    if (stepsResult.rows.length === 0 && store.is_trial) {
+      for (const step of GUIDE_STEPS) {
+        await pool.query(
+          `INSERT INTO trial_guide_progress (store_id, step_number, step_key, unlocked_at)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT DO NOTHING`,
+          [req.storeId, step.step_number, step.step_key, step.step_number === 1 ? new Date() : null]
+        );
+      }
+      stepsResult = await pool.query(
+        `SELECT * FROM trial_guide_progress WHERE store_id = $1 ORDER BY step_number`,
+        [req.storeId]
+      );
+    }
+
+    // Step 1 が unlocked でなければ自動修復（初期化不備の安全策）
+    const step1Row = stepsResult.rows.find((row: { step_key: string }) => row.step_key === 'view_dashboard');
+    if (step1Row && !step1Row.unlocked_at) {
+      await pool.query(
+        `UPDATE trial_guide_progress SET unlocked_at = NOW() WHERE store_id = $1 AND step_key = 'view_dashboard'`,
+        [req.storeId]
+      );
+      stepsResult = await pool.query(
+        `SELECT * FROM trial_guide_progress WHERE store_id = $1 ORDER BY step_number`,
+        [req.storeId]
+      );
+    }
+
+    // trial_store_code が未設定の場合は自動生成
+    if (store.is_trial && !store.trial_store_code) {
+      const trialStoreCode = `STORE-${generateStoreCode()}`;
+      await pool.query(
+        `UPDATE stores SET trial_store_code = $1 WHERE id = $2`,
+        [trialStoreCode, req.storeId]
+      );
+      store.trial_store_code = trialStoreCode;
+    }
+
     // 残り日数を計算
     let daysRemaining = 0;
     if (store.trial_expires_at) {
