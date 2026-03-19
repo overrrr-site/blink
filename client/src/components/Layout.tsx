@@ -130,6 +130,9 @@ function Layout(): JSX.Element {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans">
+      {/* モード識別トップバー（管理側: オレンジ） */}
+      <div className="h-[3px] bg-primary w-full shrink-0" />
+
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-xl focus:text-sm focus:font-bold"
@@ -139,6 +142,7 @@ function Layout(): JSX.Element {
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64 lg:flex-col lg:border-r lg:border-border lg:bg-background">
+        <div className="h-[3px] bg-primary w-full shrink-0" />
         <div className="px-5 pt-6 pb-4">
           <img src={logoImage} alt="Blink" className="h-8" />
         </div>

@@ -38,6 +38,9 @@ export default function Layout() {
         background: `linear-gradient(180deg, ${activeColors.pale} 0%, #FAFAF9 210px)`,
       }}
     >
+      {/* モード識別トップバー（LIFF側: ティールグリーン） */}
+      <div className="h-[3px] w-full shrink-0" style={{ backgroundColor: '#0D9488' }} />
+
       {/* ヘッダー */}
       <header
         className="px-5 pt-4 pb-4 sticky top-0 z-20 flex items-center justify-between border-b safe-area-pt backdrop-blur-md"
@@ -122,9 +125,9 @@ export default function Layout() {
       </main>
 
       {/* ボトムナビゲーション */}
-      <nav 
-        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t px-2 py-1 z-30 safe-area-pb"
-        style={{ borderTopColor: `${activeColors.primary}20` }}
+      <nav
+        className="fixed bottom-0 left-0 right-0 backdrop-blur-md border-t px-2 py-1 z-30 safe-area-pb"
+        style={{ borderTopColor: '#0D948820', backgroundColor: 'rgba(13, 148, 136, 0.05)' }}
         role="navigation"
         aria-label="メインナビゲーション"
       >
