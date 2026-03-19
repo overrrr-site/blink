@@ -130,6 +130,14 @@ async function handleStoreCodeInput(lineUserId: string, storeCode: string, reply
       [store.id, lineUserId, ownerId]
     );
 
+    // 飼い主のline_idも更新（飼い主詳細ページで「LINE連携済」と表示されるようにする）
+    if (ownerId) {
+      await pool.query(
+        `UPDATE owners SET line_id = $1 WHERE id = $2 AND (line_id IS NULL OR line_id = '')`,
+        [lineUserId, ownerId]
+      );
+    }
+
     await sendTrialReply(replyToken, `${store.name}に接続しました！管理画面から通知テストを送ってみてください。`);
   } catch (error) {
     console.error('Store code handling error:', error);
