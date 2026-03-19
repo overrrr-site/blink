@@ -15,12 +15,14 @@ const generateStoreCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 6);
 // ガイドステップ定義
 const GUIDE_STEPS = [
   { step_number: 1, step_key: 'view_dashboard', title: 'ダッシュボードを確認', description: 'ダッシュボードを開くだけでOKです', action_url: '/dashboard' },
-  { step_number: 2, step_key: 'register_customer', title: '自分を飼い主として登録', description: 'あなた自身の情報で飼い主と犬を1件登録します', action_url: '/owners/new' },
+  { step_number: 2, step_key: 'register_customer', title: '飼い主を登録しよう', description: 'あなた自身の情報で飼い主と犬を1件登録します', action_url: '/owners/new' },
   { step_number: 3, step_key: 'link_line_account', title: 'LINEアカウントを連携', description: 'Blink公式LINEを友だち追加し、店舗コードを送信して連携します', action_url: '' },
-  { step_number: 4, step_key: 'create_reservation', title: '予約を入れてみよう', description: '登録した犬の予約を作成します', action_url: '/reservations/new' },
-  { step_number: 5, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書きます', action_url: '/records/new' },
-  { step_number: 6, step_key: 'send_line_notification', title: 'LINEで通知を送ってみよう', description: '連絡帳を共有すると、あなたのLINEに届きます', action_url: '/records' },
-  { step_number: 7, step_key: 'check_liff_app', title: 'ユーザー側の画面を確認', description: 'LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認します', action_url: '' },
+  { step_number: 4, step_key: 'create_reservation', title: '予約を作成しよう', description: '登録した犬の予約を作成します', action_url: '/reservations/new' },
+  { step_number: 5, step_key: 'setup_training', title: 'トレーニング項目を設定', description: '犬のトレーニング評価項目をカスタマイズします', action_url: '/settings/training' },
+  { step_number: 6, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書きます', action_url: '/records/new' },
+  { step_number: 7, step_key: 'write_internal_notes', title: '内部メモを記入しよう', description: 'スタッフ間の申し送りメモを記入します（飼い主には非公開）', action_url: '/records' },
+  { step_number: 8, step_key: 'send_line_notification', title: 'LINEで通知を送ってみよう', description: '連絡帳を共有すると、あなたのLINEに届きます', action_url: '/records' },
+  { step_number: 9, step_key: 'check_liff_app', title: 'ユーザー側の画面を確認', description: 'LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認します', action_url: '' },
 ];
 
 // -------------------------
@@ -215,6 +217,25 @@ router.get('/guide', authenticate, async (req: AuthRequest, res) => {
         `UPDATE trial_guide_progress SET unlocked_at = NOW() WHERE store_id = $1 AND step_key = 'view_dashboard'`,
         [req.storeId]
       );
+      stepsResult = await pool.query(
+        `SELECT * FROM trial_guide_progress WHERE store_id = $1 ORDER BY step_number`,
+        [req.storeId]
+      );
+    }
+
+    // 不足ステップの自動補完（ステップ追加時の既存アカウント対応）
+    if (stepsResult.rows.length < GUIDE_STEPS.length && store.is_trial) {
+      const existingKeys = new Set(stepsResult.rows.map((r: { step_key: string }) => r.step_key));
+      for (const step of GUIDE_STEPS) {
+        if (!existingKeys.has(step.step_key)) {
+          await pool.query(
+            `INSERT INTO trial_guide_progress (store_id, step_number, step_key)
+             VALUES ($1, $2, $3)
+             ON CONFLICT DO NOTHING`,
+            [req.storeId, step.step_number, step.step_key]
+          );
+        }
+      }
       stepsResult = await pool.query(
         `SELECT * FROM trial_guide_progress WHERE store_id = $1 ORDER BY step_number`,
         [req.storeId]

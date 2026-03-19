@@ -179,6 +179,7 @@ function Layout(): JSX.Element {
             <button
               key={action.path}
               onClick={() => navigate(action.path)}
+              data-trial-target={action.path === '/owners/new' ? 'register-customer' : action.path === '/reservations/new' ? 'create-reservation' : action.path === '/records/new' ? 'write-record' : undefined}
               className={`w-full flex items-center gap-3 ${action.color} text-white px-4 py-3 rounded-xl text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all`}
             >
               <Icon icon={action.icon} width="20" height="20" aria-hidden="true" />
@@ -241,6 +242,7 @@ function Layout(): JSX.Element {
               e.stopPropagation()
               handleFabAction(action.path)
             }}
+            data-trial-target={action.path === '/owners/new' ? 'register-customer' : action.path === '/reservations/new' ? 'create-reservation' : action.path === '/records/new' ? 'write-record' : undefined}
             className={`flex items-center gap-3 ${action.color} text-white pl-4 pr-5 py-3 rounded-full shadow-lg hover:scale-105 active:scale-[0.98] transition-transform min-h-[48px]`}
             style={{
               transitionDelay: fabOpen ? `${index * 50}ms` : '0ms',

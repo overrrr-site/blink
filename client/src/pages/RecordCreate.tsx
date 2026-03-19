@@ -67,7 +67,7 @@ const RecordCreate = () => {
   const recordLabel = getRecordLabel(activeBusinessType)
   const [recordSaved, setRecordSaved] = useState(false)
 
-  // トライアルガイド: 連絡帳保存完了で Step 4 自動完了
+  // トライアルガイド: 連絡帳保存完了で Step 6 自動完了
   useTrialStepCompletion('write_record', recordSaved)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
   const { finishSession, trackRecordEvent } = useRecordCreateAnalytics({ reservationId, storeId })

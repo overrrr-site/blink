@@ -89,6 +89,7 @@ export default function NotesForm({
           value={data.internal_notes || ''}
           onChange={(e) => onChange({ ...data, internal_notes: e.target.value })}
           placeholder="スタッフ間の申し送りなど"
+          data-trial-target="internal-notes"
           className="w-full px-3 py-2 bg-background rounded-xl text-sm border-none resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
           style={{ minHeight: 72 }}
         />

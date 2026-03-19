@@ -37,9 +37,12 @@ const RecordDetail = () => {
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const primaryBusinessType = useAuthStore((s) => s.user?.primaryBusinessType)
   const [lineNotificationSent, setLineNotificationSent] = useState(false)
+  const [internalNotesSaved, setInternalNotesSaved] = useState(false)
 
-  // トライアルガイド: 連絡帳を飼い主に送信（=LINE通知）で Step 6 自動完了
+  // トライアルガイド: 連絡帳を飼い主に送信（=LINE通知）で Step 8 自動完了
   useTrialStepCompletion('send_line_notification', lineNotificationSent)
+  // トライアルガイド: 内部メモ記入で Step 7 自動完了
+  useTrialStepCompletion('write_internal_notes', internalNotesSaved)
   const storeId = useAuthStore((s) => s.user?.storeId ?? 0)
   const recordLabel = getRecordLabel(primaryBusinessType)
 
@@ -175,6 +178,9 @@ const RecordDetail = () => {
     await recordsApi.update(id, updates)
     await mutate()
     await sendAIFeedback(notes.report_text)
+    if (notes.internal_notes?.trim()) {
+      setInternalNotesSaved(true)
+    }
     showToast('保存しました', 'success')
   }, [condition, daycareData, groomingData, healthCheck, hotelData, id, mutate, notes, photos, record, sendAIFeedback, showToast])
 
@@ -303,6 +309,11 @@ const RecordDetail = () => {
         target='[data-trial-step="send_line_notification"]'
         message="ここを押すとあなたのLINEに届きます"
         position="top"
+      />
+      <TrialCoachMark
+        stepKey="write_internal_notes"
+        target='[data-trial-target="internal-notes"]'
+        message="スタッフ間の内部メモを入力しましょう（飼い主には非公開）"
       />
       <RecordHeader
         petName={record.dog_name}

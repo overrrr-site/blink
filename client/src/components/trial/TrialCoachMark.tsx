@@ -33,10 +33,15 @@ export default function TrialCoachMark({
     }
 
     const timer = setTimeout(() => {
-      const el = document.querySelector(target)
-      if (!el) return
-
+      const elements = document.querySelectorAll(target)
+      if (elements.length === 0) return
+      // 表示されている要素を優先（hidden要素はサイズ0になる）
+      const el = Array.from(elements).find(e => {
+        const r = e.getBoundingClientRect()
+        return r.width > 0 && r.height > 0
+      }) || elements[0]
       const rect = el.getBoundingClientRect()
+      if (rect.width === 0 && rect.height === 0) return
       setCoords({
         top: rect.top + window.scrollY,
         left: rect.left + window.scrollX,
