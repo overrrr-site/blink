@@ -42,6 +42,7 @@ export const useTrialStore = create<TrialState>((set, get) => ({
   fetchGuide: async () => {
     try {
       const { data } = await api.get('/trial/guide')
+      console.log('[TrialStore] fetchGuide response:', JSON.stringify(data))
       if (data.success && data.data) {
         const guide: TrialGuideData = data.data
         set({
@@ -52,8 +53,11 @@ export const useTrialStore = create<TrialState>((set, get) => ({
           steps: guide.steps,
           currentStep: guide.current_step,
         })
+      } else {
+        console.warn('[TrialStore] fetchGuide: success=false or no data', data)
       }
-    } catch {
+    } catch (error) {
+      console.error('[TrialStore] fetchGuide error:', error)
       // Non-trial users will get 404 or the response will have is_trial: false
       // In that case, just keep default state
     }
