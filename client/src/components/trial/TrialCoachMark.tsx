@@ -10,6 +10,10 @@ interface TrialCoachMarkProps {
   message: string
   /** 吹き出しの位置 */
   position?: 'top' | 'bottom'
+  /** プライマリターゲットが見つからない場合のフォールバック要素セレクター */
+  fallbackTarget?: string
+  /** フォールバック時に表示するメッセージ */
+  fallbackMessage?: string
 }
 
 export default function TrialCoachMark({
@@ -17,11 +21,14 @@ export default function TrialCoachMark({
   target,
   message,
   position = 'bottom',
+  fallbackTarget,
+  fallbackMessage,
 }: TrialCoachMarkProps) {
   const { isTrial, guideCompleted, currentStep } = useTrialStore()
   const [visible, setVisible] = useState(false)
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
   const [dismissed, setDismissed] = useState(false)
+  const [usingFallback, setUsingFallback] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   const isActiveStep = isTrial && !guideCompleted && currentStep?.step_key === stepKey
@@ -33,15 +40,29 @@ export default function TrialCoachMark({
     }
 
     const timer = setTimeout(() => {
-      const elements = document.querySelectorAll(target)
-      if (elements.length === 0) return
-      // 表示されている要素を優先（hidden要素はサイズ0になる）
-      const el = Array.from(elements).find(e => {
-        const r = e.getBoundingClientRect()
-        return r.width > 0 && r.height > 0
-      }) || elements[0]
+      // 表示されている要素を見つけるヘルパー
+      const findVisibleElement = (selector: string): Element | null => {
+        const els = document.querySelectorAll(selector)
+        if (els.length === 0) return null
+        return Array.from(els).find(e => {
+          const r = e.getBoundingClientRect()
+          return r.width > 0 && r.height > 0
+        }) || els[0]
+      }
+
+      let el = findVisibleElement(target)
+      let isFallback = false
+
+      if (!el && fallbackTarget) {
+        el = findVisibleElement(fallbackTarget)
+        isFallback = true
+      }
+
+      if (!el) return
       const rect = el.getBoundingClientRect()
       if (rect.width === 0 && rect.height === 0) return
+
+      setUsingFallback(isFallback)
       setCoords({
         top: rect.top + window.scrollY,
         left: rect.left + window.scrollX,
@@ -52,7 +73,7 @@ export default function TrialCoachMark({
     }, 600)
 
     return () => clearTimeout(timer)
-  }, [target, isActiveStep, dismissed])
+  }, [target, fallbackTarget, isActiveStep, dismissed])
 
   // ステップが変わったらdismissをリセット
   useEffect(() => {
@@ -94,7 +115,7 @@ export default function TrialCoachMark({
                 : '-bottom-1.5 left-6'
             }`}
           />
-          <p className="text-xs leading-relaxed">{message}</p>
+          <p className="text-xs leading-relaxed">{usingFallback && fallbackMessage ? fallbackMessage : message}</p>
           <button
             onClick={() => setDismissed(true)}
             className="mt-2 text-[10px] text-background/60 hover:text-background/80 transition-colors"
