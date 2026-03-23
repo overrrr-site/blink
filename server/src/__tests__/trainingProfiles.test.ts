@@ -39,6 +39,7 @@ describe('Training Profiles API', () => {
       .mockResolvedValueOnce({ rows: [{ id: 10 }] })
       .mockResolvedValueOnce({ rows: [{ count: '1' }] })
       .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] })
       .mockResolvedValueOnce({ rows: [{ id: 1, name: 'コマンド達成状況', items: [] }] })
       .mockResolvedValueOnce({ rows: [{ id: 1, symbol: '○', label: 'できた' }] })
       .mockResolvedValueOnce({ rows: [{ id: 11, category_id: 1, achievement_symbol: '○' }] })
