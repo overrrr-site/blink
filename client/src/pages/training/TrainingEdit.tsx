@@ -27,7 +27,6 @@ function TrainingEdit(): JSX.Element {
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [form, setForm] = useState<TrainingForm>({
     category: '基本トレーニング',
     item_key: '',
@@ -89,7 +88,6 @@ function TrainingEdit(): JSX.Element {
       }
 
       await mutate('/training-masters')
-      setSaved(true)
       navigate('/settings')
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } }
