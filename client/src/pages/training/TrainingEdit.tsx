@@ -7,8 +7,6 @@ import PageHeader from '../../components/PageHeader'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import SaveButton from '../../components/SaveButton'
 import { useToast } from '../../components/Toast'
-import { useTrialStepCompletion } from '../../hooks/useTrialStepCompletion'
-
 const TRAINING_CATEGORIES = [
   '基本トレーニング',
   'トイレトレーニング',
@@ -36,8 +34,6 @@ function TrainingEdit(): JSX.Element {
     item_label: '',
     enabled: true,
   })
-
-  useTrialStepCompletion('setup_training', saved)
 
   const isEditing = Boolean(id)
 

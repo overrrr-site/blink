@@ -3,6 +3,7 @@ import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { cacheControl } from '../middleware/cache.js';
 import { requireStoreId, sendNotFound, sendBadRequest, sendServerError, sendSuccess } from '../utils/response.js';
+import { ensureDefaultItems } from '../services/trainingProfilesService.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -19,6 +20,8 @@ const CATEGORY_ORDER = [
 router.get('/', cacheControl(60, 300), async (req: AuthRequest, res) => {
   try {
     if (!requireStoreId(req, res)) return;
+
+    await ensureDefaultItems(req.storeId!);
 
     const result = await pool.query(
       `SELECT * FROM training_item_masters

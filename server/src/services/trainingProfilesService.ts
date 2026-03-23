@@ -24,6 +24,52 @@ const DEFAULT_ACHIEVEMENT_LEVELS = [
   { symbol: 'F', label: '言葉を聞き分けられる', color_class: 'bg-purple-100 border-purple-500 text-purple-600' },
 ];
 
+const DEFAULT_TRAINING_ITEMS = [
+  // 基本トレーニング
+  { category: '基本トレーニング', item_key: 'eye_contact', item_label: 'アイコンタクト', display_order: 0, evaluation_type: 'simple', has_note: false },
+  { category: '基本トレーニング', item_key: 'praise', item_label: '褒め言葉', display_order: 1, evaluation_type: 'simple', has_note: true },
+  { category: '基本トレーニング', item_key: 'name_response', item_label: '名前', display_order: 2, evaluation_type: 'simple', has_note: false },
+  { category: '基本トレーニング', item_key: 'collar_grab', item_label: '首輪をつかむ', display_order: 3, evaluation_type: 'simple', has_note: false },
+  { category: '基本トレーニング', item_key: 'come', item_label: 'おいで', display_order: 4, evaluation_type: 'simple', has_note: false },
+  { category: '基本トレーニング', item_key: 'hand_follow', item_label: '手を追う練習', display_order: 5, evaluation_type: 'simple', has_note: false },
+  { category: '基本トレーニング', item_key: 'holding', item_label: 'ホールディング', display_order: 6, evaluation_type: 'simple', has_note: false },
+  { category: '基本トレーニング', item_key: 'settle', item_label: '足元で落ち着く', display_order: 7, evaluation_type: 'simple', has_note: false },
+  // コマンドトレーニング
+  { category: 'コマンドトレーニング', item_key: 'sit', item_label: 'オスワリ', display_order: 0, evaluation_type: 'advanced', has_note: false },
+  { category: 'コマンドトレーニング', item_key: 'down', item_label: 'フセ', display_order: 1, evaluation_type: 'advanced', has_note: false },
+  { category: 'コマンドトレーニング', item_key: 'stand', item_label: 'タッテ', display_order: 2, evaluation_type: 'advanced', has_note: false },
+  { category: 'コマンドトレーニング', item_key: 'stay', item_label: 'マテ', display_order: 3, evaluation_type: 'advanced', has_note: false },
+  { category: 'コマンドトレーニング', item_key: 'release', item_label: '開放の合図', display_order: 4, evaluation_type: 'advanced', has_note: true },
+  { category: 'コマンドトレーニング', item_key: 'heel', item_label: 'ヒール', display_order: 5, evaluation_type: 'advanced', has_note: false },
+  { category: 'コマンドトレーニング', item_key: 'mat', item_label: 'マット', display_order: 6, evaluation_type: 'advanced', has_note: false },
+  { category: 'コマンドトレーニング', item_key: 'go_in', item_label: 'ゴーイン', display_order: 7, evaluation_type: 'advanced', has_note: false },
+];
+
+async function countItems(storeId: number): Promise<number> {
+  const result = await pool.query(
+    `SELECT COUNT(*) FROM training_item_masters WHERE store_id = $1`,
+    [storeId]
+  );
+  return Number.parseInt(result.rows[0].count as string, 10);
+}
+
+async function seedDefaultItems(storeId: number): Promise<void> {
+  for (const item of DEFAULT_TRAINING_ITEMS) {
+    await pool.query(
+      `INSERT INTO training_item_masters (store_id, category, item_key, item_label, display_order, evaluation_type, has_note, enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
+       ON CONFLICT DO NOTHING`,
+      [storeId, item.category, item.item_key, item.item_label, item.display_order, item.evaluation_type, item.has_note]
+    );
+  }
+}
+
+export async function ensureDefaultItems(storeId: number): Promise<void> {
+  if ((await countItems(storeId)) === 0) {
+    await seedDefaultItems(storeId);
+  }
+}
+
 export async function seedDefaultCategories(storeId: number): Promise<void> {
   const client = await pool.connect();
   try {
@@ -385,6 +431,7 @@ export interface DogTrainingData {
 }
 
 export async function getAllDogTrainingData(storeId: number, dogId: number): Promise<DogTrainingData> {
+  await ensureDefaultItems(storeId);
   await ensureDefaultCategories(storeId);
   await ensureDefaultAchievementLevels(storeId);
 
