@@ -112,7 +112,20 @@ export default function LinkAccount() {
 
       if (response.data.token && response.data.owner) {
         setAuth(response.data.token, response.data.owner);
-        navigate('/home');
+        // アカウント紐付け完了後、初回カルテ入力へ誘導
+        // 犬の一覧を取得して、1匹ならそのままチャットへ、複数ならホームへ
+        try {
+          const dogsRes = await liffClient.get('/intake/dogs');
+          const dogs = dogsRes.data?.data || [];
+          const notStarted = dogs.filter((d: { intakeStatus: string }) => d.intakeStatus === 'not_started');
+          if (notStarted.length === 1) {
+            navigate(`/home/intake/${notStarted[0].id}`);
+          } else {
+            navigate('/home');
+          }
+        } catch {
+          navigate('/home');
+        }
       } else {
         setError('認証に失敗しました');
       }

@@ -17,6 +17,8 @@ const PreVisitInput = lazy(() => import('./pages/PreVisitInput'));
 const RecordList = lazy(() => import('./pages/RecordList'));
 const RecordDetail = lazy(() => import('./pages/RecordDetail'));
 const Announcements = lazy(() => import('./pages/Announcements'));
+const IntakeChat = lazy(() => import('./pages/IntakeChat'));
+const IntakeResult = lazy(() => import('./pages/IntakeResult'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Terms = lazy(() => import('./pages/Terms'));
 
@@ -83,6 +85,8 @@ function App() {
               <Route path="records" element={<RecordList />} />
               <Route path="records/:id" element={<RecordDetail />} />
               <Route path="announcements" element={<Announcements />} />
+              <Route path="intake/:dogId" element={<IntakeChat />} />
+              <Route path="intake-result/:dogId" element={<IntakeResult />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

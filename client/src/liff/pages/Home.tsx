@@ -21,6 +21,13 @@ import { LazyImage } from '../../components/LazyImage';
 import type { RecordType } from '../../types/record';
 import type { DashboardSummary } from '../types/dashboard';
 
+interface IntakeDog {
+  id: number;
+  name: string;
+  photo_url: string | null;
+  intakeStatus: 'not_started' | 'in_progress' | 'completed';
+}
+
 interface OwnerData {
   id: number;
   name: string;
@@ -113,6 +120,10 @@ export default function Home() {
   const [qrModalMode, setQrModalMode] = useState<'checkin' | 'checkout'>('checkin');
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
+
+  const { data: intakeDogs } = useSWR<IntakeDog[]>('/intake/dogs', liffFetcher, {
+    dedupingInterval: 60_000,
+  });
 
   const recordLabel = getRecordLabel(effectiveBusinessType);
   const statusLabels = getDashboardStatusLabels(effectiveBusinessType);
@@ -454,6 +465,49 @@ export default function Home() {
             予約する
           </button>
         </section>
+      )}
+
+      {/* インテークカルテ案内 */}
+      {intakeDogs && intakeDogs.some(d => d.intakeStatus !== 'completed') && (
+        <div className="space-y-3">
+          {intakeDogs.filter(d => d.intakeStatus !== 'completed').map(dog => (
+            <DashboardCard
+              key={dog.id}
+              onClick={() => navigate(`/home/intake/${dog.id}`)}
+              icon="solar:chat-round-dots-bold"
+              iconColor="#6366F1"
+              iconBg="#6366F11A"
+              title={`${dog.name}のカルテを作成`}
+              description={dog.intakeStatus === 'in_progress'
+                ? 'カルテ入力を途中から再開できます'
+                : 'AIチャットで簡単にカルテを作成しましょう'}
+              actionLabel={dog.intakeStatus === 'in_progress' ? '続きから入力' : 'カルテを作成する'}
+              badge={dog.intakeStatus === 'in_progress' ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700">
+                  入力中
+                </span>
+              ) : undefined}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 完了済みカルテの閲覧 */}
+      {intakeDogs && intakeDogs.some(d => d.intakeStatus === 'completed') && (
+        <div className="space-y-3">
+          {intakeDogs.filter(d => d.intakeStatus === 'completed').map(dog => (
+            <DashboardCard
+              key={dog.id}
+              onClick={() => navigate(`/home/intake-result/${dog.id}`)}
+              icon="solar:document-text-bold"
+              iconColor="#6366F1"
+              iconBg="#6366F11A"
+              title={`${dog.name}のカルテ`}
+              description="性格・教育プランを確認できます"
+              actionLabel="カルテを見る"
+            />
+          ))}
+        </div>
       )}
 
       <div className="space-y-3">

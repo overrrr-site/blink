@@ -132,7 +132,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       return;
     }
 
-    const [healthResult, personalityResult, contractResult, reservationsResult, recordsResult, preVisitResult] = await Promise.all([
+    const [healthResult, personalityResult, contractResult, reservationsResult, recordsResult, preVisitResult, intakeResult] = await Promise.all([
       pool.query(`SELECT * FROM dog_health WHERE dog_id = $1`, [id]),
       pool.query(`SELECT * FROM dog_personality WHERE dog_id = $1`, [id]),
       pool.query(`SELECT * FROM contracts WHERE dog_id = $1 ORDER BY created_at DESC LIMIT 1`, [id]),
@@ -171,6 +171,14 @@ router.get('/:id', async (req: AuthRequest, res) => {
          LIMIT 30`,
         [id, req.storeId]
       ),
+      pool.query(
+        `SELECT ai_summary, education_plan, structured_data, completed_at
+         FROM ai_intake_sessions
+         WHERE dog_id = $1 AND status = 'completed'
+         ORDER BY completed_at DESC
+         LIMIT 1`,
+        [id]
+      ),
     ]);
 
     res.json({
@@ -181,6 +189,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       reservations: reservationsResult.rows || [],
       records: recordsResult.rows || [],
       preVisitHistory: preVisitResult.rows || [],
+      intake: intakeResult.rows[0] || null,
     });
   } catch (error) {
     sendServerError(res, '犬情報の取得に失敗しました', error);

@@ -30,6 +30,13 @@ interface DogPreVisitItem {
   hotel_data?: Record<string, unknown> | null
 }
 
+interface DogIntakeData {
+  ai_summary: string
+  education_plan: { daycare_plan?: string; home_advice?: string; three_month_goals?: string } | null
+  structured_data: Record<string, unknown> | null
+  completed_at: string
+}
+
 interface DogDetailData {
   id: number
   name: string
@@ -42,6 +49,7 @@ interface DogDetailData {
   neutered?: string | null
   health?: Record<string, unknown>
   personality?: Record<string, unknown>
+  intake?: DogIntakeData | null
   reservations?: DogReservationItem[]
   records?: DogRecordItem[]
   preVisitHistory?: DogPreVisitItem[]

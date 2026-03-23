@@ -13,6 +13,70 @@ import { LazyImage } from '../../components/LazyImage'
 import { getDetailThumbnailUrl } from '../../utils/image'
 import CoachMark from '../../components/onboarding/CoachMark'
 
+function IntakeSection({ intake }: { intake: { ai_summary: string; education_plan: { daycare_plan?: string; home_advice?: string; three_month_goals?: string } | null; completed_at: string } }) {
+  const [expanded, setExpanded] = useState(false)
+  const plan = intake.education_plan
+
+  return (
+    <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="size-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#6366F11A' }}>
+          <Icon icon="solar:chat-round-dots-bold" width="20" height="20" style={{ color: '#6366F1' }} />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold">初回カウンセリング</h3>
+          <p className="text-[11px] text-muted-foreground">
+            {new Date(intake.completed_at).toLocaleDateString('ja-JP')} AIチャットで回答
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-bold text-muted-foreground mb-1 block">トレーナー向け要約</label>
+          <p className="text-sm bg-muted/50 rounded-xl p-3 leading-relaxed">{intake.ai_summary}</p>
+        </div>
+
+        {plan && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="w-full flex items-center justify-between text-sm font-bold text-indigo-600 py-2"
+          >
+            <span>教育プラン</span>
+            <Icon
+              icon={expanded ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
+              width="16" height="16"
+            />
+          </button>
+        )}
+
+        {expanded && plan && (
+          <div className="space-y-2 text-sm">
+            {plan.daycare_plan && (
+              <div className="bg-indigo-50 rounded-xl p-3">
+                <label className="text-[11px] font-bold text-indigo-600 block mb-1">園での過ごし方</label>
+                <p className="text-foreground leading-relaxed">{plan.daycare_plan}</p>
+              </div>
+            )}
+            {plan.home_advice && (
+              <div className="bg-indigo-50 rounded-xl p-3">
+                <label className="text-[11px] font-bold text-indigo-600 block mb-1">家庭でのアドバイス</label>
+                <p className="text-foreground leading-relaxed">{plan.home_advice}</p>
+              </div>
+            )}
+            {plan.three_month_goals && (
+              <div className="bg-indigo-50 rounded-xl p-3">
+                <label className="text-[11px] font-bold text-indigo-600 block mb-1">3ヶ月目標</label>
+                <p className="text-foreground leading-relaxed">{plan.three_month_goals}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function DogDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -141,6 +205,8 @@ function DogDetail(): JSX.Element {
 
         {/* Right column (3/5) */}
         <div className="lg:col-span-3 space-y-4">
+          {dog.intake && <IntakeSection intake={dog.intake} />}
+
           {dog.health && <HealthInfoSection health={dog.health} />}
 
           {dog.personality && <PersonalitySection personality={dog.personality} />}
