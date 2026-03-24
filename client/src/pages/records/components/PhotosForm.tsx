@@ -29,11 +29,18 @@ export default function PhotosForm({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const concernFileInputRef = useRef<HTMLInputElement>(null)
 
+  const MAX_REGULAR_PHOTOS = 5
+  const regularCount = data.regular?.length || 0
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'regular' | 'concern') => {
     const files = e.target.files
     if (!files) return
 
-    Array.from(files).forEach((file) => {
+    const filesToProcess = type === 'regular'
+      ? Array.from(files).slice(0, MAX_REGULAR_PHOTOS - (data.regular?.length || 0))
+      : Array.from(files)
+
+    filesToProcess.forEach((file) => {
       const reader = new FileReader()
       reader.onload = (ev) => {
         const base64 = ev.target?.result as string
@@ -113,13 +120,15 @@ export default function PhotosForm({
               </button>
             </div>
           ))}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="size-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center hover:bg-background active:scale-95 transition-all"
-            aria-label="写真を追加"
-          >
-            <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-muted-foreground" />
-          </button>
+          {regularCount < MAX_REGULAR_PHOTOS && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="size-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center hover:bg-background active:scale-95 transition-all"
+              aria-label="写真を追加"
+            >
+              <Icon icon="solar:add-circle-linear" width="24" height="24" className="text-muted-foreground" />
+            </button>
+          )}
           <input
             ref={fileInputRef}
             type="file"

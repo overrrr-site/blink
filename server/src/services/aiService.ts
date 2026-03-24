@@ -275,7 +275,12 @@ export async function generateReport(
   input: RecordContext & {
     dog_name: string;
     grooming_data?: { selectedParts?: string[]; partNotes?: Record<string, string> };
-    daycare_data?: { activities?: string[] };
+    daycare_data?: {
+      activities?: string[];
+      training?: { items?: Record<string, string> };
+      meal?: { morning?: string; afternoon?: string };
+      toilet?: Record<string, { urination: boolean; defecation: boolean }>;
+    };
     hotel_data?: { nights?: number; special_care?: string };
     condition?: { overall?: string };
     health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
@@ -308,6 +313,15 @@ export async function generateReport(
   }
   if (input.record_type === 'daycare' && input.daycare_data?.activities && input.daycare_data.activities.length > 0) {
     usedInputs.push('daycare_activities');
+  }
+  if (input.record_type === 'daycare' && input.daycare_data?.training?.items && Object.values(input.daycare_data.training.items).some((v) => v && v !== '')) {
+    usedInputs.push('daycare_training');
+  }
+  if (input.record_type === 'daycare' && (input.daycare_data?.meal?.morning?.trim() || input.daycare_data?.meal?.afternoon?.trim())) {
+    usedInputs.push('daycare_meal');
+  }
+  if (input.record_type === 'daycare' && input.daycare_data?.toilet && Object.values(input.daycare_data.toilet).some((e) => e.urination || e.defecation)) {
+    usedInputs.push('daycare_toilet');
   }
   if (input.record_type === 'grooming' && input.grooming_data?.selectedParts && input.grooming_data.selectedParts.length > 0) {
     usedInputs.push('grooming_parts');
@@ -353,6 +367,40 @@ export async function generateReport(
     }
   }
 
+  // 写真分析（最大2枚）
+  let photoAnalysisHint = '';
+  if (regularPhotos.length > 0 && process.env.GEMINI_API_KEY) {
+    const photoUrls = regularPhotos
+      .slice(0, 1)
+      .map((p: { url?: string }) => p.url)
+      .filter(Boolean) as string[];
+
+    const analyses: string[] = [];
+    for (const url of photoUrls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        const buffer = Buffer.from(await response.arrayBuffer());
+        const base64 = buffer.toString('base64');
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        const base64WithPrefix = `data:${contentType};base64,${base64}`;
+        const result = await analyzePhotoForRecord({
+          record_type: input.record_type,
+          photo_base64: base64WithPrefix,
+          dog_name: input.dog_name,
+        });
+        if (result.analysis && result.analysis !== '写真を確認しました。') {
+          analyses.push(result.analysis);
+        }
+      } catch {
+        // 写真分析失敗は無視して続行
+      }
+    }
+    if (analyses.length > 0) {
+      photoAnalysisHint = `\n\n【写真から読み取れた様子】\n${analyses.map((a) => `・${a}`).join('\n')}`;
+    }
+  }
+
   const prompt = buildReportPrompt(input.record_type, input.dog_name, {
     grooming_data: input.grooming_data,
     daycare_data: input.daycare_data,
@@ -360,6 +408,7 @@ export async function generateReport(
     condition: input.condition,
     health_check: input.health_check,
     notes: input.notes,
+    photoAnalyses: photoAnalysisHint,
   }, input.tone || 'formal', styleHint);
 
   try {
@@ -465,7 +514,7 @@ function generateReportFallback(recordType: string, dogName: string): string {
 
 export async function fetchTrainingLabels(storeId: number): Promise<Record<string, string>> {
   const labelResult = await pool.query(
-    'SELECT item_key, item_label FROM training_masters WHERE store_id = $1 AND enabled = true',
+    'SELECT item_key, item_label FROM training_item_masters WHERE store_id = $1 AND enabled = true',
     [storeId]
   );
   const customLabels: Record<string, string> = {};

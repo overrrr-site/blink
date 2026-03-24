@@ -128,11 +128,12 @@ export function buildReportPrompt(
   dogName: string,
   data: {
     grooming_data?: { selectedParts?: string[]; partNotes?: Record<string, string> };
-    daycare_data?: { activities?: string[]; meal?: { morning?: string; afternoon?: string }; toilet?: Record<string, { urination: boolean; defecation: boolean }> };
+    daycare_data?: { activities?: string[]; training?: { items?: Record<string, string> }; meal?: { morning?: string; afternoon?: string }; toilet?: Record<string, { urination: boolean; defecation: boolean }> };
     hotel_data?: { nights?: number; special_care?: string };
     condition?: { overall?: string };
     health_check?: { weight?: number; ears?: string; nails?: string; skin?: string; teeth?: string };
     notes?: { internal_notes?: string };
+    photoAnalyses?: string;
   } ,
   tone: 'formal' | 'casual' = 'formal',
   styleHint: string = ''
@@ -187,7 +188,7 @@ export function buildReportPrompt(
 【施術部位】${parts.join('、') || '未選択'}
 ${healthNotes.length > 0 ? '【健康チェック】' + healthNotes.join('、') : ''}
 ${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
-${memo}
+${memo}${data.photoAnalyses || ''}
 
 200〜300文字程度で、以下を含めてください：
 - カットの仕上がり
@@ -206,7 +207,7 @@ ${memo}
 
 ${specialCare ? '【特別ケア】' + specialCare : ''}
 ${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
-${memo}
+${memo}${data.photoAnalyses || ''}
 
 200〜300文字程度で、以下を含めてください：
 - 滞在中の様子・リラックス度
@@ -219,6 +220,21 @@ ${memo}
   // daycare (default)
   const activities = formatActivities(data.daycare_data?.activities);
   const memo = data.notes?.internal_notes ? `\nスタッフメモ: ${data.notes.internal_notes}` : '';
+
+  // トレーニング結果
+  const TRAINING_STATUS_LABELS: Record<string, string> = {
+    done: 'できた', almost: 'もう少し', not_done: 'まだ',
+    A: 'A評価', B: 'B評価', C: 'C評価', D: 'D評価', E: 'E評価', F: 'F評価',
+  };
+  const trainingResults: string[] = [];
+  if (data.daycare_data?.training?.items) {
+    for (const [item, status] of Object.entries(data.daycare_data.training.items)) {
+      if (status && status !== '') {
+        trainingResults.push(`${item}: ${TRAINING_STATUS_LABELS[status] || status}`);
+      }
+    }
+  }
+  const trainingSection = trainingResults.length > 0 ? `\n【トレーニング結果】${trainingResults.join('、')}` : '';
 
   // ごはん情報
   const mealInfo: string[] = [];
@@ -242,13 +258,15 @@ ${memo}
 
 【活動内容】${activities || '未記録'}
 ${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
-${memo}${mealSection}${toiletSection}
+${memo}${trainingSection}${mealSection}${toiletSection}${data.photoAnalyses || ''}
 
 200〜300文字程度で、以下を含めてください：
 - 今日の活動と楽しんでいた様子
-- 食事やトイレの状況（記録がある場合）
+- トレーニングの成果（記録がある場合のみ）
+- 食事やトイレの状況（記録がある場合のみ）
 - 成長が見られた点
 - 次回への期待
+重要：上記の【】で記載された情報のみに基づいて書いてください。記録がない項目について推測や創作をしないでください。
 英語やローマ字の表現（例: freeplay, training, socialization, nap）は使わず、自然な日本語だけで記述してください。
 温かみのある丁寧な日本語でお願いします。${toneHint}${styleHint}`;
 }
