@@ -86,8 +86,7 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
                   d.name as dog_name,
                   d.photo_url as dog_photo,
                   o.name as owner_name,
-                  rec.id as record_id,
-                  rec.report_text as comment
+                  rec.id as record_id
            FROM reservations r
            JOIN dogs d ON r.dog_id = d.id
            JOIN owners o ON d.owner_id = o.id
