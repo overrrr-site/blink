@@ -87,7 +87,7 @@ function Settings() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-24 px-5 space-y-4 pt-4 lg:max-w-3xl">
+      <main className="flex-1 overflow-y-auto pb-24 px-5 space-y-4 pt-4">
         <Suspense fallback={<TabLoader />}>
           {renderActiveTab(activeTab)}
         </Suspense>

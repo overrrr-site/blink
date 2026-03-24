@@ -4,6 +4,7 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { cacheControl } from '../middleware/cache.js';
 import { requireStoreId, sendBadRequest, sendServerError } from '../utils/response.js';
 import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../utils/businessTypes.js';
+import { getTodayJST, getDaysAgoJST } from '../utils/date.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -15,10 +16,10 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayJST();
     const now = new Date().toISOString();
     // 未入力記録の検索範囲を過去30日に制限（パフォーマンス改善）
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const thirtyDaysAgo = getDaysAgoJST(30);
 
     // 業種フィルタ
     const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(req.query.service_type, 'service_type');
@@ -102,9 +103,9 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
       }),
 
       timedQuery('alerts', () => {
-        const mixedExpiry = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const mixedExpiry = getDaysAgoJST(365);
         const rabiesStart = today;
-        const rabiesEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const rabiesEnd = getDaysAgoJST(-14);
         return pool.query(
           `SELECT d.id as dog_id, d.name as dog_name, d.gender as dog_gender, o.name as owner_name,
                   CASE

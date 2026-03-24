@@ -3,6 +3,7 @@ import pool from '../../db/connection.js';
 import { sendNotFound, sendServerError, sendUnauthorized } from '../../utils/response.js';
 import { requireOwnerToken } from './common.js';
 import { isBusinessType, normalizeBusinessTypes, type BusinessType } from '../../utils/businessTypes.js';
+import { getTodayJST } from '../../utils/date.js';
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/me', async function(req, res) {
     if (!decoded) return;
 
     const queryStart = Date.now();
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayJST();
     const timedQuery = async (label: string, queryFn: () => Promise<any>) => {
       const s = Date.now();
       const result = await queryFn();

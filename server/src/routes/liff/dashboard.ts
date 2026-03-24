@@ -3,6 +3,7 @@ import pool from '../../db/connection.js';
 import { parseBusinessTypeInput } from '../../utils/businessTypes.js';
 import { sendBadRequest, sendServerError } from '../../utils/response.js';
 import { requireOwnerToken } from './common.js';
+import { getTodayJST } from '../../utils/date.js';
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ router.get('/dashboard/summary', async function(req, res) {
     }
 
     const serviceType = requestedServiceType || 'daycare';
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayJST();
     const now = new Date().toISOString();
 
     const [nextReservationResult, latestRecordResult, announcementCountResult, latestAnnouncementResult] = await Promise.all([

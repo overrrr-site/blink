@@ -23,7 +23,12 @@ interface TrainingGridViewProps {
   dogId: string
   visualIndex?: number
   onMutate: () => void
+  onSaved?: () => void
 }
+
+type PendingAction =
+  | { type: 'upsert'; payload: { categoryId: number; trainingItemId: number; entryDate: string; achievementSymbol: string } }
+  | { type: 'delete'; entryId: number }
 
 const GRID_VISUALS = [
   {
@@ -59,10 +64,13 @@ function TrainingGridView({
   dogId,
   visualIndex = 0,
   onMutate,
+  onSaved,
 }: TrainingGridViewProps) {
   const [saving, setSaving] = useState(false)
   const [showAddDate, setShowAddDate] = useState(false)
   const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [pendingChanges, setPendingChanges] = useState<Map<string, PendingAction>>(new Map())
+  const [localOverrides, setLocalOverrides] = useState<Map<string, string>>(new Map())
 
   const items: TrainingProfileCategoryItem[] = category.items || []
   const categoryEntries = entries.filter((e) => e.category_id === category.id)
@@ -80,7 +88,9 @@ function TrainingGridView({
     return map
   }, [achievementLevels])
 
-  const handleCellTap = useCallback(async (
+  const hasPendingChanges = pendingChanges.size > 0
+
+  const handleCellTap = useCallback((
     itemId: number,
     date: string,
     currentSymbol: string,
@@ -102,29 +112,51 @@ function TrainingGridView({
       return
     }
 
+    const key = `${itemId}_${date}`
+    setPendingChanges((prev) => {
+      const next = new Map(prev)
+      next.set(key, cellAction)
+      return next
+    })
+
+    // ローカルでUI即時反映
+    const nextSymbol = cellAction.type === 'upsert' ? cellAction.payload.achievementSymbol : ''
+    setLocalOverrides((prev) => {
+      const next = new Map(prev)
+      next.set(key, nextSymbol)
+      return next
+    })
+  }, [saving, symbolCycle, entryMap, category.id])
+
+  const handleSave = useCallback(async () => {
+    if (pendingChanges.size === 0 || saving) {
+      return
+    }
     setSaving(true)
     try {
-      if (cellAction.type === 'delete') {
-        await trainingProfilesApi.deleteGridEntry({
-          dogId,
-          entryId: cellAction.entryId,
-        })
-      } else {
-        await trainingProfilesApi.upsertGridEntry({
-          dogId,
-          categoryId: cellAction.payload.categoryId,
-          trainingItemId: cellAction.payload.trainingItemId,
-          entryDate: cellAction.payload.entryDate,
-          achievementSymbol: cellAction.payload.achievementSymbol,
-        })
+      for (const action of pendingChanges.values()) {
+        if (action.type === 'delete') {
+          await trainingProfilesApi.deleteGridEntry({ dogId, entryId: action.entryId })
+        } else {
+          await trainingProfilesApi.upsertGridEntry({
+            dogId,
+            categoryId: action.payload.categoryId,
+            trainingItemId: action.payload.trainingItemId,
+            entryDate: action.payload.entryDate,
+            achievementSymbol: action.payload.achievementSymbol,
+          })
+        }
       }
+      setPendingChanges(new Map())
+      setLocalOverrides(new Map())
       onMutate()
+      onSaved?.()
     } catch {
       // ignore
     } finally {
       setSaving(false)
     }
-  }, [saving, symbolCycle, entryMap, dogId, category.id, onMutate])
+  }, [pendingChanges, saving, dogId, onMutate, onSaved])
 
   const handleAddDate = useCallback(() => {
     if (!newDate) {
@@ -226,9 +258,11 @@ function TrainingGridView({
                   const key = `${item.training_item_id}_${date}`
                   const existing = entryMap.get(key)
                   const rawSymbol = existing?.symbol || ''
-                  const symbol = levelMap.has(rawSymbol) ? rawSymbol : ''
+                  const baseSymbol = levelMap.has(rawSymbol) ? rawSymbol : ''
+                  const symbol = localOverrides.has(key) ? localOverrides.get(key)! : baseSymbol
                   const level = symbol ? levelMap.get(symbol) : undefined
                   const dateLabel = formatEntryDateShort(date)
+                  const isPending = localOverrides.has(key)
 
                   return (
                     <td
@@ -239,7 +273,7 @@ function TrainingGridView({
                         onClick={() => handleCellTap(item.training_item_id, date, symbol)}
                         className={`inline-flex items-center justify-center min-w-[36px] min-h-[36px] rounded-lg border transition-all active:scale-90 ${
                           symbol
-                            ? 'border-border/70 bg-background hover:bg-muted'
+                            ? `bg-background hover:bg-muted ${isPending ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border/70'}`
                             : 'border-dashed border-border/70 bg-muted/30 hover:bg-muted'
                         }`}
                         disabled={saving}
@@ -285,6 +319,20 @@ function TrainingGridView({
               閉じる
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Save button */}
+      {hasPendingChanges && (
+        <div className="px-4 py-3 border-t border-border">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold text-white bg-primary rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 min-h-[48px]"
+          >
+            <Icon icon={saving ? 'solar:refresh-bold' : 'solar:check-circle-bold'} width="18" height="18" className={saving ? 'animate-spin' : ''} />
+            {saving ? '保存中...' : `保存する（${pendingChanges.size}件）`}
+          </button>
         </div>
       )}
     </div>

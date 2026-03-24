@@ -261,7 +261,7 @@ const Customers = () => {
         </div>
 
         {/* 表示切り替え */}
-        <div className="flex bg-muted rounded-xl p-1 lg:max-w-xs">
+        <div className="flex bg-muted rounded-xl p-1">
           <button
             onClick={() => setViewMode('owners')}
             className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-colors relative min-h-[48px] ${
@@ -273,7 +273,7 @@ const Customers = () => {
             aria-pressed={viewMode === 'owners'}
           >
             <Icon icon="solar:user-bold" width={16} height={16} className="mr-1.5 inline-block" />
-            飼い主
+            飼い主 <span className="font-bold">{pagination?.total ?? owners.length}</span><span className="text-xs font-normal">名</span>
           </button>
           <button
             onClick={() => setViewMode('dogs')}
@@ -286,20 +286,8 @@ const Customers = () => {
             aria-pressed={viewMode === 'dogs'}
           >
             <Icon icon="solar:paw-print-bold" width={16} height={16} className="mr-1.5 inline-block" />
-            ワンちゃん
+            ワンちゃん <span className="font-bold">{allDogs.length}</span><span className="text-xs font-normal">頭</span>
           </button>
-        </div>
-
-        {/* 統計 */}
-        <div className="flex gap-3">
-          <div className="flex-1 bg-card rounded-xl p-3 border border-border">
-            <p className="text-xs text-muted-foreground">飼い主</p>
-            <p className="text-2xl font-bold">{pagination?.total ?? owners.length}<span className="text-sm font-normal text-muted-foreground">名</span></p>
-          </div>
-          <div className="flex-1 bg-card rounded-xl p-3 border border-border">
-            <p className="text-xs text-muted-foreground">ワンちゃん</p>
-            <p className="text-2xl font-bold">{allDogs.length}<span className="text-sm font-normal text-muted-foreground">頭</span></p>
-          </div>
         </div>
 
         {/* リスト表示 */}

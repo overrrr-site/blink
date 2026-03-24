@@ -226,7 +226,7 @@ function Layout(): JSX.Element {
       <TrialCoachMark stepKey="register_customer" target='[data-guide="nav-customers"]' message="「顧客」から飼い主を登録しましょう" />
       <TrialCoachMark stepKey="create_reservation" target='[data-guide="nav-reservations"]' message="「予定」から予約を追加しましょう" />
       <TrialCoachMark stepKey="write_record" target='[data-trial-target="write-record"]' message="連絡帳を作成しましょう" />
-      <TrialCoachMark stepKey="write_internal_notes" target='[data-trial-target="internal-notes"]' message="内部メモを入力しましょう（飼い主には非公開）" fallbackTarget='[data-guide="nav-today"]' fallbackMessage="ダッシュボードから作成した連絡帳を開きましょう" />
+      <TrialCoachMark stepKey="write_internal_notes" target='[data-trial-target="internal-records"]' message="「内部記録」を開いて記録を付けましょう" fallbackTarget='[data-guide="nav-today"]' fallbackMessage="ダッシュボードの予約カードから「内部記録」を開きましょう" />
       <TrialCoachMark stepKey="send_line_notification" target='[data-trial-step="send_line_notification"]' message="共有ボタンであなたのLINEに届きます" position="top" />
 
       {isTrial && daysRemaining <= 0 && <TrialExpiredOverlay />}

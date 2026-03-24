@@ -18,7 +18,7 @@ const GUIDE_STEPS = [
   { step_number: 2, step_key: 'create_reservation', title: '予約を作成しよう', description: '登録した犬の予約を作成します', action_url: '/reservations/new' },
   { step_number: 3, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書きます', action_url: '/records/new' },
   { step_number: 4, step_key: 'link_line_account', title: 'LINE通知を受け取る設定', description: 'デモ用LINE公式アカウントを友だち追加し、店舗コードを送信します', action_url: '' },
-  { step_number: 5, step_key: 'write_internal_notes', title: '内部メモを記入しよう', description: 'スタッフ間の申し送りメモを記入します（飼い主には非公開）', action_url: '/records' },
+  { step_number: 5, step_key: 'write_internal_notes', title: '内部記録を記入しよう', description: '予約カードから内部記録を記入します（飼い主には非公開）', action_url: '/' },
   { step_number: 6, step_key: 'send_line_notification', title: 'LINEで通知を送ってみよう', description: '連絡帳を共有すると、あなたのLINEに届きます', action_url: '/records' },
   { step_number: 7, step_key: 'check_liff_app', title: 'ユーザー側の画面を確認', description: 'LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認します', action_url: '' },
 ];

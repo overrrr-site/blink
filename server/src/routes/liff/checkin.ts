@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../../db/connection.js';
 import { authenticate, AuthRequest } from '../../middleware/auth.js';
 import { sendBadRequest, sendForbidden, sendNotFound, sendServerError } from '../../utils/response.js';
+import { getTodayJST } from '../../utils/date.js';
 import { requireOwnerToken } from './common.js';
 
 const router = express.Router();
@@ -122,7 +123,7 @@ router.post('/check-in', async function(req, res) {
     const reservation = reservationCheck.rows[0];
 
     // 予約日が今日以降であることを確認
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayJST();
     if (reservation.reservation_date < today) {
       return res.status(400).json({
         error: 'この予約は過去の予約です',

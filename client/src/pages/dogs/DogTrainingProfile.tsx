@@ -5,6 +5,8 @@ import { fetcher } from '../../lib/swr'
 import PageHeader from '../../components/PageHeader'
 import { Icon } from '../../components/Icon'
 import { useTrainingProfile } from '../../hooks/useTrainingProfile'
+import { useTrialStepCompletion } from '../../hooks/useTrialStepCompletion'
+import { useToast } from '../../components/Toast'
 import { calculateAge } from '../../utils/dog'
 import TrainingGridView from '../../components/training/TrainingGridView'
 import TrainingLogView from '../../components/training/TrainingLogView'
@@ -38,6 +40,7 @@ const SIX_STEP_GENERIC_LABELS: Record<string, string> = {
 
 function DogTrainingProfile() {
   const { dogId } = useParams<{ dogId: string }>()
+  const { showToast } = useToast()
 
   const { data: dog } = useSWR<DogSummary>(
     dogId ? `/dogs/${dogId}` : null,
@@ -47,6 +50,12 @@ function DogTrainingProfile() {
   const { data: profileData, isLoading, mutate } = useTrainingProfile(dogId)
 
   const { data: storeSettings, isLoading: isStoreSettingsLoading } = useSWR<StoreSettings>('/store-settings', fetcher)
+
+  // トライアルガイド: 内部記録に何か記入したらステップ完了
+  const hasAnyEntry = (profileData?.gridEntries?.length ?? 0) > 0
+    || (profileData?.logEntries?.length ?? 0) > 0
+    || (profileData?.concerns?.length ?? 0) > 0
+  useTrialStepCompletion('write_internal_notes', hasAnyEntry)
 
   const handleMutate = useCallback(() => {
     mutate()
@@ -98,7 +107,19 @@ function DogTrainingProfile() {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <PageHeader title="内部記録" backPath={dogId ? `/dogs/${dogId}` : undefined} />
+      <PageHeader
+        title="内部記録"
+        backPath={dogId ? `/dogs/${dogId}` : undefined}
+        rightContent={
+          <button
+            onClick={() => window.print()}
+            aria-label="印刷"
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center text-muted-foreground rounded-full active:bg-muted active:scale-95 transition-all"
+          >
+            <Icon icon="solar:printer-bold" width="22" height="22" />
+          </button>
+        }
+      />
 
       {/* Dog summary card */}
       {dog && (
@@ -139,6 +160,7 @@ function DogTrainingProfile() {
                 dogId={dogId!}
                 visualIndex={index}
                 onMutate={handleMutate}
+                onSaved={() => showToast('保存しました', 'success')}
               />
             )
           }

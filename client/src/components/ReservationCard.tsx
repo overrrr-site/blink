@@ -264,6 +264,7 @@ const ReservationCard = React.memo(function ReservationCard({
             )}
             <button
               onClick={() => onNavigateTraining(reservation.dog_id)}
+              data-trial-target="internal-records"
               className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:bg-muted/50 min-h-[48px] active:bg-muted active:scale-[0.98] transition-all"
             >
               <Icon icon="solar:clipboard-list-bold" className="size-4" />
