@@ -1,5 +1,7 @@
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000
+
 /**
- * JST (Asia/Tokyo) 基準で今日の日付を YYYY-MM-DD 形式で返す。
+ * JST (UTC+9) 基準で今日の日付を YYYY-MM-DD 形式で返す。
  * サーバーがUTCで動作していても正しい日本日付を返す。
  */
 export function getTodayJST(): string {
@@ -8,9 +10,11 @@ export function getTodayJST(): string {
 
 /**
  * JST 基準で Date を YYYY-MM-DD 形式に変換する。
+ * ロケール依存を避け、UTC+9 の算術変換で確実に動作する。
  */
 export function toDateStringJST(date: Date): string {
-  return date.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' })
+  const jst = new Date(date.getTime() + JST_OFFSET_MS)
+  return jst.toISOString().split('T')[0]
 }
 
 /**

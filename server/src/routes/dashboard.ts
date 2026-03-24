@@ -153,6 +153,7 @@ router.get('/', cacheControl(5, 30), async function(req: AuthRequest, res): Prom
       ))
     ]);
     console.log(`[DASHBOARD] total queries: ${Date.now() - queryStart}ms`);
+    console.log(`[DASHBOARD] today=${today}, storeId=${req.storeId}, serviceType=${serviceType || 'none'}, reservations=${reservationsResult.rows.length}`);
 
     res.json({
       todayReservations: reservationsResult.rows,
