@@ -392,12 +392,21 @@ export async function sendRecordNotification(
       [storeId]
     );
 
+    let settings: NotificationSettingsRow;
     if (settingsResult.rows.length === 0) {
-      console.warn(`通知設定が見つかりません: store_id=${storeId}`);
-      return;
+      // 通知設定が未作成の場合はデフォルトで作成（トライアルアカウント対応）
+      console.log(`通知設定をデフォルト作成します: store_id=${storeId}`);
+      await pool.query(
+        `INSERT INTO notification_settings (store_id, record_notification, line_notification_enabled)
+         VALUES ($1, TRUE, TRUE)
+         ON CONFLICT DO NOTHING`,
+        [storeId]
+      );
+      settings = { record_notification: true, line_notification_enabled: true, email_notification_enabled: false };
+    } else {
+      settings = settingsResult.rows[0];
     }
 
-    const settings = settingsResult.rows[0];
     if (!settings.record_notification) {
       console.log(`カルテ通知が無効です: store_id=${storeId}`);
       return;

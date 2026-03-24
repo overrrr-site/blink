@@ -141,6 +141,14 @@ router.post('/start', async (req, res) => {
         );
       }
 
+      // 通知設定の初期データ作成（LINE通知を有効にしておく）
+      await client.query(
+        `INSERT INTO notification_settings (store_id, record_notification, line_notification_enabled)
+         VALUES ($1, TRUE, TRUE)
+         ON CONFLICT DO NOTHING`,
+        [storeId]
+      );
+
       await client.query('COMMIT');
 
       // キャッシュを無効化
