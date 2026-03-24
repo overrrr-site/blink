@@ -310,7 +310,7 @@ const Customers = () => {
               }
             />
           ) : (
-            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-3 md:space-y-0">
+            <div className="space-y-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-3 md:space-y-0">
               {owners.map((owner) => (
                 <OwnerCard key={owner.id} owner={owner} onNavigate={handleNavigateOwner} />
               ))}
@@ -326,7 +326,7 @@ const Customers = () => {
               illustration={!searchQuery ? '/images/dog-waiting.webp' : undefined}
             />
           ) : (
-            <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-3 md:space-y-0">
+            <div className="space-y-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-3 md:space-y-0">
               {allDogs.map((dog) => (
                 <DogCard key={dog.id} dog={dog} onNavigate={handleNavigateDog} />
               ))}
