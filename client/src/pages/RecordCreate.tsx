@@ -18,6 +18,7 @@ import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
 import AISettingsScreen from './records/components/AISettingsScreen'
 import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
+import { TrialPageGuide } from '../components/trial/TrialPageGuide'
 import RecordTypeSection from './records/components/RecordTypeSection'
 import HotelForm from './records/components/HotelForm'
 import RecordReportComposer from './records/components/RecordReportComposer'
@@ -240,6 +241,14 @@ const RecordCreate = () => {
         recordType={recordType}
         onSettings={openAISettings}
       />
+
+      <div className="px-4 pt-4">
+        <TrialPageGuide
+          stepKey="write_record"
+          title="連絡帳を書いてみましょう"
+          detail="ワンちゃんの今日の様子を書いてみましょう。ごはん・お散歩・気になったことなど、自由にお書きください。"
+        />
+      </div>
 
       {waitingReservationSource && (
         <div className="mx-4 mt-4 rounded-2xl border border-border bg-white p-4 text-sm text-muted-foreground">

@@ -11,6 +11,7 @@ import { TrialBanner } from './trial/TrialBanner'
 import { TrialGuideOverlay } from './trial/TrialGuideOverlay'
 import { TrialExpiredOverlay } from './trial/TrialExpiredOverlay'
 import TrialCoachMark from './trial/TrialCoachMark'
+import { TrialHelpButton } from './trial/TrialHelpButton'
 import { useTrialStore } from '../store/trialStore'
 import logoImage from '../assets/logo.png'
 
@@ -221,13 +222,14 @@ function Layout(): JSX.Element {
       </main>
 
       <TrialGuideOverlay />
+      <TrialHelpButton />
 
       {/* トライアル: コーチマーク（全ページ共通） */}
-      <TrialCoachMark stepKey="register_customer" target='[data-guide="nav-customers"]' message="「顧客」から飼い主を登録しましょう" />
-      <TrialCoachMark stepKey="create_reservation" target='[data-guide="nav-reservations"]' message="「予定」から予約を追加しましょう" />
-      <TrialCoachMark stepKey="write_record" target='[data-trial-target="write-record"]' message="連絡帳を作成しましょう" />
-      <TrialCoachMark stepKey="write_internal_notes" target='[data-trial-target="internal-records"]' message="「内部記録」を開いて記録を付けましょう" fallbackTarget='[data-guide="nav-today"]' fallbackMessage="ダッシュボードの予約カードから「内部記録」を開きましょう" />
-      <TrialCoachMark stepKey="send_line_notification" target='[data-trial-step="send_line_notification"]' message="共有ボタンであなたのLINEに届きます" position="top" />
+      <TrialCoachMark stepKey="register_customer" target='[data-guide="nav-customers"]' title="まずは飼い主さんの登録です" detail="下の「顧客」ボタンをタップしてください。お試しなので、ご自身の情報を入力すれば大丈夫です。" />
+      <TrialCoachMark stepKey="create_reservation" target='[data-guide="nav-reservations"]' title="次は予約を作ってみましょう" detail="「予定」ボタンをタップして、先ほど登録したワンちゃんの予約を入れてみてください。" />
+      <TrialCoachMark stepKey="write_record" target='[data-trial-target="write-record"]' title="連絡帳を書いてみましょう" detail="ワンちゃんの今日の様子を書く「連絡帳」を作成します。飼い主さんに届くメッセージになります。" />
+      <TrialCoachMark stepKey="write_internal_notes" target='[data-trial-target="internal-records"]' title="スタッフ用のメモを書いてみましょう" detail="「内部記録」はスタッフだけが見られるメモです。飼い主さんには届かないのでご安心ください。" fallbackTarget='[data-guide="nav-today"]' fallbackTitle="スタッフ用のメモを書いてみましょう" fallbackDetail="ダッシュボードの予約カードから「内部記録」を開いてください。スタッフだけが見られるメモです。" />
+      <TrialCoachMark stepKey="send_line_notification" target='[data-trial-step="send_line_notification"]' title="LINEで通知を送ってみましょう" detail="「共有」ボタンをタップすると、先ほど書いた連絡帳がご自身のLINEに届きます。" position="top" />
 
       {isTrial && daysRemaining <= 0 && <TrialExpiredOverlay />}
 

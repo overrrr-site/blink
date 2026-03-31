@@ -14,13 +14,13 @@ const generateStoreCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 6);
 
 // ガイドステップ定義
 const GUIDE_STEPS = [
-  { step_number: 1, step_key: 'register_customer', title: '飼い主を登録しよう', description: 'あなた自身の情報で飼い主と犬を1件登録します', action_url: '/owners/new' },
-  { step_number: 2, step_key: 'create_reservation', title: '予約を作成しよう', description: '登録した犬の予約を作成します', action_url: '/reservations/new' },
-  { step_number: 3, step_key: 'write_record', title: '連絡帳を書いてみよう', description: '今日の様子を連絡帳に書きます', action_url: '/records/new' },
-  { step_number: 4, step_key: 'link_line_account', title: 'LINE通知を受け取る設定', description: 'デモ用LINE公式アカウントを友だち追加し、店舗コードを送信します', action_url: '' },
-  { step_number: 5, step_key: 'write_internal_notes', title: '内部記録を記入しよう', description: '予約カードから内部記録を記入します（飼い主には非公開）', action_url: '/' },
-  { step_number: 6, step_key: 'send_line_notification', title: 'LINEで通知を送ってみよう', description: '連絡帳を共有すると、あなたのLINEに届きます', action_url: '/records' },
-  { step_number: 7, step_key: 'check_liff_app', title: 'ユーザー側の画面を確認', description: 'LINEのBlink画面を開いて、飼い主として受け取った連絡帳を確認します', action_url: '' },
+  { step_number: 1, step_key: 'register_customer', title: '飼い主さんを登録しましょう', description: 'お試しですので、ご自身のお名前で飼い主さんとワンちゃんを登録してみましょう', action_url: '/owners/new' },
+  { step_number: 2, step_key: 'create_reservation', title: '予約を作成しましょう', description: '先ほど登録したワンちゃんの予約を入れてみましょう', action_url: '/reservations/new' },
+  { step_number: 3, step_key: 'write_record', title: '連絡帳を書いてみましょう', description: 'ワンちゃんの今日の様子を連絡帳に書いてみましょう', action_url: '/records/new' },
+  { step_number: 4, step_key: 'link_line_account', title: 'LINEの通知設定をしましょう', description: 'QRコードを読み取って、お試し用のLINEアカウントとつなげましょう', action_url: '' },
+  { step_number: 5, step_key: 'write_internal_notes', title: 'スタッフ用メモを書いてみましょう', description: 'スタッフだけが見られるメモを書いてみましょう（飼い主さんには届きません）', action_url: '/' },
+  { step_number: 6, step_key: 'send_line_notification', title: 'LINEで通知を送ってみましょう', description: '連絡帳を「共有」すると、ご自身のLINEに届きます。ぜひ試してみてください', action_url: '/records' },
+  { step_number: 7, step_key: 'check_liff_app', title: '飼い主さん側の画面を確認しましょう', description: 'LINEを開いて、飼い主さんとして届いた連絡帳を確認してみましょう', action_url: '' },
 ];
 
 // -------------------------

@@ -14,6 +14,7 @@ import PhotosForm from './records/components/PhotosForm'
 import ConditionForm from './records/components/ConditionForm'
 import HealthCheckForm from './records/components/HealthCheckForm'
 import { useTrialStepCompletion } from '../hooks/useTrialStepCompletion'
+import { TrialPageGuide } from '../components/trial/TrialPageGuide'
 
 import AISettingsScreen from './records/components/AISettingsScreen'
 import RecordTypeSection from './records/components/RecordTypeSection'
@@ -305,6 +306,14 @@ const RecordDetail = () => {
         autoSaveStatus={autoSaveStatus}
         onSettings={openAISettings}
       />
+
+      <div className="px-4 pt-2">
+        <TrialPageGuide
+          stepKey="send_line_notification"
+          title="連絡帳を飼い主さんに共有しましょう"
+          detail="「共有」ボタンをタップすると、飼い主さんのLINEに連絡帳が届きます。今回はご自身のLINEに届きますので、ぜひ試してみてください。"
+        />
+      </div>
 
       <PetInfoCard
         petName={record.dog_name || ''}

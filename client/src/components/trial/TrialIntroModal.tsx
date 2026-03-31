@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../Icon'
 import { BTN_PRIMARY, BTN_TERTIARY } from '../../utils/styles'
+import { GuideCharacter } from './GuideCharacter'
 
 interface TrialIntroModalProps {
   onStart: () => void
@@ -25,48 +26,46 @@ export default function TrialIntroModal({ onStart, onSkip }: TrialIntroModalProp
           visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}
       >
-        {/* Icon */}
+        {/* キャラクター */}
         <div className="flex justify-center mb-4">
-          <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Icon icon="solar:hand-stars-bold" className="size-8 text-primary" />
-          </div>
+          <GuideCharacter expression="waving" size="lg" />
         </div>
 
-        {/* Title */}
         <h2 className="text-center text-xl font-bold text-foreground">
-          まずはデモモードで体験しましょう
+          一緒にBlinkを体験してみましょう！
         </h2>
 
-        {/* Description */}
         <p className="mt-3 text-center text-sm text-muted-foreground leading-relaxed">
-          デモデータで予約・連絡帳・LINE通知など一通りの機能を体験できます。
-          ガイドに沿ってステップを試してみましょう。
+          7つのかんたんなステップで、予約管理から連絡帳、LINE通知まで一通りの操作を体験できます。
         </p>
 
-        {/* Feature highlights */}
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          所要時間：約5分
+        </p>
+
+        {/* 体験できること */}
         <div className="mt-5 space-y-2.5">
           <FeatureItem
             icon="solar:calendar-bold"
-            text="予約管理を体験"
+            text="予約の作成・管理"
           />
           <FeatureItem
             icon="solar:document-text-bold"
-            text="連絡帳を作成・共有"
+            text="連絡帳の作成・飼い主さんへの共有"
           />
           <FeatureItem
             icon="simple-icons:line"
-            text="LINEでの通知受信を確認"
+            text="LINEでの通知の受け取り"
           />
         </div>
 
-        {/* Actions */}
         <div className="mt-6 space-y-3">
           <button
             type="button"
             onClick={onStart}
             className={`${BTN_PRIMARY} w-full px-6`}
           >
-            始める
+            さっそく始める
             <Icon icon="solar:arrow-right-linear" className="size-4 ml-1 inline-block" />
           </button>
           <div className="flex justify-center">
@@ -75,7 +74,7 @@ export default function TrialIntroModal({ onStart, onSkip }: TrialIntroModalProp
               onClick={onSkip}
               className={`${BTN_TERTIARY} px-4 py-2 text-xs`}
             >
-              スキップしてダッシュボードへ
+              あとで体験する
             </button>
           </div>
         </div>

@@ -1,11 +1,20 @@
 import { useEffect, useRef } from 'react'
-import { Icon } from '../Icon'
 import { useTrialStore } from '../../store/trialStore'
 import { TrialStepCard } from './TrialStepCard'
 import { TrialStepCelebration } from './TrialStepCelebration'
 import { TrialAllCompleteCelebration } from './TrialAllCompleteCelebration'
+import { GuideCharacter } from './GuideCharacter'
 
-const POLL_INTERVAL = 10_000 // 10秒
+const POLL_INTERVAL = 10_000
+
+function getEncouragement(completed: number, total: number): string {
+  if (completed === 0) return 'さっそく始めましょう！'
+  if (completed === 1) return '最初のステップが完了しました！'
+  if (completed < Math.floor(total / 2)) return '順調に進んでいます！'
+  if (completed === Math.floor(total / 2)) return 'もう半分クリアしました！'
+  if (completed === total - 1) return 'あと1つで完了です！'
+  return 'もう少しで全ステップ完了です！'
+}
 
 export function TrialGuideOverlay() {
   const {
@@ -26,7 +35,6 @@ export function TrialGuideOverlay() {
     fetchGuide()
   }, [fetchGuide])
 
-  // link_line_account ステップ中はポーリングで自動完了を検知
   useEffect(() => {
     if (currentStep?.step_key === 'link_line_account') {
       intervalRef.current = setInterval(() => {
@@ -41,7 +49,6 @@ export function TrialGuideOverlay() {
     }
   }, [currentStep?.step_key, fetchGuide])
 
-  // Not in trial or guide completed - don't show
   if (!isTrial || guideCompleted) return null
 
   const completedCount = steps.filter(s => s.completed).length
@@ -49,7 +56,6 @@ export function TrialGuideOverlay() {
 
   return (
     <>
-      {/* Step celebration modal */}
       {showCelebration && celebrationStepKey && (
         <TrialStepCelebration
           stepKey={celebrationStepKey}
@@ -58,45 +64,46 @@ export function TrialGuideOverlay() {
         />
       )}
 
-      {/* All complete celebration */}
       {showAllCompleteCelebration && (
         <TrialAllCompleteCelebration onDismiss={dismissAllCompleteCelebration} />
       )}
 
-      {/* Desktop: fixed right panel / Mobile: bottom sheet */}
       <div className="fixed bottom-0 left-0 right-0 z-40 lg:bottom-auto lg:top-0 lg:left-auto lg:right-0 lg:w-[300px] lg:h-full">
-        {/* Mobile backdrop */}
         <div className="lg:hidden bg-background/80 backdrop-blur-sm" />
 
-        {/* Panel */}
         <div className="bg-card border-t lg:border-l border-border shadow-lg lg:shadow-none lg:h-full overflow-y-auto">
-          <div className="p-5 space-y-5 max-h-[60vh] lg:max-h-none overflow-y-auto">
-            {/* Header */}
-            <div className="space-y-2">
-              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Icon icon="solar:paw-bold" className="size-5 text-primary" />
-                Blinkを体験しよう
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                操作すると自動でステップが進みます
-              </p>
-
-              {/* Progress bar */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>進捗</span>
-                  <span>{completedCount}/{totalSteps}</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-500"
-                    style={{ width: `${(completedCount / totalSteps) * 100}%` }}
-                  />
-                </div>
+          <div className="p-5 space-y-4 max-h-[60vh] lg:max-h-none overflow-y-auto">
+            {/* ヘッダー: キャラクター + タイトル */}
+            <div className="flex items-start gap-3">
+              <GuideCharacter
+                expression={completedCount === 0 ? 'waving' : 'default'}
+                size="sm"
+              />
+              <div className="flex-1 space-y-1.5">
+                <h3 className="text-base font-bold text-foreground">
+                  Blinkを体験しましょう
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {getEncouragement(completedCount, totalSteps)}
+                </p>
               </div>
             </div>
 
-            {/* Steps */}
+            {/* 進捗バー */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>進捗</span>
+                <span>{completedCount}/{totalSteps}</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${(completedCount / totalSteps) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* ステップ一覧 */}
             <div className="space-y-1.5">
               {steps.map(step => (
                 <TrialStepCard

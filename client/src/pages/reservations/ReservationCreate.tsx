@@ -6,6 +6,7 @@ import { useReservationCreate } from '../../hooks/useReservationCreate'
 import { useDogFilter } from '../../hooks/useDogFilter'
 import { endUxSession, getUxIdentity, startUxSession, trackUxEvent } from '../../lib/uxAnalytics'
 import { useTrialStepCompletion } from '../../hooks/useTrialStepCompletion'
+import { TrialPageGuide } from '../../components/trial/TrialPageGuide'
 import StepIndicator from '../../components/reservations/StepIndicator'
 import DogSelectStep from '../../components/reservations/DogSelectStep'
 import DateTimeStep from '../../components/reservations/DateTimeStep'
@@ -127,6 +128,14 @@ const ReservationCreate = () => {
           <h1 className="text-lg font-bold font-heading">予約登録</h1>
         </div>
       </header>
+
+      <div className="px-5 pt-4">
+        <TrialPageGuide
+          stepKey="create_reservation"
+          title="予約を作成してみましょう"
+          detail="先ほど登録したワンちゃんを選んで、日にちを決めたら予約完了です。実際のお客様の予約もこのように作れます。"
+        />
+      </div>
 
       <StepIndicator
         currentStep={currentStep}

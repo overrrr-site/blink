@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast'
 import OwnerForm, { OwnerFormValues } from '../../components/OwnerForm'
 import { useAuthStore } from '../../store/authStore'
 import { useTrialStepCompletion } from '../../hooks/useTrialStepCompletion'
+import { TrialPageGuide } from '../../components/trial/TrialPageGuide'
 import type { RecordType } from '../../types/record'
 
 const OwnerCreate = () => {
@@ -93,6 +94,14 @@ const OwnerCreate = () => {
           <h1 className="text-lg font-bold font-heading">新規飼い主登録</h1>
         </div>
       </header>
+
+      <div className="px-5 pt-4">
+        <TrialPageGuide
+          stepKey="register_customer"
+          title="飼い主さんの情報を入力しましょう"
+          detail="お名前と電話番号を入力して、ワンちゃんのお名前も登録しましょう。お試しですので、ご自身の情報で大丈夫ですよ。"
+        />
+      </div>
 
       <OwnerForm onSubmit={handleSubmit} loading={loading} availableBusinessTypes={businessTypes} />
 

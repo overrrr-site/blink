@@ -1,28 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTrialStore } from '../../store/trialStore'
+import { GuideCharacter } from './GuideCharacter'
 
 interface TrialCoachMarkProps {
-  /** このコーチマークが表示されるステップキー */
   stepKey: string
-  /** 対象要素のセレクター（例: '[data-trial-target="owner-create"]'） */
   target: string
-  /** 表示メッセージ */
-  message: string
-  /** 吹き出しの位置 */
+  title: string
+  detail: string
   position?: 'top' | 'bottom'
-  /** プライマリターゲットが見つからない場合のフォールバック要素セレクター */
   fallbackTarget?: string
-  /** フォールバック時に表示するメッセージ */
-  fallbackMessage?: string
+  fallbackTitle?: string
+  fallbackDetail?: string
 }
 
 export default function TrialCoachMark({
   stepKey,
   target,
-  message,
+  title,
+  detail,
   position = 'bottom',
   fallbackTarget,
-  fallbackMessage,
+  fallbackTitle,
+  fallbackDetail,
 }: TrialCoachMarkProps) {
   const { isTrial, guideCompleted, currentStep } = useTrialStore()
   const [visible, setVisible] = useState(false)
@@ -40,7 +39,6 @@ export default function TrialCoachMark({
     }
 
     const timer = setTimeout(() => {
-      // 表示されている要素を見つけるヘルパー
       const findVisibleElement = (selector: string): Element | null => {
         const els = document.querySelectorAll(selector)
         if (els.length === 0) return null
@@ -75,12 +73,14 @@ export default function TrialCoachMark({
     return () => clearTimeout(timer)
   }, [target, fallbackTarget, isActiveStep, dismissed])
 
-  // ステップが変わったらdismissをリセット
   useEffect(() => {
     setDismissed(false)
   }, [currentStep?.step_key])
 
   if (!visible || !coords || !isActiveStep) return null
+
+  const displayTitle = usingFallback && fallbackTitle ? fallbackTitle : title
+  const displayDetail = usingFallback && fallbackDetail ? fallbackDetail : detail
 
   const tooltipTop = position === 'bottom'
     ? coords.top + coords.height + 12
@@ -100,28 +100,36 @@ export default function TrialCoachMark({
       {/* 吹き出し */}
       <div
         ref={tooltipRef}
-        className="absolute z-50 max-w-xs animate-in fade-in slide-in-from-bottom-2 duration-300"
+        className="absolute z-50 max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-300"
         style={{
           top: tooltipTop,
-          left: Math.max(16, Math.min(coords.left, window.innerWidth - 280)),
+          left: Math.max(16, Math.min(coords.left, window.innerWidth - 360)),
         }}
       >
-        <div className="bg-foreground text-background rounded-xl px-4 py-3 shadow-lg relative">
+        <div className="bg-card border border-border rounded-2xl px-4 py-3.5 shadow-xl relative">
           {/* 矢印 */}
           <div
-            className={`absolute w-3 h-3 bg-foreground rotate-45 ${
+            className={`absolute w-3 h-3 bg-card border-border rotate-45 ${
               position === 'bottom'
-                ? '-top-1.5 left-6'
-                : '-bottom-1.5 left-6'
+                ? '-top-1.5 left-8 border-l border-t'
+                : '-bottom-1.5 left-8 border-r border-b'
             }`}
           />
-          <p className="text-xs leading-relaxed">{usingFallback && fallbackMessage ? fallbackMessage : message}</p>
-          <button
-            onClick={() => setDismissed(true)}
-            className="mt-2 text-[10px] text-background/60 hover:text-background/80 transition-colors"
-          >
-            OK
-          </button>
+          <div className="flex items-start gap-3">
+            <GuideCharacter expression="pointing" size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground leading-snug">{displayTitle}</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{displayDetail}</p>
+            </div>
+          </div>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={() => setDismissed(true)}
+              className="text-xs text-primary font-medium hover:text-primary/80 transition-colors px-2 py-1"
+            >
+              わかりました
+            </button>
+          </div>
         </div>
       </div>
     </>
