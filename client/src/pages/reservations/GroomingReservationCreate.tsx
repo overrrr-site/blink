@@ -5,6 +5,7 @@ import { useReservationCreateData } from '../../hooks/useReservationCreateData'
 import { useDogFilter } from '../../hooks/useDogFilter'
 import { useToast } from '../../components/Toast'
 import { INPUT_CLASS } from '../../utils/styles'
+import { getCalendarSyncWarningMessage } from '../../utils/calendarSync'
 import { formatDateISO, formatDateFullWithWeekday } from '../../utils/date'
 import StepIndicator from '../../components/reservations/StepIndicator'
 import DogSelectStep from '../../components/reservations/DogSelectStep'
@@ -78,7 +79,7 @@ const GroomingReservationCreate = () => {
 
     setSaving(true)
     try {
-      await api.post('/reservations', {
+      const response = await api.post('/reservations', {
         dog_id: selectedDogId,
         reservation_date: form.reservation_date,
         reservation_time: form.reservation_time,
@@ -86,6 +87,10 @@ const GroomingReservationCreate = () => {
         service_type: 'grooming',
         service_details: { duration_minutes: form.duration_minutes },
       })
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
 
       invalidate()
       navigate('/reservations')

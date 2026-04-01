@@ -10,8 +10,8 @@ interface UseRecordEditorCoreArgs {
   onValidationError: (message: string) => void
   onSave: () => Promise<void>
   onShare: () => Promise<void>
-  onSaveError: () => void
-  onShareError: () => void
+  onSaveError: (error: unknown) => void
+  onShareError: (error: unknown) => void
   confirmShare?: () => Promise<boolean>
   validateShareBeforeConfirm?: boolean
   onToneChange?: (tone: 'formal' | 'casual') => void
@@ -45,13 +45,13 @@ export const useRecordEditorCore = ({
 
   const executeWithSaving = useCallback(async (
     action: () => Promise<void>,
-    onError: () => void
+    onError: (error: unknown) => void
   ) => {
     setSaving(true)
     try {
       await action()
-    } catch {
-      onError()
+    } catch (error) {
+      onError(error)
     } finally {
       setSaving(false)
     }
@@ -60,7 +60,7 @@ export const useRecordEditorCore = ({
   const runValidatedAction = useCallback(async (
     mode: 'save' | 'share',
     action: () => Promise<void>,
-    onError: () => void
+    onError: (error: unknown) => void
   ) => {
     const validation = validate(mode)
     if (!validation.ok) {

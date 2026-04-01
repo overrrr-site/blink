@@ -252,14 +252,16 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
 
     const reservation = result.rows[0];
 
-    // Googleカレンダーに同期（非ブロッキング: レスポンスを先に返す）
-    syncCalendarOnCreate({
+    const calendarSync = await syncCalendarOnCreate({
       storeId: req.storeId!,
       reservation,
       dogId: dog_id,
-    }).catch((err) => console.error('Calendar sync error (create):', err));
+    });
 
-    res.status(201).json(reservation);
+    res.status(201).json({
+      ...reservation,
+      calendar_sync: calendarSync,
+    });
   } catch (error) {
     sendServerError(res, '予約の作成に失敗しました', error);
   }
@@ -420,15 +422,17 @@ router.put('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
 
       await client.query('COMMIT');
 
-      // Googleカレンダーに同期（非ブロッキング: レスポンスを先に返す）
-      syncCalendarOnUpdate({
+      const calendarSync = await syncCalendarOnUpdate({
         storeId: req.storeId!,
         reservationId: parseInt(id, 10),
         reservation,
         status,
-      }).catch((err) => console.error('Calendar sync error (update):', err));
+      });
 
-      res.json(reservation);
+      res.json({
+        ...reservation,
+        calendar_sync: calendarSync,
+      });
       return;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -450,9 +454,6 @@ router.delete('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void>
 
     const { id } = req.params;
 
-    // Googleカレンダーから削除（エラーが発生しても予約削除は続行）
-    await syncCalendarOnDelete({ storeId: req.storeId, reservationId: parseInt(id, 10) });
-
     const result = await pool.query(
       `DELETE FROM reservations WHERE id = $1 AND store_id = $2 RETURNING *`,
       [id, req.storeId]
@@ -463,7 +464,15 @@ router.delete('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void>
       return;
     }
 
-    res.json({ success: true });
+    const calendarSync = await syncCalendarOnDelete({
+      storeId: req.storeId,
+      reservationId: parseInt(id, 10),
+    });
+
+    res.json({
+      success: true,
+      calendar_sync: calendarSync,
+    });
   } catch (error) {
     sendServerError(res, '予約の削除に失敗しました', error);
   }

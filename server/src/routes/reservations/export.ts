@@ -9,6 +9,7 @@ import {
 import { isNonEmptyString, isNumberLike } from '../../utils/validation.js';
 import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../../utils/businessTypes.js';
 import { logExportAction } from '../../services/exportLogService.js';
+import { toCompactDateStringJST } from '../../utils/date.js';
 import { getMonthDateRange, buildCsv } from './utils.js';
 
 const router = express.Router();
@@ -172,7 +173,7 @@ router.get('/export.ics', async function(req: AuthRequest, res): Promise<void> {
     ];
 
     for (const reservation of result.rows) {
-      const dateStr = reservation.reservation_date.toISOString().split('T')[0].replace(/-/g, '');
+      const dateStr = toCompactDateStringJST(reservation.reservation_date);
       const startTime = (reservation.reservation_time || '09:00').replace(':', '') + '00';
       const endTime = (reservation.pickup_time || '17:00').replace(':', '') + '00';
 

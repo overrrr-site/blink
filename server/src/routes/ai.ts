@@ -20,7 +20,7 @@ router.use(authenticate);
 // 日誌コメント生成
 router.post('/generate-comment', async (req: AuthRequest, res) => {
   try {
-    const comment = await generateDaycareComment(req.body);
+    const comment = await generateDaycareComment(req.body, req.storeId);
     res.json({ comment });
   } catch (error) {
     sendServerError(res, 'コメント生成に失敗しました', error);
@@ -48,12 +48,15 @@ router.post('/analyze-photo', async (req: AuthRequest, res) => {
     }
 
     if (!photo_base64) {
-      sendBadRequest(res, '写真が必要です');
-      return;
+      if (!photo) {
+        sendBadRequest(res, '写真が必要です');
+        return;
+      }
     }
 
     try {
       const result = await analyzePhotoForActivity({
+        photo,
         photo_base64,
         dog_name,
       });

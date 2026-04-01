@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { format, isFuture, isToday, parseISO } from 'date-fns';
 import liffClient from '../api/client';
 import { getAvatarUrl } from '../../utils/image';
+import { getCalendarSyncWarningMessage } from '../../utils/calendarSync'
 import { getAxiosErrorMessage } from '../../utils/error';
 import { useToast } from '../../components/Toast'
 import type { LiffReservationForm } from '../../types/reservation';
@@ -81,7 +82,11 @@ export default function ReservationEdit(): JSX.Element {
 
     setSaving(true);
     try {
-      await liffClient.put(`/reservations/${id}`, form);
+      const response = await liffClient.put(`/reservations/${id}`, form);
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
       navigate('/home/reservations');
     } catch (error) {
       showToast(getAxiosErrorMessage(error, '予約の更新に失敗しました'), 'error');

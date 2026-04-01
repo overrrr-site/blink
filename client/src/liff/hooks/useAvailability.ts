@@ -16,13 +16,18 @@ type AvailabilityResponse = {
   closedDays: string[];
 };
 
-export function useAvailability(month: string) {
+export function useAvailability(month: string, enabled = true) {
   const [data, setData] = useState<AvailabilityResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!month) return;
+    if (!month || !enabled) {
+      setData(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
     const fetchAvailability = async () => {
       setLoading(true);
@@ -39,7 +44,7 @@ export function useAvailability(month: string) {
     };
 
     fetchAvailability();
-  }, [month]);
+  }, [enabled, month]);
 
   const getAvailabilityForDate = (date: string): AvailabilityData | null => {
     if (!data) return null;

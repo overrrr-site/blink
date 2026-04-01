@@ -33,10 +33,17 @@ router.post('/', async (req, res) => {
 
     const eventType = event.type ?? 'unknown';
     const eventData = event.data ?? null;
+    const eventId = event.id ?? null;
 
     console.log('PAY.JP Webhook received:', eventType);
 
-    logId = await logWebhookEvent(eventType, eventData);
+    const logResult = await logWebhookEvent(eventType, eventData, eventId);
+    logId = logResult.logId;
+
+    if (logResult.duplicate) {
+      res.json({ received: true, duplicate: true });
+      return;
+    }
 
     switch (eventType) {
       case 'charge.succeeded':
@@ -72,18 +79,53 @@ router.post('/', async (req, res) => {
   }
 });
 
-async function logWebhookEvent(eventType: string, eventData: unknown): Promise<number | null> {
+async function logWebhookEvent(
+  eventType: string,
+  eventData: unknown,
+  eventId: string | null
+): Promise<{ logId: number | null; duplicate: boolean }> {
   try {
+    if (eventId) {
+      const existing = await pool.query<{ id: number; processed: boolean }>(
+        `SELECT id, processed
+         FROM billing_webhook_events
+         WHERE event_id = $1
+         LIMIT 1`,
+        [eventId]
+      );
+
+      if (existing.rows.length > 0) {
+        return {
+          logId: existing.rows[0].id,
+          duplicate: existing.rows[0].processed === true,
+        };
+      }
+    }
+
     const result = await pool.query(
-      `INSERT INTO billing_webhook_events (event_type, event_data, processed)
-       VALUES ($1, $2, false)
+      `INSERT INTO billing_webhook_events (event_id, event_type, event_data, processed)
+       VALUES ($1, $2, $3, false)
        RETURNING id`,
-      [eventType, eventData]
+      [eventId, eventType, eventData]
     );
-    return result.rows[0]?.id ?? null;
+    return { logId: result.rows[0]?.id ?? null, duplicate: false };
   } catch (error) {
+    const pgError = error as { code?: string };
+    if (eventId && pgError.code === '23505') {
+      const existing = await pool.query<{ id: number; processed: boolean }>(
+        `SELECT id, processed
+         FROM billing_webhook_events
+         WHERE event_id = $1
+         LIMIT 1`,
+        [eventId]
+      );
+      return {
+        logId: existing.rows[0]?.id ?? null,
+        duplicate: existing.rows[0]?.processed === true,
+      };
+    }
     console.error('Failed to log webhook event:', error);
-    return null;
+    return { logId: null, duplicate: false };
   }
 }
 

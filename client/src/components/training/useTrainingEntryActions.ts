@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { trainingProfilesApi } from '../../api/trainingProfiles'
 import type { TrainingEntryKind } from '../../types/trainingProfile'
+import { formatDateISO } from '../../utils/date'
 
 type UseTrainingEntryActionsParams = {
   mode: TrainingEntryKind
@@ -36,7 +37,7 @@ export type TrainingEntryActions = {
 }
 
 function getTodayISODate(): string {
-  return new Date().toISOString().split('T')[0]
+  return formatDateISO(new Date())
 }
 
 export function useTrainingEntryActions({

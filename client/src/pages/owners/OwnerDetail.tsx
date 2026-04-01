@@ -17,6 +17,7 @@ interface OwnerDog {
 
 interface OwnerDetailData {
   id: number
+  store_id: number
   name: string
   name_kana?: string
   phone: string
@@ -27,13 +28,28 @@ interface OwnerDetailData {
   dogs: OwnerDog[]
 }
 
-function buildOwnerLineLinkUrl(phone?: string): string {
-  const phoneQuery = phone ? `?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}` : ''
+function buildOwnerLineLinkUrl(params: {
+  phone?: string
+  ownerId?: number
+  storeId?: number
+}): string {
+  const searchParams = new URLSearchParams()
+  if (params.phone) {
+    searchParams.set('phone', params.phone.replace(/[^0-9]/g, ''))
+  }
+  if (params.ownerId) {
+    searchParams.set('ownerId', String(params.ownerId))
+  }
+  if (params.storeId) {
+    searchParams.set('storeId', String(params.storeId))
+  }
+  const query = searchParams.toString()
+  const suffix = query ? `?${query}` : ''
   const liffId = import.meta.env.VITE_LIFF_ID
   if (liffId) {
-    return `https://liff.line.me/${liffId}/link${phoneQuery}`
+    return `https://liff.line.me/${liffId}/link${suffix}`
   }
-  return `${window.location.origin}/liff/link${phoneQuery}`
+  return `${window.location.origin}/liff/link${suffix}`
 }
 
 function OwnerDetail(): JSX.Element {
@@ -62,7 +78,11 @@ function OwnerDetail(): JSX.Element {
   }
 
   const isLineLinked = Boolean(owner.line_id && owner.line_id.trim())
-  const ownerLineLinkUrl = buildOwnerLineLinkUrl(owner.phone)
+  const ownerLineLinkUrl = buildOwnerLineLinkUrl({
+    phone: owner.phone,
+    ownerId: owner.id,
+    storeId: owner.store_id,
+  })
 
   return (
     <div className="space-y-4 pb-6">

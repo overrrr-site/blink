@@ -2,7 +2,11 @@ import express from 'express';
 import pool from '../db/connection.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { requireStoreId, sendServerError, sendBadRequest } from '../utils/response.js';
-import { sendLineMessage } from '../services/lineMessagingService.js';
+import {
+  describeLineConnectionIssue,
+  getStoreLineConnectionStatus,
+  sendLineMessageDetailed,
+} from '../services/lineMessagingService.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -166,29 +170,19 @@ router.post('/test-line', async (req: AuthRequest, res) => {
 
     const { owner_id } = req.body;
 
-    // 店舗のLINE設定確認
-    const storeResult = await pool.query(
-      `SELECT line_channel_id, line_channel_secret, line_channel_access_token 
-       FROM stores WHERE id = $1`,
-      [req.storeId]
-    );
-
-    if (storeResult.rows.length === 0) {
+    const lineStatus = await getStoreLineConnectionStatus(req.storeId!);
+    if (!lineStatus) {
       return sendBadRequest(res, '店舗情報が見つかりません');
     }
 
-    const store = storeResult.rows[0];
-    const missingCredentials: string[] = [];
-    if (!store.line_channel_id) missingCredentials.push('Channel ID');
-    if (!store.line_channel_secret) missingCredentials.push('Channel Secret');
-    if (!store.line_channel_access_token) missingCredentials.push('Channel Access Token');
-
-    if (missingCredentials.length > 0) {
+    if (!lineStatus.connected) {
       return res.status(400).json({
         success: false,
-        error: 'LINE認証情報が不足しています',
-        missing: missingCredentials,
-        message: `以下の設定が必要です: ${missingCredentials.join(', ')}`,
+        error: lineStatus.isTrial ? 'トライアルLINE認証情報が不足しています' : 'LINE認証情報が不足しています',
+        missing: lineStatus.missing,
+        isTrial: lineStatus.isTrial,
+        source: lineStatus.source,
+        message: describeLineConnectionIssue(lineStatus),
       });
     }
 
@@ -249,9 +243,9 @@ router.post('/test-line', async (req: AuthRequest, res) => {
     // テストメッセージ送信
     const testMessage = `🐕 LINE通知テスト\n\nこれはBLINKからのテストメッセージです。\n送信日時: ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`;
 
-    const sent = await sendLineMessage(req.storeId!, targetLineId!, testMessage);
+    const sent = await sendLineMessageDetailed(req.storeId!, targetLineId!, testMessage);
 
-    if (sent) {
+    if (sent.sent) {
       res.json({
         success: true,
         message: `${ownerName}さんにテストメッセージを送信しました`,
@@ -261,7 +255,7 @@ router.post('/test-line', async (req: AuthRequest, res) => {
       res.status(500).json({
         success: false,
         error: 'メッセージ送信に失敗しました',
-        message: 'LINE APIエラーが発生しました。Vercelログを確認してください。',
+        message: sent.reason || 'LINE APIエラーが発生しました。Vercelログを確認してください。',
         lineEnabled,
       });
     }
@@ -277,19 +271,10 @@ router.get('/line-status', async (req: AuthRequest, res) => {
       return;
     }
 
-    // 店舗のLINE認証情報確認
-    const storeResult = await pool.query(
-      `SELECT line_channel_id, line_channel_secret, line_channel_access_token 
-       FROM stores WHERE id = $1`,
-      [req.storeId]
-    );
-
-    const store = storeResult.rows[0];
-    const hasCredentials = !!(
-      store?.line_channel_id &&
-      store?.line_channel_secret &&
-      store?.line_channel_access_token
-    );
+    const lineStatus = await getStoreLineConnectionStatus(req.storeId!);
+    if (!lineStatus) {
+      return sendBadRequest(res, '店舗情報が見つかりません');
+    }
 
     // 通知設定確認
     const settingsResult = await pool.query(
@@ -308,10 +293,13 @@ router.get('/line-status', async (req: AuthRequest, res) => {
     );
 
     res.json({
-      hasLineCredentials: hasCredentials,
+      hasLineCredentials: lineStatus.connected,
       lineNotificationEnabled: settings?.line_notification_enabled ?? false,
       recordNotificationEnabled: settings?.record_notification ?? true,
       linkedOwnersCount: parseInt(linkedOwnersResult.rows[0]?.count || '0'),
+      isTrial: lineStatus.isTrial,
+      lineConnectionSource: lineStatus.source,
+      missing: lineStatus.missing,
     });
   } catch (error) {
     sendServerError(res, 'LINE設定状態の確認に失敗しました', error);

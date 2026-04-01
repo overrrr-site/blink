@@ -5,7 +5,8 @@ export function buildDaycareCommentPrompt(
   morningToilet: { urination: boolean; defecation: boolean; location: string } | undefined,
   afternoonToilet: { urination: boolean; defecation: boolean; location: string } | undefined,
   memo?: string,
-  photoAnalyses?: string[]
+  photoAnalyses?: string[],
+  styleHint: string = ''
 ): string {
   let context = `あなたは犬の幼稚園・保育園のスタッフです。今日の${dogName}ちゃんの様子を飼い主さんに伝える日誌コメントを、温かみのある自然な日本語で書いてください。
 
@@ -56,7 +57,7 @@ export function buildDaycareCommentPrompt(
 - スタッフのメモや写真の情報を優先的に反映してください
 - 絵文字は控えめに（1〜2個程度）
 - ポジティブな表現を心がけてください
-- 「もう少し」の項目は、前向きな表現で伝えてください`;
+- 「もう少し」の項目は、前向きな表現で伝えてください${styleHint}`;
 
   return context;
 }
@@ -190,7 +191,7 @@ ${healthNotes.length > 0 ? '【健康チェック】' + healthNotes.join('、') 
 ${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
 ${memo}${data.photoAnalyses || ''}
 
-200〜300文字程度で、以下を含めてください：
+150〜250文字程度で、以下を含めてください：
 - カットの仕上がり
 - 健康面で気づいたこと
 - ご自宅でのケアアドバイス
@@ -209,7 +210,7 @@ ${specialCare ? '【特別ケア】' + specialCare : ''}
 ${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
 ${memo}${data.photoAnalyses || ''}
 
-200〜300文字程度で、以下を含めてください：
+150〜250文字程度で、以下を含めてください：
 - 滞在中の様子・リラックス度
 - お食事やお散歩の様子
 - 飼い主さんへの安心メッセージ
@@ -260,7 +261,7 @@ ${memo}${data.photoAnalyses || ''}
 ${data.condition?.overall ? '【体調】' + formatCondition(data.condition.overall) : ''}
 ${memo}${trainingSection}${mealSection}${toiletSection}${data.photoAnalyses || ''}
 
-200〜300文字程度で、以下を含めてください：
+150〜250文字程度で、以下を含めてください：
 - 今日の活動と楽しんでいた様子
 - トレーニングの成果（記録がある場合のみ）
 - 食事やトイレの状況（記録がある場合のみ）

@@ -6,8 +6,15 @@ import axios from 'axios'
  */
 export function getAxiosErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
-    const serverMessage = (error.response?.data as { error?: string } | undefined)?.error
-    return serverMessage || fallback
+    const payload = error.response?.data as {
+      error?: string
+      message?: string
+      reason?: string
+    } | undefined
+    if (payload?.error && payload?.reason) {
+      return `${payload.error}: ${payload.reason}`
+    }
+    return payload?.error || payload?.message || payload?.reason || fallback
   }
   if (error instanceof Error) {
     return error.message || fallback

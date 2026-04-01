@@ -15,6 +15,7 @@ import {
   createAchievementCycle,
 } from './trainingGridModel'
 import { formatEntryDateShort } from '../../utils/trainingDate'
+import { formatDateISO } from '../../utils/date'
 
 interface TrainingGridViewProps {
   category: TrainingProfileCategory
@@ -68,7 +69,7 @@ function TrainingGridView({
 }: TrainingGridViewProps) {
   const [saving, setSaving] = useState(false)
   const [showAddDate, setShowAddDate] = useState(false)
-  const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [newDate, setNewDate] = useState(() => formatDateISO(new Date()))
   const [pendingChanges, setPendingChanges] = useState<Map<string, PendingAction>>(new Map())
   const [localOverrides, setLocalOverrides] = useState<Map<string, string>>(new Map())
 

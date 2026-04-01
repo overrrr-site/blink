@@ -3,6 +3,7 @@ import { ja } from 'date-fns/locale'
 import { useAvailability } from '../hooks/useAvailability'
 import type { LiffReservationForm } from '../../types/reservation'
 import type { RecordType } from '../../types/record'
+import { formatDateISO } from '../../utils/date'
 
 type ReservationFormFieldsProps = {
   businessType: RecordType
@@ -30,12 +31,13 @@ function calculateNights(checkInDate: string, checkOutDate?: string): number {
 }
 
 export default function ReservationFormFields({ businessType, formData, onChange }: ReservationFormFieldsProps) {
+  const isDaycare = businessType === 'daycare'
   const selectedMonth = formData.reservation_date
     ? format(new Date(formData.reservation_date), 'yyyy-MM')
     : format(new Date(), 'yyyy-MM')
 
-  const { getAvailabilityForDate } = useAvailability(selectedMonth)
-  const availability = formData.reservation_date
+  const { getAvailabilityForDate } = useAvailability(selectedMonth, isDaycare)
+  const availability = isDaycare && formData.reservation_date
     ? getAvailabilityForDate(formData.reservation_date)
     : null
 
@@ -70,7 +72,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
             type="date"
             value={formData.reservation_date}
             onChange={(e) => onChange({ reservation_date: e.target.value })}
-            min={format(new Date(), 'yyyy-MM-dd')}
+            min={formatDateISO(new Date())}
             className={`w-full px-4 py-3 rounded-xl border bg-input text-foreground min-h-[52px]
                        focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all
                        ${availability?.isClosed ? 'border-destructive/50 bg-destructive/5' : ''}
@@ -84,7 +86,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
             <p className="text-xs text-muted-foreground">
               {format(new Date(formData.reservation_date), 'yyyy年M月d日 (E)', { locale: ja })}
             </p>
-            {availability && (
+            {isDaycare && availability && (
               <div className="text-xs">
                 {availability.isClosed ? (
                   <span className="text-destructive font-medium">定休日</span>
@@ -172,7 +174,7 @@ export default function ReservationFormFields({ businessType, formData, onChange
               id="checkout_date"
               type="date"
               value={formData.checkout_date || ''}
-              min={formData.reservation_date || format(new Date(), 'yyyy-MM-dd')}
+              min={formData.reservation_date || formatDateISO(new Date())}
               onChange={(e) => onChange({ checkout_date: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-border bg-input text-foreground min-h-[52px]
                      focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"

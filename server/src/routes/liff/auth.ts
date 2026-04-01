@@ -7,6 +7,89 @@ import { generateVerificationCode, maskEmail } from './common.js';
 
 const router = express.Router();
 
+type LinkOwnerRow = {
+  id: number;
+  store_id: number;
+  name: string;
+  email: string | null;
+  line_id: string | null;
+  store_name?: string;
+};
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, '');
+}
+
+function parseScopedId(value: unknown, fieldName: string): { value: number | null; error?: string } {
+  if (value === undefined || value === null || value === '') {
+    return { value: null };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return { value: null, error: `${fieldName}が不正です` };
+  }
+
+  return { value: parsed };
+}
+
+async function findOwnersForLink(params: {
+  phone: string;
+  ownerId?: number | null;
+  storeId?: number | null;
+}): Promise<LinkOwnerRow[]> {
+  const queryParams: Array<string | number> = [params.phone];
+  let query = `
+    SELECT o.*, s.name as store_name
+    FROM owners o
+    JOIN stores s ON o.store_id = s.id
+    WHERE o.phone = $1
+      AND o.deleted_at IS NULL
+  `;
+
+  if (params.ownerId) {
+    queryParams.push(params.ownerId);
+    query += ` AND o.id = $${queryParams.length}`;
+  }
+
+  if (params.storeId) {
+    queryParams.push(params.storeId);
+    query += ` AND o.store_id = $${queryParams.length}`;
+  }
+
+  const result = await pool.query<LinkOwnerRow>(query, queryParams);
+  return result.rows;
+}
+
+function buildLinkCodeScopeQuery(params: {
+  baseQuery: string;
+  phone: string;
+  lineUserId: string;
+  ownerId?: number | null;
+  storeId?: number | null;
+  code?: string;
+}): { query: string; values: Array<string | number> } {
+  const values: Array<string | number> = [params.phone, params.lineUserId];
+  let query = params.baseQuery;
+
+  if (params.code) {
+    values.push(params.code);
+    query += ` AND code = $${values.length}`;
+  }
+
+  if (params.ownerId) {
+    values.push(params.ownerId);
+    query += ` AND owner_id = $${values.length}`;
+  }
+
+  if (params.storeId) {
+    values.push(params.storeId);
+    query += ` AND store_id = $${values.length}`;
+  }
+
+  return { query, values };
+}
+
 router.post('/auth', async function(req, res) {
   const startTime = Date.now();
   console.log('🔐 LIFF auth開始');
@@ -117,34 +200,39 @@ router.post('/auth', async function(req, res) {
 router.post('/link/request', async function(req, res) {
   try {
     const { phone, lineUserId } = req.body;
+    const normalizedPhone = typeof phone === 'string' ? normalizePhone(phone) : '';
+    const ownerScope = parseScopedId(req.body.ownerId, 'ownerId');
+    const storeScope = parseScopedId(req.body.storeId, 'storeId');
 
-    if (!phone || !lineUserId) {
+    if (ownerScope.error || storeScope.error) {
+      sendBadRequest(res, ownerScope.error || storeScope.error || '紐付け情報が不正です');
+      return;
+    }
+
+    if (!normalizedPhone || !lineUserId) {
       sendBadRequest(res, '電話番号とLINEユーザーIDが必要です');
       return;
     }
 
-    // 電話番号で飼い主を検索
-    const ownerResult = await pool.query(
-      `SELECT o.*, s.name as store_name FROM owners o
-       JOIN stores s ON o.store_id = s.id
-       WHERE o.phone = $1`,
-      [phone]
-    );
+    const owners = await findOwnersForLink({
+      phone: normalizedPhone,
+      ownerId: ownerScope.value,
+      storeId: storeScope.value,
+    });
 
-    if (ownerResult.rows.length === 0) {
+    if (owners.length === 0) {
       return res.status(404).json({
         error: 'この電話番号で登録されているアカウントが見つかりません',
       });
     }
 
-    // 同じ電話番号の顧客が複数店舗に存在する場合
-    if (ownerResult.rows.length > 1) {
+    if (owners.length > 1) {
       return res.status(409).json({
         error: 'この電話番号は複数の店舗で登録されています。店舗にお問い合わせください。',
       });
     }
 
-    const owner = ownerResult.rows[0];
+    const owner = owners[0];
 
     // 既にLINE IDが紐付いている場合
     if (owner.line_id && owner.line_id === lineUserId) {
@@ -174,15 +262,15 @@ router.post('/link/request', async function(req, res) {
 
     // 既存のコードを削除（同じ電話番号とLINE User IDの組み合わせ）
     await pool.query(
-      `DELETE FROM line_link_codes WHERE phone = $1 AND line_user_id = $2`,
-      [phone, lineUserId]
+      `DELETE FROM line_link_codes WHERE line_user_id = $1 AND owner_id = $2 AND store_id = $3`,
+      [lineUserId, owner.id, owner.store_id]
     );
 
     // 確認コードを保存
     await pool.query(
-      `INSERT INTO line_link_codes (phone, code, line_user_id, expires_at)
-       VALUES ($1, $2, $3, $4)`,
-      [phone, code, lineUserId, expiresAt]
+      `INSERT INTO line_link_codes (phone, code, line_user_id, owner_id, store_id, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [normalizedPhone, code, lineUserId, owner.id, owner.store_id, expiresAt]
     );
 
     // メール送信
@@ -221,28 +309,51 @@ router.post('/link/request', async function(req, res) {
 router.post('/link/verify', async function(req, res) {
   try {
     const { phone, code, lineUserId } = req.body;
+    const normalizedPhone = typeof phone === 'string' ? normalizePhone(phone) : '';
+    const ownerScope = parseScopedId(req.body.ownerId, 'ownerId');
+    const storeScope = parseScopedId(req.body.storeId, 'storeId');
 
-    if (!phone || !code || !lineUserId) {
+    if (ownerScope.error || storeScope.error) {
+      sendBadRequest(res, ownerScope.error || storeScope.error || '紐付け情報が不正です');
+      return;
+    }
+
+    if (!normalizedPhone || !code || !lineUserId) {
       sendBadRequest(res, '電話番号、確認コード、LINEユーザーIDが必要です');
       return;
     }
 
     // 確認コードを検証
+    const verifyScope = buildLinkCodeScopeQuery({
+      baseQuery: `SELECT * FROM line_link_codes
+       WHERE phone = $1 AND line_user_id = $2 AND expires_at > CURRENT_TIMESTAMP`,
+      phone: normalizedPhone,
+      lineUserId,
+      code,
+      ownerId: ownerScope.value,
+      storeId: storeScope.value,
+    });
     const codeResult = await pool.query(
-      `SELECT * FROM line_link_codes
-       WHERE phone = $1 AND line_user_id = $2 AND code = $3 AND expires_at > CURRENT_TIMESTAMP
+      `${verifyScope.query}
        ORDER BY created_at DESC
        LIMIT 1`,
-      [phone, lineUserId, code]
+      verifyScope.values
     );
 
     if (codeResult.rows.length === 0) {
       // 試行回数をカウント
-      await pool.query(
-        `UPDATE line_link_codes
+      const attemptScope = buildLinkCodeScopeQuery({
+        baseQuery: `UPDATE line_link_codes
          SET attempts = attempts + 1
          WHERE phone = $1 AND line_user_id = $2 AND expires_at > CURRENT_TIMESTAMP`,
-        [phone, lineUserId]
+        phone: normalizedPhone,
+        lineUserId,
+        ownerId: ownerScope.value,
+        storeId: storeScope.value,
+      });
+      await pool.query(
+        attemptScope.query,
+        attemptScope.values
       );
 
       return res.status(400).json({
@@ -259,24 +370,30 @@ router.post('/link/verify', async function(req, res) {
       });
     }
 
-    // 電話番号で飼い主を取得
-    const ownerResult = await pool.query(
-      `SELECT o.* FROM owners o WHERE o.phone = $1`,
-      [phone]
-    );
+    const owners = await findOwnersForLink({
+      phone: normalizedPhone,
+      ownerId: codeRecord.owner_id ?? ownerScope.value,
+      storeId: codeRecord.store_id ?? storeScope.value,
+    });
 
-    if (ownerResult.rows.length === 0) {
+    if (owners.length === 0) {
       sendNotFound(res, '飼い主が見つかりません');
       return;
     }
 
-    if (ownerResult.rows.length > 1) {
+    if (owners.length > 1) {
       return res.status(409).json({
         error: 'この電話番号は複数の店舗で登録されています。店舗にお問い合わせください。',
       });
     }
 
-    const owner = ownerResult.rows[0];
+    const owner = owners[0];
+
+    if (owner.line_id && owner.line_id !== lineUserId) {
+      return res.status(400).json({
+        error: '既に別のLINEアカウントが紐付いています。店舗にお問い合わせください。',
+      });
+    }
 
     // LINE User IDを更新
     await pool.query(
@@ -286,8 +403,8 @@ router.post('/link/verify', async function(req, res) {
 
     // 使用済み確認コードを削除
     await pool.query(
-      `DELETE FROM line_link_codes WHERE phone = $1 AND line_user_id = $2`,
-      [phone, lineUserId]
+      `DELETE FROM line_link_codes WHERE id = $1`,
+      [codeRecord.id]
     );
 
     // JWTトークンを発行

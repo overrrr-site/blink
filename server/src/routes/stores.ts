@@ -8,8 +8,11 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
-import { clearStoreLineClientCache } from '../services/lineMessagingService.js';
-import { encrypt, decrypt } from '../utils/encryption.js';
+import {
+  clearStoreLineClientCache,
+  getStoreLineConnectionStatus,
+} from '../services/lineMessagingService.js';
+import { encrypt } from '../utils/encryption.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -24,6 +27,7 @@ router.get('/', cacheControl(30, 60), async (req: AuthRequest, res) => {
     const result = await pool.query(
       `SELECT id, name, address, phone, business_hours, closed_days,
               business_types, primary_business_type,
+              is_trial,
               line_channel_id, line_channel_secret, line_channel_access_token,
               created_at, updated_at
        FROM stores WHERE id = $1`,
@@ -36,14 +40,22 @@ router.get('/', cacheControl(30, 60), async (req: AuthRequest, res) => {
     }
 
     const store = result.rows[0];
-    
-    // LINE設定をマスク表示（セキュリティのため）
+    const lineStatus = await getStoreLineConnectionStatus(req.storeId!);
+
     const response = {
       ...store,
-      line_channel_id: store.line_channel_id ? `${store.line_channel_id.substring(0, 4)}...` : null,
-      line_channel_secret: store.line_channel_secret ? `${store.line_channel_secret.substring(0, 4)}...` : null,
-      line_channel_access_token: store.line_channel_access_token ? `${store.line_channel_access_token.substring(0, 8)}...` : null,
-      line_connected: !!(store.line_channel_id && store.line_channel_secret && store.line_channel_access_token),
+      line_channel_id: lineStatus?.source === 'store' && store.line_channel_id
+        ? `${store.line_channel_id.substring(0, 4)}...`
+        : null,
+      line_channel_secret: lineStatus?.source === 'store' && store.line_channel_secret
+        ? `${store.line_channel_secret.substring(0, 4)}...`
+        : null,
+      line_channel_access_token: lineStatus?.source === 'store' && store.line_channel_access_token
+        ? `${store.line_channel_access_token.substring(0, 8)}...`
+        : null,
+      line_connected: lineStatus?.connected ?? false,
+      line_connection_source: lineStatus?.source ?? 'none',
+      line_missing: lineStatus?.missing ?? [],
     };
 
     res.json(response);
@@ -127,6 +139,7 @@ router.put('/', async (req: AuthRequest, res) => {
       `UPDATE stores SET ${updates.join(', ')} WHERE id = $${paramIndex} 
        RETURNING id, name, address, phone, business_hours, closed_days,
                  business_types, primary_business_type,
+                 is_trial,
                  line_channel_id, line_channel_secret, line_channel_access_token,
                  created_at, updated_at`,
       values
@@ -143,14 +156,22 @@ router.put('/', async (req: AuthRequest, res) => {
     }
 
     const store = result.rows[0];
-    
-    // LINE設定をマスク表示（セキュリティのため）
+    const lineStatus = await getStoreLineConnectionStatus(req.storeId!);
+
     const response = {
       ...store,
-      line_channel_id: store.line_channel_id ? `${store.line_channel_id.substring(0, 4)}...` : null,
-      line_channel_secret: store.line_channel_secret ? `${store.line_channel_secret.substring(0, 4)}...` : null,
-      line_channel_access_token: store.line_channel_access_token ? `${store.line_channel_access_token.substring(0, 8)}...` : null,
-      line_connected: !!(store.line_channel_id && store.line_channel_secret && store.line_channel_access_token),
+      line_channel_id: lineStatus?.source === 'store' && store.line_channel_id
+        ? `${store.line_channel_id.substring(0, 4)}...`
+        : null,
+      line_channel_secret: lineStatus?.source === 'store' && store.line_channel_secret
+        ? `${store.line_channel_secret.substring(0, 4)}...`
+        : null,
+      line_channel_access_token: lineStatus?.source === 'store' && store.line_channel_access_token
+        ? `${store.line_channel_access_token.substring(0, 8)}...`
+        : null,
+      line_connected: lineStatus?.connected ?? false,
+      line_connection_source: lineStatus?.source ?? 'none',
+      line_missing: lineStatus?.missing ?? [],
     };
 
     res.json(response);

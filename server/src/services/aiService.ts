@@ -41,6 +41,172 @@ const TRAINING_LABELS: Record<string, string> = {
   jumping: '飛びつき対策',
 };
 
+const AI_COMMENT_MIN_LENGTH = 150;
+const AI_COMMENT_MAX_LENGTH = 250;
+
+function normalizeNarrativeText(text: string): string {
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function isWithinNarrativeLength(text: string): boolean {
+  return text.length >= AI_COMMENT_MIN_LENGTH && text.length <= AI_COMMENT_MAX_LENGTH;
+}
+
+function trimNarrativeText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const sentenceMatches = text.match(/[^。！？\n]+[。！？]?/g) || [];
+  let trimmed = '';
+
+  for (const sentence of sentenceMatches) {
+    const next = `${trimmed}${sentence}`.trim();
+    if (next.length > maxLength) {
+      break;
+    }
+    trimmed = next;
+  }
+
+  const candidate = trimmed || text.slice(0, maxLength);
+  return candidate.trim();
+}
+
+async function rewriteTextToTargetLength(text: string): Promise<string | null> {
+  if (!process.env.GEMINI_API_KEY) {
+    return null;
+  }
+
+  return callGeminiText({
+    prompt: `次の文章の意味を変えずに、自然な日本語で${AI_COMMENT_MIN_LENGTH}〜${AI_COMMENT_MAX_LENGTH}文字に整えてください。文章本文だけを返してください。\n\n${text}`,
+    model: 'gemini-3-flash-preview',
+    maxOutputTokens: 500,
+    temperature: 0.3,
+    thinkingBudget: 0,
+  });
+}
+
+function clampFallbackText(text: string, filler: string): string {
+  let normalized = normalizeNarrativeText(text);
+  while (normalized.length < AI_COMMENT_MIN_LENGTH) {
+    normalized = normalizeNarrativeText(`${normalized}${normalized.endsWith('。') ? '' : '。'}${filler}`);
+  }
+  return trimNarrativeText(normalized, AI_COMMENT_MAX_LENGTH);
+}
+
+async function finalizeNarrativeText(text: string | null | undefined, fallbackText: string): Promise<string> {
+  const normalizedFallback = normalizeNarrativeText(fallbackText);
+  if (!text) {
+    return normalizedFallback;
+  }
+
+  const normalized = normalizeNarrativeText(text);
+  if (isWithinNarrativeLength(normalized)) {
+    return normalized;
+  }
+
+  try {
+    const rewritten = await rewriteTextToTargetLength(normalized);
+    if (rewritten) {
+      const normalizedRewrite = normalizeNarrativeText(rewritten);
+      if (isWithinNarrativeLength(normalizedRewrite)) {
+        return normalizedRewrite;
+      }
+      if (normalizedRewrite.length > AI_COMMENT_MAX_LENGTH) {
+        return trimNarrativeText(normalizedRewrite, AI_COMMENT_MAX_LENGTH);
+      }
+    }
+  } catch (error) {
+    console.error('🤖 Gemini rewrite exception:', error);
+  }
+
+  if (normalized.length > AI_COMMENT_MAX_LENGTH) {
+    return trimNarrativeText(normalized, AI_COMMENT_MAX_LENGTH);
+  }
+
+  return normalizedFallback;
+}
+
+async function buildStoreStyleHint(
+  storeId: number | undefined,
+  recordType: 'daycare' | 'grooming' | 'hotel'
+): Promise<string> {
+  if (!storeId) {
+    return '';
+  }
+
+  let styleHint = '';
+  const writingStyle = await analyzeWritingStyle(storeId, recordType);
+  if (writingStyle) {
+    const styleDescriptions: string[] = [];
+    if (writingStyle.avgLength > 220) {
+      styleDescriptions.push('やや詳しく丁寧に');
+    } else if (writingStyle.avgLength < 160) {
+      styleDescriptions.push('簡潔すぎず自然な長さで');
+    }
+    if (writingStyle.usesEmoji) {
+      styleDescriptions.push('絵文字を適度に使用');
+    } else {
+      styleDescriptions.push('絵文字は控えめに');
+    }
+    if (writingStyle.formalLevel === 'casual') {
+      styleDescriptions.push('親しみやすい口調で');
+    } else if (writingStyle.formalLevel === 'formal') {
+      styleDescriptions.push('丁寧な敬語で');
+    }
+    if (styleDescriptions.length > 0) {
+      styleHint = `\n\n【この店舗の好みの文体】\n${styleDescriptions.join('、')}書いてください。`;
+    }
+  }
+
+  const examples = await getHighQualityExamples(storeId, 'report_generation', recordType, 2);
+  if (examples.length > 0) {
+    styleHint += '\n\n【参考：この店舗で好評だった過去の文例】\n';
+    examples.forEach((ex, i) => {
+      styleHint += `例${i + 1}: ${ex.finalText.substring(0, 150)}...\n`;
+    });
+  }
+
+  return styleHint;
+}
+
+function isRemotePhotoUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+async function resolvePhotoAnalysisInput(input: {
+  photo?: string;
+  photo_base64?: string;
+}): Promise<{ base64Data: string; mimeType: string } | null> {
+  if (input.photo_base64) {
+    return processBase64Image(input.photo_base64);
+  }
+
+  if (!input.photo) {
+    return null;
+  }
+
+  if (!isRemotePhotoUrl(input.photo)) {
+    return processBase64Image(input.photo);
+  }
+
+  const response = await fetch(input.photo);
+  if (!response.ok) {
+    return null;
+  }
+
+  const mimeType = response.headers.get('content-type') || 'image/jpeg';
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return {
+    base64Data: buffer.toString('base64'),
+    mimeType,
+  };
+}
+
 export async function generateDaycareComment(input: {
   dog_name: string;
   training_data?: Record<string, string>;
@@ -49,7 +215,7 @@ export async function generateDaycareComment(input: {
   memo?: string;
   photo_analyses?: string[];
   training_labels?: Record<string, string>;
-}): Promise<string> {
+}, storeId?: number): Promise<string> {
   const {
     dog_name,
     training_data,
@@ -59,6 +225,7 @@ export async function generateDaycareComment(input: {
     photo_analyses,
     training_labels,
   } = input;
+  const styleHint = await buildStoreStyleHint(storeId, 'daycare');
 
   const doneItems: string[] = [];
   const almostItems: string[] = [];
@@ -82,7 +249,16 @@ export async function generateDaycareComment(input: {
     morning_toilet,
     afternoon_toilet,
     memo,
-    photo_analyses
+    photo_analyses,
+    styleHint
+  );
+  const fallbackText = generateTemplateComment(
+    dog_name,
+    doneItems,
+    almostItems,
+    morning_toilet,
+    afternoon_toilet,
+    memo
   );
 
   try {
@@ -94,20 +270,13 @@ export async function generateDaycareComment(input: {
       thinkingBudget: 0,
     });
     if (generatedText) {
-      return generatedText;
+      return finalizeNarrativeText(generatedText, fallbackText);
     }
   } catch (error) {
     console.error('🤖 Gemini API exception:', error);
   }
 
-  return generateTemplateComment(
-    dog_name,
-    doneItems,
-    almostItems,
-    morning_toilet,
-    afternoon_toilet,
-    memo
-  );
+  return fallbackText;
 }
 
 export async function analyzePhotoForRecord(input: {
@@ -144,8 +313,8 @@ export async function analyzePhotoForRecord(input: {
     };
   }
 
-  let imageBase64 = photo_base64;
-  if (!imageBase64 && photo) {
+  const resolvedPhoto = await resolvePhotoAnalysisInput({ photo, photo_base64 });
+  if (!resolvedPhoto) {
     return {
       analysis: '写真を確認しました。',
       health_concerns: [],
@@ -153,7 +322,7 @@ export async function analyzePhotoForRecord(input: {
     };
   }
 
-  const { base64Data, mimeType } = processBase64Image(imageBase64);
+  const { base64Data, mimeType } = resolvedPhoto;
   const prompt = buildRecordPhotoPrompt(record_type, dog_name);
 
   try {
@@ -219,7 +388,8 @@ export async function analyzePhotoForRecord(input: {
 }
 
 export async function analyzePhotoForActivity(input: {
-  photo_base64: string;
+  photo?: string;
+  photo_base64?: string;
   dog_name?: string;
 }): Promise<{
   analysis: string;
@@ -234,7 +404,15 @@ export async function analyzePhotoForActivity(input: {
     };
   }
 
-  const { base64Data, mimeType } = processBase64Image(input.photo_base64);
+  const resolvedPhoto = await resolvePhotoAnalysisInput({
+    photo: input.photo,
+    photo_base64: input.photo_base64,
+  });
+  if (!resolvedPhoto) {
+    throw new Error('解析用の写真データを取得できませんでした');
+  }
+
+  const { base64Data, mimeType } = resolvedPhoto;
   const prompt = buildActivityPhotoPrompt(input.dog_name);
 
   const responseText = await callGeminiVision({
@@ -334,38 +512,10 @@ export async function generateReport(
     usedInputs.push('hotel_stay');
   }
 
-  if (storeId) {
-    const writingStyle = await analyzeWritingStyle(storeId, input.record_type);
-    if (writingStyle) {
-      const styleDescriptions: string[] = [];
-      if (writingStyle.avgLength > 300) {
-        styleDescriptions.push('詳しく丁寧に');
-      } else if (writingStyle.avgLength < 150) {
-        styleDescriptions.push('簡潔に');
-      }
-      if (writingStyle.usesEmoji) {
-        styleDescriptions.push('絵文字を適度に使用');
-      } else {
-        styleDescriptions.push('絵文字は控えめに');
-      }
-      if (writingStyle.formalLevel === 'casual') {
-        styleDescriptions.push('親しみやすい口調で');
-      } else if (writingStyle.formalLevel === 'formal') {
-        styleDescriptions.push('丁寧な敬語で');
-      }
-      if (styleDescriptions.length > 0) {
-        styleHint = `\n\n【この店舗の好みの文体】\n${styleDescriptions.join('、')}書いてください。`;
-      }
-    }
-
-    const examples = await getHighQualityExamples(storeId, 'report_generation', input.record_type, 2);
-    if (examples.length > 0) {
-      styleHint += '\n\n【参考：この店舗で好評だった過去のレポート例】\n';
-      examples.forEach((ex, i) => {
-        styleHint += `例${i + 1}: ${ex.finalText.substring(0, 150)}...\n`;
-      });
-    }
-  }
+  styleHint = await buildStoreStyleHint(
+    storeId,
+    input.record_type as 'daycare' | 'grooming' | 'hotel'
+  );
 
   // 写真分析（最大2枚）
   let photoAnalysisHint = '';
@@ -421,6 +571,10 @@ export async function generateReport(
     });
 
     if (reportText) {
+      const finalizedReport = await finalizeNarrativeText(
+        reportText,
+        generateReportFallback(input.record_type, input.dog_name)
+      );
       let learningDataId: number | null = null;
       if (storeId) {
         learningDataId = await saveAILearningData({
@@ -433,12 +587,12 @@ export async function generateReport(
             condition: input.condition,
             health_check: input.health_check,
           },
-          aiOutput: reportText,
+          aiOutput: finalizedReport,
           recordType: input.record_type as 'daycare' | 'grooming' | 'hotel',
         });
       }
 
-      return { report: reportText, learningDataId, usedInputs };
+      return { report: finalizedReport, learningDataId, usedInputs };
     }
   } catch (apiError) {
     console.error('Gemini API error for generate-report:', apiError);
@@ -455,61 +609,52 @@ function generateTemplateComment(
   afternoonToilet: { urination: boolean; defecation: boolean; location: string } | undefined,
   memo?: string
 ): string {
-  const parts: string[] = [];
-
-  const greetings = [
-    `今日も${dogName}ちゃん、元気いっぱいでした！`,
-    `${dogName}ちゃん、今日も頑張りました！`,
-    `本日の${dogName}ちゃんの様子をお伝えします。`,
-  ];
-  parts.push(greetings[Math.floor(Math.random() * greetings.length)]);
-
+  const detailParts: string[] = [];
   if (memo && memo.trim()) {
-    parts.push(memo.trim());
+    detailParts.push(memo.trim());
   }
-
   if (doneItems.length > 0) {
-    if (doneItems.length === 1) {
-      parts.push(`${doneItems[0]}がバッチリできました！`);
-    } else if (doneItems.length <= 3) {
-      parts.push(`${doneItems.join('、')}ができました。`);
-    } else {
-      parts.push(`${doneItems.slice(0, 3).join('、')}など、${doneItems.length}項目ができました！`);
-    }
+    detailParts.push(
+      doneItems.length === 1
+        ? `${doneItems[0]}にも前向きに取り組み、落ち着いて行動できる場面が見られました`
+        : `${doneItems.slice(0, 3).join('、')}などに前向きに取り組み、できることが少しずつ増えてきています`
+    );
   }
-
   if (almostItems.length > 0) {
-    if (almostItems.length === 1) {
-      parts.push(`${almostItems[0]}はもう少しで完璧になりそうです。`);
-    } else {
-      parts.push(`${almostItems.slice(0, 2).join('、')}は引き続き練習していきます。`);
-    }
+    detailParts.push(
+      `${almostItems.slice(0, 2).join('、')}もスタッフと一緒に練習しながら、次につながる良い動きが見られました`
+    );
   }
-
-  const toiletSuccess = (morningToilet?.urination || morningToilet?.defecation) ||
-                       (afternoonToilet?.urination || afternoonToilet?.defecation);
+  const toiletSuccess = (morningToilet?.urination || morningToilet?.defecation)
+    || (afternoonToilet?.urination || afternoonToilet?.defecation);
   if (toiletSuccess) {
-    parts.push('トイレも上手にできていました。');
+    detailParts.push('園内でのトイレも無理なくできており、安心して過ごせていた様子です');
   }
 
-  const closings = [
-    'また次回も楽しみにしています！',
-    '次回も一緒に頑張りましょう！',
-    '引き続きよろしくお願いします。',
-  ];
-  parts.push(closings[Math.floor(Math.random() * closings.length)]);
-
-  return parts.join('\n');
+  const baseText = `${dogName}ちゃんは今日も元気に登園し、スタッフや周りの環境に慣れながら穏やかに過ごしてくれました。${detailParts.join('。')}。これからもその子らしいペースを大切にしながら、楽しく成長をサポートしてまいります。`;
+  return clampFallbackText(
+    baseText,
+    `次回も${dogName}ちゃんが安心して過ごせるよう、できたことをしっかり褒めながら丁寧に関わっていきます。`
+  );
 }
 
 function generateReportFallback(recordType: string, dogName: string): string {
   if (recordType === 'grooming') {
-    return `${dogName}ちゃんのトリミングが完了しました！今日もとてもお利口にしてくれました。仕上がりもバッチリです。お家でのブラッシングも続けていただけると、キレイな状態を保てます。次回のご予約もお待ちしております。`;
+    return clampFallbackText(
+      `今日の${dogName}ちゃんは落ち着いてトリミングを頑張ってくれました。施術中もスタッフの声かけによく応えてくれ、仕上がりもすっきり整っています。おうちではブラッシングを続けていただくと、毛並みをきれいに保ちやすくなります。`,
+      `次回も${dogName}ちゃんが安心して施術を受けられるよう、様子を見ながら丁寧にお預かりいたします。`
+    );
   }
   if (recordType === 'hotel') {
-    return `${dogName}ちゃんの滞在中、リラックスして過ごしてくれました。お食事もしっかり食べて、お散歩も楽しんでいました。とても穏やかに過ごしていましたのでご安心ください。またのご利用をお待ちしております。`;
+    return clampFallbackText(
+      `今回の${dogName}ちゃんは滞在中も落ち着いて過ごし、お食事やお散歩にも無理なく参加できていました。スタッフのそばでも安心した様子が見られ、リラックスして宿泊できていた印象です。`,
+      `お迎えまで穏やかに過ごしてくれていましたので、どうぞご安心ください。またのご利用をお待ちしております。`
+    );
   }
-  return `${dogName}ちゃん、今日も元気いっぱいでした！お友達と仲良く遊んで、トレーニングも頑張りました。次回も楽しみにしています！`;
+  return clampFallbackText(
+    `今日の${dogName}ちゃんは元気に登園し、お友達との時間やスタッフとの関わりを楽しみながら過ごしてくれました。園内でも落ち着いた場面が増え、できることを一つずつ頑張る姿が見られました。`,
+    `お食事やトイレも大きな問題なく過ごせており、これからの成長も楽しみです。次回も元気に会えるのを楽しみにしています。`
+  );
 }
 
 export async function fetchTrainingLabels(storeId: number): Promise<Record<string, string>> {

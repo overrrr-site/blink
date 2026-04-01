@@ -3,6 +3,7 @@ import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
 import api from '../../api/client'
+import { supabase } from '../../lib/supabase'
 import { useBusinessTypeFilter } from '../../hooks/useBusinessTypeFilter'
 import BusinessTypeSwitcher from '../../components/BusinessTypeSwitcher'
 import OverflowMenu from '../../components/OverflowMenu'
@@ -13,6 +14,7 @@ import ReservationCard from '../../components/ReservationCard'
 import type { ReservationCardData } from '../../components/ReservationCard'
 import CalendarCell from '../../components/reservations/CalendarCell'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { getCalendarSyncWarningMessage } from '../../utils/calendarSync'
 
 function toDateKey(date: Date): string {
   const year = date.getFullYear()
@@ -217,9 +219,13 @@ const ReservationsCalendar = () => {
 
     setUpdating(draggedReservation)
     try {
-      await api.put(`/reservations/${draggedReservation}`, {
+      const response = await api.put(`/reservations/${draggedReservation}`, {
         reservation_date: newDate,
       })
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
       await fetchReservations()
       setSelectedDate(targetDate)
     } catch {
@@ -242,27 +248,39 @@ const ReservationsCalendar = () => {
     window.print()
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const monthStr = format(currentDate, 'yyyy-MM')
-    const token = localStorage.getItem('token')
     const url = `${import.meta.env.VITE_API_URL}/reservations/export.ics?month=${monthStr}`
-    fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((response) => response.blob())
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = blobUrl
-        link.download = `reservations-${monthStr}.ics`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        showToast('認証情報を取得できませんでした。再ログインしてください。', 'error')
+        return
+      }
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (response.status === 401) {
+        showToast('認証情報の有効期限が切れました。再ログインしてください。', 'error')
+        return
+      }
+      if (!response.ok) {
+        throw new Error('Failed to export calendar')
+      }
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = `reservations-${monthStr}.ics`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.setTimeout(() => {
         URL.revokeObjectURL(blobUrl)
-      })
-      .catch(() => {
-        showToast('カレンダーのエクスポートに失敗しました', 'error')
-      })
+      }, 0)
+    } catch {
+      showToast('カレンダーのエクスポートに失敗しました', 'error')
+    }
   }
 
   // カレンダーの予約データを ReservationCardData に変換

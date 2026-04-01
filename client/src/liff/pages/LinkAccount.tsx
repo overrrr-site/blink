@@ -18,6 +18,8 @@ export default function LinkAccount() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
+  const [ownerId, setOwnerId] = useState<number | null>(null);
+  const [storeId, setStoreId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,8 +28,22 @@ export default function LinkAccount() {
     const params = new URLSearchParams(location.search);
     const userId = params.get('lineUserId') || location.state?.lineUserId;
     const phoneParam = params.get('phone');
+    const ownerIdParam = params.get('ownerId');
+    const storeIdParam = params.get('storeId');
     if (phoneParam && !phone) {
       setPhone(phoneParam.replace(/[^0-9]/g, ''));
+    }
+    if (ownerIdParam) {
+      const parsedOwnerId = Number(ownerIdParam);
+      if (Number.isInteger(parsedOwnerId) && parsedOwnerId > 0) {
+        setOwnerId(parsedOwnerId);
+      }
+    }
+    if (storeIdParam) {
+      const parsedStoreId = Number(storeIdParam);
+      if (Number.isInteger(parsedStoreId) && parsedStoreId > 0) {
+        setStoreId(parsedStoreId);
+      }
     }
     
     if (userId) {
@@ -78,6 +94,8 @@ export default function LinkAccount() {
       const response = await liffClient.post('/link/request', {
         phone: phone.trim(),
         lineUserId,
+        ownerId,
+        storeId,
       });
 
       setMaskedEmail(response.data.maskedEmail);
@@ -108,6 +126,8 @@ export default function LinkAccount() {
         phone: phone.trim(),
         code: code.trim(),
         lineUserId,
+        ownerId,
+        storeId,
       });
 
       if (response.data.token && response.data.owner) {

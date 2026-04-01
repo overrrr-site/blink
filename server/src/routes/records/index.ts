@@ -317,12 +317,21 @@ router.post('/:id/share', async (req: AuthRequest, res) => {
     }
 
     const sharedRecord = await shareRecordForOwner(req.storeId!, Number(id));
-    if (!sharedRecord) {
+    if (sharedRecord.ok) {
+      res.json(sharedRecord.record);
+      return;
+    }
+
+    if ('kind' in sharedRecord && sharedRecord.kind === 'not_found') {
       sendNotFound(res, 'カルテが見つかりません');
       return;
     }
 
-    res.json(sharedRecord);
+    res.status(409).json({
+      error: 'カルテ通知の送信に失敗したため、共有を完了できませんでした',
+      code: 'code' in sharedRecord ? sharedRecord.code : undefined,
+      reason: 'reason' in sharedRecord ? sharedRecord.reason : undefined,
+    });
   } catch (error) {
     sendServerError(res, 'カルテの共有に失敗しました', error);
   }

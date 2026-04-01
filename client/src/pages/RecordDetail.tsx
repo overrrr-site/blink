@@ -29,6 +29,7 @@ import { useRecordDetail } from './records/hooks/useRecordDetail'
 import { getRecordLabel } from '../domain/businessTypeConfig'
 import { useAuthStore } from '../store/authStore'
 import { calculateAge } from '../utils/dog'
+import { getAxiosErrorMessage } from '../utils/error'
 import { normalizePhotosData } from '../utils/recordPhotos'
 
 const RecordDetail = () => {
@@ -212,8 +213,8 @@ const RecordDetail = () => {
     onValidationError: (message) => showToast(message, 'error'),
     onSave: saveRecord,
     onShare: shareRecord,
-    onSaveError: () => showToast('保存に失敗しました', 'error'),
-    onShareError: () => showToast('送信に失敗しました', 'error'),
+    onSaveError: (error) => showToast(getAxiosErrorMessage(error, '保存に失敗しました'), 'error'),
+    onShareError: (error) => showToast(getAxiosErrorMessage(error, '送信に失敗しました'), 'error'),
     confirmShare: () => confirm({
       title: '送信確認',
       message: '飼い主に送信しますか？',

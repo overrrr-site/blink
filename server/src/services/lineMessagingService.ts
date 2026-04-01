@@ -6,23 +6,117 @@ import { decrypt } from '../utils/encryption.js';
 // 店舗ごとのLINEクライアントをキャッシュ
 const storeLineClients: Map<number, Client> = new Map();
 
-/**
- * 店舗のLINE認証情報を取得
- */
-async function getStoreLineCredentials(storeId: number): Promise<{
+export type LineConnectionSource = 'store' | 'trial_env' | 'none';
+
+export interface StoreLineConnectionStatus {
+  connected: boolean;
+  isTrial: boolean;
+  source: LineConnectionSource;
+  missing: string[];
+  channelId: string | null;
+}
+
+export interface LineSendResult {
+  sent: boolean;
+  reason?: string;
+}
+
+type StoreLineCredentials = {
   channelId: string;
   channelSecret: string;
   channelAccessToken: string;
-} | null> {
-  try {
-    const result = await pool.query(
-      `SELECT line_channel_id, line_channel_secret, line_channel_access_token, is_trial
-       FROM stores
-       WHERE id = $1`,
-      [storeId]
-    );
+};
 
-    const store = result.rows[0];
+type StoreLineRow = {
+  line_channel_id: string | null;
+  line_channel_secret: string | null;
+  line_channel_access_token: string | null;
+  is_trial: boolean;
+};
+
+const TRIAL_LINE_ENV_MAP = [
+  { key: 'TRIAL_LINE_CHANNEL_ID', label: 'TRIAL_LINE_CHANNEL_ID' },
+  { key: 'TRIAL_LINE_CHANNEL_SECRET', label: 'TRIAL_LINE_CHANNEL_SECRET' },
+  { key: 'TRIAL_LINE_CHANNEL_ACCESS_TOKEN', label: 'TRIAL_LINE_CHANNEL_ACCESS_TOKEN' },
+] as const;
+
+async function fetchStoreLineRow(storeId: number): Promise<StoreLineRow | null> {
+  const result = await pool.query<StoreLineRow>(
+    `SELECT line_channel_id, line_channel_secret, line_channel_access_token, is_trial
+     FROM stores
+     WHERE id = $1`,
+    [storeId]
+  );
+
+  return result.rows[0] ?? null;
+}
+
+export async function getStoreLineConnectionStatus(storeId: number): Promise<StoreLineConnectionStatus | null> {
+  try {
+    const store = await fetchStoreLineRow(storeId);
+    if (!store) {
+      console.warn(`店舗ID ${storeId} が見つかりません`);
+      return null;
+    }
+
+    if (store.is_trial) {
+      const missing = TRIAL_LINE_ENV_MAP
+        .filter(({ key }) => !process.env[key])
+        .map(({ label }) => label);
+
+      return {
+        connected: missing.length === 0,
+        isTrial: true,
+        source: missing.length === 0 ? 'trial_env' : 'none',
+        missing,
+        channelId: missing.length === 0 ? process.env.TRIAL_LINE_CHANNEL_ID ?? null : null,
+      };
+    }
+
+    const missing: string[] = [];
+    if (!store.line_channel_id) missing.push('Channel ID');
+    if (!store.line_channel_secret) missing.push('Channel Secret');
+    if (!store.line_channel_access_token) missing.push('Channel Access Token');
+
+    return {
+      connected: missing.length === 0,
+      isTrial: false,
+      source: missing.length === 0 ? 'store' : 'none',
+      missing,
+      channelId: store.line_channel_id,
+    };
+  } catch (error) {
+    console.error(`店舗ID ${storeId} のLINE接続状態取得エラー:`, error);
+    return null;
+  }
+}
+
+export function describeLineConnectionIssue(status: StoreLineConnectionStatus | null): string {
+  if (!status) {
+    return 'LINE認証情報を取得できません';
+  }
+
+  if (status.connected) {
+    return 'LINE送信に失敗しました';
+  }
+
+  if (status.isTrial) {
+    return status.missing.length > 0
+      ? `トライアルLINE認証情報が未設定です: ${status.missing.join(', ')}`
+      : 'トライアルLINE認証情報が未設定です';
+  }
+
+  return status.missing.length > 0
+    ? `LINE認証情報が不足しています: ${status.missing.join(', ')}`
+    : 'LINE認証情報が不足しています';
+}
+
+/**
+ * 店舗のLINE認証情報を取得
+ */
+async function getStoreLineCredentials(storeId: number): Promise<StoreLineCredentials | null> {
+  try {
+    const store = await fetchStoreLineRow(storeId);
     if (!store) {
       console.warn(`店舗ID ${storeId} が見つかりません`);
       return null;
@@ -102,16 +196,24 @@ async function pushWithClient(
   lineUserId: string,
   message: Message | Message[],
   label: string
-): Promise<boolean> {
+): Promise<LineSendResult> {
   try {
+    const status = await getStoreLineConnectionStatus(storeId);
+    if (!status?.connected) {
+      const reason = describeLineConnectionIssue(status);
+      console.warn(`店舗ID ${storeId} のLINEクライアントが初期化されていません: ${reason}`);
+      return { sent: false, reason };
+    }
+
     const client = await getStoreLineClient(storeId);
     if (!client) {
-      console.warn(`店舗ID ${storeId} のLINEクライアントが初期化されていません`);
-      return false;
+      const reason = describeLineConnectionIssue(status);
+      console.warn(`店舗ID ${storeId} のLINEクライアントが初期化されていません: ${reason}`);
+      return { sent: false, reason };
     }
 
     await client.pushMessage(lineUserId, message, false);
-    return true;
+    return { sent: true };
   } catch (error) {
     console.error(`Error sending LINE ${label}:`, error);
     const statusCode = (error as { statusCode?: number })?.statusCode;
@@ -119,8 +221,21 @@ async function pushWithClient(
       const originalData = (error as { originalError?: { response?: { data?: unknown } } })?.originalError?.response?.data;
       console.error('LINE API Error:', originalData);
     }
-    return false;
+    return {
+      sent: false,
+      reason: error instanceof Error ? error.message : 'LINE APIエラーが発生しました',
+    };
   }
+}
+
+async function pushWithClientLegacy(
+  storeId: number,
+  lineUserId: string,
+  message: Message | Message[],
+  label: string
+): Promise<boolean> {
+  const result = await pushWithClient(storeId, lineUserId, message, label);
+  return result.sent;
 }
 
 /**
@@ -131,6 +246,14 @@ export async function sendLineMessage(
   lineUserId: string,
   message: string
 ): Promise<boolean> {
+  return pushWithClientLegacy(storeId, lineUserId, { type: 'text', text: message }, 'message');
+}
+
+export async function sendLineMessageDetailed(
+  storeId: number,
+  lineUserId: string,
+  message: string
+): Promise<LineSendResult> {
   return pushWithClient(storeId, lineUserId, { type: 'text', text: message }, 'message');
 }
 
@@ -142,7 +265,7 @@ export async function sendLineMessages(
   lineUserId: string,
   messages: Message[]
 ): Promise<boolean> {
-  return pushWithClient(storeId, lineUserId, messages, 'messages');
+  return pushWithClientLegacy(storeId, lineUserId, messages, 'messages');
 }
 
 /**
@@ -153,6 +276,13 @@ export async function sendLineFlexMessage(
   lineUserId: string,
   flexMessage: FlexMessage
 ): Promise<boolean> {
-  return pushWithClient(storeId, lineUserId, flexMessage, 'flex message');
+  return pushWithClientLegacy(storeId, lineUserId, flexMessage, 'flex message');
 }
 
+export async function sendLineFlexMessageDetailed(
+  storeId: number,
+  lineUserId: string,
+  flexMessage: FlexMessage
+): Promise<LineSendResult> {
+  return pushWithClient(storeId, lineUserId, flexMessage, 'flex message');
+}

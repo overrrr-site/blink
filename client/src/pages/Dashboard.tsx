@@ -30,6 +30,7 @@ import CoachMark from '../components/onboarding/CoachMark'
 import TrialIntroModal from '../components/trial/TrialIntroModal'
 
 import { useTrialStore } from '../store/trialStore'
+import { getCalendarSyncWarningMessage } from '../utils/calendarSync'
 
 function Dashboard(): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -90,9 +91,13 @@ function Dashboard(): JSX.Element {
   const handleCheckIn = useCallback(async function(reservationId: number): Promise<void> {
     setCheckingIn(reservationId)
     try {
-      await api.put(`/reservations/${reservationId}`, {
+      const response = await api.put(`/reservations/${reservationId}`, {
         status: '登園済',
       })
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
       await mutate()
     } catch {
       showToast('登園処理に失敗しました', 'error')
@@ -104,9 +109,13 @@ function Dashboard(): JSX.Element {
   const handleCheckOut = useCallback(async function(reservationId: number): Promise<void> {
     setCheckingIn(reservationId)
     try {
-      await api.put(`/reservations/${reservationId}`, {
+      const response = await api.put(`/reservations/${reservationId}`, {
         status: '降園済',
       })
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
       await mutate()
     } catch {
       showToast('降園処理に失敗しました', 'error')

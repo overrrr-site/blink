@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SaveButton from '../components/SaveButton'
 import { useToast } from '../components/Toast'
+import { formatDateISO } from '../utils/date'
 
 const CONTRACT_TYPES = ['月謝制', 'チケット制', '単発'] as const
 
@@ -81,7 +82,7 @@ function ContractEdit(): JSX.Element {
     if (course) {
       // コースマスタの情報でフォームを自動入力
       const validUntil = course.valid_days
-        ? new Date(Date.now() + course.valid_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        ? formatDateISO(new Date(Date.now() + course.valid_days * 24 * 60 * 60 * 1000))
         : ''
       
       setForm({

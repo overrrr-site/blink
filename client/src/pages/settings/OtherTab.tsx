@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore, selectUser } from '../../store/authStore'
 import api from '../../api/client'
 import { useToast } from '../../components/Toast'
+import { formatDateISO } from '../../utils/date'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
@@ -107,7 +108,7 @@ function OtherTab() {
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`
+      link.download = `${filename}_${formatDateISO(new Date())}.csv`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

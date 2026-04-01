@@ -1,5 +1,8 @@
 import pool from '../db/connection.js';
-import { sendLineMessage, sendLineFlexMessage } from './lineMessagingService.js';
+import {
+  sendLineMessageDetailed,
+  sendLineFlexMessageDetailed,
+} from './lineMessagingService.js';
 import { sendEmail } from './emailService.js';
 import {
   createReservationReminderFlexMessage,
@@ -10,6 +13,7 @@ import {
 } from './lineFlexMessages.js';
 import { type BusinessType } from '../utils/businessTypes.js';
 import type { FlexMessage } from '@line/bot-sdk';
+import { getDaysAgoJST } from '../utils/date.js';
 
 export type OwnerContact = { lineId: string | null; email: string | null };
 
@@ -28,6 +32,12 @@ type NotificationSettingsRow = {
   line_notification_enabled?: boolean;
   email_notification_enabled?: boolean;
 };
+
+export interface NotificationSendResult {
+  sent: boolean;
+  sentVia: 'line' | 'email' | 'app' | null;
+  reason?: string;
+}
 
 /**
  * 空文字をnullに正規化する
@@ -60,7 +70,6 @@ export async function getOwnerContactBatch(
     console.error('Error fetching owner contacts batch:', error);
   }
 
-  // 見つからなかったIDにはデフォルト値を設定
   for (const id of uniqueIds) {
     if (!map.has(id)) map.set(id, { lineId: null, email: null });
   }
@@ -86,20 +95,12 @@ function shouldSendByType(
 
 async function insertNotificationLog(params: {
   data: NotificationData;
-  sentVia: string | null;
+  sentVia: NotificationSendResult['sentVia'];
   sent: boolean;
   errorMessage?: string;
 }): Promise<void> {
   const { data, sentVia, sent, errorMessage } = params;
 
-  let status: string;
-  if (errorMessage) {
-    status = 'failed';
-  } else if (sent) {
-    status = 'sent';
-  } else {
-    status = 'pending';
-  }
   await pool.query(
     `INSERT INTO notification_logs (
       store_id, owner_id, notification_type, title, message,
@@ -112,7 +113,7 @@ async function insertNotificationLog(params: {
       data.title,
       data.message,
       sentVia,
-      status,
+      sent ? 'sent' : 'failed',
       sent ? new Date() : null,
       errorMessage ?? null,
     ]
@@ -130,37 +131,69 @@ async function deliverNotification(params: {
   title: string;
   message: string;
   flexMessage?: FlexMessage;
-}): Promise<{ sent: boolean; sentVia: string }> {
+}): Promise<NotificationSendResult> {
   const { storeId, settings, contact, title, message, flexMessage } = params;
   const lineId = contact?.lineId ?? null;
   const email = contact?.email ?? null;
+  const failures: string[] = [];
 
-  // 1. LINE通知を試行
-  if (settings.line_notification_enabled && lineId) {
-    const lineSent = flexMessage
-      ? await sendLineFlexMessage(storeId, lineId, flexMessage)
-      : await sendLineMessage(storeId, lineId, `${title}\n\n${message}`);
-    if (lineSent) {
-      return { sent: true, sentVia: 'line' };
+  if (settings.line_notification_enabled) {
+    if (!lineId) {
+      failures.push('LINE連携済みの飼い主ではありません');
+    } else {
+      const lineResult = flexMessage
+        ? await sendLineFlexMessageDetailed(storeId, lineId, flexMessage)
+        : await sendLineMessageDetailed(storeId, lineId, `${title}\n\n${message}`);
+      if (lineResult.sent) {
+        return { sent: true, sentVia: 'line' };
+      }
+      failures.push(lineResult.reason ?? 'LINE送信に失敗しました');
     }
+  } else {
+    failures.push('LINE通知が無効です');
   }
 
-  // 2. LINEで送信できなかった場合はメール通知
-  if (settings.email_notification_enabled && email) {
-    const emailSent = await sendEmail(
-      email,
-      title,
-      message,
-      `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
-    );
-    if (emailSent) {
-      return { sent: true, sentVia: 'email' };
+  if (settings.email_notification_enabled) {
+    if (!email) {
+      failures.push('メールアドレスが登録されていません');
+    } else {
+      const emailSent = await sendEmail(
+        email,
+        title,
+        message,
+        `<h2>${title}</h2><p>${message.replace(/\n/g, '<br>')}</p>`
+      );
+      if (emailSent) {
+        return { sent: true, sentVia: 'email' };
+      }
+      failures.push('メール送信に失敗しました');
     }
+  } else {
+    failures.push('メール通知が無効です');
   }
 
-  // 3. いずれも送信できなかった場合はアプリ内通知
   console.log(`[アプリ内通知] ${title}: ${message}`);
-  return { sent: false, sentVia: 'app' };
+  return {
+    sent: false,
+    sentVia: 'app',
+    reason: failures.find(Boolean) ?? '通知の送信先がありません',
+  };
+}
+
+function buildSettingsDisabledResult(
+  type: NotificationData['notificationType']
+): NotificationSendResult {
+  const labels: Record<NotificationData['notificationType'], string> = {
+    reminder: '登園前リマインド',
+    record: '日誌送信通知',
+    vaccine_alert: 'ワクチン期限アラート',
+  };
+
+  return {
+    sent: false,
+    sentVia: null,
+    reason: `${labels[type]}が無効です`,
+  };
 }
 
 /**
@@ -170,13 +203,20 @@ export async function sendNotificationWithSettings(
   data: NotificationData,
   settings: NotificationSettingsRow,
   contact?: OwnerContact | null
-): Promise<void> {
+): Promise<NotificationSendResult> {
   if (!shouldSendByType(settings, data.notificationType)) {
     console.log(`通知が無効です: type=${data.notificationType}, store_id=${data.storeId}`);
-    return;
+    const result = buildSettingsDisabledResult(data.notificationType);
+    await insertNotificationLog({
+      data,
+      sentVia: result.sentVia,
+      sent: result.sent,
+      errorMessage: result.reason,
+    });
+    return result;
   }
 
-  const { sent, sentVia } = await deliverNotification({
+  const result = await deliverNotification({
     storeId: data.storeId,
     settings,
     contact: contact ?? null,
@@ -184,14 +224,21 @@ export async function sendNotificationWithSettings(
     message: data.message,
   });
 
-  await insertNotificationLog({ data, sentVia, sent });
+  await insertNotificationLog({
+    data,
+    sentVia: result.sentVia,
+    sent: result.sent,
+    errorMessage: result.reason,
+  });
+
+  return result;
 }
 
 /**
  * 通知を送信する（ログに記録）
  * 単発呼び出し用。バッチ時は sendNotificationWithSettings + getOwnerContactBatch を推奨。
  */
-export async function sendNotification(data: NotificationData): Promise<void> {
+export async function sendNotification(data: NotificationData): Promise<NotificationSendResult> {
   try {
     const settingsResult = await pool.query<NotificationSettingsRow>(
       `SELECT reminder_before_visit, record_notification, vaccine_alert,
@@ -202,22 +249,34 @@ export async function sendNotification(data: NotificationData): Promise<void> {
 
     if (settingsResult.rows.length === 0) {
       console.warn(`通知設定が見つかりません: store_id=${data.storeId}`);
-      return;
+      const result: NotificationSendResult = {
+        sent: false,
+        sentVia: null,
+        reason: '通知設定が見つかりません',
+      };
+      await insertNotificationLog({
+        data,
+        sentVia: result.sentVia,
+        sent: result.sent,
+        errorMessage: result.reason,
+      });
+      return result;
     }
 
     const settings = settingsResult.rows[0];
     const contactMap = await getOwnerContactBatch([data.ownerId]);
     const contact = contactMap.get(data.ownerId) ?? null;
 
-    await sendNotificationWithSettings(data, settings, contact);
+    return await sendNotificationWithSettings(data, settings, contact);
   } catch (error) {
     console.error('Error sending notification:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     try {
       await insertNotificationLog({
         data,
         sentVia: null,
         sent: false,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorMessage: message,
       });
     } catch (logError) {
       console.error('Error logging notification failure:', logError);
@@ -243,9 +302,7 @@ export async function sendReservationReminders(): Promise<{ sent: number; failed
 
     for (const settings of settingsResult.rows) {
       const daysBefore = settings.reminder_before_visit_days ?? 1;
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + daysBefore);
-      const targetDateStr = targetDate.toISOString().slice(0, 10);
+      const targetDateStr = getDaysAgoJST(-daysBefore);
 
       const reservationsResult = await pool.query<{
         id: number;
@@ -302,6 +359,7 @@ export async function sendReservationReminders(): Promise<{ sent: number; failed
           data: { storeId: settings.store_id, ownerId: reservation.owner_id, notificationType: 'reminder', title, message },
           sentVia: result.sentVia,
           sent: result.sent,
+          errorMessage: result.reason,
         });
       }
     }
@@ -322,7 +380,10 @@ export async function sendRecordNotificationLegacy(
   recordId?: number,
   comment?: string | null,
   photos?: string[] | null
-): Promise<void> {
+): Promise<NotificationSendResult> {
+  const title = '記録が更新されました';
+  const message = `${dogName}ちゃんの${recordDate}の記録が更新されました。`;
+
   try {
     const settingsResult = await pool.query<NotificationSettingsRow>(
       `SELECT record_notification, line_notification_enabled, email_notification_enabled
@@ -331,27 +392,43 @@ export async function sendRecordNotificationLegacy(
     );
 
     if (settingsResult.rows.length === 0) {
-      console.warn(`通知設定が見つかりません: store_id=${storeId}`);
-      return;
+      const result: NotificationSendResult = {
+        sent: false,
+        sentVia: null,
+        reason: '通知設定が見つかりません',
+      };
+      await insertNotificationLog({
+        data: { storeId, ownerId, notificationType: 'record', title, message },
+        sentVia: result.sentVia,
+        sent: result.sent,
+        errorMessage: result.reason,
+      });
+      return result;
     }
 
     const settings = settingsResult.rows[0];
     if (!settings.record_notification) {
-      console.log(`記録通知が無効です: store_id=${storeId}`);
-      return;
+      const result: NotificationSendResult = {
+        sent: false,
+        sentVia: null,
+        reason: '日誌送信通知が無効です',
+      };
+      await insertNotificationLog({
+        data: { storeId, ownerId, notificationType: 'record', title, message },
+        sentVia: result.sentVia,
+        sent: result.sent,
+        errorMessage: result.reason,
+      });
+      return result;
     }
 
     const contactMap = await getOwnerContactBatch([ownerId]);
     const contact = contactMap.get(ownerId) ?? null;
-
-    const title = '記録が更新されました';
-    const message = `${dogName}ちゃんの${recordDate}の記録が更新されました。`;
-
     const flexMessage = recordId
       ? createRecordNotificationLegacyFlexMessage({ id: recordId, record_date: recordDate, dog_name: dogName, comment, photos })
       : undefined;
 
-    const { sent, sentVia } = await deliverNotification({
+    const result = await deliverNotification({
       storeId,
       settings,
       contact,
@@ -362,11 +439,26 @@ export async function sendRecordNotificationLegacy(
 
     await insertNotificationLog({
       data: { storeId, ownerId, notificationType: 'record', title, message },
-      sentVia,
-      sent,
+      sentVia: result.sentVia,
+      sent: result.sent,
+      errorMessage: result.reason,
     });
+
+    return result;
   } catch (error) {
     console.error('Error sending record notification:', error);
+    const result: NotificationSendResult = {
+      sent: false,
+      sentVia: null,
+      reason: error instanceof Error ? error.message : 'カルテ通知の送信に失敗しました',
+    };
+    await insertNotificationLog({
+      data: { storeId, ownerId, notificationType: 'record', title, message },
+      sentVia: result.sentVia,
+      sent: result.sent,
+      errorMessage: result.reason,
+    });
+    return result;
   }
 }
 
@@ -384,7 +476,16 @@ export async function sendRecordNotification(
     report_text?: string | null;
     photos?: string[] | null;
   }
-): Promise<void> {
+): Promise<NotificationSendResult> {
+  const typeLabels: Record<string, string> = {
+    grooming: 'トリミングカルテ',
+    daycare: 'デイケアカルテ',
+    hotel: 'ホテルカルテ',
+  };
+  const typeLabel = typeLabels[record.record_type] ?? 'カルテ';
+  const title = `${typeLabel}が届きました`;
+  const message = `${record.dog_name}ちゃんの${typeLabel}が共有されました。`;
+
   try {
     const settingsResult = await pool.query<NotificationSettingsRow>(
       `SELECT record_notification, line_notification_enabled, email_notification_enabled
@@ -394,7 +495,6 @@ export async function sendRecordNotification(
 
     let settings: NotificationSettingsRow;
     if (settingsResult.rows.length === 0) {
-      // 通知設定が未作成の場合はデフォルトで作成（トライアルアカウント対応）
       console.log(`通知設定をデフォルト作成します: store_id=${storeId}`);
       await pool.query(
         `INSERT INTO notification_settings (store_id, record_notification, line_notification_enabled)
@@ -408,26 +508,25 @@ export async function sendRecordNotification(
     }
 
     if (!settings.record_notification) {
-      console.log(`カルテ通知が無効です: store_id=${storeId}`);
-      return;
+      const result: NotificationSendResult = {
+        sent: false,
+        sentVia: null,
+        reason: '日誌送信通知が無効です',
+      };
+      await insertNotificationLog({
+        data: { storeId, ownerId, notificationType: 'record', title, message },
+        sentVia: result.sentVia,
+        sent: result.sent,
+        errorMessage: result.reason,
+      });
+      return result;
     }
 
     const contactMap = await getOwnerContactBatch([ownerId]);
     const contact = contactMap.get(ownerId) ?? null;
-
-    const typeLabels: Record<string, string> = {
-      grooming: 'トリミングカルテ',
-      daycare: 'デイケアカルテ',
-      hotel: 'ホテルカルテ',
-    };
-    const typeLabel = typeLabels[record.record_type] ?? 'カルテ';
-
-    const title = `${typeLabel}が届きました`;
-    const message = `${record.dog_name}ちゃんの${typeLabel}が共有されました。`;
-
     const flexMessage = createRecordNotificationFlexMessage(record);
 
-    const { sent, sentVia } = await deliverNotification({
+    const result = await deliverNotification({
       storeId,
       settings,
       contact,
@@ -438,11 +537,26 @@ export async function sendRecordNotification(
 
     await insertNotificationLog({
       data: { storeId, ownerId, notificationType: 'record', title, message },
-      sentVia,
-      sent,
+      sentVia: result.sentVia,
+      sent: result.sent,
+      errorMessage: result.reason,
     });
+
+    return result;
   } catch (error) {
     console.error('Error sending record notification:', error);
+    const result: NotificationSendResult = {
+      sent: false,
+      sentVia: null,
+      reason: error instanceof Error ? error.message : 'カルテ通知の送信に失敗しました',
+    };
+    await insertNotificationLog({
+      data: { storeId, ownerId, notificationType: 'record', title, message },
+      sentVia: result.sentVia,
+      sent: result.sent,
+      errorMessage: result.reason,
+    });
+    return result;
   }
 }
 
@@ -506,9 +620,7 @@ export async function sendVaccineAlerts(): Promise<{ sent: number; failed: numbe
 
     for (const settings of settingsResult.rows) {
       const alertDays = settings.vaccine_alert_days ?? 14;
-      const alertDate = new Date();
-      alertDate.setDate(alertDate.getDate() + alertDays);
-      const alertDateStr = alertDate.toISOString().slice(0, 10);
+      const alertDateStr = getDaysAgoJST(-alertDays);
 
       const dogsResult = await pool.query<{
         id: number;
@@ -573,6 +685,7 @@ export async function sendVaccineAlerts(): Promise<{ sent: number; failed: numbe
           data: { storeId: settings.store_id, ownerId: dog.owner_id, notificationType: 'vaccine_alert', title, message },
           sentVia: result.sentVia,
           sent: result.sent,
+          errorMessage: result.reason,
         });
       }
     }

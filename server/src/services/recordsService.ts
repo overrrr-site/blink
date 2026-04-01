@@ -2,6 +2,28 @@ import pool from '../db/connection.js';
 import { appendBusinessTypeFilter, type BusinessType } from '../utils/businessTypes.js';
 import { sendRecordNotification } from './notificationService.js';
 
+type ShareRecordSuccess = {
+  ok: true;
+  record: Record<string, unknown>;
+};
+
+type ShareRecordNotFound = {
+  ok: false;
+  kind: 'not_found';
+};
+
+type ShareRecordNotificationFailure = {
+  ok: false;
+  kind: 'notification_failed';
+  code: 'RECORD_SHARE_NOTIFICATION_FAILED';
+  reason: string;
+};
+
+export type ShareRecordResult =
+  | ShareRecordSuccess
+  | ShareRecordNotFound
+  | ShareRecordNotificationFailure;
+
 export async function ensureDogBelongsToStore(dogId: number, storeId: number): Promise<boolean> {
   const dogCheck = await pool.query(
     `SELECT o.store_id FROM dogs d
@@ -31,7 +53,7 @@ export async function fetchLatestRecordForDog(
   return result.rows[0] || null;
 }
 
-export async function shareRecordForOwner(storeId: number, recordId: number) {
+export async function shareRecordForOwner(storeId: number, recordId: number): Promise<ShareRecordResult> {
   const recordResult = await pool.query(
     `SELECT r.*, d.name as dog_name, o.id as owner_id, o.store_id
      FROM records r
@@ -42,9 +64,10 @@ export async function shareRecordForOwner(storeId: number, recordId: number) {
   );
 
   if (recordResult.rows.length === 0) {
-    return null;
+    return { ok: false, kind: 'not_found' };
   }
 
+  const originalRecord = recordResult.rows[0];
   const updateResult = await pool.query(
     `UPDATE records SET status = 'shared', shared_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
      WHERE id = $1 AND store_id = $2
@@ -52,20 +75,36 @@ export async function shareRecordForOwner(storeId: number, recordId: number) {
     [recordId, storeId]
   );
 
-  const record = recordResult.rows[0];
-  const photos = record.photos ? (typeof record.photos === 'string' ? JSON.parse(record.photos) : record.photos) : null;
-  sendRecordNotification(
+  const photos = originalRecord.photos
+    ? (typeof originalRecord.photos === 'string' ? JSON.parse(originalRecord.photos) : originalRecord.photos)
+    : null;
+  const notificationResult = await sendRecordNotification(
     storeId,
-    record.owner_id,
+    originalRecord.owner_id,
     {
-      id: record.id,
-      record_date: record.record_date,
-      record_type: record.record_type,
-      dog_name: record.dog_name,
-      report_text: record.report_text,
+      id: originalRecord.id,
+      record_date: originalRecord.record_date,
+      record_type: originalRecord.record_type,
+      dog_name: originalRecord.dog_name,
+      report_text: originalRecord.report_text,
       photos,
     }
-  ).catch((err) => console.error('Record notification error:', err));
+  );
 
-  return updateResult.rows[0];
+  if (!(notificationResult.sent && (notificationResult.sentVia === 'line' || notificationResult.sentVia === 'email'))) {
+    await pool.query(
+      `UPDATE records
+       SET status = $3, shared_at = $4, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND store_id = $2`,
+      [recordId, storeId, originalRecord.status, originalRecord.shared_at ?? null]
+    );
+    return {
+      ok: false,
+      kind: 'notification_failed',
+      code: 'RECORD_SHARE_NOTIFICATION_FAILED',
+      reason: notificationResult.reason ?? '通知の送信に失敗しました',
+    };
+  }
+
+  return { ok: true, record: updateResult.rows[0] };
 }

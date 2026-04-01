@@ -8,6 +8,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../utils/response.js';
+import { toDateStringJST } from '../utils/date.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -186,7 +187,7 @@ router.post('/', async (req: AuthRequest, res) => {
     if (contract_type === 'チケット制' && !valid_until && total_sessions) {
       const threeMonthsLater = new Date();
       threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
-      calculatedValidUntil = threeMonthsLater.toISOString().split('T')[0];
+      calculatedValidUntil = toDateStringJST(threeMonthsLater);
     }
 
     const result = await pool.query(

@@ -49,6 +49,9 @@ interface NotificationSettings {
 interface StoreLineStatus {
   line_connected?: boolean | null
   line_channel_id?: string | null
+  is_trial?: boolean
+  line_connection_source?: 'store' | 'trial_env' | 'none'
+  line_missing?: string[]
 }
 
 const defaultNotificationSettings: NotificationSettings = {
@@ -102,6 +105,9 @@ function IntegrationTab() {
     ? {
         connected: storeData.line_connected ?? false,
         channelId: storeData.line_channel_id ?? null,
+        isTrial: storeData.is_trial ?? false,
+        source: storeData.line_connection_source ?? 'none',
+        missing: storeData.line_missing ?? [],
       }
     : null
 
@@ -315,6 +321,80 @@ function IntegrationTab() {
             <div className="text-center py-4">
               <span className="text-xs text-muted-foreground">読み込み中...</span>
             </div>
+          ) : lineStatus?.isTrial ? (
+            <div className="space-y-3">
+              <div className={`rounded-xl p-3 ${lineStatus.connected ? 'bg-chart-2/10' : 'bg-warning/10'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs font-bold ${lineStatus.connected ? 'text-chart-2' : 'text-warning'}`}>
+                    {lineStatus.connected ? 'Blink共通LINE利用中' : 'トライアルLINE未設定'}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                    lineStatus.connected
+                      ? 'bg-chart-2/20 text-chart-2'
+                      : 'bg-warning/20 text-warning'
+                  }`}>
+                    {lineStatus.connected ? '有効' : '要設定'}
+                  </span>
+                </div>
+                <p className="text-sm font-medium">
+                  トライアル店舗は Blink 共通LINE アカウントを利用します
+                </p>
+                {lineStatus.connected ? (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    店舗ごとの LINE Developers 設定は不要です
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-warning mt-1">
+                    未設定の環境変数: {lineStatus.missing.join(', ')}
+                  </p>
+                )}
+              </div>
+
+              {lineStatus.connected && (
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <span className="text-sm font-medium block">LINE通知を有効にする</span>
+                    <span className="text-[10px] text-muted-foreground">オンにすると Blink 共通LINE でメッセージを送信します</span>
+                  </div>
+                  <ToggleSwitch
+                    checked={notificationSettings.line_notification_enabled}
+                    onChange={() => updateNotificationSetting('line_notification_enabled', !notificationSettings.line_notification_enabled)}
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={handleTestLineMessage}
+                disabled={testingLine || !lineStatus.connected}
+                className="w-full flex items-center justify-center gap-2 p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all active:scale-[0.98] text-sm font-bold disabled:opacity-50"
+              >
+                {testingLine ? (
+                  <>
+                    <Icon icon="solar:spinner-bold" width="16" height="16" className="animate-spin" />
+                    送信中...
+                  </>
+                ) : (
+                  <>
+                    <Icon icon="solar:paper-plane-bold" width="16" height="16" />
+                    テストメッセージを送信
+                  </>
+                )}
+              </button>
+
+              {lineTestResult && (
+                <div className={`rounded-xl p-3 ${
+                  lineTestResult.success ? 'bg-chart-2/10 text-chart-2' : 'bg-destructive/10 text-destructive'
+                }`}>
+                  <div className="flex items-start gap-2">
+                    <Icon icon={lineTestResult.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
+                      width="16"
+                      height="16"
+                      className="mt-0.5" />
+                    <p className="text-sm">{lineTestResult.message}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : lineStatus?.connected ? (
             <div className="space-y-3">
               <div className="bg-chart-2/10 rounded-xl p-3">
@@ -414,7 +494,7 @@ function IntegrationTab() {
       </section>
 
       {/* LINEチャットボット設定 */}
-      {lineStatus?.connected && (
+      {lineStatus?.connected && !lineStatus?.isTrial && (
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
             <h2 className="text-sm font-bold font-heading flex items-center gap-2">

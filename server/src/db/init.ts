@@ -45,6 +45,7 @@ const MIGRATIONS = [
   { file: '043_ux_analytics.sql',                     label: 'UX分析イベント・レポートジョブ' },
   { file: '044_clarity_export_snapshots.sql',         label: 'Clarityエクスポートスナップショット' },
   { file: '046_rls_security_ux_and_clarity.sql',      label: 'UX分析・Clarity RLSセキュリティ' },
+  { file: '057_line_link_scope_and_webhook_event_id.sql', label: 'LIFF連携スコープ・Webhook冪等化' },
 ] as const;
 
 async function runMigration(file: string, label: string): Promise<void> {

@@ -27,6 +27,7 @@ import { useLiffAuthStore } from '../store/authStore';
 import { getBusinessTypeLabel, getStatusLabel } from '../../domain/businessTypeConfig';
 import type { DaycarePreVisitData } from '../../types/daycarePreVisit'
 import { DAYCARE_LABELS } from '../../types/daycarePreVisit'
+import { getCalendarSyncWarningMessage } from '../../utils/calendarSync'
 
 interface Reservation {
   id: number;
@@ -150,7 +151,11 @@ export default function ReservationsCalendar(): JSX.Element {
     if (!ok) return;
 
     try {
-      await liffClient.put(`/reservations/${reservationId}/cancel`);
+      const response = await liffClient.put(`/reservations/${reservationId}/cancel`);
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
       mutate();
     } catch {
       showToast('予約のキャンセルに失敗しました', 'error');

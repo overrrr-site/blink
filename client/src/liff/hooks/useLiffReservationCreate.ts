@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import liffClient from '../api/client'
+import { getCalendarSyncWarningMessage } from '../../utils/calendarSync'
 import { getAxiosErrorMessage } from '../../utils/error'
 import { useToast } from '../../components/Toast'
 import type { LiffDog } from '../types/dog'
@@ -127,9 +128,13 @@ export function useLiffReservationCreate() {
         payload.end_datetime = `${formData.checkout_date}T${formData.checkout_time}`
       }
 
-      await liffClient.post('/reservations', {
+      const response = await liffClient.post('/reservations', {
         ...payload,
       })
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
       return true
     } catch (error) {
       console.error('Error creating reservation:', error)

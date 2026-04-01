@@ -14,6 +14,7 @@ import type {
 import { useRecordEditorCore } from './useRecordEditorCore'
 import { buildCreateRecordPayload, validateRecordForm } from '../utils/recordForm'
 import type { RecordCreateEventName, RecordCreateSessionResult } from './useRecordCreateAnalytics'
+import { getAxiosErrorMessage } from '../../../utils/error'
 
 type ShowToast = (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void
 type ConfirmDialogVariant = 'default' | 'destructive'
@@ -104,7 +105,7 @@ export function useRecordCreateActions({
       dogId: selectedDogId,
       reservationId,
       recordType,
-      status: shareAfter ? 'shared' : 'saved',
+      status: 'saved',
       daycareData,
       groomingData,
       hotelData,
@@ -117,21 +118,37 @@ export function useRecordCreateActions({
     const res = await recordsApi.create(formData)
     const recordId = res.data.id
 
-    trackRecordEvent('submit_success', shareAfter ? 'record_share_submit' : 'record_save_submit', {
-      share_after: shareAfter,
-    })
-    finishSession('success', shareAfter ? 'record_share_submit' : 'record_save_submit')
-
     if (shareAfter) {
-      await recordsApi.share(recordId)
+      let shareError: unknown = null
+      try {
+        await recordsApi.share(recordId)
+      } catch (error) {
+        shareError = error
+      }
+
+      onRecordSaved()
+      await sendAIFeedback(notes.report_text)
+      navigate(`/records/${recordId}`, { replace: true })
+
+      if (shareError) {
+        throw shareError
+      }
+
+      trackRecordEvent('submit_success', 'record_share_submit', {
+        share_after: true,
+      })
+      finishSession('success', 'record_share_submit')
       showToast(`${recordLabel}を共有しました`, 'success')
     } else {
+      trackRecordEvent('submit_success', 'record_save_submit', {
+        share_after: false,
+      })
+      finishSession('success', 'record_save_submit')
       showToast(`${recordLabel}を保存しました`, 'success')
+      onRecordSaved()
+      await sendAIFeedback(notes.report_text)
+      navigate(`/records/${recordId}`, { replace: true })
     }
-
-    onRecordSaved()
-    await sendAIFeedback(notes.report_text)
-    navigate(`/records/${recordId}`, { replace: true })
   }, [
     condition,
     daycareData,
@@ -178,13 +195,13 @@ export function useRecordCreateActions({
       trackRecordEvent('cta_click', 'record_share_click', { mode: 'share' })
       return createRecord(true)
     },
-    onSaveError: () => {
+    onSaveError: (error) => {
       trackRecordEvent('submit_fail', 'record_save_submit', { mode: 'save' })
-      showToast('保存に失敗しました', 'error')
+      showToast(getAxiosErrorMessage(error, '保存に失敗しました'), 'error')
     },
-    onShareError: () => {
+    onShareError: (error) => {
       trackRecordEvent('submit_fail', 'record_share_submit', { mode: 'share' })
-      showToast('保存に失敗しました', 'error')
+      showToast(getAxiosErrorMessage(error, '共有に失敗しました'), 'error')
     },
     confirmShare: () => confirm({
       title: '送信確認',

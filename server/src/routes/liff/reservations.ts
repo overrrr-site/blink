@@ -8,6 +8,16 @@ import {
 } from '../../utils/response.js';
 import { buildPaginatedResponse, extractTotalCount, parsePaginationParams } from '../../utils/pagination.js';
 import { parseBusinessTypeInput } from '../../utils/businessTypes.js';
+import {
+  addDaysToDateString,
+  addMonthsToDateString,
+  getDayOfWeekFromDateString,
+  toCompactDateStringJST,
+} from '../../utils/date.js';
+import {
+  syncCalendarOnCreate,
+  syncCalendarOnUpdate,
+} from '../../services/reservationsService.js';
 import { requireOwnerToken } from './common.js';
 
 const router = express.Router();
@@ -124,7 +134,7 @@ router.get('/reservations/export.ics', async function(req, res) {
     ];
 
     for (const reservation of result.rows) {
-      const dateStr = reservation.reservation_date.toISOString().split('T')[0].replace(/-/g, '');
+      const dateStr = toCompactDateStringJST(reservation.reservation_date);
       const startTime = (reservation.reservation_time || '09:00').replace(':', '') + '00';
       const endTime = (reservation.pickup_time || '17:00').replace(':', '') + '00';
       const uid = `reservation-${reservation.id}@petcarte`;
@@ -217,8 +227,7 @@ router.get('/availability', async function(req, res) {
 
     // 指定月の各日の予約数を取得
     const startDate = `${month}-01`;
-    const endDate = new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + 1))
-      .toISOString().split('T')[0];
+    const endDate = addMonthsToDateString(startDate, 1);
 
     const reservationsResult = await pool.query(
       `SELECT 
@@ -249,12 +258,8 @@ router.get('/availability', async function(req, res) {
       isClosed: boolean;
     }> = [];
 
-    const currentDate = new Date(startDate);
-    const end = new Date(endDate);
-
-    while (currentDate < end) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const dayOfWeek = currentDate.getDay(); // 0=日曜, 1=月曜, ...
+    for (let dateStr = startDate; dateStr < endDate; dateStr = addDaysToDateString(dateStr, 1)) {
+      const dayOfWeek = getDayOfWeekFromDateString(dateStr); // 0=日曜, 1=月曜, ...
       const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const dayName = dayNames[dayOfWeek];
 
@@ -267,8 +272,6 @@ router.get('/availability', async function(req, res) {
         capacity: maxCapacity,
         isClosed,
       });
-
-      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     res.json({
@@ -400,7 +403,17 @@ router.post('/reservations', async function(req, res) {
       ]
     );
 
-    res.status(201).json(result.rows[0]);
+    const reservation = result.rows[0];
+    const calendarSync = await syncCalendarOnCreate({
+      storeId: decoded.storeId,
+      reservation,
+      dogId: dog_id,
+    });
+
+    res.status(201).json({
+      ...reservation,
+      calendar_sync: calendarSync,
+    });
   } catch (error: unknown) {
     sendServerError(res, '予約の作成に失敗しました', error);
   }
@@ -439,7 +452,18 @@ router.put('/reservations/:id', async function(req, res) {
       [reservation_date, reservation_time, notes, id]
     );
 
-    res.json(result.rows[0]);
+    const reservation = result.rows[0];
+    const calendarSync = await syncCalendarOnUpdate({
+      storeId: decoded.storeId,
+      reservationId: Number(id),
+      reservation,
+      status: reservation?.status,
+    });
+
+    res.json({
+      ...reservation,
+      calendar_sync: calendarSync,
+    });
   } catch (error: unknown) {
     sendServerError(res, '予約の更新に失敗しました', error);
   }
@@ -473,7 +497,18 @@ router.put('/reservations/:id/cancel', async function(req, res) {
       [id]
     );
 
-    res.json(result.rows[0]);
+    const reservation = result.rows[0];
+    const calendarSync = await syncCalendarOnUpdate({
+      storeId: decoded.storeId,
+      reservationId: Number(id),
+      reservation,
+      status: 'キャンセル',
+    });
+
+    res.json({
+      ...reservation,
+      calendar_sync: calendarSync,
+    });
   } catch (error: unknown) {
     sendServerError(res, '予約のキャンセルに失敗しました', error);
   }

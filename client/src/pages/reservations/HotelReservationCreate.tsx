@@ -6,6 +6,7 @@ import { useReservationCreateData } from '../../hooks/useReservationCreateData'
 import { useDogFilter } from '../../hooks/useDogFilter'
 import { useToast } from '../../components/Toast'
 import { INPUT_CLASS } from '../../utils/styles'
+import { getCalendarSyncWarningMessage } from '../../utils/calendarSync'
 import { formatDateISO, formatDateFullWithWeekday } from '../../utils/date'
 import StepIndicator from '../../components/reservations/StepIndicator'
 import DogSelectStep from '../../components/reservations/DogSelectStep'
@@ -170,7 +171,7 @@ const HotelReservationCreate = () => {
 
     setSaving(true)
     try {
-      await api.post('/reservations', {
+      const response = await api.post('/reservations', {
         dog_id: selectedDogId,
         reservation_date: form.checkin_date,
         reservation_time: form.checkin_time,
@@ -179,6 +180,10 @@ const HotelReservationCreate = () => {
         service_type: 'hotel',
         room_id: selectedRoomId,
       })
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
 
       invalidate()
       navigate('/reservations')

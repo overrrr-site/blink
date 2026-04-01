@@ -11,6 +11,7 @@ import type {
 } from '../../../types/record'
 import { normalizePhotosData } from '../../../utils/recordPhotos'
 import { validateRecord } from '../../../utils/recordValidation'
+import { formatDateISO } from '../../../utils/date'
 
 export interface RecordFormPayloadInput {
   recordType: RecordType
@@ -49,7 +50,7 @@ export const buildCreateRecordPayload = (
     ? Number(input.reservationId)
     : null,
   record_type: input.recordType,
-  record_date: input.recordDate ?? new Date().toISOString().split('T')[0],
+  record_date: input.recordDate ?? formatDateISO(new Date()),
   status: input.status,
   ...buildRecordBasePayload(input, { normalizePhotos: true }),
 })

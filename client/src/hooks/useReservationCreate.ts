@@ -2,6 +2,7 @@ import { useState } from 'react'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
 import type { StaffReservationForm } from '../types/reservation'
+import { getCalendarSyncWarningMessage } from '../utils/calendarSync'
 import { formatDateISO } from '../utils/date'
 import { getUxIdentity, trackUxEvent } from '../lib/uxAnalytics'
 
@@ -73,11 +74,15 @@ export function useReservationCreate({
 
     setSaving(true)
     try {
-      await api.post('/reservations', {
+      const response = await api.post('/reservations', {
         dog_id: selectedDogId,
         ...form,
         service_type: 'daycare',
       })
+      const calendarWarning = getCalendarSyncWarningMessage(response.data)
+      if (calendarWarning) {
+        showToast(calendarWarning, 'warning')
+      }
 
       trackUxEvent({
         eventName: 'submit_success',

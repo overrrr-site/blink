@@ -3,6 +3,7 @@ import { Icon } from '../components/Icon'
 import PageHeader from '../components/PageHeader'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
+import { formatDateISO } from '../utils/date'
 import type { Staff } from '../types/staff'
 
 interface InspectionRecord {
@@ -388,7 +389,7 @@ function InspectionRecordList(): JSX.Element {
   const [savingDates, setSavingDates] = useState<Set<string>>(new Set())
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
   const currentDate = new Date()
-  const today = currentDate.toISOString().split('T')[0]
+  const today = formatDateISO(currentDate)
   const [selectedMonth, setSelectedMonth] = useState(
     `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
   )
