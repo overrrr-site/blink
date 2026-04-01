@@ -388,7 +388,7 @@ router.post('/guide/:stepKey/complete', authenticate, async (req: AuthRequest, r
       [req.storeId]
     );
     const { total, completed } = allStepsResult.rows[0];
-    const allCompleted = parseInt(total) === parseInt(completed) + 1; // +1 は今完了したステップ分
+    const allCompleted = parseInt(total, 10) === parseInt(completed, 10);
 
     res.json({
       success: true,

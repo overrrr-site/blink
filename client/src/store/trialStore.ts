@@ -12,6 +12,7 @@ interface TrialState {
   currentStep: GuideStep | null
 
   // UI state
+  guidePanelOpen: boolean
   showCelebration: boolean
   showAllCompleteCelebration: boolean
   celebrationStepKey: string | null
@@ -19,6 +20,7 @@ interface TrialState {
   // actions
   fetchGuide: () => Promise<void>
   completeStep: (stepKey: string) => Promise<CompleteStepResponse | null>
+  setGuidePanelOpen: (open: boolean) => void
   dismissCelebration: () => void
   dismissAllCompleteCelebration: () => void
   reset: () => void
@@ -31,6 +33,7 @@ const INITIAL_STATE = {
   guideCompleted: false,
   steps: [] as GuideStep[],
   currentStep: null as GuideStep | null,
+  guidePanelOpen: false,
   showCelebration: false,
   showAllCompleteCelebration: false,
   celebrationStepKey: null as string | null,
@@ -42,7 +45,6 @@ export const useTrialStore = create<TrialState>((set, get) => ({
   fetchGuide: async () => {
     try {
       const { data } = await api.get('/trial/guide')
-      console.log('[TrialStore] fetchGuide response:', JSON.stringify(data))
       if (data.success && data.data) {
         const guide: TrialGuideData = data.data
         set({
@@ -52,6 +54,7 @@ export const useTrialStore = create<TrialState>((set, get) => ({
           guideCompleted: guide.guide_completed,
           steps: guide.steps,
           currentStep: guide.current_step,
+          guidePanelOpen: guide.is_trial && !guide.guide_completed ? get().guidePanelOpen : false,
         })
       } else {
         console.warn('[TrialStore] fetchGuide: success=false or no data', data)
@@ -69,6 +72,8 @@ export const useTrialStore = create<TrialState>((set, get) => ({
       if (data.success && data.data) {
         const result: CompleteStepResponse = data.data
 
+        await get().fetchGuide()
+
         if (result.celebration) {
           set({ showAllCompleteCelebration: true })
         } else {
@@ -78,8 +83,6 @@ export const useTrialStore = create<TrialState>((set, get) => ({
           })
         }
 
-        // Refresh guide data
-        await get().fetchGuide()
         return result
       }
       return null
@@ -89,6 +92,7 @@ export const useTrialStore = create<TrialState>((set, get) => ({
     }
   },
 
+  setGuidePanelOpen: (open) => set({ guidePanelOpen: open }),
   dismissCelebration: () => set({ showCelebration: false, celebrationStepKey: null }),
   dismissAllCompleteCelebration: () => set({ showAllCompleteCelebration: false }),
   reset: () => set(INITIAL_STATE),

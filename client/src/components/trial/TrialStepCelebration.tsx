@@ -20,7 +20,7 @@ interface TrialStepCelebrationProps {
 
 export function TrialStepCelebration({ stepKey, stepTitle, onDismiss }: TrialStepCelebrationProps) {
   const { steps } = useTrialStore()
-  const completedCount = steps.filter(s => s.completed).length + 1
+  const completedCount = steps.filter(s => s.completed).length
 
   useEffect(() => {
     const timer = setTimeout(onDismiss, 3000)

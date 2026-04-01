@@ -84,7 +84,7 @@ function Layout(): JSX.Element {
   const { selectedBusinessType, syncFromUser } = useBusinessTypeStore()
   const [fabOpen, setFabOpen] = useState(false)
   const [greeting] = useState(() => getRandomGreeting())
-  const { isTrial, daysRemaining, fetchGuide } = useTrialStore()
+  const { isTrial, daysRemaining, guideCompleted, guidePanelOpen, fetchGuide } = useTrialStore()
 
   useEffect(() => {
     fetchGuide()
@@ -124,6 +124,7 @@ function Layout(): JSX.Element {
   )
 
   const isHomePage = location.pathname === '/dashboard'
+  const shouldReserveGuideSpace = isTrial && !guideCompleted && guidePanelOpen
 
   function handleFabAction(path: string): void {
     setFabOpen(false)
@@ -192,7 +193,9 @@ function Layout(): JSX.Element {
       </aside>
 
       {isHomePage && (
-        <header className="bg-background sticky top-0 z-10 border-b border-border safe-area-pt lg:ml-64 md:px-8 lg:px-12">
+        <header className={`bg-background sticky top-0 z-10 border-b border-border safe-area-pt transition-[margin] duration-300 lg:ml-64 md:px-8 lg:px-12 ${
+          shouldReserveGuideSpace ? 'lg:mr-[300px]' : ''
+        }`}>
           <div className="max-w-7xl mx-auto px-5 md:px-0 pt-4 pb-3 flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium mb-0.5">
@@ -215,7 +218,9 @@ function Layout(): JSX.Element {
 
       <TrialBanner />
 
-      <main id="main-content" className="flex-1 overflow-y-auto pb-24 lg:pb-6 md:px-8 lg:ml-64 lg:px-12">
+      <main id="main-content" className={`flex-1 overflow-y-auto pb-24 transition-[margin] duration-300 lg:pb-6 md:px-8 lg:ml-64 lg:px-12 ${
+        shouldReserveGuideSpace ? 'lg:mr-[300px]' : ''
+      }`}>
         <div className="max-w-7xl mx-auto">
           <Outlet />
         </div>

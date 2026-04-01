@@ -35,7 +35,7 @@ const HELP_CONTENT: Record<string, { question: string; answer: string }[]> = {
 }
 
 export function TrialHelpButton() {
-  const { isTrial, guideCompleted, currentStep } = useTrialStore()
+  const { isTrial, guideCompleted, currentStep, guidePanelOpen } = useTrialStore()
   const [open, setOpen] = useState(false)
 
   if (!isTrial || guideCompleted || !currentStep) return null
@@ -48,7 +48,11 @@ export function TrialHelpButton() {
       {/* ヘルプボタン */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-30 lg:bottom-auto lg:top-4 lg:right-[316px] bg-card border border-border shadow-lg rounded-full w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors"
+        className={`fixed bottom-4 right-4 z-30 bg-card border border-border shadow-lg rounded-full w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors lg:bottom-auto ${
+          guidePanelOpen
+            ? 'lg:top-4 lg:right-[316px]'
+            : 'lg:top-16 lg:right-4'
+        }`}
         aria-label="ヘルプ"
       >
         <Icon icon="solar:question-circle-linear" className="size-5 text-muted-foreground" />
