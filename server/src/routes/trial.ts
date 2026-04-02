@@ -16,7 +16,7 @@ const generateStoreCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 6);
 const GUIDE_STEPS = [
   { step_number: 1, step_key: 'register_customer', title: '飼い主さんを登録しましょう', description: 'お試しですので、ご自身のお名前で飼い主さんとワンちゃんを登録してみましょう', action_url: '/owners/new' },
   { step_number: 2, step_key: 'create_reservation', title: '予約を作成しましょう', description: '先ほど登録したワンちゃんの予約を入れてみましょう', action_url: '/reservations/new' },
-  { step_number: 3, step_key: 'write_record', title: '連絡帳を書いてみましょう', description: 'ワンちゃんの今日の様子を連絡帳に書いてみましょう', action_url: '/records/new' },
+  { step_number: 3, step_key: 'write_record', title: '連絡帳を書いてみましょう', description: 'ワンちゃんの今日の様子を連絡帳に書いてみましょう。まずは「保存」だけでOKです', action_url: '/records/new' },
   { step_number: 4, step_key: 'link_line_account', title: 'LINEの通知設定をしましょう', description: 'QRコードを読み取って、お試し用のLINEアカウントとつなげましょう', action_url: '' },
   { step_number: 5, step_key: 'write_internal_notes', title: 'スタッフ用メモを書いてみましょう', description: 'スタッフだけが見られるメモを書いてみましょう（飼い主さんには届きません）', action_url: '/' },
   { step_number: 6, step_key: 'send_line_notification', title: 'LINEで通知を送ってみましょう', description: '連絡帳を「共有」すると、ご自身のLINEに届きます。ぜひ試してみてください', action_url: '/records' },

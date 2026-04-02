@@ -479,7 +479,7 @@ export async function sendRecordNotification(
 ): Promise<NotificationSendResult> {
   const typeLabels: Record<string, string> = {
     grooming: 'トリミングカルテ',
-    daycare: 'デイケアカルテ',
+    daycare: '連絡帳',
     hotel: 'ホテルカルテ',
   };
   const typeLabel = typeLabels[record.record_type] ?? 'カルテ';

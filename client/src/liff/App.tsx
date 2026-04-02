@@ -47,7 +47,10 @@ function App() {
     // basename="/liff" なので、window.location.pathname から /liff を除いたパスを保存
     const fullPath = window.location.pathname;
     const liffPath = fullPath.startsWith('/liff') ? fullPath.slice(5) : fullPath;
-    if (liffPath && liffPath !== '/' && !sessionStorage.getItem('liff_redirect')) {
+    if (liffPath && liffPath !== '/' && liffPath !== '/home') {
+      // 具体的なディープリンクパス（例: /home/records/123）は常に上書き保存
+      sessionStorage.setItem('liff_redirect', liffPath);
+    } else if (liffPath && liffPath !== '/' && !sessionStorage.getItem('liff_redirect')) {
       sessionStorage.setItem('liff_redirect', liffPath);
     }
 

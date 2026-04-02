@@ -509,7 +509,7 @@ export function createRecordNotificationFlexMessage(record: {
   // 業種別のカラーと絵文字・ラベル
   const typeConfig: Record<string, { color: string; emoji: string; label: string }> = {
     grooming: { color: '#8B5CF6', emoji: '✂️', label: 'トリミングカルテ' },
-    daycare: { color: '#F97316', emoji: '🐾', label: 'デイケアカルテ' },
+    daycare: { color: '#F97316', emoji: '🐾', label: '連絡帳' },
     hotel: { color: '#06B6D4', emoji: '🏨', label: 'ホテルカルテ' },
   };
   const config = typeConfig[record.record_type] ?? { color: '#3B82F6', emoji: '📋', label: 'カルテ' };
@@ -538,7 +538,7 @@ export function createRecordNotificationFlexMessage(record: {
         type: 'button',
         style: 'primary',
         height: 'sm',
-        action: { type: 'uri', label: 'カルテを見る', uri: buildLiffUrl(`/home/records/${record.id}`) },
+        action: { type: 'uri', label: record.record_type === 'daycare' ? '連絡帳を見る' : 'カルテを見る', uri: buildLiffUrl(`/home/records/${record.id}`) },
         color: config.color,
       },
     ],
