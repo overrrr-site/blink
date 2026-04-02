@@ -51,8 +51,9 @@ function App() {
       sessionStorage.setItem('liff_redirect', liffPath);
     }
 
-    // LIFF初期化
-    initLiff().catch(() => {});
+    initLiff().catch((err) => {
+      console.error('[LIFF] initialization failed:', err);
+    });
 
     // 認証状態を復元
     initialize();

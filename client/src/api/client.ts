@@ -2,8 +2,7 @@ import { createApiClient } from './createApiClient'
 
 const api = createApiClient({
   baseURL: '/api',
-  tokenKey: 'token',
-  userKey: 'user',
+  tokenKey: 'staff_user',
   loginPath: '/login',
 })
 

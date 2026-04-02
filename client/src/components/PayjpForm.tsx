@@ -35,11 +35,15 @@ export default function PayjpForm({ publicKey, onTokenCreated, onError, onSubmit
   const [payjpLoaded, setPayjpLoaded] = useState(false)
 
   useEffect(() => {
+    let mounted = true
+    let appendedScript: HTMLScriptElement | null = null
     if (!window.Payjp) {
       const script = document.createElement('script')
+      appendedScript = script
       script.src = 'https://js.pay.jp/v1'
       script.async = true
       script.onload = () => {
+        if (!mounted) return
         if (window.Payjp) {
           setPayjpLoaded(true)
         } else {
@@ -47,11 +51,18 @@ export default function PayjpForm({ publicKey, onTokenCreated, onError, onSubmit
         }
       }
       script.onerror = () => {
+        if (!mounted) return
         onError(new Error('PAY.JP SDKの読み込みに失敗しました'))
       }
       document.head.appendChild(script)
     } else {
       setPayjpLoaded(true)
+    }
+    return () => {
+      mounted = false
+      if (appendedScript?.parentNode === document.head) {
+        document.head.removeChild(appendedScript)
+      }
     }
   }, [onError])
 

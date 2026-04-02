@@ -8,8 +8,21 @@ type CreateApiClientOptions = {
   loginPath: string
 }
 
+const LEGACY_AUTH_STORAGE_KEYS = ['token', 'user'] as const
+
 let cachedToken: string | null = null
 let tokenExpiresAt = 0
+
+function clearLegacyAuthStorage(): void {
+  for (const key of LEGACY_AUTH_STORAGE_KEYS) {
+    localStorage.removeItem(key)
+  }
+}
+
+export function clearCachedToken(): void {
+  cachedToken = null
+  tokenExpiresAt = 0
+}
 
 export function createApiClient({ baseURL, tokenKey, userKey, loginPath }: CreateApiClientOptions) {
   const client = axios.create({
@@ -44,10 +57,12 @@ export function createApiClient({ baseURL, tokenKey, userKey, loginPath }: Creat
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
+        clearCachedToken()
         localStorage.removeItem(tokenKey)
         if (userKey) {
           localStorage.removeItem(userKey)
         }
+        clearLegacyAuthStorage()
         window.location.href = loginPath
       }
       return Promise.reject(error)

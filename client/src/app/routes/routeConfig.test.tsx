@@ -1,5 +1,7 @@
+import { isValidElement } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import { appRoutes } from './AppRoutes'
 import { publicRoutes } from './publicRoutes'
 import { staffRoutes } from './staffRoutes'
 
@@ -42,5 +44,19 @@ describe('route config', () => {
       '/billing',
       '/help',
     ]))
+  })
+
+  it('redirects unknown paths to dashboard', () => {
+    const catchAllRoute = appRoutes[appRoutes.length - 1]
+
+    expect(catchAllRoute?.path).toBe('*')
+    expect(isValidElement(catchAllRoute?.element)).toBe(true)
+
+    if (!isValidElement(catchAllRoute?.element)) {
+      throw new Error('Catch-all route element is missing')
+    }
+
+    expect(catchAllRoute.element.props.to).toBe('/dashboard')
+    expect(catchAllRoute.element.props.replace).toBe(true)
   })
 })

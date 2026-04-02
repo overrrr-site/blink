@@ -102,7 +102,15 @@ export const useLiffAuthStore = create<AuthState>((set) => ({
     const token = localStorage.getItem('liff_token');
     const ownerStr = localStorage.getItem('liff_user');
     if (token && ownerStr) {
-      const owner = JSON.parse(ownerStr);
+      let owner: Owner;
+      try {
+        owner = JSON.parse(ownerStr);
+      } catch {
+        localStorage.removeItem('liff_token');
+        localStorage.removeItem('liff_user');
+        localStorage.removeItem(SELECTED_BUSINESS_TYPE_KEY);
+        return;
+      }
       const availableBusinessTypes = normalizeBusinessTypes(
         owner.availableBusinessTypes,
         owner.primaryBusinessType

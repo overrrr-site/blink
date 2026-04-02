@@ -3,6 +3,7 @@ import axios from 'axios'
 import { supabase } from '../lib/supabase'
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import * as Sentry from '@sentry/react'
+import { clearCachedToken } from '../api/createApiClient'
 
 import type { RecordType } from '../types/record'
 
@@ -39,6 +40,8 @@ export interface AuthState {
   fetchStaffInfo: (accessToken: string) => Promise<void>
 }
 
+const LEGACY_AUTH_STORAGE_KEYS = ['token', 'user'] as const
+
 const UNAUTHENTICATED_STATE = {
   user: null,
   supabaseUser: null,
@@ -52,6 +55,12 @@ function setAuthHeader(token: string): void {
 
 function clearAuthHeader(): void {
   delete axios.defaults.headers.common['Authorization']
+}
+
+function clearLegacyAuthStorage(): void {
+  for (const key of LEGACY_AUTH_STORAGE_KEYS) {
+    localStorage.removeItem(key)
+  }
 }
 
 function setSentryContext(staff: StaffUser | null): void {
@@ -146,7 +155,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await supabase.auth.signOut()
     clearAuthHeader()
+    clearCachedToken()
     localStorage.removeItem('staff_user')
+    clearLegacyAuthStorage()
     clearSentryContext()
     set(UNAUTHENTICATED_STATE)
   },
@@ -169,9 +180,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initialize: async () => {
     set({ isLoading: true })
+    clearLegacyAuthStorage()
 
     const staffUserStr = localStorage.getItem('staff_user')
-    const cachedStaffUser = staffUserStr ? JSON.parse(staffUserStr) : null
+    let cachedStaffUser: StaffUser | null = null
+    if (staffUserStr) {
+      try {
+        cachedStaffUser = JSON.parse(staffUserStr)
+      } catch {
+        localStorage.removeItem('staff_user')
+      }
+    }
 
     const { data: { session } } = await supabase.auth.getSession()
 
@@ -220,7 +239,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       } else if (event === 'SIGNED_OUT') {
         clearAuthHeader()
+        clearCachedToken()
         localStorage.removeItem('staff_user')
+        clearLegacyAuthStorage()
         clearSentryContext()
         set(UNAUTHENTICATED_STATE)
       } else if (event === 'TOKEN_REFRESHED' && session) {

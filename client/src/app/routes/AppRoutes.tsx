@@ -1,12 +1,13 @@
-import { useRoutes } from 'react-router-dom'
+import { Navigate, useRoutes } from 'react-router-dom'
 import { publicRoutes } from './publicRoutes'
 import { staffRoutes } from './staffRoutes'
 
-const routes = [
+export const appRoutes = [
   ...publicRoutes,
   ...staffRoutes,
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
 ]
 
 export function AppRoutes() {
-  return useRoutes(routes)
+  return useRoutes(appRoutes)
 }

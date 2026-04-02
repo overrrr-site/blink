@@ -20,7 +20,15 @@ export function useTrialStepCompletion(stepKey: string, condition: boolean): voi
 
     if (condition) {
       completedRef.current = true
-      completeStep(stepKey)
+      void completeStep(stepKey)
+        .then((result) => {
+          if (!result) {
+            completedRef.current = false
+          }
+        })
+        .catch(() => {
+          completedRef.current = false
+        })
     }
   }, [condition, isTrial, guideCompleted, steps, stepKey, completeStep])
 }
