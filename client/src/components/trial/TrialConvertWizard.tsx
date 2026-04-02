@@ -18,7 +18,6 @@ export function TrialConvertWizard() {
     line_channel_id: '',
     line_channel_secret: '',
     line_channel_access_token: '',
-    liff_id: '',
   })
   const [connectionTestResult, setConnectionTestResult] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
   const [confirmChecked, setConfirmChecked] = useState(false)
@@ -67,7 +66,7 @@ export function TrialConvertWizard() {
     }
   }
 
-  const isLineConfigValid = lineConfig.line_channel_id && lineConfig.line_channel_secret && lineConfig.line_channel_access_token && lineConfig.liff_id
+  const isLineConfigValid = lineConfig.line_channel_id && lineConfig.line_channel_secret && lineConfig.line_channel_access_token
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
@@ -150,11 +149,19 @@ export function TrialConvertWizard() {
         <div className="space-y-4">
           <h2 className="text-base font-bold">Step 2: LINE設定の入力</h2>
           <p className="text-sm text-muted-foreground">
-            LINE Developers Consoleから以下の情報を入力してください。
+            LINE Developersコンソールから、Messaging APIチャネルの情報を入力してください。
           </p>
+          <a
+            href="https://developers.line.biz/console/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+          >
+            LINE Developersコンソールを開く →
+          </a>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Channel ID</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">チャネルID</label>
               <input
                 type="text"
                 className={INPUT_CLASS}
@@ -162,19 +169,25 @@ export function TrialConvertWizard() {
                 value={lineConfig.line_channel_id}
                 onChange={e => setLineConfig(prev => ({ ...prev, line_channel_id: e.target.value }))}
               />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                確認場所: LINE Developers → Messaging APIチャネル → チャネル基本設定
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Channel Secret</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">チャネルシークレット</label>
               <input
                 type="password"
                 className={INPUT_CLASS}
-                placeholder="abc123..."
+                placeholder="英数字の文字列"
                 value={lineConfig.line_channel_secret}
                 onChange={e => setLineConfig(prev => ({ ...prev, line_channel_secret: e.target.value }))}
               />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                確認場所: LINE Developers → Messaging APIチャネル → チャネル基本設定
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Channel Access Token</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">チャネルアクセストークン（長期）</label>
               <input
                 type="password"
                 className={INPUT_CLASS}
@@ -182,16 +195,9 @@ export function TrialConvertWizard() {
                 value={lineConfig.line_channel_access_token}
                 onChange={e => setLineConfig(prev => ({ ...prev, line_channel_access_token: e.target.value }))}
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">LIFF ID</label>
-              <input
-                type="text"
-                className={INPUT_CLASS}
-                placeholder="1234567890-abcdefgh"
-                value={lineConfig.liff_id}
-                onChange={e => setLineConfig(prev => ({ ...prev, liff_id: e.target.value }))}
-              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                確認場所: LINE Developers → Messaging API設定 →「チャネルアクセストークン（長期）」の「発行」ボタン
+              </p>
             </div>
           </div>
 

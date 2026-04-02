@@ -411,7 +411,7 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
   try {
     if (!requireStoreId(req, res)) return;
 
-    const { line_channel_id, line_channel_secret, line_channel_access_token, liff_id, confirm_delete_all } = req.body;
+    const { line_channel_id, line_channel_secret, line_channel_access_token, confirm_delete_all } = req.body;
 
     // 確認フラグのバリデーション
     if (confirm_delete_all !== true) {
@@ -420,7 +420,7 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
     }
 
     // LINE認証情報のバリデーション
-    if (!line_channel_id || !line_channel_secret || !line_channel_access_token || !liff_id) {
+    if (!line_channel_id || !line_channel_secret || !line_channel_access_token) {
       sendBadRequest(res, 'LINE連携情報を全て入力してください');
       return;
     }
@@ -437,11 +437,6 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
 
     if (typeof line_channel_access_token !== 'string' || line_channel_access_token.trim().length === 0) {
       sendBadRequest(res, '有効なLINEチャネルアクセストークンを入力してください');
-      return;
-    }
-
-    if (typeof liff_id !== 'string' || liff_id.trim().length === 0) {
-      sendBadRequest(res, '有効なLIFF IDを入力してください');
       return;
     }
 
@@ -506,12 +501,11 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
          SET line_channel_id = $1,
              line_channel_secret = $2,
              line_channel_access_token = $3,
-             liff_id = $4,
              is_trial = FALSE,
              converted_at = NOW(),
              trial_store_code = NULL
-         WHERE id = $5`,
-        [line_channel_id.trim(), encryptedSecret, encryptedAccessToken, liff_id.trim(), req.storeId]
+         WHERE id = $4`,
+        [line_channel_id.trim(), encryptedSecret, encryptedAccessToken, req.storeId]
       );
 
       await client.query('COMMIT');
