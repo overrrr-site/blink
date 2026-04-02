@@ -86,7 +86,26 @@ router.get('/records/:id', async function(req, res) {
       return sendNotFound(res, 'カルテが見つかりません');
     }
 
-    res.json(result.rows[0]);
+    const record = result.rows[0];
+
+    // daycare のトレーニング記録がある場合、item_key → item_label のマッピングを付与
+    if (record.record_type === 'daycare' && record.daycare_data?.training?.items) {
+      const itemKeys = Object.keys(record.daycare_data.training.items);
+      if (itemKeys.length > 0) {
+        const labelsResult = await pool.query(
+          `SELECT item_key, item_label FROM training_item_masters
+           WHERE store_id = $1 AND item_key = ANY($2)`,
+          [decoded.storeId, itemKeys]
+        );
+        const labelMap: Record<string, string> = {};
+        for (const row of labelsResult.rows) {
+          labelMap[row.item_key] = row.item_label;
+        }
+        record.daycare_data.training.item_labels = labelMap;
+      }
+    }
+
+    res.json(record);
   } catch (error: unknown) {
     sendServerError(res, 'カルテの取得に失敗しました', error);
   }

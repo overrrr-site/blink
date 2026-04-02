@@ -28,6 +28,7 @@ interface RecordData {
     training?: {
       items: Record<string, string>
       item_notes?: Record<string, string>
+      item_labels?: Record<string, string>
       note?: string
     }
     meal?: { morning?: string; afternoon?: string }
@@ -249,54 +250,14 @@ export default function RecordDetail() {
       )}
 
       {record.record_type === 'daycare' && record.daycare_data && (() => {
-        const trainingItems = record.daycare_data.training?.items || {}
-        const filledItems = Object.entries(trainingItems).filter(([, v]) => v && v !== '')
-        const trainingNote = record.daycare_data.training?.note
         const activities = record.daycare_data.activities || []
-        const hasTraining = filledItems.length > 0
+        const hasTrainingItems = Object.entries(record.daycare_data.training?.items || {}).some(([, v]) => v && v !== '')
         const hasActivities = activities.length > 0
 
         return (
           <>
-            {/* トレーニング記録（新データ） */}
-            {hasTraining && (
-              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
-                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-                  <Icon icon="mdi:book-open-page-variant" width="16" height="16" className="text-orange-500" />
-                  トレーニング記録
-                </h3>
-                <div className="space-y-1.5">
-                  {filledItems.map(([key, value]) => {
-                    const achievement = TRAINING_ACHIEVEMENT_LABELS[value]
-                    const itemNote = record.daycare_data?.training?.item_notes?.[key]
-                    return (
-                      <div key={key}>
-                        <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2">
-                          <span className="text-sm">{key.replace(/_/g, ' ')}</span>
-                          {achievement && (
-                            <span className={`size-8 rounded-full flex items-center justify-center text-sm font-bold ${achievement.className}`}>
-                              {achievement.label}
-                            </span>
-                          )}
-                        </div>
-                        {itemNote && (
-                          <p className="text-xs text-muted-foreground mt-0.5 ml-3">{itemNote}</p>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-                {trainingNote && (
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-1">メモ</p>
-                    <p className="text-sm whitespace-pre-wrap">{trainingNote}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* 旧「今日の活動」（後方互換） */}
-            {!hasTraining && hasActivities && (
+            {!hasTrainingItems && hasActivities && (
               <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
                 <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
                   <Icon icon="solar:sun-bold" width="16" height="16" className="text-orange-500" />
@@ -502,6 +463,52 @@ export default function RecordDetail() {
           </div>
         </div>
       )}
+
+      {/* トレーニング記録（写真・報告の後に表示） */}
+      {record.record_type === 'daycare' && record.daycare_data?.training && (() => {
+        const trainingItems = record.daycare_data.training.items || {}
+        const itemLabels = record.daycare_data.training.item_labels || {}
+        const filledItems = Object.entries(trainingItems).filter(([, v]) => v && v !== '')
+        const trainingNote = record.daycare_data.training.note
+
+        if (filledItems.length === 0) return null
+
+        return (
+          <div className="bg-card rounded-2xl p-4 border border-border shadow-sm mb-4">
+            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+              <Icon icon="mdi:book-open-page-variant" width="16" height="16" className="text-orange-500" />
+              トレーニング記録
+            </h3>
+            <div className="space-y-1.5">
+              {filledItems.map(([key, value]) => {
+                const achievement = TRAINING_ACHIEVEMENT_LABELS[value]
+                const itemNote = record.daycare_data?.training?.item_notes?.[key]
+                return (
+                  <div key={key}>
+                    <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2">
+                      <span className="text-sm">{itemLabels[key] || key}</span>
+                      {achievement && (
+                        <span className={`size-8 rounded-full flex items-center justify-center text-sm font-bold ${achievement.className}`}>
+                          {achievement.label}
+                        </span>
+                      )}
+                    </div>
+                    {itemNote && (
+                      <p className="text-xs text-muted-foreground mt-0.5 ml-3">{itemNote}</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {trainingNote && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-1">メモ</p>
+                <p className="text-sm whitespace-pre-wrap">{trainingNote}</p>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* 健康チェック */}
       {record.health_check && (
