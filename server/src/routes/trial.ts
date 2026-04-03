@@ -5,7 +5,7 @@ import { supabase } from '../db/supabase.js';
 import { authenticate, requireOwner, AuthRequest, invalidateStaffCache } from '../middleware/auth.js';
 import { requireStoreId, sendBadRequest, sendServerError } from '../utils/response.js';
 import { encrypt } from '../utils/encryption.js';
-import { clearStoreLineClientCache } from '../services/lineMessagingService.js';
+import { clearStoreLineClientCache, validateLineCredentials } from '../services/lineMessagingService.js';
 
 const router = express.Router();
 
@@ -22,6 +22,51 @@ const GUIDE_STEPS = [
   { step_number: 6, step_key: 'send_line_notification', title: 'LINEで通知を送ってみましょう', description: '連絡帳を「共有」すると、ご自身のLINEに届きます。ぜひ試してみてください', action_url: '/records' },
   { step_number: 7, step_key: 'check_liff_app', title: '飼い主さん側の画面を確認しましょう', description: 'LINEを開いて、飼い主さんとして届いた連絡帳を確認してみましょう', action_url: '' },
 ];
+
+type TrialLineCredentials = {
+  lineChannelId: string;
+  lineChannelSecret: string;
+  lineChannelAccessToken: string;
+};
+
+function parseTrialLineCredentials(body: unknown): { credentials?: TrialLineCredentials; error?: string } {
+  const payload = body && typeof body === 'object' ? body as Record<string, unknown> : {};
+  const lineChannelId = typeof payload.line_channel_id === 'string' ? payload.line_channel_id.trim() : '';
+  const lineChannelSecret = typeof payload.line_channel_secret === 'string' ? payload.line_channel_secret.trim() : '';
+  const lineChannelAccessToken = typeof payload.line_channel_access_token === 'string' ? payload.line_channel_access_token.trim() : '';
+
+  if (!lineChannelId) {
+    return { error: '有効なLINEチャネルIDを入力してください' };
+  }
+
+  if (!lineChannelSecret) {
+    return { error: '有効なLINEチャネルシークレットを入力してください' };
+  }
+
+  if (!lineChannelAccessToken) {
+    return { error: '有効なLINEチャネルアクセストークンを入力してください' };
+  }
+
+  return {
+    credentials: {
+      lineChannelId,
+      lineChannelSecret,
+      lineChannelAccessToken,
+    },
+  };
+}
+
+function respondLineValidationError(
+  res: express.Response,
+  validation: Awaited<ReturnType<typeof validateLineCredentials>>
+): void {
+  const status = validation.kind === 'network_error' ? 502 : 400;
+  res.status(status).json({
+    success: false,
+    error: validation.message || 'LINE認証情報を確認してください',
+    statusCode: validation.statusCode,
+  });
+}
 
 // -------------------------
 // POST /start - トライアル登録（認証不要）
@@ -172,6 +217,40 @@ router.post('/start', async (req, res) => {
     }
   } catch (error) {
     sendServerError(res, 'トライアルアカウントの作成に失敗しました', error);
+  }
+});
+
+router.post('/line/test', authenticate, requireOwner, async (req: AuthRequest, res) => {
+  try {
+    if (!requireStoreId(req, res)) return;
+
+    const parsed = parseTrialLineCredentials(req.body);
+    if (parsed.error || !parsed.credentials) {
+      sendBadRequest(res, parsed.error || 'LINE認証情報を確認してください');
+      return;
+    }
+
+    const validation = await validateLineCredentials({
+      channelId: parsed.credentials.lineChannelId,
+      channelSecret: parsed.credentials.lineChannelSecret,
+      channelAccessToken: parsed.credentials.lineChannelAccessToken,
+    });
+
+    if (!validation.ok) {
+      respondLineValidationError(res, validation);
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        display_name: validation.botInfo?.displayName ?? null,
+        user_id: validation.botInfo?.userId ?? null,
+        basic_id: validation.botInfo?.basicId ?? null,
+      },
+    });
+  } catch (error) {
+    sendServerError(res, 'LINE接続テストに失敗しました', error);
   }
 });
 
@@ -411,7 +490,8 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
   try {
     if (!requireStoreId(req, res)) return;
 
-    const { line_channel_id, line_channel_secret, line_channel_access_token, confirm_delete_all } = req.body;
+    const { confirm_delete_all } = req.body;
+    const parsed = parseTrialLineCredentials(req.body);
 
     // 確認フラグのバリデーション
     if (confirm_delete_all !== true) {
@@ -419,24 +499,8 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
       return;
     }
 
-    // LINE認証情報のバリデーション
-    if (!line_channel_id || !line_channel_secret || !line_channel_access_token) {
-      sendBadRequest(res, 'LINE連携情報を全て入力してください');
-      return;
-    }
-
-    if (typeof line_channel_id !== 'string' || line_channel_id.trim().length === 0) {
-      sendBadRequest(res, '有効なLINEチャネルIDを入力してください');
-      return;
-    }
-
-    if (typeof line_channel_secret !== 'string' || line_channel_secret.trim().length === 0) {
-      sendBadRequest(res, '有効なLINEチャネルシークレットを入力してください');
-      return;
-    }
-
-    if (typeof line_channel_access_token !== 'string' || line_channel_access_token.trim().length === 0) {
-      sendBadRequest(res, '有効なLINEチャネルアクセストークンを入力してください');
+    if (parsed.error || !parsed.credentials) {
+      sendBadRequest(res, parsed.error || 'LINE認証情報を確認してください');
       return;
     }
 
@@ -448,6 +512,17 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
 
     if (storeCheck.rows.length === 0 || !storeCheck.rows[0].is_trial) {
       sendBadRequest(res, 'この店舗はトライアルモードではありません');
+      return;
+    }
+
+    const validation = await validateLineCredentials({
+      channelId: parsed.credentials.lineChannelId,
+      channelSecret: parsed.credentials.lineChannelSecret,
+      channelAccessToken: parsed.credentials.lineChannelAccessToken,
+    });
+
+    if (!validation.ok) {
+      respondLineValidationError(res, validation);
       return;
     }
 
@@ -493,8 +568,8 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
       }
 
       // LINE認証情報を暗号化して店舗テーブルを更新
-      const encryptedSecret = encrypt(line_channel_secret.trim());
-      const encryptedAccessToken = encrypt(line_channel_access_token.trim());
+      const encryptedSecret = encrypt(parsed.credentials.lineChannelSecret);
+      const encryptedAccessToken = encrypt(parsed.credentials.lineChannelAccessToken);
 
       await client.query(
         `UPDATE stores
@@ -505,7 +580,7 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
              converted_at = NOW(),
              trial_store_code = NULL
          WHERE id = $4`,
-        [line_channel_id.trim(), encryptedSecret, encryptedAccessToken, req.storeId]
+        [parsed.credentials.lineChannelId, encryptedSecret, encryptedAccessToken, req.storeId]
       );
 
       await client.query('COMMIT');

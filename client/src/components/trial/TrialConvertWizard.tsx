@@ -25,24 +25,27 @@ export function TrialConvertWizard() {
   const [converting, setConverting] = useState(false)
   const [error, setError] = useState('')
 
+  const updateLineConfig = (key: keyof typeof lineConfig, value: string) => {
+    setLineConfig(prev => ({ ...prev, [key]: value }))
+    setConnectionTestResult('idle')
+    setError('')
+  }
+
   const handleConnectionTest = async () => {
     setConnectionTestResult('testing')
     setError('')
     try {
-      const response = await fetch('https://api.line.me/v2/bot/info', {
-        headers: {
-          'Authorization': `Bearer ${lineConfig.line_channel_access_token}`,
-        },
-      })
-      if (response.ok) {
+      const { data } = await api.post('/trial/line/test', lineConfig)
+      if (data.success) {
         setConnectionTestResult('success')
       } else {
         setConnectionTestResult('error')
         setError('LINE接続テストに失敗しました。認証情報を確認してください。')
       }
-    } catch {
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } }
       setConnectionTestResult('error')
-      setError('接続エラーが発生しました。')
+      setError(axiosErr.response?.data?.error || '接続エラーが発生しました。')
     }
   }
 
@@ -167,7 +170,7 @@ export function TrialConvertWizard() {
                 className={INPUT_CLASS}
                 placeholder="1234567890"
                 value={lineConfig.line_channel_id}
-                onChange={e => setLineConfig(prev => ({ ...prev, line_channel_id: e.target.value }))}
+                onChange={e => updateLineConfig('line_channel_id', e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground mt-1">
                 確認場所: LINE Developers → Messaging APIチャネル → チャネル基本設定
@@ -180,7 +183,7 @@ export function TrialConvertWizard() {
                 className={INPUT_CLASS}
                 placeholder="英数字の文字列"
                 value={lineConfig.line_channel_secret}
-                onChange={e => setLineConfig(prev => ({ ...prev, line_channel_secret: e.target.value }))}
+                onChange={e => updateLineConfig('line_channel_secret', e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground mt-1">
                 確認場所: LINE Developers → Messaging APIチャネル → チャネル基本設定
@@ -193,7 +196,7 @@ export function TrialConvertWizard() {
                 className={INPUT_CLASS}
                 placeholder="長い文字列..."
                 value={lineConfig.line_channel_access_token}
-                onChange={e => setLineConfig(prev => ({ ...prev, line_channel_access_token: e.target.value }))}
+                onChange={e => updateLineConfig('line_channel_access_token', e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground mt-1">
                 確認場所: LINE Developers → Messaging API設定 →「チャネルアクセストークン（長期）」の「発行」ボタン

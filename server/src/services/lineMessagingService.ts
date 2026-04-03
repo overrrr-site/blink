@@ -21,6 +21,24 @@ export interface LineSendResult {
   reason?: string;
 }
 
+export interface LineCredentialValidationInput {
+  channelId: string;
+  channelSecret: string;
+  channelAccessToken: string;
+}
+
+export interface LineCredentialValidationResult {
+  ok: boolean;
+  kind: 'valid' | 'invalid' | 'network_error';
+  message?: string;
+  statusCode?: number;
+  botInfo?: {
+    userId?: string;
+    basicId?: string;
+    displayName?: string;
+  };
+}
+
 type StoreLineCredentials = {
   channelId: string;
   channelSecret: string;
@@ -109,6 +127,90 @@ export function describeLineConnectionIssue(status: StoreLineConnectionStatus | 
   return status.missing.length > 0
     ? `LINE認証情報が不足しています: ${status.missing.join(', ')}`
     : 'LINE認証情報が不足しています';
+}
+
+export async function validateLineCredentials(
+  input: LineCredentialValidationInput
+): Promise<LineCredentialValidationResult> {
+  const channelId = input.channelId.trim();
+  const channelSecret = input.channelSecret.trim();
+  const channelAccessToken = input.channelAccessToken.trim();
+
+  if (!channelId) {
+    return {
+      ok: false,
+      kind: 'invalid',
+      message: '有効なLINEチャネルIDを入力してください',
+    };
+  }
+
+  if (!channelSecret) {
+    return {
+      ok: false,
+      kind: 'invalid',
+      message: '有効なLINEチャネルシークレットを入力してください',
+    };
+  }
+
+  if (!channelAccessToken) {
+    return {
+      ok: false,
+      kind: 'invalid',
+      message: '有効なLINEチャネルアクセストークンを入力してください',
+    };
+  }
+
+  try {
+    const response = await fetch('https://api.line.me/v2/bot/info', {
+      headers: {
+        Authorization: `Bearer ${channelAccessToken}`,
+      },
+    });
+
+    if (response.ok) {
+      const botInfo = await response.json() as LineCredentialValidationResult['botInfo'];
+      return {
+        ok: true,
+        kind: 'valid',
+        botInfo,
+      };
+    }
+
+    const responseBody = await response.text().catch(() => '');
+
+    let message = 'LINE認証情報を確認してください';
+    let kind: LineCredentialValidationResult['kind'] = 'invalid';
+
+    if (response.status === 400) {
+      message = 'LINEチャネルアクセストークンの形式が不正です';
+    } else if (response.status === 401 || response.status === 403) {
+      message = 'LINEチャネルアクセストークンが無効です';
+    } else if (response.status === 429) {
+      message = 'LINE APIの利用制限に達しました。少し時間をおいて再試行してください';
+      kind = 'network_error';
+    } else if (response.status >= 500) {
+      message = 'LINE API側でエラーが発生しました。少し時間をおいて再試行してください';
+      kind = 'network_error';
+    }
+
+    if (responseBody) {
+      console.warn('LINE credential validation failed:', response.status, responseBody);
+    }
+
+    return {
+      ok: false,
+      kind,
+      message,
+      statusCode: response.status,
+    };
+  } catch (error) {
+    console.error('LINE credential validation request failed:', error);
+    return {
+      ok: false,
+      kind: 'network_error',
+      message: 'LINE APIへの接続に失敗しました。時間をおいて再試行してください',
+    };
+  }
 }
 
 /**
