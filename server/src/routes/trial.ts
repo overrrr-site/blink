@@ -68,6 +68,26 @@ function respondLineValidationError(
   });
 }
 
+async function markStoreLineSetupCompleted(
+  client: { query: (sql: string, params?: unknown[]) => Promise<unknown> },
+  storeId: number
+): Promise<void> {
+  await client.query(
+    `UPDATE staff s
+     SET onboarding_state = jsonb_set(
+           COALESCE(s.onboarding_state, '{}'::jsonb),
+           '{setup}',
+           COALESCE(s.onboarding_state->'setup', '{}'::jsonb) || '{"line":"completed"}'::jsonb,
+           true
+         ),
+         updated_at = CURRENT_TIMESTAMP
+     FROM staff_stores ss
+     WHERE ss.staff_id = s.id
+       AND ss.store_id = $1`,
+    [storeId]
+  );
+}
+
 // -------------------------
 // POST /start - トライアル登録（認証不要）
 // -------------------------
@@ -582,6 +602,8 @@ router.post('/convert', authenticate, requireOwner, async (req: AuthRequest, res
          WHERE id = $4`,
         [parsed.credentials.lineChannelId, encryptedSecret, encryptedAccessToken, req.storeId]
       );
+
+      await markStoreLineSetupCompleted(client, req.storeId);
 
       await client.query('COMMIT');
 

@@ -128,4 +128,59 @@ describe('trial routes', () => {
     })
     expect(poolConnectMock).not.toHaveBeenCalled()
   })
+
+  it('marks LINE setup as completed for store staff after successful conversion', async () => {
+    const handler = await getRouteHandler('/convert', 'post')
+    expect(handler).toBeTypeOf('function')
+
+    poolQueryMock.mockResolvedValueOnce({
+      rows: [{ is_trial: true }],
+    })
+    validateLineCredentialsMock.mockResolvedValue({
+      ok: true,
+      kind: 'valid',
+      botInfo: {
+        displayName: 'Test Bot',
+      },
+    })
+
+    const transactionQueryMock = vi.fn(async (sql: string) => {
+      if (sql === 'BEGIN' || sql === 'COMMIT') {
+        return { rowCount: null, rows: [] }
+      }
+      return { rowCount: 0, rows: [] }
+    })
+    const releaseMock = vi.fn()
+
+    poolConnectMock.mockResolvedValue({
+      query: transactionQueryMock,
+      release: releaseMock,
+    })
+
+    const req = {
+      storeId: 1,
+      body: {
+        line_channel_id: '1234567890',
+        line_channel_secret: 'secret',
+        line_channel_access_token: 'valid-token',
+        confirm_delete_all: true,
+      },
+    } as unknown as Request
+    const res = createResponse()
+
+    await handler!(req, res)
+
+    expect(transactionQueryMock).toHaveBeenCalledWith('BEGIN')
+    expect(transactionQueryMock).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE staff s'),
+      [1]
+    )
+    expect(clearStoreLineClientCacheMock).toHaveBeenCalledWith(1)
+    expect(releaseMock).toHaveBeenCalled()
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+      })
+    )
+  })
 })
