@@ -258,8 +258,8 @@ function Dashboard(): JSX.Element {
         </div>
       )}
 
-      <div className="lg:flex lg:gap-8">
-        <div className="lg:flex-1 lg:min-w-0">
+      <div className="xl:flex xl:gap-8">
+        <div className="xl:flex-1 xl:min-w-0">
           {/* ステータスフィルター */}
           <div className="px-5 pt-2 mb-4">
             <div className="relative">
@@ -362,8 +362,8 @@ function Dashboard(): JSX.Element {
 
         {/* クイックアクション */}
         {data && (
-          <aside className="px-5 mt-4 lg:mt-2 lg:px-0 lg:w-72 lg:shrink-0 lg:sticky lg:top-4 lg:self-start">
-            <section className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-1 lg:gap-2">
+          <aside className="px-5 mt-4 xl:mt-2 xl:px-0 xl:w-72 xl:shrink-0 xl:sticky xl:top-4 xl:self-start">
+            <section className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 xl:grid-cols-1 xl:gap-2">
               {/* 今日の点検記録 */}
               <QuickActionCard
                 onClick={handleNavigateInspection}
