@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom'
+import useSWR from 'swr'
 import { useAuthStore, selectUser } from '../../store/authStore'
 import api from '../../api/client'
 import { useToast } from '../../components/Toast'
 import { formatDateISO } from '../../utils/date'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import { fetcher } from '../../lib/swr'
 
 type ExportType = 'owners' | 'dogs' | 'records'
 
@@ -16,6 +18,25 @@ const EXPORT_ITEMS: { type: ExportType; icon: string; label: string }[] = [
   { type: 'records', icon: 'solar:notebook-bold', label: '日誌データ' },
 ]
 
+interface CurrentBillingPlan {
+  display_name: string | null
+  price_monthly: number | null
+  subscription_status: string | null
+}
+
+function getSubscriptionStatusBadge(status: string | null | undefined): { label: string; className: string } {
+  switch (status) {
+    case 'active':
+      return { label: 'アクティブ', className: 'bg-chart-2/10 text-chart-2' }
+    case 'past_due':
+      return { label: '支払い失敗', className: 'bg-destructive/10 text-destructive' }
+    case 'canceled':
+      return { label: 'キャンセル', className: 'bg-muted text-muted-foreground' }
+    default:
+      return { label: '未契約', className: 'bg-muted text-muted-foreground' }
+  }
+}
+
 function OtherTab() {
   const navigate = useNavigate()
   const user = useAuthStore(selectUser)
@@ -24,6 +45,11 @@ function OtherTab() {
   const [exporting, setExporting] = useState<ExportType | null>(null)
   const { showToast } = useToast()
   const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
+  const { data: currentPlan, isLoading: loadingCurrentPlan } = useSWR<CurrentBillingPlan>(
+    isOwner ? '/billing/current' : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
 
   async function handleLogout() {
     const ok = await confirm({
@@ -168,10 +194,25 @@ function OtherTab() {
             <div className="bg-accent/30 rounded-xl p-4 mb-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-accent-foreground">現在のプラン</span>
-                <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">アクティブ</span>
+                {(() => {
+                  const badge = getSubscriptionStatusBadge(currentPlan?.subscription_status)
+                  return (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${badge.className}`}>
+                      {badge.label}
+                    </span>
+                  )
+                })()}
               </div>
-              <p className="text-lg font-bold">スタンダードプラン</p>
-              <p className="text-xs text-muted-foreground">¥5,500/月（税込）</p>
+              <p className="text-lg font-bold">
+                {loadingCurrentPlan
+                  ? '読み込み中...'
+                  : currentPlan?.display_name || '未契約'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {currentPlan?.price_monthly
+                  ? `¥${Math.floor(currentPlan.price_monthly).toLocaleString()}/月（税込）`
+                  : 'プラン・お支払い管理から設定できます'}
+              </p>
             </div>
             <button
               onClick={() => navigate('/billing')}
