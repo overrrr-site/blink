@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLiffProfile, initLiff, isLiffLoggedIn } from '../utils/liff';
+import { getLiffIdToken, getLiffProfile, initLiff, isLiffLoggedIn } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
 import logoImage from '../../assets/logo.png';
@@ -84,9 +84,16 @@ export default function Login() {
 
         // ログイン済みの場合、プロフィールを取得
         const profile = await getLiffProfile();
+        const idToken = getLiffIdToken();
+
+        if (!idToken) {
+          setError('LINE IDトークンの取得に失敗しました');
+          return;
+        }
 
         // バックエンドでLINE認証
         const response = await liffClient.post('/auth', {
+          idToken,
           lineUserId: profile.userId,
           displayName: profile.displayName,
           pictureUrl: profile.pictureUrl,

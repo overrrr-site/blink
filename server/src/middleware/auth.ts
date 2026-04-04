@@ -136,12 +136,12 @@ export async function authenticate(
         [authUserId]
       );
       if (staffOnly.rows.length > 0) {
-        console.error(`認証エラー: スタッフは存在するが店舗未関連 (auth_user_id: ${authUserId}, staff_id: ${staffOnly.rows[0].id})`);
+        console.error('認証エラー: スタッフは存在するが店舗未関連です');
         res.status(403).json({
           error: '店舗に関連付けられていません。管理者に連絡してください。',
         });
       } else {
-        console.error(`認証エラー: スタッフが見つかりません (auth_user_id: ${authUserId})`);
+        console.error('認証エラー: スタッフが見つかりません');
         res.status(403).json({
           error: 'スタッフとして登録されていません。管理者に連絡してください。',
         });
@@ -166,10 +166,7 @@ export async function authenticate(
     next();
   } catch (error) {
     console.error('認証エラー:', error);
-    res.status(500).json({
-      error: '認証に失敗しました',
-      details: error instanceof Error ? error.message : '不明なエラーが発生しました',
-    });
+    res.status(500).json({ error: '認証に失敗しました' });
   }
 }
 
@@ -218,21 +215,15 @@ async function resolveAuthUserId(token: string, res: Response): Promise<string |
   // フォールバック: Supabase Auth APIで検証
   if (!supabase) {
     console.error('認証エラー: Supabaseクライアントが初期化されていません');
-    res.status(500).json({
-      error: '認証システムが設定されていません',
-      details: 'SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を確認してください'
-    });
+    res.status(500).json({ error: '認証システムが設定されていません' });
     return null;
   }
 
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
   if (authError) {
-    console.error('Supabase認証エラー:', authError);
-    res.status(401).json({
-      error: '無効な認証トークンです',
-      details: authError.message
-    });
+    console.error('Supabase認証エラー:', authError.message);
+    res.status(401).json({ error: '無効な認証トークンです' });
     return null;
   }
 

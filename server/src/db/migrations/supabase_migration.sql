@@ -185,16 +185,40 @@ ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pre_visit_inputs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE journals ENABLE ROW LEVEL SECURITY;
 
--- Service Role Keyを使用するため、RLSポリシーは基本的に許可
--- 本番環境では適切なRLSポリシーを設定してください
-CREATE POLICY "Enable all access for service role" ON staff FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON stores FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON staff_stores FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON owners FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON dogs FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON dog_health FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON dog_personality FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON contracts FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON reservations FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON pre_visit_inputs FOR ALL USING (true);
-CREATE POLICY "Enable all access for service role" ON journals FOR ALL USING (true);
+-- バックエンド API / service_role 経由のアクセスのみを許可し、
+-- PostgREST からの anon / authenticated 直接アクセスは拒否する。
+DROP POLICY IF EXISTS "Enable all access for service role" ON staff;
+DROP POLICY IF EXISTS "Enable all access for service role" ON stores;
+DROP POLICY IF EXISTS "Enable all access for service role" ON staff_stores;
+DROP POLICY IF EXISTS "Enable all access for service role" ON owners;
+DROP POLICY IF EXISTS "Enable all access for service role" ON dogs;
+DROP POLICY IF EXISTS "Enable all access for service role" ON dog_health;
+DROP POLICY IF EXISTS "Enable all access for service role" ON dog_personality;
+DROP POLICY IF EXISTS "Enable all access for service role" ON contracts;
+DROP POLICY IF EXISTS "Enable all access for service role" ON reservations;
+DROP POLICY IF EXISTS "Enable all access for service role" ON pre_visit_inputs;
+DROP POLICY IF EXISTS "Enable all access for service role" ON journals;
+
+DROP POLICY IF EXISTS "Deny all direct access" ON staff;
+DROP POLICY IF EXISTS "Deny all direct access" ON stores;
+DROP POLICY IF EXISTS "Deny all direct access" ON staff_stores;
+DROP POLICY IF EXISTS "Deny all direct access" ON owners;
+DROP POLICY IF EXISTS "Deny all direct access" ON dogs;
+DROP POLICY IF EXISTS "Deny all direct access" ON dog_health;
+DROP POLICY IF EXISTS "Deny all direct access" ON dog_personality;
+DROP POLICY IF EXISTS "Deny all direct access" ON contracts;
+DROP POLICY IF EXISTS "Deny all direct access" ON reservations;
+DROP POLICY IF EXISTS "Deny all direct access" ON pre_visit_inputs;
+DROP POLICY IF EXISTS "Deny all direct access" ON journals;
+
+CREATE POLICY "Deny all direct access" ON staff FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON stores FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON staff_stores FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON owners FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON dogs FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON dog_health FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON dog_personality FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON contracts FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON reservations FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON pre_visit_inputs FOR ALL USING (false);
+CREATE POLICY "Deny all direct access" ON journals FOR ALL USING (false);

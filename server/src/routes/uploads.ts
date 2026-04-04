@@ -3,8 +3,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
-import { sendBadRequest, sendForbidden, sendNotFound, sendServerError } from '../utils/response.js';
+import { requireStoreId, sendBadRequest, sendForbidden, sendNotFound, sendServerError } from '../utils/response.js';
 import {
+  isPrivateStorageReference,
   isSupabaseStorageAvailable,
   uploadToSupabaseStorage,
   uploadMultipleToSupabaseStorage,
@@ -13,6 +14,20 @@ import {
 
 const router = express.Router();
 router.use(authenticate);
+
+const UPLOAD_CATEGORY_CONFIG = {
+  general: { visibility: 'public' as const },
+  'dog-photos': { visibility: 'public' as const },
+  'record-photos': { visibility: 'public' as const },
+  'vaccine-certs': { visibility: 'private' as const },
+};
+
+type UploadCategory = keyof typeof UPLOAD_CATEGORY_CONFIG;
+
+function resolveUploadCategory(category: unknown): UploadCategory | null {
+  if (typeof category !== 'string') return 'general';
+  return category in UPLOAD_CATEGORY_CONFIG ? (category as UploadCategory) : null;
+}
 
 // Vercel環境かどうかを判定
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
@@ -45,7 +60,7 @@ const storage = useSupabaseStorage
   : multer.diskStorage({
       destination: (req, file, cb) => {
         // カテゴリ別にディレクトリを作成
-        const category = (req.query.category as string) || 'general';
+        const category = resolveUploadCategory(req.query.category) || 'general';
         const categoryDir = path.join(uploadDir, category);
         try {
           if (!fs.existsSync(categoryDir)) {
@@ -85,16 +100,29 @@ const upload = multer({
 // 単一ファイルアップロード
 router.post('/', upload.single('file'), async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     if (!req.file) {
       sendBadRequest(res, 'ファイルが見つかりません');
       return;
     }
 
-    const category = (req.query.category as string) || 'general';
+    const category = resolveUploadCategory(req.query.category);
+    if (!category) {
+      sendBadRequest(res, '許可されていないアップロードカテゴリです');
+      return;
+    }
+    const categoryConfig = UPLOAD_CATEGORY_CONFIG[category];
 
     // Supabase Storage使用時
     if (useSupabaseStorage) {
-      const result = await uploadToSupabaseStorage(req.file, category);
+      const result = await uploadToSupabaseStorage(req.file, {
+        category,
+        storeId: req.storeId,
+        visibility: categoryConfig.visibility,
+      });
       if (!result) {
         sendServerError(res, 'ファイルのアップロードに失敗しました', new Error('Supabase Storage upload failed'));
         return;
@@ -103,11 +131,13 @@ router.post('/', upload.single('file'), async (req: AuthRequest, res) => {
       res.json({
         success: true,
         url: result.url,
+        accessUrl: result.accessUrl || result.url,
         path: result.path,
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
         storage: 'supabase',
+        visibility: categoryConfig.visibility,
       });
       return;
     }
@@ -132,24 +162,38 @@ router.post('/', upload.single('file'), async (req: AuthRequest, res) => {
 // 複数ファイルアップロード（最大10ファイル）
 router.post('/multiple', upload.array('files', 10), async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
       sendBadRequest(res, 'ファイルが見つかりません');
       return;
     }
 
-    const category = (req.query.category as string) || 'general';
+    const category = resolveUploadCategory(req.query.category);
+    if (!category) {
+      sendBadRequest(res, '許可されていないアップロードカテゴリです');
+      return;
+    }
+    const categoryConfig = UPLOAD_CATEGORY_CONFIG[category];
 
     // Supabase Storage使用時
     if (useSupabaseStorage) {
       const results = await uploadMultipleToSupabaseStorage(
         req.files as Express.Multer.File[],
-        category
+        {
+          category,
+          storeId: req.storeId,
+          visibility: categoryConfig.visibility,
+        }
       );
 
       res.json({
         success: true,
         files: results,
         storage: 'supabase',
+        visibility: categoryConfig.visibility,
       });
       return;
     }
@@ -176,6 +220,10 @@ router.post('/multiple', upload.array('files', 10), async (req: AuthRequest, res
 // ファイル削除
 router.delete('/', async (req: AuthRequest, res) => {
   try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
     const { url } = req.body;
     if (!url) {
       sendBadRequest(res, 'URLが指定されていません');
@@ -183,10 +231,10 @@ router.delete('/', async (req: AuthRequest, res) => {
     }
 
     // Supabase Storage URL かどうかを判定
-    const isSupabaseUrl = url.includes('supabase.co/storage');
+    const isSupabaseUrl = url.includes('supabase.co/storage') || isPrivateStorageReference(url);
 
     if (isSupabaseUrl) {
-      const success = await deleteFromSupabaseStorage(url);
+      const success = await deleteFromSupabaseStorage(url, req.storeId);
       if (success) {
         res.json({ success: true, message: 'ファイルを削除しました' });
       } else {

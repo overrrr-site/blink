@@ -21,8 +21,12 @@ export interface DogFormData {
 export interface DogHealthData {
   mixed_vaccine_date: string
   mixed_vaccine_cert_url: string
+  mixed_vaccine_cert_access_url?: string
+  mixed_vaccine_cert_private?: boolean
   rabies_vaccine_date: string
   rabies_vaccine_cert_url: string
+  rabies_vaccine_cert_access_url?: string
+  rabies_vaccine_cert_private?: boolean
   flea_tick_date: string
   allergies: string
   medical_history: string

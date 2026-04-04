@@ -1,9 +1,14 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import pool from '../../db/connection.js';
 import { sendEmail } from '../../services/emailService.js';
-import { sendBadRequest, sendNotFound, sendServerError } from '../../utils/response.js';
+import { sendBadRequest, sendNotFound, sendServerError, sendUnauthorized } from '../../utils/response.js';
 import { generateVerificationCode, maskEmail } from './common.js';
+import {
+  SecurityConfigurationError,
+  type VerifiedLineIdentity,
+  signOwnerToken,
+  verifyLineIdentity,
+} from './security.js';
 
 const router = express.Router();
 
@@ -90,17 +95,51 @@ function buildLinkCodeScopeQuery(params: {
   return { query, values };
 }
 
+function allowInsecureDevLiffAuth(): boolean {
+  return process.env.NODE_ENV !== 'production' && process.env.ALLOW_INSECURE_LIFF_DEV_AUTH === 'true';
+}
+
+async function resolveLineIdentity(
+  body: Record<string, unknown>,
+  res: express.Response,
+): Promise<VerifiedLineIdentity | null> {
+  const expectedLineUserId = typeof body.lineUserId === 'string' ? body.lineUserId : undefined;
+  const idToken = typeof body.idToken === 'string' ? body.idToken : '';
+
+  if (!idToken) {
+    if (allowInsecureDevLiffAuth() && expectedLineUserId) {
+      return {
+        userId: expectedLineUserId,
+        displayName: typeof body.displayName === 'string' ? body.displayName : undefined,
+        pictureUrl: typeof body.pictureUrl === 'string' ? body.pictureUrl : undefined,
+      };
+    }
+
+    sendBadRequest(res, 'LINE ID token が必要です');
+    return null;
+  }
+
+  try {
+    return await verifyLineIdentity(idToken, expectedLineUserId);
+  } catch (error) {
+    if (error instanceof SecurityConfigurationError) {
+      sendServerError(res, 'LINE認証設定に不備があります', error);
+      return null;
+    }
+
+    sendUnauthorized(res, 'LINE認証の検証に失敗しました');
+    return null;
+  }
+}
+
 router.post('/auth', async function(req, res) {
   const startTime = Date.now();
   console.log('🔐 LIFF auth開始');
 
   try {
-    const { lineUserId, displayName, pictureUrl } = req.body;
-
-    if (!lineUserId) {
-      sendBadRequest(res, 'LINEユーザーIDが必要です');
-      return;
-    }
+    const lineIdentity = await resolveLineIdentity(req.body as Record<string, unknown>, res);
+    if (!lineIdentity) return;
+    const lineUserId = lineIdentity.userId;
 
     console.log('🔐 DBクエリ開始:', Date.now() - startTime, 'ms');
 
@@ -138,16 +177,11 @@ router.post('/auth', async function(req, res) {
 
       // トライアル店舗の飼い主として認証
       const trialOwner = trialResult.rows[0];
-      const trialToken = jwt.sign(
-        {
-          ownerId: trialOwner.id,
-          storeId: trialOwner.store_id,
-          lineUserId: lineUserId,
-          type: 'owner',
-        },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: '30d' }
-      );
+      const trialToken = signOwnerToken({
+        ownerId: trialOwner.id,
+        storeId: trialOwner.store_id,
+        lineUserId,
+      });
 
       console.log('🔐 LIFF trial auth完了:', Date.now() - startTime, 'ms');
 
@@ -167,16 +201,11 @@ router.post('/auth', async function(req, res) {
     const owner = ownerResult.rows[0];
 
     // LINE IDが一致する場合、JWTトークンを発行
-    const token = jwt.sign(
-      {
-        ownerId: owner.id,
-        storeId: owner.store_id,
-        lineUserId: lineUserId,
-        type: 'owner', // スタッフと区別するため
-      },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '30d' } // 飼い主は30日間有効
-    );
+    const token = signOwnerToken({
+      ownerId: owner.id,
+      storeId: owner.store_id,
+      lineUserId,
+    });
 
     console.log('🔐 LIFF auth完了:', Date.now() - startTime, 'ms');
 
@@ -199,7 +228,11 @@ router.post('/auth', async function(req, res) {
 
 router.post('/link/request', async function(req, res) {
   try {
-    const { phone, lineUserId } = req.body;
+    const lineIdentity = await resolveLineIdentity(req.body as Record<string, unknown>, res);
+    if (!lineIdentity) return;
+
+    const { phone } = req.body;
+    const lineUserId = lineIdentity.userId;
     const normalizedPhone = typeof phone === 'string' ? normalizePhone(phone) : '';
     const ownerScope = parseScopedId(req.body.ownerId, 'ownerId');
     const storeScope = parseScopedId(req.body.storeId, 'storeId');
@@ -308,7 +341,11 @@ router.post('/link/request', async function(req, res) {
 // LINE ID紐付け確認（確認コード検証）
 router.post('/link/verify', async function(req, res) {
   try {
-    const { phone, code, lineUserId } = req.body;
+    const lineIdentity = await resolveLineIdentity(req.body as Record<string, unknown>, res);
+    if (!lineIdentity) return;
+
+    const { phone, code } = req.body;
+    const lineUserId = lineIdentity.userId;
     const normalizedPhone = typeof phone === 'string' ? normalizePhone(phone) : '';
     const ownerScope = parseScopedId(req.body.ownerId, 'ownerId');
     const storeScope = parseScopedId(req.body.storeId, 'storeId');
@@ -408,16 +445,11 @@ router.post('/link/verify', async function(req, res) {
     );
 
     // JWTトークンを発行
-    const token = jwt.sign(
-      {
-        ownerId: owner.id,
-        storeId: owner.store_id,
-        lineUserId: lineUserId,
-        type: 'owner',
-      },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '30d' }
-    );
+    const token = signOwnerToken({
+      ownerId: owner.id,
+      storeId: owner.store_id,
+      lineUserId,
+    });
 
     res.json({
       token,

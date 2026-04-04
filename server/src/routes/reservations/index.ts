@@ -93,7 +93,7 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
         sample: result.rows.slice(0, 2).map(r => ({
           id: r.id,
           date: r.reservation_date,
-          dog: r.dog_name
+          status: r.status,
         }))
       });
     }

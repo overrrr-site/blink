@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
+import { formatErrorForLog } from '../utils/errorLogging.js';
 
 export function errorHandler(
   err: unknown,
@@ -12,12 +13,10 @@ export function errorHandler(
       userId?: number;
       storeId?: number;
       isOwner?: boolean;
-      staffData?: { email?: string };
     };
     if (authReq.userId) {
       scope.setUser({
         id: authReq.userId.toString(),
-        email: authReq.staffData?.email,
       });
     }
     if (authReq.storeId) {
@@ -29,6 +28,6 @@ export function errorHandler(
     Sentry.captureException(err);
   });
 
-  console.error('Unhandled error:', err);
+  console.error('Unhandled error:', formatErrorForLog(err));
   res.status(500).json({ error: 'サーバーエラーが発生しました' });
 }

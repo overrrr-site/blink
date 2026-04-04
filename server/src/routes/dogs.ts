@@ -10,8 +10,72 @@ import {
 } from '../utils/response.js';
 import { isNonEmptyString, isNumberLike } from '../utils/validation.js';
 import { cacheControl } from '../middleware/cache.js';
+import { createSignedFileUrl, isPrivateStorageReference } from '../services/storageService.js';
 
-async function upsertDogHealth(dogId: number, health: Record<string, unknown> | null | undefined): Promise<void> {
+function sanitizeOptionalString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function sanitizeDogHealthInput(input: unknown): Record<string, string | null> | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return null;
+  }
+
+  const health = input as Record<string, unknown>;
+  return {
+    mixed_vaccine_date: sanitizeOptionalString(health.mixed_vaccine_date),
+    mixed_vaccine_cert_url: sanitizeOptionalString(health.mixed_vaccine_cert_url),
+    rabies_vaccine_date: sanitizeOptionalString(health.rabies_vaccine_date),
+    rabies_vaccine_cert_url: sanitizeOptionalString(health.rabies_vaccine_cert_url),
+    flea_tick_date: sanitizeOptionalString(health.flea_tick_date),
+    medical_history: sanitizeOptionalString(health.medical_history),
+    allergies: sanitizeOptionalString(health.allergies),
+    medications: sanitizeOptionalString(health.medications),
+    vet_name: sanitizeOptionalString(health.vet_name),
+    vet_phone: sanitizeOptionalString(health.vet_phone),
+    food_info: sanitizeOptionalString(health.food_info),
+  };
+}
+
+function sanitizeDogPersonalityInput(input: unknown): Record<string, string | null> | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return null;
+  }
+
+  const personality = input as Record<string, unknown>;
+  return {
+    personality_description: sanitizeOptionalString(personality.personality_description),
+    dog_compatibility: sanitizeOptionalString(personality.dog_compatibility),
+    human_reaction: sanitizeOptionalString(personality.human_reaction),
+    likes: sanitizeOptionalString(personality.likes),
+    dislikes: sanitizeOptionalString(personality.dislikes),
+    toilet_status: sanitizeOptionalString(personality.toilet_status),
+    crate_training: sanitizeOptionalString(personality.crate_training),
+  };
+}
+
+async function buildDogHealthResponse(health: Record<string, unknown> | undefined) {
+  if (!health) return null;
+
+  const mixedRef = typeof health.mixed_vaccine_cert_url === 'string' ? health.mixed_vaccine_cert_url : '';
+  const rabiesRef = typeof health.rabies_vaccine_cert_url === 'string' ? health.rabies_vaccine_cert_url : '';
+
+  return {
+    ...health,
+    mixed_vaccine_cert_access_url: mixedRef
+      ? await createSignedFileUrl(mixedRef)
+      : null,
+    rabies_vaccine_cert_access_url: rabiesRef
+      ? await createSignedFileUrl(rabiesRef)
+      : null,
+    mixed_vaccine_cert_private: mixedRef ? isPrivateStorageReference(mixedRef) : false,
+    rabies_vaccine_cert_private: rabiesRef ? isPrivateStorageReference(rabiesRef) : false,
+  };
+}
+
+async function upsertDogHealth(dogId: number, health: Record<string, string | null> | null | undefined): Promise<void> {
   if (!health) return;
 
   await pool.query(
@@ -51,7 +115,7 @@ async function upsertDogHealth(dogId: number, health: Record<string, unknown> | 
   );
 }
 
-async function upsertDogPersonality(dogId: number, personality: Record<string, unknown> | null | undefined): Promise<void> {
+async function upsertDogPersonality(dogId: number, personality: Record<string, string | null> | null | undefined): Promise<void> {
   if (!personality) return;
 
   await pool.query(
@@ -183,7 +247,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
     res.json({
       ...dogResult.rows[0],
-      health: healthResult.rows[0] || null,
+      health: await buildDogHealthResponse(healthResult.rows[0]),
       personality: personalityResult.rows[0] || null,
       contract: contractResult.rows[0] || null,
       reservations: reservationsResult.rows || [],
@@ -246,8 +310,8 @@ router.post('/', async (req: AuthRequest, res) => {
     const dogId = dogResult.rows[0].id;
 
     // 健康情報と性格情報を登録
-    await upsertDogHealth(dogId, health);
-    await upsertDogPersonality(dogId, personality);
+    await upsertDogHealth(dogId, sanitizeDogHealthInput(health));
+    await upsertDogPersonality(dogId, sanitizeDogPersonalityInput(personality));
 
     res.status(201).json(dogResult.rows[0]);
   } catch (error) {
@@ -289,8 +353,8 @@ router.put('/:id', async (req: AuthRequest, res) => {
       [name, breed, birth_date, gender, weight, color, photo_url, neuteredValue, id]
     );
 
-    await upsertDogHealth(Number(id), health);
-    await upsertDogPersonality(Number(id), personality);
+    await upsertDogHealth(Number(id), sanitizeDogHealthInput(health));
+    await upsertDogPersonality(Number(id), sanitizeDogPersonalityInput(personality));
 
     res.json(result.rows[0]);
   } catch (error) {

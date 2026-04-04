@@ -4,6 +4,7 @@ declare const liff: {
   isLoggedIn(): boolean;
   login(): void;
   logout(): void;
+  getIDToken(): string | null;
   getProfile(): Promise<{
     userId: string;
     displayName: string;
@@ -59,6 +60,11 @@ export async function getLiffProfile(): Promise<{
   }
 
   return liff.getProfile();
+}
+
+export function getLiffIdToken(): string | null {
+  if (!isLiffAvailable()) return null;
+  return liff.getIDToken();
 }
 
 export function isLiffLoggedIn(): boolean {

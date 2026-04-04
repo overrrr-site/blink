@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import pool from '../db/connection.js';
 import { sendStoreOwnerPaymentFailedNotification } from '../services/notificationService.js';
 
@@ -19,11 +20,50 @@ type StoreForBilling = {
 
 const router = express.Router();
 
+function getWebhookTokenHeader(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0] : null;
+  }
+  return typeof value === 'string' ? value : null;
+}
+
+function verifyWebhookToken(headerValue: string | null): boolean {
+  const configuredToken = process.env.PAYJP_WEBHOOK_TOKEN?.trim();
+  if (!configuredToken) {
+    throw new Error('PAYJP_WEBHOOK_TOKEN is not configured');
+  }
+
+  if (!headerValue) {
+    return false;
+  }
+
+  const expected = Buffer.from(configuredToken);
+  const received = Buffer.from(headerValue.trim());
+
+  return expected.length === received.length && crypto.timingSafeEqual(expected, received);
+}
+
 // PAY.JP Webhook受信
 router.post('/', async (req, res) => {
   let logId: number | null = null;
 
   try {
+    const webhookToken = getWebhookTokenHeader(req.headers['x-payjp-webhook-token']);
+    let verified = false;
+
+    try {
+      verified = verifyWebhookToken(webhookToken);
+    } catch (configError) {
+      console.error('PAY.JP Webhook configuration error:', configError);
+      res.status(500).json({ received: false, error: 'webhook not configured' });
+      return;
+    }
+
+    if (!verified) {
+      res.status(401).json({ received: false, error: 'invalid webhook signature' });
+      return;
+    }
+
     const event = parseWebhookBody(req.body);
     if (!event) {
       console.log('PAY.JP Webhook: body取得失敗 - type:', typeof req.body);

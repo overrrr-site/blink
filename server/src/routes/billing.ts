@@ -16,6 +16,28 @@ router.use(requireOwner); // 課金関連は管理者のみ
 // PAY.JP初期化（APIキーが設定されていない場合はnull）
 const payjp = process.env.PAYJP_SECRET_KEY ? Payjp(process.env.PAYJP_SECRET_KEY) : null;
 
+function getPayjpClient(res: express.Response): NonNullable<typeof payjp> | null {
+  if (!payjp) {
+    res.status(500).json({ error: '決済設定が完了していません' });
+    return null;
+  }
+  return payjp;
+}
+
+function logPayjpError(context: string, error: unknown): void {
+  const payjpError = error as {
+    status?: unknown;
+    type?: unknown;
+    code?: unknown;
+  };
+
+  console.error(`PAY.JP ${context} error:`, {
+    status: typeof payjpError.status === 'number' ? payjpError.status : undefined,
+    type: typeof payjpError.type === 'string' ? payjpError.type : undefined,
+    code: typeof payjpError.code === 'string' ? payjpError.code : undefined,
+  });
+}
+
 // プラン一覧取得
 router.get('/plans', async (req: AuthRequest, res) => {
   try {
@@ -74,6 +96,11 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
       return;
     }
 
+    const payjpClient = getPayjpClient(res);
+    if (!payjpClient) {
+      return;
+    }
+
     if (!plan_id || !payjp_token) {
       sendBadRequest(res, 'プランIDとPAY.JPトークンが必要です');
       return;
@@ -123,7 +150,7 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
           customerEmail = staffResult.rows[0]?.email || `store_${req.storeId}@blink.app`;
         }
 
-        const customer = await payjp.customers.create({
+        const customer = await payjpClient.customers.create({
           email: customerEmail,
           card: payjp_token,
         });
@@ -135,7 +162,7 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
         );
       } else {
         // 既存顧客のカードを更新
-        await payjp.customers.update(customerId, {
+        await payjpClient.customers.update(customerId, {
           card: payjp_token,
         });
       }
@@ -143,9 +170,9 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
       // 既存のサブスクリプションをキャンセル
       if (store.payjp_subscription_id) {
         try {
-          await payjp.subscriptions.cancel(store.payjp_subscription_id);
+          await payjpClient.subscriptions.cancel(store.payjp_subscription_id);
         } catch (cancelError) {
-          console.warn('Failed to cancel existing subscription:', cancelError);
+          logPayjpError('cancel existing subscription', cancelError);
         }
       }
 
@@ -155,9 +182,9 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
       const payjpPlanId = `plan_${plan.id}`;
 
       try {
-        await payjp.plans.retrieve(payjpPlanId);
+        await payjpClient.plans.retrieve(payjpPlanId);
       } catch (planError) {
-        await payjp.plans.create({
+        await payjpClient.plans.create({
           id: payjpPlanId,
           amount: monthlyAmount,
           currency: 'jpy',
@@ -170,7 +197,7 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
         });
       }
 
-      const subscription = await payjp.subscriptions.create({
+      const subscription = await payjpClient.subscriptions.create({
         customer: customerId,
         plan: payjpPlanId,
         metadata: {
@@ -221,11 +248,8 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
         },
       });
     } catch (payjpError: unknown) {
-      console.error('PAY.JP error:', payjpError);
-      res.status(400).json({
-        error: '決済処理に失敗しました',
-        details: payjpError instanceof Error ? payjpError.message : 'Unknown error',
-      });
+      logPayjpError('subscribe', payjpError);
+      res.status(400).json({ error: '決済処理に失敗しました' });
     }
   } catch (error) {
     sendServerError(res, 'プラン変更に失敗しました', error);
@@ -238,6 +262,11 @@ router.post('/update-card', async (req: AuthRequest, res) => {
     const { payjp_token } = req.body;
 
     if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    const payjpClient = getPayjpClient(res);
+    if (!payjpClient) {
       return;
     }
 
@@ -263,17 +292,14 @@ router.post('/update-card', async (req: AuthRequest, res) => {
     }
 
     try {
-      await payjp.customers.update(customerId, {
+      await payjpClient.customers.update(customerId, {
         card: payjp_token,
       });
 
       res.json({ success: true, message: 'カード情報を更新しました' });
     } catch (payjpError: unknown) {
-      console.error('PAY.JP update card error:', payjpError);
-      res.status(400).json({
-        error: 'カード情報の更新に失敗しました',
-        details: payjpError instanceof Error ? payjpError.message : 'Unknown error',
-      });
+      logPayjpError('update card', payjpError);
+      res.status(400).json({ error: 'カード情報の更新に失敗しました' });
     }
   } catch (error) {
     sendServerError(res, 'カード情報の更新に失敗しました', error);
@@ -283,6 +309,11 @@ router.post('/update-card', async (req: AuthRequest, res) => {
 // サブスクリプションキャンセル
 router.post('/cancel', async (req: AuthRequest, res) => {
   try {
+    const payjpClient = getPayjpClient(res);
+    if (!payjpClient) {
+      return;
+    }
+
     const storeResult = await pool.query(
       `SELECT payjp_subscription_id FROM stores WHERE id = $1`,
       [req.storeId]
@@ -296,7 +327,7 @@ router.post('/cancel', async (req: AuthRequest, res) => {
     const subscriptionId = storeResult.rows[0].payjp_subscription_id;
 
     try {
-      await payjp.subscriptions.cancel(subscriptionId);
+      await payjpClient.subscriptions.cancel(subscriptionId);
 
       await pool.query(
         `UPDATE stores SET
@@ -308,11 +339,8 @@ router.post('/cancel', async (req: AuthRequest, res) => {
 
       res.json({ success: true, message: 'サブスクリプションをキャンセルしました' });
     } catch (payjpError: unknown) {
-      console.error('PAY.JP cancel error:', payjpError);
-      res.status(400).json({
-        error: 'キャンセル処理に失敗しました',
-        details: payjpError instanceof Error ? payjpError.message : 'Unknown error',
-      });
+      logPayjpError('cancel', payjpError);
+      res.status(400).json({ error: 'キャンセル処理に失敗しました' });
     }
   } catch (error) {
     sendServerError(res, 'キャンセル処理に失敗しました', error);

@@ -45,7 +45,11 @@ const MIGRATIONS = [
   { file: '043_ux_analytics.sql',                     label: 'UX分析イベント・レポートジョブ' },
   { file: '044_clarity_export_snapshots.sql',         label: 'Clarityエクスポートスナップショット' },
   { file: '046_rls_security_ux_and_clarity.sql',      label: 'UX分析・Clarity RLSセキュリティ' },
+  { file: '049_create_trial_line_links.sql',          label: 'トライアルLINE紐付け' },
+  { file: '050_create_trial_guide_progress.sql',      label: 'トライアルガイド進捗' },
+  { file: '053_ai_intake_chat.sql',                   label: 'AIインテークチャット' },
   { file: '057_line_link_scope_and_webhook_event_id.sql', label: 'LIFF連携スコープ・Webhook冪等化' },
+  { file: '058_rls_security_remaining_sensitive_tables.sql', label: '追加機微テーブル RLS セキュリティ' },
 ] as const;
 
 async function runMigration(file: string, label: string): Promise<void> {

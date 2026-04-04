@@ -81,8 +81,12 @@ const DogEdit = () => {
         setHealth({
           mixed_vaccine_date: dog.health.mixed_vaccine_date ? dog.health.mixed_vaccine_date.split('T')[0] : '',
           mixed_vaccine_cert_url: dog.health.mixed_vaccine_cert_url || '',
+          mixed_vaccine_cert_access_url: dog.health.mixed_vaccine_cert_access_url || '',
+          mixed_vaccine_cert_private: Boolean(dog.health.mixed_vaccine_cert_private),
           rabies_vaccine_date: dog.health.rabies_vaccine_date ? dog.health.rabies_vaccine_date.split('T')[0] : '',
           rabies_vaccine_cert_url: dog.health.rabies_vaccine_cert_url || '',
+          rabies_vaccine_cert_access_url: dog.health.rabies_vaccine_cert_access_url || '',
+          rabies_vaccine_cert_private: Boolean(dog.health.rabies_vaccine_cert_private),
           flea_tick_date: dog.health.flea_tick_date ? dog.health.flea_tick_date.split('T')[0] : '',
           allergies: dog.health.allergies || '',
           medical_history: dog.health.medical_history || '',
@@ -194,9 +198,19 @@ const DogEdit = () => {
 
       if (response.data.url) {
         if (type === 'mixed') {
-          setHealth(prev => ({ ...prev, mixed_vaccine_cert_url: response.data.url }))
+          setHealth(prev => ({
+            ...prev,
+            mixed_vaccine_cert_url: response.data.url,
+            mixed_vaccine_cert_access_url: response.data.accessUrl || response.data.url,
+            mixed_vaccine_cert_private: response.data.visibility === 'private',
+          }))
         } else {
-          setHealth(prev => ({ ...prev, rabies_vaccine_cert_url: response.data.url }))
+          setHealth(prev => ({
+            ...prev,
+            rabies_vaccine_cert_url: response.data.url,
+            rabies_vaccine_cert_access_url: response.data.accessUrl || response.data.url,
+            rabies_vaccine_cert_private: response.data.visibility === 'private',
+          }))
         }
       }
     } catch {
@@ -223,9 +237,19 @@ const DogEdit = () => {
       // ファイルが存在しなくても続行
     } finally {
       if (type === 'mixed') {
-        setHealth(prev => ({ ...prev, mixed_vaccine_cert_url: '' }))
+        setHealth(prev => ({
+          ...prev,
+          mixed_vaccine_cert_url: '',
+          mixed_vaccine_cert_access_url: '',
+          mixed_vaccine_cert_private: false,
+        }))
       } else {
-        setHealth(prev => ({ ...prev, rabies_vaccine_cert_url: '' }))
+        setHealth(prev => ({
+          ...prev,
+          rabies_vaccine_cert_url: '',
+          rabies_vaccine_cert_access_url: '',
+          rabies_vaccine_cert_private: false,
+        }))
       }
     }
   }
@@ -239,6 +263,16 @@ const DogEdit = () => {
 
     setSaving(true)
     try {
+      const healthPayload = {
+        mixed_vaccine_date: health.mixed_vaccine_date,
+        mixed_vaccine_cert_url: health.mixed_vaccine_cert_url,
+        rabies_vaccine_date: health.rabies_vaccine_date,
+        rabies_vaccine_cert_url: health.rabies_vaccine_cert_url,
+        flea_tick_date: health.flea_tick_date,
+        allergies: health.allergies,
+        medical_history: health.medical_history,
+      }
+
       await api.put(`/dogs/${id}`, {
         name: form.name,
         breed: form.breed,
@@ -248,7 +282,7 @@ const DogEdit = () => {
         color: form.color,
         neutered: form.neutered,
         photo_url: form.photo_url || null,
-        health,
+        health: healthPayload,
         personality,
       })
       navigate(`/dogs/${id}`)

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon'
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLiffProfile, isLiffLoggedIn, initLiff } from '../utils/liff';
+import { getLiffIdToken, getLiffProfile, isLiffLoggedIn, initLiff } from '../utils/liff';
 import { useLiffAuthStore } from '../store/authStore';
 import liffClient from '../api/client';
 import { getAxiosErrorMessage } from '../../utils/error';
@@ -15,6 +15,7 @@ export default function LinkAccount() {
   const { setAuth } = useLiffAuthStore();
   const [step, setStep] = useState<Step>('phone');
   const [lineUserId, setLineUserId] = useState<string>('');
+  const [idToken, setIdToken] = useState<string>('');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
@@ -46,34 +47,31 @@ export default function LinkAccount() {
       }
     }
     
+    const fetchLineIdentity = async () => {
+      try {
+        await initLiff();
+
+        if (!isLiffLoggedIn()) {
+          await getLiffProfile();
+          return;
+        }
+
+        const profile = await getLiffProfile();
+        setLineUserId(userId || profile.userId);
+        setIdToken(getLiffIdToken() || '');
+      } catch (err) {
+        if (err instanceof Error && err.message === 'Redirecting to LINE login...') {
+          return;
+        }
+        setError('LINEアカウント情報の取得に失敗しました');
+      }
+    };
+
     if (userId) {
       setLineUserId(userId);
-    } else {
-      // LINE User IDが取得できない場合は、LIFFから取得を試みる
-      const fetchLineUserId = async () => {
-        try {
-          // LIFF初期化
-          await initLiff();
-          
-          // ログイン状態を確認
-          if (!isLiffLoggedIn()) {
-            // 未ログインの場合、getLiffProfileがliff.login()を呼び出しリダイレクト
-            await getLiffProfile();
-            return;
-          }
-          
-          const profile = await getLiffProfile();
-          setLineUserId(profile.userId);
-        } catch (err) {
-          // リダイレクト中のエラーは無視
-          if (err instanceof Error && err.message === 'Redirecting to LINE login...') {
-            return;
-          }
-          setError('LINEアカウント情報の取得に失敗しました');
-        }
-      };
-      fetchLineUserId();
     }
+
+    void fetchLineIdentity();
   }, [location, phone]);
 
   const handleRequestCode = async () => {
@@ -82,8 +80,8 @@ export default function LinkAccount() {
       return;
     }
 
-    if (!lineUserId) {
-      setError('LINEアカウント情報が取得できませんでした');
+    if (!lineUserId || !idToken) {
+      setError('LINEアカウント認証情報が取得できませんでした');
       return;
     }
 
@@ -92,6 +90,7 @@ export default function LinkAccount() {
 
     try {
       const response = await liffClient.post('/link/request', {
+        idToken,
         phone: phone.trim(),
         lineUserId,
         ownerId,
@@ -113,7 +112,7 @@ export default function LinkAccount() {
       return;
     }
 
-    if (!lineUserId || !phone) {
+    if (!lineUserId || !phone || !idToken) {
       setError('必要な情報が不足しています');
       return;
     }
@@ -123,6 +122,7 @@ export default function LinkAccount() {
 
     try {
       const response = await liffClient.post('/link/verify', {
+        idToken,
         phone: phone.trim(),
         code: code.trim(),
         lineUserId,

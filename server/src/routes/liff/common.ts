@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { sendForbidden, sendUnauthorized } from '../../utils/response.js';
+import { sendForbidden, sendServerError, sendUnauthorized } from '../../utils/response.js';
+import { getJwtSecret, SecurityConfigurationError } from './security.js';
 
 export interface OwnerToken {
   ownerId: number;
@@ -18,13 +19,17 @@ export function requireOwnerToken(req: express.Request, res: express.Response): 
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as OwnerToken;
+    const decoded = jwt.verify(token, getJwtSecret()) as OwnerToken;
     if (decoded.type !== 'owner') {
       sendForbidden(res, '飼い主専用のエンドポイントです');
       return null;
     }
     return decoded;
   } catch (error) {
+    if (error instanceof SecurityConfigurationError) {
+      sendServerError(res, '認証設定に不備があります', error);
+      return null;
+    }
     if (error instanceof Error && (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError')) {
       sendUnauthorized(res, '無効な認証トークンです');
       return null;

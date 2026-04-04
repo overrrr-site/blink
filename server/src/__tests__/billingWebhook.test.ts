@@ -23,6 +23,7 @@ describe('billing webhook', () => {
     vi.resetModules()
     poolQueryMock.mockReset()
     sendStoreOwnerPaymentFailedNotificationMock.mockReset()
+    process.env.PAYJP_WEBHOOK_TOKEN = 'test-webhook-token'
   })
 
   it('skips duplicate processed events by event.id', async () => {
@@ -34,6 +35,9 @@ describe('billing webhook', () => {
     })
 
     const req = {
+      headers: {
+        'x-payjp-webhook-token': 'test-webhook-token',
+      },
       body: {
         id: 'evt_duplicate',
         type: 'charge.failed',

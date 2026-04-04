@@ -3,7 +3,10 @@ import type { Request, Response } from 'express'
 
 const poolQueryMock = vi.fn()
 const sendEmailMock = vi.fn()
-const jwtSignMock = vi.fn(() => 'test-token')
+const signOwnerTokenMock = vi.fn(() => 'test-token')
+const verifyLineIdentityMock = vi.fn(async (_idToken: string, expectedLineUserId?: string) => ({
+  userId: expectedLineUserId ?? 'U123',
+}))
 
 vi.mock('../db/connection.js', () => ({
   default: { query: poolQueryMock },
@@ -18,10 +21,10 @@ vi.mock('../routes/liff/common.js', () => ({
   maskEmail: vi.fn(() => 't***@example.com'),
 }))
 
-vi.mock('jsonwebtoken', () => ({
-  default: {
-    sign: jwtSignMock,
-  },
+vi.mock('../routes/liff/security.js', () => ({
+  signOwnerToken: signOwnerTokenMock,
+  verifyLineIdentity: verifyLineIdentityMock,
+  SecurityConfigurationError: class SecurityConfigurationError extends Error {},
 }))
 
 async function getRouteHandler(path: string, method: 'post') {
@@ -43,7 +46,8 @@ describe('LIFF link auth', () => {
     poolQueryMock.mockReset()
     sendEmailMock.mockReset()
     sendEmailMock.mockResolvedValue(true)
-    jwtSignMock.mockClear()
+    signOwnerTokenMock.mockClear()
+    verifyLineIdentityMock.mockClear()
   })
 
   it('stores owner_id and store_id in scoped link requests', async () => {
@@ -67,6 +71,7 @@ describe('LIFF link auth', () => {
 
     const req = {
       body: {
+        idToken: 'id-token',
         phone: '090-1234-5678',
         lineUserId: 'U123',
         ownerId: 10,
@@ -111,6 +116,7 @@ describe('LIFF link auth', () => {
 
     const req = {
       body: {
+        idToken: 'id-token',
         phone: '09012345678',
         lineUserId: 'U123',
       },
@@ -157,6 +163,7 @@ describe('LIFF link auth', () => {
 
     const req = {
       body: {
+        idToken: 'id-token',
         phone: '09012345678',
         code: '123456',
         lineUserId: 'U123',

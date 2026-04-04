@@ -60,7 +60,7 @@ const DogEditHealth = memo(function DogEditHealth({
               {data.mixed_vaccine_cert_url ? (
                 <div className="flex items-center gap-2">
                   <a
-                    href={getFileUrl(data.mixed_vaccine_cert_url)}
+                    href={data.mixed_vaccine_cert_access_url || getFileUrl(data.mixed_vaccine_cert_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
@@ -128,7 +128,7 @@ const DogEditHealth = memo(function DogEditHealth({
               {data.rabies_vaccine_cert_url ? (
                 <div className="flex items-center gap-2">
                   <a
-                    href={getFileUrl(data.rabies_vaccine_cert_url)}
+                    href={data.rabies_vaccine_cert_access_url || getFileUrl(data.rabies_vaccine_cert_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"

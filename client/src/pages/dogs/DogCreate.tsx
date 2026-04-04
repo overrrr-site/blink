@@ -3,6 +3,7 @@ import { Icon } from '../../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/client'
 import { useToast } from '../../components/Toast'
+import type { DogHealthData } from '../../types/dog'
 
 const DogCreate = () => {
   const { ownerId } = useParams<{ ownerId: string }>()
@@ -24,7 +25,7 @@ const DogCreate = () => {
     neutered: '',
     photo_url: '',
   })
-  const [health, setHealth] = useState({
+  const [health, setHealth] = useState<DogHealthData>({
     mixed_vaccine_date: '',
     mixed_vaccine_cert_url: '',
     rabies_vaccine_date: '',
@@ -88,9 +89,19 @@ const DogCreate = () => {
 
       if (response.data.url) {
         if (type === 'mixed') {
-          setHealth(prev => ({ ...prev, mixed_vaccine_cert_url: response.data.url }))
+          setHealth(prev => ({
+            ...prev,
+            mixed_vaccine_cert_url: response.data.url,
+            mixed_vaccine_cert_access_url: response.data.accessUrl || response.data.url,
+            mixed_vaccine_cert_private: response.data.visibility === 'private',
+          }))
         } else {
-          setHealth(prev => ({ ...prev, rabies_vaccine_cert_url: response.data.url }))
+          setHealth(prev => ({
+            ...prev,
+            rabies_vaccine_cert_url: response.data.url,
+            rabies_vaccine_cert_access_url: response.data.accessUrl || response.data.url,
+            rabies_vaccine_cert_private: response.data.visibility === 'private',
+          }))
         }
       }
     } catch {
@@ -104,6 +115,33 @@ const DogCreate = () => {
     const file = e.target.files?.[0]
     if (file) {
       handleFileUpload(file, type)
+    }
+  }
+
+  const handleRemoveFile = async (type: 'mixed' | 'rabies') => {
+    const url = type === 'mixed' ? health.mixed_vaccine_cert_url : health.rabies_vaccine_cert_url
+    if (!url) return
+
+    try {
+      await api.delete('/uploads', { data: { url } })
+    } catch {
+      // ファイルが存在しなくても続行
+    } finally {
+      if (type === 'mixed') {
+        setHealth(prev => ({
+          ...prev,
+          mixed_vaccine_cert_url: '',
+          mixed_vaccine_cert_access_url: '',
+          mixed_vaccine_cert_private: false,
+        }))
+      } else {
+        setHealth(prev => ({
+          ...prev,
+          rabies_vaccine_cert_url: '',
+          rabies_vaccine_cert_access_url: '',
+          rabies_vaccine_cert_private: false,
+        }))
+      }
     }
   }
 
@@ -121,6 +159,16 @@ const DogCreate = () => {
 
     setSaving(true)
     try {
+      const healthPayload = {
+        mixed_vaccine_date: health.mixed_vaccine_date,
+        mixed_vaccine_cert_url: health.mixed_vaccine_cert_url,
+        rabies_vaccine_date: health.rabies_vaccine_date,
+        rabies_vaccine_cert_url: health.rabies_vaccine_cert_url,
+        flea_tick_date: health.flea_tick_date,
+        allergies: health.allergies,
+        medical_history: health.medical_history,
+      }
+
       await api.post('/dogs', {
         owner_id: ownerId,
         name: form.name,
@@ -131,7 +179,7 @@ const DogCreate = () => {
         color: form.color,
         neutered: form.neutered,
         photo_url: form.photo_url || null,
-        health: Object.keys(health).some(key => health[key as keyof typeof health]) ? health : null,
+        health: Object.values(healthPayload).some(Boolean) ? healthPayload : null,
       })
       navigate(`/owners/${ownerId}`)
     } catch {
@@ -368,7 +416,7 @@ const DogCreate = () => {
                   {health.mixed_vaccine_cert_url ? (
                     <div className="flex items-center gap-2">
                       <a
-                        href={getFileUrl(health.mixed_vaccine_cert_url)}
+                        href={health.mixed_vaccine_cert_access_url || getFileUrl(health.mixed_vaccine_cert_url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
@@ -378,7 +426,7 @@ const DogCreate = () => {
                       </a>
                       <button
                         type="button"
-                        onClick={() => setHealth(prev => ({ ...prev, mixed_vaccine_cert_url: '' }))}
+                        onClick={() => handleRemoveFile('mixed')}
                         className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <Icon icon="solar:trash-bin-trash-bold" width="20" height="20" />
@@ -436,7 +484,7 @@ const DogCreate = () => {
                   {health.rabies_vaccine_cert_url ? (
                     <div className="flex items-center gap-2">
                       <a
-                        href={getFileUrl(health.rabies_vaccine_cert_url)}
+                        href={health.rabies_vaccine_cert_access_url || getFileUrl(health.rabies_vaccine_cert_url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
@@ -446,7 +494,7 @@ const DogCreate = () => {
                       </a>
                       <button
                         type="button"
-                        onClick={() => setHealth(prev => ({ ...prev, rabies_vaccine_cert_url: '' }))}
+                        onClick={() => handleRemoveFile('rabies')}
                         className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <Icon icon="solar:trash-bin-trash-bold" width="20" height="20" />

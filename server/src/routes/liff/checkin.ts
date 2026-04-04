@@ -5,6 +5,7 @@ import { authenticate, AuthRequest } from '../../middleware/auth.js';
 import { sendBadRequest, sendForbidden, sendNotFound, sendServerError } from '../../utils/response.js';
 import { getTodayJST } from '../../utils/date.js';
 import { requireOwnerToken } from './common.js';
+import { getJwtSecret, SecurityConfigurationError } from './security.js';
 
 const router = express.Router();
 const STORE_QR_TOKEN_TYPE = 'store_checkin';
@@ -17,7 +18,7 @@ function verifyStoreQrToken(qrCode: string, ownerStoreId: number): {
   error?: string;
 } {
   try {
-    const qrData = jwt.verify(qrCode, process.env.JWT_SECRET || 'secret') as {
+    const qrData = jwt.verify(qrCode, getJwtSecret()) as {
       storeId?: number;
       type?: string;
     };
@@ -45,7 +46,14 @@ function verifyStoreQrToken(qrCode: string, ownerStoreId: number): {
       ok: true,
       storeId: qrData.storeId,
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof SecurityConfigurationError) {
+      return {
+        ok: false,
+        code: 'QR_INVALID',
+        error: 'チェックイン認証設定に不備があります',
+      };
+    }
     return {
       ok: false,
       code: 'QR_INVALID',
@@ -73,7 +81,7 @@ router.get('/qr-code', authenticate, async function(req: AuthRequest, res) {
     // 署名付きトークンを生成（有効期限なし、店舗固定）
     const qrToken = jwt.sign(
       qrData,
-      process.env.JWT_SECRET || 'secret',
+      getJwtSecret(),
       { expiresIn: '365d' } // 1年間有効（実質的に固定）
     );
 

@@ -172,7 +172,7 @@ async function deliverNotification(params: {
     failures.push('メール通知が無効です');
   }
 
-  console.log(`[アプリ内通知] ${title}: ${message}`);
+  console.log(`[アプリ内通知] fallback store_id=${storeId}`);
   return {
     sent: false,
     sentVia: 'app',

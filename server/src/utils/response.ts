@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
+import { formatErrorForLog } from './errorLogging.js';
 
 export function requireStoreId(req: AuthRequest, res: Response): boolean {
   if (!req.storeId) {
@@ -26,7 +27,7 @@ export function sendBadRequest(res: Response, message: string): void {
 }
 
 export function sendServerError(res: Response, message: string, error: unknown): void {
-  console.error(`${message}:`, error);
+  console.error(`${message}:`, formatErrorForLog(error));
   res.status(500).json({ error: message });
 }
 
