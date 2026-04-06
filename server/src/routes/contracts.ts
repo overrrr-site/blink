@@ -9,6 +9,13 @@ import {
   sendServerError,
 } from '../utils/response.js';
 import { toDateStringJST } from '../utils/date.js';
+import {
+  contractCreateSchema,
+  contractsListQuerySchema,
+  contractUpdateSchema,
+  idParamSchema,
+  parseSchema,
+} from './schemas.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -16,7 +23,13 @@ router.use(authenticate);
 // 契約一覧取得（犬ID指定）
 router.get('/', async (req: AuthRequest, res) => {
   try {
-    const { dog_id } = req.query;
+    const parsedQuery = parseSchema(contractsListQuerySchema, req.query);
+    if ('error' in parsedQuery) {
+      sendBadRequest(res, parsedQuery.error);
+      return;
+    }
+
+    const { dog_id } = parsedQuery.data;
 
     if (!requireStoreId(req, res)) {
       return;
@@ -37,7 +50,7 @@ router.get('/', async (req: AuthRequest, res) => {
 
     if (dog_id) {
       query += ` AND c.dog_id = $2`;
-      params.push(String(dog_id));
+      params.push(dog_id);
     }
 
     query += ` ORDER BY c.created_at DESC`;
@@ -91,7 +104,13 @@ router.get('/', async (req: AuthRequest, res) => {
 // 契約詳細取得
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
 
     if (!requireStoreId(req, res)) {
       return;
@@ -153,28 +172,23 @@ router.get('/:id', async (req: AuthRequest, res) => {
 // 契約作成
 router.post('/', async (req: AuthRequest, res) => {
   try {
-    const {
-      dog_id,
-      contract_type,
-      course_name,
-      total_sessions,
-      remaining_sessions,
-      valid_until,
-      monthly_sessions,
-      price,
-    } = req.body;
-
-    if (!dog_id || !contract_type) {
-      sendBadRequest(res, '必須項目が不足しています');
+    if (!requireStoreId(req, res)) {
       return;
     }
+
+    const parsedBody = parseSchema(contractCreateSchema, req.body);
+    if ('error' in parsedBody) {
+      sendBadRequest(res, parsedBody.error);
+      return;
+    }
+    const payload = parsedBody.data;
 
     // 犬のstore_idを確認
     const dogCheck = await pool.query(
       `SELECT o.store_id FROM dogs d
        JOIN owners o ON d.owner_id = o.id
        WHERE d.id = $1 AND o.store_id = $2`,
-      [dog_id, req.storeId]
+      [payload.dog_id, req.storeId]
     );
 
     if (dogCheck.rows.length === 0) {
@@ -183,8 +197,8 @@ router.post('/', async (req: AuthRequest, res) => {
     }
 
     // 有効期限の計算（チケット制の場合）
-    let calculatedValidUntil = valid_until;
-    if (contract_type === 'チケット制' && !valid_until && total_sessions) {
+    let calculatedValidUntil = payload.valid_until ?? null;
+    if (payload.contract_type === 'チケット制' && !payload.valid_until && payload.total_sessions) {
       const threeMonthsLater = new Date();
       threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
       calculatedValidUntil = toDateStringJST(threeMonthsLater);
@@ -197,14 +211,14 @@ router.post('/', async (req: AuthRequest, res) => {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
-        dog_id,
-        contract_type,
-        course_name || null,
-        total_sessions || null,
-        remaining_sessions || total_sessions || null,
-        calculatedValidUntil || null,
-        monthly_sessions || null,
-        price || null,
+        payload.dog_id,
+        payload.contract_type,
+        payload.course_name ?? null,
+        payload.total_sessions ?? null,
+        payload.remaining_sessions ?? payload.total_sessions ?? null,
+        calculatedValidUntil ?? null,
+        payload.monthly_sessions ?? null,
+        payload.price ?? null,
       ]
     );
 
@@ -217,16 +231,19 @@ router.post('/', async (req: AuthRequest, res) => {
 // 契約更新
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
-    const {
-      contract_type,
-      course_name,
-      total_sessions,
-      remaining_sessions,
-      valid_until,
-      monthly_sessions,
-      price,
-    } = req.body;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+    const parsedBody = parseSchema(contractUpdateSchema, req.body);
+    if ('error' in parsedBody) {
+      sendBadRequest(res, parsedBody.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
+    const payload = parsedBody.data;
 
     if (!requireStoreId(req, res)) {
       return;
@@ -259,13 +276,13 @@ router.put('/:id', async (req: AuthRequest, res) => {
       WHERE id = $8
       RETURNING *`,
       [
-        contract_type,
-        course_name,
-        total_sessions,
-        remaining_sessions,
-        valid_until,
-        monthly_sessions,
-        price,
+        payload.contract_type ?? null,
+        payload.course_name ?? null,
+        payload.total_sessions ?? null,
+        payload.remaining_sessions ?? null,
+        payload.valid_until ?? null,
+        payload.monthly_sessions ?? null,
+        payload.price ?? null,
         id,
       ]
     );
@@ -279,7 +296,13 @@ router.put('/:id', async (req: AuthRequest, res) => {
 // 契約削除
 router.delete('/:id', async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
 
     if (!requireStoreId(req, res)) {
       return;

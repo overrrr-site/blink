@@ -9,8 +9,7 @@ import {
   sendNotFound,
   sendServerError,
 } from '../../utils/response.js';
-import { isNonEmptyString, isNumberLike } from '../../utils/validation.js';
-import { appendBusinessTypeFilter, parseBusinessTypeInput } from '../../utils/businessTypes.js';
+import { appendBusinessTypeFilter } from '../../utils/businessTypes.js';
 import {
   syncCalendarOnCreate,
   syncCalendarOnUpdate,
@@ -19,6 +18,13 @@ import {
 import { getMonthDateRange, parseDateTimeRange, findRoomConflict } from './utils.js';
 import availabilityRouter from './availability.js';
 import exportRouter from './export.js';
+import {
+  idParamSchema,
+  parseSchema,
+  reservationCreateSchema,
+  reservationsListQuerySchema,
+  reservationUpdateSchema,
+} from '../schemas.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -30,7 +36,13 @@ router.use(exportRouter);
 // 予約一覧取得（日付指定）
 router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Promise<void> {
   try {
-    const { date, month, service_type } = req.query;
+    const parsedQuery = parseSchema(reservationsListQuerySchema, req.query);
+    if ('error' in parsedQuery) {
+      sendBadRequest(res, parsedQuery.error);
+      return;
+    }
+
+    const { date, month, service_type } = parsedQuery.data;
 
     // storeIdがnullの場合はエラー
     if (!requireStoreId(req, res)) {
@@ -69,14 +81,8 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
       }
     }
 
-    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
-    if (serviceTypeError) {
-      sendBadRequest(res, serviceTypeError);
-      return;
-    }
-
     // 業種フィルタ
-    query += appendBusinessTypeFilter(params, 'r.service_type', serviceType);
+    query += appendBusinessTypeFilter(params, 'r.service_type', service_type);
 
     query += ` ORDER BY r.reservation_date, r.reservation_time`;
 
@@ -111,7 +117,13 @@ router.get('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const { id } = req.params;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
 
     // 最適化: スカラーサブクエリをLATERAL JOINに変更
     const result = await pool.query(
@@ -170,30 +182,24 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const { dog_id, reservation_date, reservation_time, memo, base_price, service_type, service_details, end_datetime, room_id } = req.body;
-
-    if (!isNumberLike(dog_id) || !isNonEmptyString(reservation_date) || !isNonEmptyString(reservation_time)) {
-      sendBadRequest(res, '必須項目が不足しています');
+    const parsedBody = parseSchema(reservationCreateSchema, req.body);
+    if ('error' in parsedBody) {
+      sendBadRequest(res, parsedBody.error);
       return;
     }
+    const payload = parsedBody.data;
 
-    const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
-    if (serviceTypeError) {
-      sendBadRequest(res, serviceTypeError);
-      return;
-    }
-
-    const roomId = isNumberLike(room_id) ? Number(room_id) : null;
-    if ((serviceType || null) === 'hotel') {
+    const roomId = payload.room_id ?? null;
+    if ((payload.service_type || null) === 'hotel') {
       if (!roomId) {
         sendBadRequest(res, 'ホテル予約ではroom_idが必須です');
         return;
       }
 
       const dateRange = parseDateTimeRange({
-        reservationDate: reservation_date,
-        reservationTime: reservation_time,
-        endDatetime: end_datetime || null,
+        reservationDate: payload.reservation_date,
+        reservationTime: payload.reservation_time,
+        endDatetime: payload.end_datetime || null,
       });
       if (!dateRange) {
         sendBadRequest(res, 'ホテル予約ではチェックアウト日時が必要です');
@@ -233,15 +239,15 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       WHERE d.id = $1 AND o.store_id = $5
       RETURNING *`,
       [
-        dog_id,
-        reservation_date,
-        reservation_time,
-        memo,
+        payload.dog_id,
+        payload.reservation_date,
+        payload.reservation_time,
+        payload.memo,
         req.storeId,
-        serviceType || null,
-        service_details ? JSON.stringify(service_details) : null,
-        end_datetime || null,
-        (serviceType || null) === 'hotel' ? roomId : null,
+        payload.service_type || null,
+        payload.service_details ? JSON.stringify(payload.service_details) : null,
+        payload.end_datetime || null,
+        (payload.service_type || null) === 'hotel' ? roomId : null,
       ]
     );
 
@@ -255,7 +261,7 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
     const calendarSync = await syncCalendarOnCreate({
       storeId: req.storeId!,
       reservation,
-      dogId: dog_id,
+      dogId: payload.dog_id,
     });
 
     res.status(201).json({
@@ -274,8 +280,19 @@ router.put('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const { id } = req.params;
-    const { reservation_date, reservation_time, status, memo, service_type, service_details, end_datetime, room_id } = req.body;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+    const parsedBody = parseSchema(reservationUpdateSchema, req.body);
+    if ('error' in parsedBody) {
+      sendBadRequest(res, parsedBody.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
+    const payload = parsedBody.data;
 
     const client = await pool.connect();
     try {
@@ -299,18 +316,11 @@ router.put('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
       const previousCheckedInAt = previousStatusResult.rows[0]?.checked_in_at;
       const currentReservation = previousStatusResult.rows[0];
 
-      const { value: serviceType, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
-      if (serviceTypeError) {
-        await client.query('ROLLBACK');
-        sendBadRequest(res, serviceTypeError);
-        return;
-      }
-
-      const nextServiceType = serviceType ?? currentReservation.service_type ?? null;
-      const nextReservationDate = reservation_date ?? currentReservation.reservation_date;
-      const nextReservationTime = reservation_time ?? currentReservation.reservation_time;
-      const nextEndDatetime = end_datetime ?? currentReservation.end_datetime;
-      const roomId = room_id === null ? null : (isNumberLike(room_id) ? Number(room_id) : undefined);
+      const nextServiceType = payload.service_type ?? currentReservation.service_type ?? null;
+      const nextReservationDate = payload.reservation_date ?? currentReservation.reservation_date;
+      const nextReservationTime = payload.reservation_time ?? currentReservation.reservation_time;
+      const nextEndDatetime = payload.end_datetime ?? currentReservation.end_datetime;
+      const roomId = payload.room_id === null ? null : payload.room_id;
       const nextRoomId = roomId !== undefined ? roomId : currentReservation.room_id;
 
       if (nextServiceType === 'hotel') {
@@ -378,15 +388,15 @@ router.put('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
         WHERE id = $5 AND store_id = $6
         RETURNING *`,
         [
-          reservation_date,
-          reservation_time,
-          status,
-          memo,
+          payload.reservation_date ?? null,
+          payload.reservation_time ?? null,
+          payload.status ?? null,
+          payload.memo ?? null,
           id,
           req.storeId,
-          serviceType || null,
-          service_details ? JSON.stringify(service_details) : null,
-          end_datetime || null,
+          payload.service_type || null,
+          payload.service_details ? JSON.stringify(payload.service_details) : null,
+          payload.end_datetime || null,
           nextServiceType === 'hotel' ? (nextRoomId ?? null) : null,
         ]
       );
@@ -424,9 +434,9 @@ router.put('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void> {
 
       const calendarSync = await syncCalendarOnUpdate({
         storeId: req.storeId!,
-        reservationId: parseInt(id, 10),
+        reservationId: id,
         reservation,
-        status,
+        status: payload.status,
       });
 
       res.json({
@@ -452,7 +462,13 @@ router.delete('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void>
       return;
     }
 
-    const { id } = req.params;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
 
     const result = await pool.query(
       `DELETE FROM reservations WHERE id = $1 AND store_id = $2 RETURNING *`,
@@ -466,7 +482,7 @@ router.delete('/:id(\\d+)', async function(req: AuthRequest, res): Promise<void>
 
     const calendarSync = await syncCalendarOnDelete({
       storeId: req.storeId,
-      reservationId: parseInt(id, 10),
+      reservationId: id,
     });
 
     res.json({

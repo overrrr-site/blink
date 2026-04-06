@@ -8,9 +8,14 @@ import {
   sendServerError,
 } from '../utils/response.js';
 import { buildPaginatedResponse, extractTotalCount, parsePaginationParams, PaginationParams } from '../utils/pagination.js';
-import { isNonEmptyString } from '../utils/validation.js';
 import type { BusinessType } from '../utils/businessTypes.js';
-import { isBusinessType, parseBusinessTypeInput } from '../utils/businessTypes.js';
+import {
+  idParamSchema,
+  ownerCreateSchema,
+  ownersListQuerySchema,
+  ownerUpdateSchema,
+  parseSchema,
+} from './schemas.js';
 import { cacheControl } from '../middleware/cache.js';
 
 function buildOwnersListQuery(params: {
@@ -119,12 +124,6 @@ router.use(authenticate);
 let hasOwnersBusinessTypesColumnCache: boolean | null = null;
 let hasOwnersBusinessTypesColumnInFlight: Promise<boolean> | null = null;
 
-function normalizeBusinessTypesInput(value: unknown): BusinessType[] | null {
-  if (!Array.isArray(value)) return null;
-  const normalized = value.filter((item): item is BusinessType => isBusinessType(item));
-  return normalized.length > 0 ? normalized : null;
-}
-
 async function hasOwnersBusinessTypesColumn(): Promise<boolean> {
   if (hasOwnersBusinessTypesColumnCache !== null) {
     return hasOwnersBusinessTypesColumnCache;
@@ -163,6 +162,40 @@ async function ensureOwnersBusinessTypesColumn(): Promise<void> {
   hasOwnersBusinessTypesColumnInFlight = null;
 }
 
+function buildOwnerUpdates(payload: {
+  name?: string | null;
+  name_kana?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  emergency_contact?: string | null;
+  emergency_picker?: string | null;
+  line_id?: string | null;
+  memo?: string | null;
+  business_types?: BusinessType[] | null;
+}, includeBusinessTypes: boolean): { updates: string[]; values: Array<string | string[] | null> } {
+  const updates: string[] = [];
+  const values: Array<string | string[] | null> = [];
+
+  const pushUpdate = (column: string, value: string | string[] | null) => {
+    updates.push(`${column} = $${values.length + 1}`);
+    values.push(value);
+  };
+
+  if (payload.name !== undefined) pushUpdate('name', payload.name);
+  if (payload.name_kana !== undefined) pushUpdate('name_kana', payload.name_kana);
+  if (payload.phone !== undefined) pushUpdate('phone', payload.phone);
+  if (payload.email !== undefined) pushUpdate('email', payload.email);
+  if (payload.address !== undefined) pushUpdate('address', payload.address);
+  if (payload.emergency_contact !== undefined) pushUpdate('emergency_contact', payload.emergency_contact);
+  if (payload.emergency_picker !== undefined) pushUpdate('emergency_picker', payload.emergency_picker);
+  if (payload.line_id !== undefined) pushUpdate('line_id', payload.line_id);
+  if (payload.memo !== undefined) pushUpdate('memo', payload.memo);
+  if (includeBusinessTypes && payload.business_types !== undefined) pushUpdate('business_types', payload.business_types);
+
+  return { updates, values };
+}
+
 // 飼い主一覧取得
 router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Promise<void> {
   try {
@@ -170,20 +203,19 @@ router.get('/', cacheControl(0, 30), async function(req: AuthRequest, res): Prom
       return;
     }
 
-    const queryParams = req.query as { search?: string | string[]; filter?: string | string[]; page?: string | string[]; limit?: string | string[]; service_type?: string | string[] };
-    const { search, service_type } = queryParams;
-    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
-    const searchValue = Array.isArray(search) ? search[0] : search;
-    const hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
-    const { value: serviceTypeValue, error: serviceTypeError } = parseBusinessTypeInput(service_type, 'service_type');
-    if (serviceTypeError) {
-      sendBadRequest(res, serviceTypeError);
+    const parsedQuery = parseSchema(ownersListQuerySchema, req.query);
+    if ('error' in parsedQuery) {
+      sendBadRequest(res, parsedQuery.error);
       return;
     }
+
+    const queryParams = req.query as { page?: string | string[]; limit?: string | string[] };
+    const pagination = parsePaginationParams({ page: queryParams.page, limit: queryParams.limit });
+    const hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
     const { query, params } = buildOwnersListQuery({
       storeId: req.storeId,
-      search: searchValue,
-      serviceType: serviceTypeValue,
+      search: parsedQuery.data.search,
+      serviceType: parsedQuery.data.service_type,
       hasOwnerBusinessTypes,
       pagination,
     });
@@ -202,7 +234,13 @@ router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const { id } = req.params;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
 
     const ownerResult = await pool.query(
       `SELECT * FROM owners WHERE id = $1 AND store_id = $2 AND deleted_at IS NULL`,
@@ -235,30 +273,19 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const {
-      name,
-      name_kana,
-      phone,
-      email,
-      address,
-      emergency_contact,
-      emergency_picker,
-      line_id,
-      memo,
-      business_types,
-    } = req.body;
-
-    if (!isNonEmptyString(name) || !isNonEmptyString(phone)) {
-      sendBadRequest(res, '名前と電話番号は必須です');
+    const parsedBody = parseSchema(ownerCreateSchema, req.body);
+    if ('error' in parsedBody) {
+      sendBadRequest(res, parsedBody.error);
       return;
     }
+    const payload = parsedBody.data;
 
     let hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
-    if (!hasOwnerBusinessTypes && Array.isArray(business_types)) {
+    if (!hasOwnerBusinessTypes && payload.business_types !== undefined) {
       await ensureOwnersBusinessTypesColumn();
       hasOwnerBusinessTypes = true;
     }
-    const businessTypesValue = hasOwnerBusinessTypes ? normalizeBusinessTypesInput(business_types) : null;
+    const businessTypesValue = hasOwnerBusinessTypes ? (payload.business_types ?? null) : null;
 
     const result = hasOwnerBusinessTypes
       ? await pool.query(
@@ -269,15 +296,15 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
         RETURNING *`,
         [
           req.storeId,
-          name,
-          name_kana,
-          phone,
-          email,
-          address,
-          emergency_contact,
-          emergency_picker,
-          line_id,
-          memo,
+          payload.name,
+          payload.name_kana,
+          payload.phone,
+          payload.email,
+          payload.address,
+          payload.emergency_contact,
+          payload.emergency_picker,
+          payload.line_id,
+          payload.memo,
           businessTypesValue,
         ]
       )
@@ -289,15 +316,15 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
         RETURNING *`,
         [
           req.storeId,
-          name,
-          name_kana,
-          phone,
-          email,
-          address,
-          emergency_contact,
-          emergency_picker,
-          line_id,
-          memo,
+          payload.name,
+          payload.name_kana,
+          payload.phone,
+          payload.email,
+          payload.address,
+          payload.emergency_contact,
+          payload.emergency_picker,
+          payload.line_id,
+          payload.memo,
         ]
       );
 
@@ -314,71 +341,37 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const { id } = req.params;
-    const {
-      name,
-      name_kana,
-      phone,
-      email,
-      address,
-      emergency_contact,
-      emergency_picker,
-      line_id,
-      memo,
-      business_types,
-    } = req.body;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+    const parsedBody = parseSchema(ownerUpdateSchema, req.body);
+    if ('error' in parsedBody) {
+      sendBadRequest(res, parsedBody.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
+    const payload = parsedBody.data;
 
     let hasOwnerBusinessTypes = await hasOwnersBusinessTypesColumn();
-    if (!hasOwnerBusinessTypes && Array.isArray(business_types)) {
+    if (!hasOwnerBusinessTypes && payload.business_types !== undefined) {
       await ensureOwnersBusinessTypesColumn();
       hasOwnerBusinessTypes = true;
     }
-    const businessTypesValue = hasOwnerBusinessTypes ? normalizeBusinessTypesInput(business_types) : null;
 
-    const result = hasOwnerBusinessTypes
-      ? await pool.query(
-        `UPDATE owners SET
-          name = $1, name_kana = $2, phone = $3, email = $4,
-          address = $5, emergency_contact = $6, emergency_picker = $7,
-          line_id = $8, memo = $9, business_types = $10, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $11 AND store_id = $12
-        RETURNING *`,
-        [
-          name,
-          name_kana,
-          phone,
-          email,
-          address,
-          emergency_contact,
-          emergency_picker,
-          line_id,
-          memo,
-          businessTypesValue,
-          id,
-          req.storeId,
-        ]
-      )
-      : await pool.query(
-        `UPDATE owners SET
-          name = $1, name_kana = $2, phone = $3, email = $4,
-          address = $5, emergency_contact = $6, emergency_picker = $7,
-          line_id = $8, memo = $9, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $10 AND store_id = $11
-        RETURNING *`,
-        [
-          name,
-          name_kana,
-          phone,
-          email,
-          address,
-          emergency_contact,
-          emergency_picker,
-          line_id,
-          memo,
-          id,
-          req.storeId,
-        ]
-      );
+    const { updates, values } = buildOwnerUpdates(payload, hasOwnerBusinessTypes);
+    values.push(String(id), String(req.storeId));
+
+    const result = await pool.query(
+      `UPDATE owners SET
+        ${updates.join(', ')},
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${values.length - 1} AND store_id = $${values.length}
+      RETURNING *`,
+      values,
+    );
 
     if (result.rows.length === 0) {
       sendNotFound(res, '飼い主が見つかりません');
@@ -398,7 +391,13 @@ router.delete('/:id', async function(req: AuthRequest, res): Promise<void> {
       return;
     }
 
-    const { id } = req.params;
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
 
     // 5年以内のデータは削除不可
     const ownerCheck = await pool.query(

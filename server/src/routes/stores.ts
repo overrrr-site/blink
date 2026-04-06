@@ -13,6 +13,7 @@ import {
   getStoreLineConnectionStatus,
 } from '../services/lineMessagingService.js';
 import { encrypt } from '../utils/encryption.js';
+import { parseSchema, storeUpdateSchema } from './schemas.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -71,9 +72,16 @@ router.put('/', async (req: AuthRequest, res) => {
       return;
     }
 
-    const { name, address, phone, business_hours, closed_days,
-            business_types, primary_business_type,
-            line_channel_id, line_channel_secret, line_channel_access_token } = req.body;
+    const parsedBody = parseSchema(storeUpdateSchema, req.body);
+    if ('error' in parsedBody) {
+      sendBadRequest(res, parsedBody.error);
+      return;
+    }
+    const {
+      name, address, phone, business_hours, closed_days,
+      business_types, primary_business_type,
+      line_channel_id, line_channel_secret, line_channel_access_token,
+    } = parsedBody.data;
 
     // 更新するフィールドを動的に構築
     const updates: string[] = [];
@@ -101,9 +109,9 @@ router.put('/', async (req: AuthRequest, res) => {
       updates.push(`closed_days = $${paramIndex++}::jsonb`);
       values.push(closed_days && Array.isArray(closed_days) ? JSON.stringify(closed_days) : null);
     }
-    if (business_types !== undefined && Array.isArray(business_types)) {
+    if (business_types !== undefined) {
       updates.push(`business_types = $${paramIndex++}`);
-      values.push(`{${business_types.join(',')}}`);
+      values.push(business_types === null ? null : `{${business_types.join(',')}}`);
     }
     if (primary_business_type !== undefined) {
       updates.push(`primary_business_type = $${paramIndex++}`);
