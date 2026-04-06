@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import jwt from 'jsonwebtoken'
 import type { Request, Response } from 'express'
 
+const TEST_JWT_SECRET = 'test-secret-key-for-unit-tests-minimum-32-chars'
+
 const poolQueryMock = vi.fn()
 const syncCalendarOnCreateMock = vi.fn()
 const syncCalendarOnUpdateMock = vi.fn()
@@ -26,6 +28,7 @@ function createJsonResponse(): Response {
 
 describe('reservation routes calendar sync response', () => {
   beforeEach(() => {
+    process.env.JWT_SECRET = TEST_JWT_SECRET
     vi.resetModules()
     poolQueryMock.mockReset()
     syncCalendarOnCreateMock.mockReset()
@@ -105,7 +108,7 @@ describe('reservation routes calendar sync response', () => {
     )
     const handler = routeLayer?.route?.stack?.[0]?.handle as undefined | ((req: Request, res: Response) => Promise<void>)
 
-    const token = jwt.sign({ ownerId: 5, storeId: 3, type: 'owner' }, process.env.JWT_SECRET || 'secret')
+    const token = jwt.sign({ ownerId: 5, storeId: 3, type: 'owner' }, TEST_JWT_SECRET)
     const req = {
       headers: {
         authorization: `Bearer ${token}`,
