@@ -21,7 +21,7 @@ describe('useRecordCreateActions', () => {
       response: {
         data: {
           error: 'カルテ通知の送信に失敗したため、共有を完了できませんでした',
-          reason: 'LINE連携済みの飼い主ではありません',
+          reason: '飼い主さんのLINE連携が未完了です（飼い主詳細画面から紐付けできます）',
         },
       },
     } as never)
@@ -96,7 +96,7 @@ describe('useRecordCreateActions', () => {
     expect(recordsApiMock.share).toHaveBeenCalledWith(77)
     expect(showToast).not.toHaveBeenCalledWith(expect.stringContaining('共有しました'), 'success')
     expect(showToast).toHaveBeenCalledWith(
-      'カルテ通知の送信に失敗したため、共有を完了できませんでした: LINE連携済みの飼い主ではありません',
+      'カルテ通知の送信に失敗したため、共有を完了できませんでした: 飼い主さんのLINE連携が未完了です（飼い主詳細画面から紐付けできます）',
       'error',
     )
     expect(navigate).toHaveBeenCalledWith('/records/77', { replace: true })
