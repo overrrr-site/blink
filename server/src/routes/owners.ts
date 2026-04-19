@@ -17,6 +17,7 @@ import {
   parseSchema,
 } from './schemas.js';
 import { cacheControl } from '../middleware/cache.js';
+import { fetchLineUserProfile } from '../services/lineMessagingService.js';
 
 function buildOwnersListQuery(params: {
   storeId: number;
@@ -381,6 +382,172 @@ router.put('/:id', async function(req: AuthRequest, res): Promise<void> {
     res.json(result.rows[0]);
   } catch (error) {
     sendServerError(res, '飼い主情報の更新に失敗しました', error);
+  }
+});
+
+// この店舗のLINE紐付け候補一覧を取得（トライアル時: trial_line_links から）
+router.get('/:id/line-candidates', async function(req: AuthRequest, res): Promise<void> {
+  try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const ownerCheck = await pool.query(
+      `SELECT id FROM owners WHERE id = $1 AND store_id = $2 AND deleted_at IS NULL`,
+      [parsedParams.data.id, req.storeId]
+    );
+    if (ownerCheck.rows.length === 0) {
+      sendNotFound(res, '飼い主が見つかりません');
+      return;
+    }
+
+    const linksResult = await pool.query<{
+      line_user_id: string;
+      owner_id: number | null;
+      owner_name: string | null;
+      linked_owner_id: number | null;
+    }>(
+      `SELECT tll.line_user_id,
+              tll.owner_id,
+              linked_o.name AS owner_name,
+              linked_o.id AS linked_owner_id
+       FROM trial_line_links tll
+       LEFT JOIN owners linked_o
+         ON linked_o.store_id = tll.store_id
+         AND linked_o.line_id = tll.line_user_id
+         AND linked_o.deleted_at IS NULL
+       WHERE tll.store_id = $1
+       ORDER BY tll.created_at DESC`,
+      [req.storeId]
+    );
+
+    const candidates = await Promise.all(
+      linksResult.rows.map(async (row) => {
+        const profile = await fetchLineUserProfile(req.storeId!, row.line_user_id);
+        return {
+          line_user_id: row.line_user_id,
+          display_name: profile?.displayName ?? null,
+          picture_url: profile?.pictureUrl ?? null,
+          linked_owner_id: row.linked_owner_id,
+          linked_owner_name: row.owner_name,
+        };
+      })
+    );
+
+    res.json({ candidates });
+  } catch (error) {
+    sendServerError(res, 'LINE連携候補の取得に失敗しました', error);
+  }
+});
+
+// 飼い主にLINEアカウントを紐付け（既に他の飼い主に紐付いていれば張り替え）
+router.post('/:id/link-line', async function(req: AuthRequest, res): Promise<void> {
+  const client = await pool.connect();
+  try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
+    const lineUserIdRaw = (req.body as { line_user_id?: unknown }).line_user_id;
+    const lineUserId = typeof lineUserIdRaw === 'string' ? lineUserIdRaw.trim() : '';
+    if (!lineUserId) {
+      sendBadRequest(res, 'line_user_id が必要です');
+      return;
+    }
+
+    await client.query('BEGIN');
+
+    const ownerCheck = await client.query(
+      `SELECT id FROM owners WHERE id = $1 AND store_id = $2 AND deleted_at IS NULL`,
+      [id, req.storeId]
+    );
+    if (ownerCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      sendNotFound(res, '飼い主が見つかりません');
+      return;
+    }
+
+    // 既に同じ店舗内で他の飼い主が同じ line_id に紐付いている場合はクリア
+    await client.query(
+      `UPDATE owners SET line_id = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE store_id = $1 AND line_id = $2 AND id <> $3 AND deleted_at IS NULL`,
+      [req.storeId, lineUserId, id]
+    );
+
+    // 対象の飼い主に紐付け
+    const result = await client.query(
+      `UPDATE owners SET line_id = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2 AND store_id = $3
+       RETURNING *`,
+      [lineUserId, id, req.storeId]
+    );
+
+    // trial_line_links の owner_id も追従
+    await client.query(
+      `UPDATE trial_line_links SET owner_id = $1
+       WHERE store_id = $2 AND line_user_id = $3`,
+      [id, req.storeId, lineUserId]
+    );
+
+    await client.query('COMMIT');
+    res.json(result.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    sendServerError(res, 'LINE連携の更新に失敗しました', error);
+  } finally {
+    client.release();
+  }
+});
+
+// 飼い主のLINE紐付けを解除
+router.delete('/:id/line-link', async function(req: AuthRequest, res): Promise<void> {
+  try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    const parsedParams = parseSchema(idParamSchema, req.params);
+    if ('error' in parsedParams) {
+      sendBadRequest(res, parsedParams.error);
+      return;
+    }
+
+    const { id } = parsedParams.data;
+
+    const result = await pool.query(
+      `UPDATE owners SET line_id = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND store_id = $2 AND deleted_at IS NULL
+       RETURNING id, line_id`,
+      [id, req.storeId]
+    );
+
+    if (result.rows.length === 0) {
+      sendNotFound(res, '飼い主が見つかりません');
+      return;
+    }
+
+    await pool.query(
+      `UPDATE trial_line_links SET owner_id = NULL
+       WHERE store_id = $1 AND owner_id = $2`,
+      [req.storeId, id]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    sendServerError(res, 'LINE連携の解除に失敗しました', error);
   }
 });
 

@@ -388,3 +388,35 @@ export async function sendLineFlexMessageDetailed(
 ): Promise<LineSendResult> {
   return pushWithClient(storeId, lineUserId, flexMessage, 'flex message');
 }
+
+export interface LineUserProfile {
+  userId: string;
+  displayName?: string;
+  pictureUrl?: string;
+  statusMessage?: string;
+}
+
+/**
+ * 店舗のLINEクライアント経由でLINEユーザーのプロフィールを取得する。
+ * 飼い主候補一覧などで表示名を添えるために使用。
+ */
+export async function fetchLineUserProfile(
+  storeId: number,
+  lineUserId: string
+): Promise<LineUserProfile | null> {
+  try {
+    const client = await getStoreLineClient(storeId);
+    if (!client) return null;
+
+    const profile = await client.getProfile(lineUserId);
+    return {
+      userId: profile.userId,
+      displayName: profile.displayName,
+      pictureUrl: profile.pictureUrl,
+      statusMessage: profile.statusMessage,
+    };
+  } catch (error) {
+    console.warn(`LINEプロフィール取得失敗 store_id=${storeId} line_user_id=${lineUserId}:`, error);
+    return null;
+  }
+}
