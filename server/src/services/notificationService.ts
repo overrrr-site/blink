@@ -139,7 +139,7 @@ async function deliverNotification(params: {
 
   if (settings.line_notification_enabled) {
     if (!lineId) {
-      failures.push('LINE連携済みの飼い主ではありません');
+      failures.push('飼い主さんのLINE連携が未完了です（飼い主詳細画面から紐付けできます）');
     } else {
       const lineResult = flexMessage
         ? await sendLineFlexMessageDetailed(storeId, lineId, flexMessage)

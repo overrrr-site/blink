@@ -1,12 +1,18 @@
+import { useState } from 'react'
 import { Icon } from '../../components/Icon'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
-import useSWR from 'swr'
+import useSWR, { useSWRConfig } from 'swr'
 import { fetcher } from '../../lib/swr'
 import type { RecordType } from '../../types/record'
 import { getBusinessTypeColors, getBusinessTypeLabel } from '../../domain/businessTypeConfig'
 import { LazyImage } from '../../components/LazyImage'
 import { getDetailThumbnailUrl } from '../../utils/image'
+import { useTrialStore } from '../../store/trialStore'
+import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
+import api from '../../api/client'
 
 interface OwnerDog {
   id: number
@@ -52,14 +58,87 @@ function buildOwnerLineLinkUrl(params: {
   return `${window.location.origin}/liff/link${suffix}`
 }
 
+interface LineLinkCandidate {
+  line_user_id: string
+  display_name: string | null
+  picture_url: string | null
+  linked_owner_id: number | null
+  linked_owner_name: string | null
+}
+
 function OwnerDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { mutate } = useSWRConfig()
+  const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
+  const { isTrial } = useTrialStore()
+  const [showLinkModal, setShowLinkModal] = useState(false)
+  const [candidates, setCandidates] = useState<LineLinkCandidate[] | null>(null)
+  const [candidatesLoading, setCandidatesLoading] = useState(false)
+  const [linkingId, setLinkingId] = useState<string | null>(null)
   const { data: owner, isLoading } = useSWR<OwnerDetailData>(
     id ? `/owners/${id}` : null,
     fetcher,
     { revalidateOnFocus: true }
   )
+
+  const openLinkModal = async () => {
+    if (!id) return
+    setShowLinkModal(true)
+    setCandidatesLoading(true)
+    try {
+      const res = await api.get<{ candidates: LineLinkCandidate[] }>(`/owners/${id}/line-candidates`)
+      setCandidates(res.data.candidates)
+    } catch {
+      showToast('LINE連携候補の取得に失敗しました', 'error')
+      setCandidates([])
+    } finally {
+      setCandidatesLoading(false)
+    }
+  }
+
+  const handleLink = async (candidate: LineLinkCandidate) => {
+    if (!id || !owner) return
+    if (candidate.linked_owner_id && candidate.linked_owner_id !== owner.id) {
+      const ok = await confirm({
+        title: 'LINE連携を切り替えますか？',
+        message: `このLINEアカウントは現在「${candidate.linked_owner_name ?? '別の飼い主さん'}」に紐付いています。「${owner.name}」さんへ切り替えますか？`,
+        confirmLabel: '切り替える',
+        variant: 'destructive',
+      })
+      if (!ok) return
+    }
+    setLinkingId(candidate.line_user_id)
+    try {
+      await api.post(`/owners/${id}/link-line`, { line_user_id: candidate.line_user_id })
+      showToast('LINE連携を更新しました', 'success')
+      setShowLinkModal(false)
+      await mutate(`/owners/${id}`)
+    } catch {
+      showToast('LINE連携の更新に失敗しました', 'error')
+    } finally {
+      setLinkingId(null)
+    }
+  }
+
+  const handleUnlink = async () => {
+    if (!id || !owner) return
+    const ok = await confirm({
+      title: 'LINE連携を解除しますか？',
+      message: `「${owner.name}」さんのLINE連携を解除します。解除すると日誌などの通知が届かなくなります。`,
+      confirmLabel: '解除する',
+      variant: 'destructive',
+    })
+    if (!ok) return
+    try {
+      await api.delete(`/owners/${id}/line-link`)
+      showToast('LINE連携を解除しました', 'success')
+      await mutate(`/owners/${id}`)
+    } catch {
+      showToast('LINE連携の解除に失敗しました', 'error')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -145,22 +224,61 @@ function OwnerDetail(): JSX.Element {
             <div>
               <label className="text-xs text-muted-foreground block mb-1">LINE連携</label>
               {isLineLinked ? (
-                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border border-chart-2/30 bg-chart-2/10 text-chart-2">
-                  LINE連携済
-                </span>
+                <div className="flex flex-col gap-2">
+                  <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold border border-chart-2/30 bg-chart-2/10 text-chart-2">
+                    LINE連携済
+                  </span>
+                  <div className="flex gap-2">
+                    {isTrial && (
+                      <button
+                        type="button"
+                        onClick={openLinkModal}
+                        className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-[0.98] transition-all"
+                      >
+                        <Icon icon="solar:refresh-bold" width="14" height="14" />
+                        連携を変更
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleUnlink}
+                      className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10 active:scale-[0.98] transition-all"
+                    >
+                      <Icon icon="solar:link-broken-bold" width="14" height="14" />
+                      解除
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold border border-border bg-muted text-muted-foreground">
                     未連携
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => window.open(ownerLineLinkUrl, '_blank', 'noopener,noreferrer')}
-                    className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-[0.98] transition-all"
-                  >
-                    <Icon icon="solar:link-bold" width="14" height="14" />
-                    連携ページを開く
-                  </button>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {isTrial
+                      ? '友だち追加済みのLINEアカウントからこの飼い主さんに紐付けます。'
+                      : '飼い主さんにLIFFを開いて電話番号で紐付けていただく必要があります。'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {isTrial && (
+                      <button
+                        type="button"
+                        onClick={openLinkModal}
+                        className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-[0.98] transition-all"
+                      >
+                        <Icon icon="mdi:line" width="14" height="14" />
+                        LINEアカウントから選ぶ
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => window.open(ownerLineLinkUrl, '_blank', 'noopener,noreferrer')}
+                      className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted active:scale-[0.98] transition-all"
+                    >
+                      <Icon icon="solar:link-bold" width="14" height="14" />
+                      連携ページを開く
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -277,6 +395,86 @@ function OwnerDetail(): JSX.Element {
           )}
         </div>
       </main>
+
+      {showLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowLinkModal(false)}>
+          <div
+            className="bg-card rounded-2xl shadow-lg w-full max-w-md max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h3 className="text-base font-bold">LINEアカウントを紐付け</h3>
+              <button
+                type="button"
+                onClick={() => setShowLinkModal(false)}
+                className="size-10 flex items-center justify-center rounded-full hover:bg-muted active:scale-95 transition-all"
+                aria-label="閉じる"
+              >
+                <Icon icon="solar:close-circle-bold" className="size-5 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                店舗のLINE公式アカウントを友だち追加し、店舗コードで接続済みのLINEアカウント一覧です。この飼い主さんに紐付けたいアカウントを選んでください。
+              </p>
+              {candidatesLoading ? (
+                <div className="py-12 text-center text-sm text-muted-foreground">読み込み中...</div>
+              ) : candidates && candidates.length > 0 ? (
+                candidates.map((c) => {
+                  const isCurrent = c.linked_owner_id === owner.id
+                  const isOtherLinked = c.linked_owner_id !== null && c.linked_owner_id !== owner.id
+                  return (
+                    <button
+                      key={c.line_user_id}
+                      type="button"
+                      disabled={isCurrent || linkingId === c.line_user_id}
+                      onClick={() => handleLink(c)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
+                        isCurrent
+                          ? 'border-chart-2/40 bg-chart-2/5 cursor-default'
+                          : 'border-border bg-card hover:bg-muted active:scale-[0.99]'
+                      }`}
+                    >
+                      {c.picture_url ? (
+                        <LazyImage src={c.picture_url} alt={c.display_name ?? 'LINEユーザー'} className="size-10 rounded-full shrink-0" />
+                      ) : (
+                        <div className="size-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <Icon icon="mdi:line" className="size-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">
+                          {c.display_name ?? '（表示名取得不可）'}
+                        </p>
+                        {isCurrent ? (
+                          <p className="text-xs text-chart-2 font-medium">このアカウントに紐付け中</p>
+                        ) : isOtherLinked ? (
+                          <p className="text-xs text-amber-600 font-medium">「{c.linked_owner_name}」さんに紐付け中</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">未紐付け</p>
+                        )}
+                      </div>
+                      {linkingId === c.line_user_id ? (
+                        <Icon icon="solar:spinner-bold" className="size-5 text-primary animate-spin" />
+                      ) : !isCurrent ? (
+                        <Icon icon="solar:arrow-right-linear" className="size-5 text-muted-foreground" />
+                      ) : null}
+                    </button>
+                  )
+                })
+              ) : (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  <Icon icon="mdi:line" className="size-10 mx-auto mb-2 text-muted-foreground/50" />
+                  <p>接続済みのLINEアカウントがありません。</p>
+                  <p className="mt-1 text-xs">飼い主さんに店舗のLINE公式アカウントを友だち追加し、店舗コードを送信してもらってください。</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </div>
   )
 }
