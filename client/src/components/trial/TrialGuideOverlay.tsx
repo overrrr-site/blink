@@ -141,16 +141,57 @@ export function TrialGuideOverlay() {
         <TrialAllCompleteCelebration onDismiss={dismissAllCompleteCelebration} />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
-        <div className="bg-background/80 backdrop-blur-sm" />
+      {/* モバイル: 折りたたみチップ ＋ 展開シート */}
+      <div className="lg:hidden">
+        {/* 折りたたみ時: BottomNavの上に浮かぶチップ（画面占有なし） */}
+        {!guidePanelOpen && (
+          <button
+            type="button"
+            onClick={() => setGuidePanelOpen(true)}
+            className="fixed left-3 bottom-[calc(env(safe-area-inset-bottom,0px)+72px)] z-40 flex items-center gap-2 rounded-full bg-card/95 border border-border shadow-lg backdrop-blur-sm pl-2 pr-3 py-1.5 active:scale-95 transition-transform"
+            aria-label={`トライアルガイドを開く（${completedCount}/${totalSteps}完了）`}
+          >
+            <div className="relative shrink-0">
+              <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Icon icon="solar:list-bold" className="size-4 text-primary" />
+              </div>
+              {completedCount < totalSteps && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none">
+                  {totalSteps - completedCount}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col items-start leading-tight">
+              <span className="text-[10px] font-bold tracking-[0.06em] text-primary">ガイド</span>
+              <span className="text-[11px] font-bold text-foreground">
+                {completedCount}/{totalSteps}
+              </span>
+            </div>
+          </button>
+        )}
 
-        <div className="bg-card border-t border-border shadow-lg overflow-y-auto">
-          <GuidePanelContent
-            completedCount={completedCount}
-            totalSteps={totalSteps}
-            steps={steps}
-          />
-        </div>
+        {/* 展開時: 背景オーバーレイ ＋ ボトムシート */}
+        {guidePanelOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              onClick={() => setGuidePanelOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="fixed bottom-0 left-0 right-0 z-40 bg-card rounded-t-2xl shadow-2xl border-t border-border pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
+              <div className="flex justify-center pt-2 pb-1">
+                <div className="h-1 w-10 rounded-full bg-muted" />
+              </div>
+              <GuidePanelContent
+                completedCount={completedCount}
+                totalSteps={totalSteps}
+                steps={steps}
+                onClose={() => setGuidePanelOpen(false)}
+                showCloseButton
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="hidden lg:block">
