@@ -30,6 +30,8 @@ export function createApiClient({ baseURL, tokenKey, userKey, loginPath }: Creat
     headers: {
       'Content-Type': 'application/json',
     },
+    // 304 Not Modified を例外扱いしない（Vercel Edge が自動付与するETagでの誤throw対策）
+    validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
   })
 
   client.interceptors.request.use(

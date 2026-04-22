@@ -9,6 +9,9 @@ const liffClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // 304 Not Modified を例外としてthrowしないようにする（body空でもキャッシュから補完できるブラウザが多いが、
+  // LINE in-app browser などで axios が throw → SWR エラーになる事象への保険）
+  validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
 })
 
 // リクエスト時にlocalStorageからトークンを取得して設定
