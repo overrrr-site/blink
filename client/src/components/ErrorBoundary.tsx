@@ -65,13 +65,17 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
           </div>
 
-          {import.meta.env.DEV && this.state.error && (
+          {this.state.error && (
             <details className="mt-8 w-full max-w-md">
               <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
-                エラー詳細（開発用）
+                エラー詳細（タップで展開・サポートへお送りください）
               </summary>
-              <pre className="mt-2 p-3 bg-muted rounded-lg text-xs text-destructive overflow-auto max-h-40">
+              <pre className="mt-2 p-3 bg-muted rounded-lg text-xs text-destructive overflow-auto max-h-60 whitespace-pre-wrap break-words">
                 {this.state.error.message}
+                {'\n\n'}
+                URL: {typeof window !== 'undefined' ? window.location.href : ''}
+                {'\n'}
+                UA: {typeof navigator !== 'undefined' ? navigator.userAgent : ''}
                 {'\n\n'}
                 {this.state.error.stack}
               </pre>
