@@ -23,14 +23,25 @@ liffClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// 401エラー時にログインページへリダイレクト
+// 401エラー時にログインページへリダイレクト（元のディープリンクをsessionStorageに退避）
 liffClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('liff_token')
       localStorage.removeItem('liff_user')
-      window.location.href = '/liff/'
+
+      // 現在のパス（/liff/home/records/123 など）をsessionStorageに退避し、
+      // 再ログイン後に同じ画面へ戻れるようにする
+      const fullPath = window.location.pathname
+      const liffPath = fullPath.startsWith('/liff') ? fullPath.slice(5) : fullPath
+      if (liffPath && liffPath !== '/' && liffPath !== '/home') {
+        sessionStorage.setItem('liff_redirect', liffPath)
+      }
+
+      if (window.location.pathname !== '/liff/' && window.location.pathname !== '/liff') {
+        window.location.href = '/liff/'
+      }
     }
     return Promise.reject(error)
   }
