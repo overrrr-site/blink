@@ -4,6 +4,7 @@ import { useLiffAuthStore } from './store/authStore';
 import { initLiff } from './utils/liff';
 import Layout from './components/Layout';
 import { ToastProvider } from '../components/Toast';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // ページコンポーネントを遅延ロード
 const Login = lazy(() => import('./pages/Login'));
@@ -63,10 +64,11 @@ function App() {
   }, [initialize]);
 
   return (
-    <ToastProvider>
-      <BrowserRouter basename="/liff">
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+    <ErrorBoundary>
+      <ToastProvider>
+        <BrowserRouter basename="/liff">
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
             {/* ルート（/liff/）がログインページ - LIFFコールバック先 */}
             <Route path="/" element={<Login />} />
             <Route path="/link" element={<LinkAccount />} />
@@ -93,10 +95,11 @@ function App() {
               <Route path="intake-result/:dogId" element={<IntakeResult />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </ToastProvider>
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

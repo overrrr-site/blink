@@ -141,14 +141,14 @@ export default function Login() {
     handleLogin();
   }, [navigate, setAuth, isAuthenticated, redirectTo]);
 
-  if (loading) {
+  if (loading || isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-b from-primary/5 to-background">
         <div className="text-center px-8">
           {/* ロゴ */}
           <img src={logoImage} alt="Blink" className="h-24 mx-auto mb-6 animate-pulse" />
           <p className="text-sm text-muted-foreground mb-8">犬の幼稚園・保育園</p>
-          
+
           <Icon icon="solar:spinner-bold"
             width="40"
             height="40"
@@ -192,5 +192,14 @@ export default function Login() {
     );
   }
 
-  return null;
+  // navigate() 実行直前/直後で state が空の瞬間に真っ白にならないよう PageLoader を出す
+  return (
+    <div className="flex items-center justify-center h-screen bg-gradient-to-b from-primary/5 to-background">
+      <div className="text-center px-8">
+        <img src={logoImage} alt="Blink" className="h-24 mx-auto mb-6 animate-pulse" />
+        <Icon icon="solar:spinner-bold" width="40" height="40" className="text-primary animate-spin mx-auto mb-4" />
+        <p className="text-muted-foreground">読み込み中...</p>
+      </div>
+    </div>
+  );
 }
