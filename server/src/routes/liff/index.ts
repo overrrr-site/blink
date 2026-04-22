@@ -11,10 +11,17 @@ import intakeRoutes from './intake.js';
 
 const router = express.Router();
 
-// LIFF API は no-store を強制し ETag も削除する。
-// Vercel Edge が自動で ETag を付与するため、ブラウザが If-None-Match を送って
-// 304 Not Modified が返り、axios が throw → SWR エラーになる問題を防ぐ。
-router.use((_req, res, next) => {
+// LIFF API は 304 Not Modified を完全に発生させない。
+//   ブラウザに既にキャッシュされた ETag がある状態で If-None-Match が送られると、
+//   Express の fresh() が true を返し自動で 304 になってしまう（body 空）。
+//   axios / SWR がこれをエラー扱いするため、予約・日誌表示が失敗する事象が出ていた。
+//
+// 対処：
+//   1) 受信リクエストから If-None-Match / If-Modified-Since を削除（304判定を発動させない）
+//   2) レスポンス側で ETag を削除し Cache-Control: no-store を強制（以降ブラウザはキャッシュしない）
+router.use((req, res, next) => {
+  delete req.headers['if-none-match'];
+  delete req.headers['if-modified-since'];
   res.removeHeader('ETag');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
