@@ -9,6 +9,11 @@ import lineWebhookTrialRoutes from '../routes/lineWebhookTrial.js';
 import billingWebhookRoutes from '../routes/billingWebhook.js';
 
 export function configureMiddleware(app: Express): void {
+  // ETag自動生成を無効化（304 Not Modified がaxios/SWRでエラー扱いされる問題を回避）
+  // cacheControlミドルウェアで no-cache を指定していても、ETagがあると
+  // ブラウザが If-None-Match を送り、Express が 304 を返してしまう。
+  app.set('etag', false);
+
   app.use(cors());
   app.use(requestLogger);
 
