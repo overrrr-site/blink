@@ -121,9 +121,13 @@ export default function Home() {
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
 
-  const { data: intakeDogs } = useSWR<IntakeDog[]>('/intake/dogs', liffFetcher, {
+  // サーバーは { success, data: IntakeDog[] } を返す
+  const { data: intakeDogsResponse } = useSWR<{ success?: boolean; data: IntakeDog[] }>('/intake/dogs', liffFetcher, {
     dedupingInterval: 60_000,
   });
+  const intakeDogs: IntakeDog[] | undefined = Array.isArray(intakeDogsResponse?.data)
+    ? intakeDogsResponse.data
+    : undefined;
 
   const recordLabel = getRecordLabel(effectiveBusinessType);
   const statusLabels = getDashboardStatusLabels(effectiveBusinessType);
