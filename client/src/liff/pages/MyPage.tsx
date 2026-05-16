@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../../components/Icon'
 import { useNavigate } from 'react-router-dom';
 import { useLiffAuthStore } from '../store/authStore';
@@ -32,10 +33,15 @@ interface OwnerData {
   }>;
   contracts: Array<{
     id: number;
+    dog_id: number;
     course_name: string;
     contract_type: string;
     start_date: string;
     end_date: string;
+    valid_until: string | null;
+    period_type?: 'monthly' | 'business_days_window' | null;
+    period_days?: number | null;
+    period_count_limit?: number | null;
     price: number | null;
     total_sessions: number | null;
     remaining_sessions: number | null;
@@ -109,6 +115,21 @@ export default function MyPage() {
     revalidateOnFocus: false,
   });
 
+  const [selectedDogId, setSelectedDogId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!data?.dogs.length) return;
+    if (selectedDogId === null || !data.dogs.some((d) => d.id === selectedDogId)) {
+      setSelectedDogId(data.dogs[0].id);
+    }
+  }, [data, selectedDogId]);
+
+  const selectedContract = useMemo(() => {
+    if (!data) return null;
+    if (selectedDogId === null) return data.contracts[0] || null;
+    return data.contracts.find((c) => c.dog_id === selectedDogId) || null;
+  }, [data, selectedDogId]);
+
   const handleLogout = async () => {
     const ok = await confirm({ title: '確認', message: 'ログアウトしますか？', confirmLabel: 'ログアウト', cancelLabel: 'キャンセル', variant: 'destructive' })
     if (ok) {
@@ -143,7 +164,6 @@ export default function MyPage() {
     );
   }
 
-  const currentContract = data.contracts[0] || null;
   const shouldShowContractInfo = selectedBusinessType === 'daycare';
 
   return (
@@ -219,10 +239,20 @@ export default function MyPage() {
 
         {data.dogs.length > 0 ? (
           <div className="space-y-3">
-            {data.dogs.map((dog) => (
-              <div 
-                key={dog.id} 
-                className="bg-card rounded-2xl p-4 border border-border shadow-sm active:bg-muted/50 transition-colors"
+            {data.dogs.map((dog) => {
+              const isSelected = selectedDogId === dog.id;
+              const showSelectionUi = data.dogs.length > 1;
+              return (
+              <button
+                key={dog.id}
+                type="button"
+                onClick={() => setSelectedDogId(dog.id)}
+                aria-pressed={isSelected}
+                className={`w-full text-left bg-card rounded-2xl p-4 border-2 shadow-sm active:scale-[0.99] transition-all ${
+                  showSelectionUi && isSelected
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/30'
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="size-14 rounded-full overflow-hidden border-2 border-primary shrink-0">
@@ -269,8 +299,9 @@ export default function MyPage() {
                     </div>
                   </div>
                 )}
-              </div>
-            ))}
+              </button>
+              );
+            })}
           </div>
         ) : (
           <div className="bg-muted/30 rounded-2xl p-6 text-center">
@@ -281,79 +312,134 @@ export default function MyPage() {
       </section>
 
       {/* 契約情報（幼稚園のみ表示） */}
-      {shouldShowContractInfo && currentContract && (
+      {shouldShowContractInfo && (
         <section className="bg-card rounded-3xl p-5 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold font-heading flex items-center gap-2">
               <Icon icon="solar:document-bold" width="20" height="20" className="text-chart-4" />
               契約情報
+              {data.dogs.length > 1 && selectedDogId !== null && (() => {
+                const selectedDog = data.dogs.find((d) => d.id === selectedDogId);
+                return selectedDog ? (
+                  <span className="text-xs font-medium text-muted-foreground">（{selectedDog.name}）</span>
+                ) : null;
+              })()}
             </h2>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-gradient-to-r from-accent/20 to-accent/10 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-accent-foreground">現在のプラン</span>
-                <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">
-                  {currentContract.contract_type}
-                </span>
-              </div>
-              <p className="text-base font-bold">{currentContract.course_name}</p>
-              
-              {/* 残数表示（チケット制） */}
-              {currentContract.contract_type === 'チケット制' && (
-                <div className="mt-3 pt-3 border-t border-accent/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">残り回数</span>
-                    {(() => {
-                      const remaining = currentContract.calculated_remaining ?? currentContract.remaining_sessions ?? 0;
-                      return (
-                        <span className={`text-lg font-bold ${
-                          remaining === 0 
-                            ? 'text-destructive' 
-                            : remaining <= 3 
-                            ? 'text-warning' 
-                            : 'text-primary'
-                        }`}>
-                          {remaining} 回
-                          {currentContract.total_sessions && (
-                            <span className="text-xs font-normal text-muted-foreground ml-1">
-                              / {currentContract.total_sessions}回
-                            </span>
-                          )}
-                        </span>
-                      );
-                    })()}
-                  </div>
+          {selectedContract ? (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-accent/20 to-accent/10 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-accent-foreground">現在のプラン</span>
+                  <span className="text-xs bg-chart-2/10 text-chart-2 px-2 py-0.5 rounded-full font-bold">
+                    {selectedContract.contract_type}
+                  </span>
                 </div>
-              )}
-              
-              {/* 月間利用可能回数（月謝制） */}
-              {currentContract.contract_type === '月謝制' && currentContract.monthly_sessions && (
-                <div className="mt-3 pt-3 border-t border-accent/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">月間利用可能回数</span>
-                    <span className="text-base font-bold text-primary">
-                      {currentContract.monthly_sessions} 回
+                <p className="text-base font-bold">{selectedContract.course_name}</p>
+
+                {/* 残数表示（チケット制） */}
+                {selectedContract.contract_type === 'チケット制' && (
+                  <div className="mt-3 pt-3 border-t border-accent/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">残り回数</span>
+                      {(() => {
+                        const remaining = selectedContract.calculated_remaining ?? selectedContract.remaining_sessions ?? 0;
+                        return (
+                          <span className={`text-lg font-bold ${
+                            remaining === 0
+                              ? 'text-destructive'
+                              : remaining <= 3
+                              ? 'text-warning'
+                              : 'text-primary'
+                          }`}>
+                            {remaining} 回
+                            {selectedContract.total_sessions && (
+                              <span className="text-xs font-normal text-muted-foreground ml-1">
+                                / {selectedContract.total_sessions}回
+                              </span>
+                            )}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* 月間利用可能回数（月謝制） */}
+                {selectedContract.contract_type === '月謝制' && selectedContract.monthly_sessions && (
+                  <div className="mt-3 pt-3 border-t border-accent/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">月間利用可能回数</span>
+                      <span className="text-base font-bold text-primary">
+                        {selectedContract.monthly_sessions} 回
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 料金表示 */}
+                {selectedContract.price && (
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-accent/30">
+                    <span className="text-xs text-muted-foreground">
+                      {selectedContract.contract_type === '月謝制' ? '月額料金' : '料金'}
+                    </span>
+                    <span className="text-base font-bold">
+                      ¥{Math.floor(selectedContract.price).toLocaleString()}
+                      <span className="text-xs font-normal text-muted-foreground">（税込）</span>
                     </span>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* 料金表示 */}
-              {currentContract.price && (
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-accent/30">
-                  <span className="text-xs text-muted-foreground">
-                    {currentContract.contract_type === '月謝制' ? '月額料金' : '料金'}
-                  </span>
-                  <span className="text-base font-bold">
-                    ¥{Math.floor(currentContract.price).toLocaleString()}
-                    <span className="text-xs font-normal text-muted-foreground">（税込）</span>
-                  </span>
-                </div>
-              )}
+                {/* 期限情報 */}
+                {selectedContract.valid_until && (() => {
+                  const dueDate = new Date(selectedContract.valid_until);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  dueDate.setHours(0, 0, 0, 0);
+                  const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  const isUrgent = daysLeft <= 7 && daysLeft >= 0;
+                  const isExpired = daysLeft < 0;
+                  return (
+                    <div className={`mt-3 pt-3 border-t border-accent/30 ${isExpired ? 'opacity-70' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">利用期限</span>
+                        <div className="text-right">
+                          <span className={`text-sm font-bold ${
+                            isExpired ? 'text-destructive' : isUrgent ? 'text-warning' : 'text-foreground'
+                          }`}>
+                            {format(dueDate, 'yyyy年M月d日 (E)', { locale: ja })}
+                          </span>
+                          {!isExpired && (
+                            <p className={`text-[10px] mt-0.5 ${isUrgent ? 'text-warning font-bold' : 'text-muted-foreground'}`}>
+                              {daysLeft === 0 ? '本日まで' : `あと${daysLeft}日`}
+                            </p>
+                          )}
+                          {isExpired && (
+                            <p className="text-[10px] text-destructive font-bold mt-0.5">期限切れ</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 期間制（business_days_window） */}
+                {selectedContract.period_type === 'business_days_window' && selectedContract.period_count_limit && selectedContract.period_days && (
+                  <div className="mt-3 pt-3 border-t border-accent/30 bg-primary/5 rounded-lg p-2.5 -mx-2 mb-0">
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      <Icon icon="solar:info-circle-bold" width="12" height="12" className="inline mr-1 text-primary" />
+                      営業日{selectedContract.period_days}日以内に{selectedContract.period_count_limit}回までご利用いただけます
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {data.dogs.length > 1 ? 'このワンちゃんの契約情報はありません' : '契約情報はありません'}
+            </p>
+          )}
         </section>
       )}
 

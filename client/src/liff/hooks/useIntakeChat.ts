@@ -62,7 +62,35 @@ export function useIntakeChat(): UseIntakeChatReturn {
       const data = response.data.data;
       setSessionId(data.session_id);
       setDogName(data.dog_name);
-      setMessages(data.messages);
+      const rawMessages: ChatMessage[] = data.messages ?? [];
+      const currentQuestion = data.currentQuestion as
+        | { type: ChatMessage['type']; choices?: ChatMessage['choices']; allowOther?: boolean; allowSupplementText?: boolean; skippable?: boolean }
+        | undefined;
+
+      let mergedMessages = rawMessages;
+      if (currentQuestion && rawMessages.length > 0) {
+        const lastIdx = (() => {
+          for (let i = rawMessages.length - 1; i >= 0; i--) {
+            if (rawMessages[i].role === 'assistant') return i;
+          }
+          return -1;
+        })();
+        if (lastIdx >= 0) {
+          mergedMessages = rawMessages.map((m, i) =>
+            i === lastIdx
+              ? {
+                  ...m,
+                  type: currentQuestion.type,
+                  choices: currentQuestion.choices,
+                  allowOther: currentQuestion.allowOther,
+                  allowSupplementText: currentQuestion.allowSupplementText,
+                  skippable: currentQuestion.skippable,
+                }
+              : m
+          );
+        }
+      }
+      setMessages(mergedMessages);
       setProgress(data.progress);
     } catch (err) {
       setError(getAxiosErrorMessage(err, 'セッションの開始に失敗しました'));

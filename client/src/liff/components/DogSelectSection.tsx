@@ -40,7 +40,7 @@ export default function DogSelectSection({ dogs, selectedDogId, businessType, on
                 value={dog.id}
                 checked={selectedDogId === String(dog.id)}
                 onChange={(e) => onChange(e.target.value)}
-                className="hidden"
+                className="sr-only"
                 aria-label={`${dog.name}を選択`}
               />
               {dog.photo_url ? (

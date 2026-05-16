@@ -10,6 +10,7 @@ import { LazyImage } from '../../components/LazyImage';
 import liffClient from '../api/client';
 import { useToast } from '../../components/Toast';
 import { useLiffAuthStore } from '../store/authStore';
+import PhotoViewer from '../components/PhotoViewer';
 import type { AnnouncementReadState } from '../types/announcement';
 
 interface Announcement extends AnnouncementReadState {
@@ -28,6 +29,7 @@ export default function Announcements() {
   const selectedBusinessType = useLiffAuthStore((s) => s.selectedBusinessType || s.owner?.primaryBusinessType || 'daycare');
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [viewerPhoto, setViewerPhoto] = useState<{ url: string; title?: string } | null>(null);
 
   const { data, isLoading, mutate } = useSWR<Announcement[]>(
     '/announcements',
@@ -205,11 +207,18 @@ export default function Announcements() {
                     {/* 画像 */}
                     {announcement.image_url && (
                       <div className="p-4 pb-0">
-                        <LazyImage
-                          src={getDetailThumbnailUrl(announcement.image_url)}
-                          alt=""
-                          className="w-full rounded-lg object-cover max-h-64"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setViewerPhoto({ url: announcement.image_url!, title: announcement.title })}
+                          className="w-full block rounded-lg overflow-hidden active:opacity-80 transition-opacity"
+                          aria-label="画像を拡大表示"
+                        >
+                          <LazyImage
+                            src={getDetailThumbnailUrl(announcement.image_url)}
+                            alt=""
+                            className="w-full rounded-lg object-cover max-h-64"
+                          />
+                        </button>
                       </div>
                     )}
 
@@ -225,6 +234,13 @@ export default function Announcements() {
             );
           })}
         </div>
+      )}
+      {viewerPhoto && (
+        <PhotoViewer
+          photos={[{ url: viewerPhoto.url }]}
+          title={viewerPhoto.title}
+          onClose={() => setViewerPhoto(null)}
+        />
       )}
     </div>
   );
