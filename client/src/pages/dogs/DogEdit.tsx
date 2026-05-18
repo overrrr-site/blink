@@ -3,10 +3,14 @@ import { Icon } from '../../components/Icon'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/client'
 import { useToast } from '../../components/Toast'
+import { useConfirmDialog } from '../../hooks/useConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import DogEditBasicInfo from '../../components/dogs/DogEditBasicInfo'
 import DogEditHealth from '../../components/dogs/DogEditHealth'
 import DogEditPersonality from '../../components/dogs/DogEditPersonality'
-import type { DogFormData, DogHealthData, DogPersonalityData } from '../../types/dog'
+import DogEditLifestyle from '../../components/dogs/DogEditLifestyle'
+import type { DogFormData, DogHealthData, DogPersonalityData, DogLifestyleData } from '../../types/dog'
+import { DEFAULT_DOG_LIFESTYLE } from '../../types/dog'
 import SwipeDownHeader from '../../components/SwipeDownHeader'
 
 interface RecordPhoto {
@@ -18,8 +22,10 @@ const DogEdit = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { dialogState, confirm, handleConfirm, handleCancel } = useConfirmDialog()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [recordPhotos, setRecordPhotos] = useState<RecordPhoto[]>([])
@@ -30,6 +36,7 @@ const DogEdit = () => {
 
   const [form, setForm] = useState<DogFormData>({
     name: '',
+    name_kana: '',
     breed: '',
     birth_date: '',
     gender: 'オス',
@@ -37,6 +44,8 @@ const DogEdit = () => {
     color: '',
     neutered: '',
     photo_url: '',
+    dog_tag_number: '',
+    microchip_number: '',
   })
   const [health, setHealth] = useState<DogHealthData>({
     mixed_vaccine_date: '',
@@ -44,6 +53,11 @@ const DogEdit = () => {
     rabies_vaccine_date: '',
     rabies_vaccine_cert_url: '',
     flea_tick_date: '',
+    flea_tick_prevention: null,
+    heartworm_prevention: null,
+    heartworm_prevention_date: '',
+    easily_upset_stomach: false,
+    easily_hurts_legs: false,
     allergies: '',
     medical_history: '',
   })
@@ -56,6 +70,7 @@ const DogEdit = () => {
     toilet_status: '',
     crate_training: '',
   })
+  const [lifestyle, setLifestyle] = useState<DogLifestyleData>(DEFAULT_DOG_LIFESTYLE)
 
   useEffect(() => {
     if (id) {
@@ -69,6 +84,7 @@ const DogEdit = () => {
       const dog = response.data
       setForm({
         name: dog.name || '',
+        name_kana: dog.name_kana || '',
         breed: dog.breed || '',
         birth_date: dog.birth_date ? dog.birth_date.split('T')[0] : '',
         gender: dog.gender || 'オス',
@@ -76,6 +92,8 @@ const DogEdit = () => {
         color: dog.color || '',
         neutered: dog.neutered || '',
         photo_url: dog.photo_url || '',
+        dog_tag_number: dog.dog_tag_number || '',
+        microchip_number: dog.microchip_number || '',
       })
       if (dog.health) {
         setHealth({
@@ -88,6 +106,11 @@ const DogEdit = () => {
           rabies_vaccine_cert_access_url: dog.health.rabies_vaccine_cert_access_url || '',
           rabies_vaccine_cert_private: Boolean(dog.health.rabies_vaccine_cert_private),
           flea_tick_date: dog.health.flea_tick_date ? dog.health.flea_tick_date.split('T')[0] : '',
+          flea_tick_prevention: typeof dog.health.flea_tick_prevention === 'boolean' ? dog.health.flea_tick_prevention : null,
+          heartworm_prevention: typeof dog.health.heartworm_prevention === 'boolean' ? dog.health.heartworm_prevention : null,
+          heartworm_prevention_date: dog.health.heartworm_prevention_date ? dog.health.heartworm_prevention_date.split('T')[0] : '',
+          easily_upset_stomach: Boolean(dog.health.easily_upset_stomach),
+          easily_hurts_legs: Boolean(dog.health.easily_hurts_legs),
           allergies: dog.health.allergies || '',
           medical_history: dog.health.medical_history || '',
         })
@@ -103,6 +126,32 @@ const DogEdit = () => {
           crate_training: dog.personality.crate_training || '',
         })
       }
+
+      // 生活情報を別APIで取得（404は無視）
+      try {
+        const lifestyleRes = await api.get(`/dog-lifestyles/${id}`)
+        const ls = lifestyleRes.data
+        setLifestyle({
+          praise_words: Array.isArray(ls.praise_words) ? ls.praise_words : [],
+          praise_words_other: ls.praise_words_other || '',
+          toilet_signal: Array.isArray(ls.toilet_signal) ? ls.toilet_signal : [],
+          toilet_signal_other: ls.toilet_signal_other || '',
+          rest_environments: Array.isArray(ls.rest_environments) ? ls.rest_environments : [],
+          toilet_environment: ls.toilet_environment || '',
+          toilet_training: Array.isArray(ls.toilet_training) ? ls.toilet_training : [],
+          urination_count_per_day: ls.urination_count_per_day !== null && ls.urination_count_per_day !== undefined
+            ? String(ls.urination_count_per_day) : '',
+          defecation_count_per_day: ls.defecation_count_per_day !== null && ls.defecation_count_per_day !== undefined
+            ? String(ls.defecation_count_per_day) : '',
+          toilet_timing_notes: ls.toilet_timing_notes || '',
+          has_lunch: Boolean(ls.has_lunch),
+          lunch_time: ls.lunch_time ? String(ls.lunch_time).slice(0, 5) : '',
+          treat_experience: Array.isArray(ls.treat_experience) ? ls.treat_experience : [],
+          treat_other_notes: ls.treat_other_notes || '',
+        })
+      } catch {
+        // 未登録は無視
+      }
     } catch {
       showToast('ワンちゃん情報の取得に失敗しました', 'error')
     } finally {
@@ -116,8 +165,11 @@ const DogEdit = () => {
     try {
       // 専用の軽量APIエンドポイントを使用
       const response = await api.get(`/records/photos/${id}`)
-      setRecordPhotos(response.data)
+      const data = Array.isArray(response.data) ? response.data : []
+      setRecordPhotos(data)
     } catch {
+      setRecordPhotos([])
+      showToast('日誌の写真を取得できませんでした', 'error')
     } finally {
       setLoadingPhotos(false)
     }
@@ -269,12 +321,18 @@ const DogEdit = () => {
         rabies_vaccine_date: health.rabies_vaccine_date,
         rabies_vaccine_cert_url: health.rabies_vaccine_cert_url,
         flea_tick_date: health.flea_tick_date,
+        flea_tick_prevention: health.flea_tick_prevention,
+        heartworm_prevention: health.heartworm_prevention,
+        heartworm_prevention_date: health.heartworm_prevention_date,
+        easily_upset_stomach: health.easily_upset_stomach,
+        easily_hurts_legs: health.easily_hurts_legs,
         allergies: health.allergies,
         medical_history: health.medical_history,
       }
 
       await api.put(`/dogs/${id}`, {
         name: form.name,
+        name_kana: form.name_kana || null,
         breed: form.breed,
         birth_date: form.birth_date,
         gender: form.gender,
@@ -282,9 +340,33 @@ const DogEdit = () => {
         color: form.color,
         neutered: form.neutered,
         photo_url: form.photo_url || null,
+        dog_tag_number: form.dog_tag_number || null,
+        microchip_number: form.microchip_number || null,
         health: healthPayload,
         personality,
       })
+
+      // 生活情報を別APIで UPSERT（送信エラーがあってもメイン保存は完了扱い）
+      try {
+        await api.put(`/dog-lifestyles/${id}`, {
+          praise_words: lifestyle.praise_words,
+          praise_words_other: lifestyle.praise_words_other || null,
+          toilet_signal: lifestyle.toilet_signal,
+          toilet_signal_other: lifestyle.toilet_signal_other || null,
+          rest_environments: lifestyle.rest_environments,
+          toilet_environment: lifestyle.toilet_environment || null,
+          toilet_training: lifestyle.toilet_training,
+          urination_count_per_day: lifestyle.urination_count_per_day ? Number(lifestyle.urination_count_per_day) : null,
+          defecation_count_per_day: lifestyle.defecation_count_per_day ? Number(lifestyle.defecation_count_per_day) : null,
+          toilet_timing_notes: lifestyle.toilet_timing_notes || null,
+          has_lunch: lifestyle.has_lunch,
+          lunch_time: lifestyle.has_lunch && lifestyle.lunch_time ? lifestyle.lunch_time : null,
+          treat_experience: lifestyle.treat_experience,
+          treat_other_notes: lifestyle.treat_other_notes || null,
+        })
+      } catch {
+        showToast('基本情報は保存しましたが、生活情報の保存に失敗しました', 'warning')
+      }
       navigate(`/dogs/${id}`)
     } catch {
       showToast('更新に失敗しました', 'error')
@@ -347,6 +429,7 @@ const DogEdit = () => {
           onChange={handleHealthChange}
           onFileSelect={handleFileSelect}
           onRemoveFile={handleRemoveFile}
+          onHealthFieldChange={(field, value) => setHealth((prev) => ({ ...prev, [field]: value }))}
           getFileUrl={getFileUrl}
         />
 
@@ -355,11 +438,16 @@ const DogEdit = () => {
           onChange={handlePersonalityChange}
         />
 
+        <DogEditLifestyle
+          data={lifestyle}
+          onChange={setLifestyle}
+        />
+
         {/* 保存ボタン */}
-        <div className="pt-4 pb-8">
+        <div className="pt-4 space-y-3">
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || deleting}
             className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl text-sm font-bold hover:bg-primary/90 active:bg-primary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? (
@@ -371,8 +459,47 @@ const DogEdit = () => {
               </>
             )}
           </button>
+
+          {/* 削除ボタン */}
+          <button
+            type="button"
+            disabled={saving || deleting}
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'ワンちゃんを削除しますか？',
+                message: `${form.name || 'このワンちゃん'} の情報を削除します。関連する予約・記録はそのまま残りますが、新しい予約は作成できなくなります。`,
+                confirmLabel: '削除する',
+                cancelLabel: 'キャンセル',
+                variant: 'destructive',
+              })
+              if (!ok) return
+              setDeleting(true)
+              try {
+                await api.delete(`/dogs/${id}`)
+                showToast('ワンちゃんを削除しました', 'success')
+                navigate('/dogs')
+              } catch {
+                showToast('削除に失敗しました', 'error')
+              } finally {
+                setDeleting(false)
+              }
+            }}
+            className="w-full border border-destructive/40 text-destructive py-3 rounded-xl text-sm font-bold hover:bg-destructive/5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {deleting ? (
+              '削除中...'
+            ) : (
+              <>
+                <Icon icon="solar:trash-bin-minimalistic-bold" width="20" height="20" />
+                ワンちゃんを削除
+              </>
+            )}
+          </button>
         </div>
+
+        <div className="pb-8" />
       </form>
+      <ConfirmDialog {...dialogState} onConfirm={handleConfirm} onCancel={handleCancel} />
 
       {/* 記録写真選択モーダル */}
       {showPhotoModal && (

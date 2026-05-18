@@ -139,6 +139,25 @@ function optionalNullableNumberField(label: string, minimum = 0) {
   );
 }
 
+function optionalNullableBoolField(label: string) {
+  return z.preprocess((value) => {
+    const normalized = firstValue(value);
+    if (normalized === undefined) return undefined;
+    if (normalized === null) return null;
+    if (typeof normalized === 'string') {
+      const trimmed = normalized.trim().toLowerCase();
+      if (trimmed === '') return null;
+      if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes') return true;
+      if (trimmed === 'false' || trimmed === '0' || trimmed === 'no') return false;
+    }
+    return normalized;
+  }, z.union([
+    z.boolean({ invalid_type_error: `${label}が不正です` }),
+    z.null(),
+    z.undefined(),
+  ]));
+}
+
 function requiredDateField(label: string) {
   return z.preprocess(
     normalizeRequiredString,
@@ -344,11 +363,30 @@ export const ownerCreateSchema = z.object({
   phone: requiredStringField('電話番号'),
   email: nullableStringField('email'),
   address: nullableStringField('address'),
+  postal_code: nullableStringField('postal_code'),
+  birth_date: optionalNullableDateField('birth_date'),
+  is_member: optionalNullableBoolField('is_member'),
+  member_number: nullableStringField('member_number'),
   emergency_contact: nullableStringField('emergency_contact'),
   emergency_picker: nullableStringField('emergency_picker'),
   line_id: nullableStringField('line_id'),
   memo: nullableStringField('memo'),
   business_types: businessTypesField('business_types'),
+  dogs: z.preprocess(
+    (value) => value === undefined ? undefined : value,
+    z.union([
+      z.array(z.object({
+        name: requiredStringField('犬の名前'),
+        breed: requiredStringField('犬種'),
+        birth_date: requiredDateField('生年月日'),
+        gender: requiredStringField('性別'),
+        weight: optionalNullableNumberField('weight'),
+        color: nullableStringField('color'),
+        neutered: optionalNullableBoolField('neutered'),
+      })),
+      z.undefined(),
+    ]),
+  ),
 });
 
 export const ownerUpdateSchema = z.object({
@@ -357,6 +395,10 @@ export const ownerUpdateSchema = z.object({
   phone: optionalNullableStringField('phone'),
   email: optionalNullableStringField('email'),
   address: optionalNullableStringField('address'),
+  postal_code: optionalNullableStringField('postal_code'),
+  birth_date: optionalNullableDateField('birth_date'),
+  is_member: optionalNullableBoolField('is_member'),
+  member_number: optionalNullableStringField('member_number'),
   emergency_contact: optionalNullableStringField('emergency_contact'),
   emergency_picker: optionalNullableStringField('emergency_picker'),
   line_id: optionalNullableStringField('line_id'),

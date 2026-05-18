@@ -11,7 +11,51 @@ interface DogEditHealthProps {
   onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   onFileSelect: (e: ChangeEvent<HTMLInputElement>, type: 'mixed' | 'rabies') => void
   onRemoveFile: (type: 'mixed' | 'rabies') => void
+  onHealthFieldChange?: (field: keyof DogHealthData, value: boolean | null) => void
   getFileUrl: (url: string) => string
+}
+
+type TriState = boolean | null
+
+function TriStateToggle({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: TriState
+  onChange: (v: TriState) => void
+}) {
+  const options: Array<{ key: TriState; text: string }> = [
+    { key: true, text: 'している' },
+    { key: false, text: 'していない' },
+    { key: null, text: '未設定' },
+  ]
+  return (
+    <div>
+      <label className="block text-xs text-muted-foreground mb-1">{label}</label>
+      <div className="flex gap-2 flex-wrap">
+        {options.map(({ key, text }) => {
+          const isSelected = value === key
+          return (
+            <button
+              key={String(key)}
+              type="button"
+              onClick={() => onChange(key)}
+              aria-pressed={isSelected}
+              className={`px-3 py-2 rounded-lg text-sm font-medium border min-h-[40px] transition-all active:scale-95 ${
+                isSelected
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-card border-border text-muted-foreground hover:border-primary/30'
+              }`}
+            >
+              {text}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 const DogEditHealth = memo(function DogEditHealth({
@@ -22,6 +66,7 @@ const DogEditHealth = memo(function DogEditHealth({
   onChange,
   onFileSelect,
   onRemoveFile,
+  onHealthFieldChange,
   getFileUrl,
 }: DogEditHealthProps) {
   return (
@@ -168,15 +213,64 @@ const DogEditHealth = memo(function DogEditHealth({
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs text-muted-foreground mb-1">ノミ・ダニ予防日</label>
-          <input
-            type="date"
-            name="flea_tick_date"
-            value={data.flea_tick_date}
-            onChange={onChange}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+          <label className="block text-xs font-bold text-foreground">ノミ・ダニ予防</label>
+          <TriStateToggle
+            label="予防状況"
+            value={data.flea_tick_prevention}
+            onChange={(v) => onHealthFieldChange?.('flea_tick_prevention', v)}
           />
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">最終予防日（任意）</label>
+            <input
+              type="date"
+              name="flea_tick_date"
+              value={data.flea_tick_date}
+              onChange={onChange}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+          <label className="block text-xs font-bold text-foreground">フィラリア予防</label>
+          <TriStateToggle
+            label="予防状況"
+            value={data.heartworm_prevention}
+            onChange={(v) => onHealthFieldChange?.('heartworm_prevention', v)}
+          />
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">最終予防日（任意）</label>
+            <input
+              type="date"
+              name="heartworm_prevention_date"
+              value={data.heartworm_prevention_date}
+              onChange={onChange}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+          <label className="block text-xs font-bold text-foreground">体質の特徴</label>
+          <label className="flex items-center gap-3 cursor-pointer min-h-[40px]">
+            <input
+              type="checkbox"
+              checked={data.easily_upset_stomach}
+              onChange={(e) => onHealthFieldChange?.('easily_upset_stomach', e.target.checked)}
+              className="size-5 accent-primary cursor-pointer"
+            />
+            <span className="text-sm">おなかを壊しやすい</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer min-h-[40px]">
+            <input
+              type="checkbox"
+              checked={data.easily_hurts_legs}
+              onChange={(e) => onHealthFieldChange?.('easily_hurts_legs', e.target.checked)}
+              className="size-5 accent-primary cursor-pointer"
+            />
+            <span className="text-sm">足を痛めやすい</span>
+          </label>
         </div>
 
         <div>

@@ -121,6 +121,19 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
           </div>
 
           <div>
+            <label className="block text-xs text-muted-foreground mb-1">フリガナ</label>
+            <input
+              type="text"
+              name="name_kana"
+              value={data.name_kana}
+              onChange={onChange}
+              placeholder="モモ"
+              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+            <p className="text-xs text-muted-foreground mt-1">検索時に利用されます</p>
+          </div>
+
+          <div>
             <label className="block text-xs text-muted-foreground mb-1">
               犬種 <span className="text-destructive">*</span>
             </label>
@@ -197,6 +210,32 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
               <option value="済">済み</option>
               <option value="未">未</option>
             </select>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">鑑札番号</label>
+              <input
+                type="text"
+                name="dog_tag_number"
+                value={data.dog_tag_number}
+                onChange={onChange}
+                placeholder="例: 第123456号"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">マイクロチップ番号</label>
+              <input
+                type="text"
+                name="microchip_number"
+                value={data.microchip_number}
+                onChange={onChange}
+                placeholder="15桁の数字"
+                inputMode="numeric"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
           </div>
         </div>
       </section>

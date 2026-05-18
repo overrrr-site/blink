@@ -17,6 +17,7 @@ const DogCreate = () => {
 
   const [form, setForm] = useState({
     name: '',
+    name_kana: '',
     breed: '',
     birth_date: '',
     gender: 'オス',
@@ -24,6 +25,8 @@ const DogCreate = () => {
     color: '',
     neutered: '',
     photo_url: '',
+    dog_tag_number: '',
+    microchip_number: '',
   })
   const [health, setHealth] = useState<DogHealthData>({
     mixed_vaccine_date: '',
@@ -31,6 +34,11 @@ const DogCreate = () => {
     rabies_vaccine_date: '',
     rabies_vaccine_cert_url: '',
     flea_tick_date: '',
+    flea_tick_prevention: null,
+    heartworm_prevention: null,
+    heartworm_prevention_date: '',
+    easily_upset_stomach: false,
+    easily_hurts_legs: false,
     allergies: '',
     medical_history: '',
   })
@@ -165,6 +173,11 @@ const DogCreate = () => {
         rabies_vaccine_date: health.rabies_vaccine_date,
         rabies_vaccine_cert_url: health.rabies_vaccine_cert_url,
         flea_tick_date: health.flea_tick_date,
+        flea_tick_prevention: health.flea_tick_prevention,
+        heartworm_prevention: health.heartworm_prevention,
+        heartworm_prevention_date: health.heartworm_prevention_date,
+        easily_upset_stomach: health.easily_upset_stomach,
+        easily_hurts_legs: health.easily_hurts_legs,
         allergies: health.allergies,
         medical_history: health.medical_history,
       }
@@ -172,6 +185,7 @@ const DogCreate = () => {
       await api.post('/dogs', {
         owner_id: ownerId,
         name: form.name,
+        name_kana: form.name_kana || null,
         breed: form.breed,
         birth_date: form.birth_date,
         gender: form.gender,
@@ -179,7 +193,9 @@ const DogCreate = () => {
         color: form.color,
         neutered: form.neutered,
         photo_url: form.photo_url || null,
-        health: Object.values(healthPayload).some(Boolean) ? healthPayload : null,
+        dog_tag_number: form.dog_tag_number || null,
+        microchip_number: form.microchip_number || null,
+        health: Object.values(healthPayload).some((v) => v !== null && v !== '' && v !== false) ? healthPayload : null,
       })
       navigate(`/owners/${ownerId}`)
     } catch {

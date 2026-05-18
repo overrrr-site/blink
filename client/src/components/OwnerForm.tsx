@@ -9,7 +9,11 @@ export interface OwnerFormValues {
   name_kana: string
   phone: string
   email: string
+  postal_code: string
   address: string
+  birth_date: string
+  is_member: boolean
+  member_number: string
   emergency_contact_name: string
   emergency_contact_phone: string
   notes: string
@@ -47,12 +51,17 @@ function OwnerForm({
     name_kana: '',
     phone: '',
     email: '',
+    postal_code: '',
     address: '',
+    birth_date: '',
+    is_member: false,
+    member_number: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
     notes: '',
     business_types: [],
   })
+  const [postalLookupStatus, setPostalLookupStatus] = useState<'idle' | 'loading' | 'error' | 'not_found'>('idle')
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
 
@@ -93,17 +102,47 @@ function OwnerForm({
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void {
-    const { name, value } = e.target
-    let processedValue = value
+    const { name, value, type } = e.target
+    let processedValue: string | boolean = value
     if (name === 'phone' || name === 'emergency_contact_phone') {
       processedValue = value.replace(/-/g, '')
+    }
+    if (name === 'postal_code') {
+      processedValue = value.replace(/[^\d]/g, '').slice(0, 7)
+    }
+    if (type === 'checkbox') {
+      processedValue = (e.target as HTMLInputElement).checked
     }
     setForm((prev) => ({ ...prev, [name]: processedValue }))
 
     // リアルタイムバリデーション（一度タッチされたフィールドのみ）
-    if (touched[name]) {
+    if (touched[name] && typeof processedValue === 'string') {
       const error = validateField(name, processedValue)
       setErrors((prev) => ({ ...prev, [name]: error }))
+    }
+  }
+
+  async function lookupAddressByPostalCode(): Promise<void> {
+    const digits = form.postal_code.replace(/[^\d]/g, '')
+    if (digits.length !== 7) {
+      setPostalLookupStatus('error')
+      return
+    }
+    setPostalLookupStatus('loading')
+    try {
+      const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`)
+      if (!res.ok) throw new Error('network')
+      const json = (await res.json()) as { status: number; results: Array<{ address1: string; address2: string; address3: string }> | null }
+      if (json.status !== 200 || !json.results || json.results.length === 0) {
+        setPostalLookupStatus('not_found')
+        return
+      }
+      const r = json.results[0]
+      const prefix = `${r.address1}${r.address2}${r.address3}`
+      setForm((prev) => ({ ...prev, address: prefix }))
+      setPostalLookupStatus('idle')
+    } catch {
+      setPostalLookupStatus('error')
     }
   }
 
@@ -247,6 +286,38 @@ function OwnerForm({
           </div>
 
           <div>
+            <label htmlFor="owner-postal" className="block text-xs text-muted-foreground mb-1">郵便番号</label>
+            <div className="flex gap-2">
+              <input
+                id="owner-postal"
+                type="text"
+                name="postal_code"
+                value={form.postal_code}
+                onChange={handleChange}
+                placeholder="1500001"
+                inputMode="numeric"
+                maxLength={7}
+                className={`${INPUT_CLASS} flex-1`}
+                aria-describedby="owner-postal-hint"
+              />
+              <button
+                type="button"
+                onClick={() => { void lookupAddressByPostalCode() }}
+                disabled={postalLookupStatus === 'loading' || form.postal_code.length !== 7}
+                className="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-bold disabled:opacity-50 active:scale-[0.98] transition-all"
+              >
+                {postalLookupStatus === 'loading' ? '検索中...' : '住所検索'}
+              </button>
+            </div>
+            <p id="owner-postal-hint" className="text-xs text-muted-foreground mt-1">
+              {postalLookupStatus === 'not_found' && '該当する住所が見つかりませんでした'}
+              {postalLookupStatus === 'error' && '郵便番号の検索に失敗しました'}
+              {postalLookupStatus === 'idle' && 'ハイフンなし7桁'}
+              {postalLookupStatus === 'loading' && '検索中です...'}
+            </p>
+          </div>
+
+          <div>
             <label htmlFor="owner-address" className="block text-xs text-muted-foreground mb-1">住所</label>
             <input
               id="owner-address"
@@ -258,6 +329,55 @@ function OwnerForm({
               className={INPUT_CLASS}
             />
           </div>
+
+          <div>
+            <label htmlFor="owner-birth-date" className="block text-xs text-muted-foreground mb-1">生年月日</label>
+            <input
+              id="owner-birth-date"
+              type="date"
+              name="birth_date"
+              value={form.birth_date}
+              onChange={handleChange}
+              className={INPUT_CLASS}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 会員情報 */}
+      <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+        <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
+          <Icon icon="solar:card-bold" className="text-primary size-4" />
+          会員情報
+        </h3>
+
+        <div className="space-y-4">
+          <label className="flex items-center gap-3 cursor-pointer min-h-[44px]">
+            <input
+              type="checkbox"
+              name="is_member"
+              checked={form.is_member}
+              onChange={handleChange}
+              className="size-5 accent-primary cursor-pointer"
+            />
+            <span className="text-sm font-medium">会員として登録する</span>
+          </label>
+
+          {form.is_member && (
+            <div>
+              <label htmlFor="owner-member-number" className="block text-xs text-muted-foreground mb-1">会員番号</label>
+              <input
+                id="owner-member-number"
+                type="text"
+                name="member_number"
+                value={form.member_number}
+                onChange={handleChange}
+                placeholder="例: M-2026-0001"
+                className={INPUT_CLASS}
+              />
+              <p className="text-xs text-muted-foreground mt-1">店舗内で重複しない番号を入力してください</p>
+            </div>
+          )}
         </div>
       </section>
 

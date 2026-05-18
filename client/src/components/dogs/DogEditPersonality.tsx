@@ -34,7 +34,7 @@ const DogEditPersonality = memo(function DogEditPersonality({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">お友達ワンちゃんとの相性</label>
+            <label className="block text-xs text-muted-foreground mb-1">他の犬への反応</label>
             <select
               name="dog_compatibility"
               value={data.dog_compatibility}
@@ -42,9 +42,13 @@ const DogEditPersonality = memo(function DogEditPersonality({
               className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
               <option value="">未設定</option>
-              <option value="良好">仲良くできる</option>
-              <option value="普通">様子を見ながら</option>
-              <option value="苦手">ひとり遊びが好き</option>
+              <option value="犬が好き">犬が好き</option>
+              <option value="初めは慎重だが慣れる">初めは慎重だが慣れる</option>
+              <option value="あまり興味がない">あまり興味がない</option>
+              {/* 旧データ互換 */}
+              {data.dog_compatibility === '良好' && <option value="良好">仲良くできる（旧）</option>}
+              {data.dog_compatibility === '普通' && <option value="普通">様子を見ながら（旧）</option>}
+              {data.dog_compatibility === '苦手' && <option value="苦手">ひとり遊びが好き（旧）</option>}
             </select>
           </div>
           <div>
@@ -56,9 +60,13 @@ const DogEditPersonality = memo(function DogEditPersonality({
               className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
               <option value="">未設定</option>
-              <option value="フレンドリー">人が大好き</option>
-              <option value="普通">慣れると仲良し</option>
-              <option value="怖がり">少し慎重派</option>
+              <option value="人が好き">人が好き</option>
+              <option value="初めは慎重だが慣れる">初めは慎重だが慣れる</option>
+              <option value="あまり興味がない">あまり興味がない</option>
+              {/* 旧データ互換 */}
+              {data.human_reaction === 'フレンドリー' && <option value="フレンドリー">人が大好き（旧）</option>}
+              {data.human_reaction === '普通' && <option value="普通">慣れると仲良し（旧）</option>}
+              {data.human_reaction === '怖がり' && <option value="怖がり">少し慎重派（旧）</option>}
             </select>
           </div>
         </div>

@@ -3,6 +3,7 @@ import authRoutes from '../routes/auth.js';
 import trialRoutes from '../routes/trial.js';
 import ownersRoutes from '../routes/owners.js';
 import dogsRoutes from '../routes/dogs.js';
+import dogLifestylesRoutes from '../routes/dogLifestyles.js';
 import reservationsRoutes from '../routes/reservations/index.js';
 import recordsRoutes from '../routes/records/index.js';
 import preVisitInputsRoutes from '../routes/preVisitInputs.js';
@@ -58,6 +59,7 @@ function registerCoreRoutes(app: Express): void {
   registerRouteGroup(app, [
     { path: '/api/owners', router: ownersRoutes },
     { path: '/api/dogs', router: dogsRoutes },
+    { path: '/api/dog-lifestyles', router: dogLifestylesRoutes },
     { path: '/api/reservations', router: reservationsRoutes },
     { path: '/api/records', router: recordsRoutes },
     { path: '/api/pre-visit-inputs', router: preVisitInputsRoutes },

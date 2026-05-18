@@ -28,7 +28,11 @@ interface OwnerDetailData {
   name_kana?: string
   phone: string
   email?: string
+  postal_code?: string | null
   address?: string
+  birth_date?: string | null
+  is_member?: boolean | null
+  member_number?: string | null
   line_id?: string | null
   business_types?: RecordType[] | null
   dogs: OwnerDog[]
@@ -215,12 +219,43 @@ function OwnerDetail(): JSX.Element {
                 </a>
               </div>
             )}
+            {owner.postal_code && (
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">郵便番号</label>
+                <p className="text-sm font-medium leading-relaxed">〒{owner.postal_code}</p>
+              </div>
+            )}
             {owner.address && (
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">住所</label>
                 <p className="text-sm font-medium leading-relaxed">{owner.address}</p>
               </div>
             )}
+            {owner.birth_date && (
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">生年月日</label>
+                <p className="text-sm font-medium leading-relaxed">
+                  {String(owner.birth_date).slice(0, 10)}
+                </p>
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">会員種別</label>
+              <div className="flex items-center gap-2">
+                {owner.is_member ? (
+                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border border-primary/30 bg-primary/10 text-primary">
+                    会員
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border border-border bg-muted text-muted-foreground">
+                    非会員
+                  </span>
+                )}
+                {owner.member_number && (
+                  <span className="text-xs text-muted-foreground">No. {owner.member_number}</span>
+                )}
+              </div>
+            </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1">LINE連携</label>
               {isLineLinked ? (

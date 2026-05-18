@@ -108,7 +108,9 @@ function buildOwnersListQuery(params: {
     const searchParam = `%${search}%`;
     query += ` AND (o.name ILIKE $${queryParams.length + 1} OR o.name_kana ILIKE $${queryParams.length + 1} OR o.phone ILIKE $${queryParams.length + 1}
                OR EXISTS (SELECT 1 FROM dogs d_s WHERE d_s.owner_id = o.id AND d_s.deleted_at IS NULL
-                          AND (d_s.name ILIKE $${queryParams.length + 1} OR d_s.breed ILIKE $${queryParams.length + 1})))`;
+                          AND (d_s.name ILIKE $${queryParams.length + 1}
+                               OR d_s.name_kana ILIKE $${queryParams.length + 1}
+                               OR d_s.breed ILIKE $${queryParams.length + 1})))`;
     queryParams.push(searchParam);
   }
 
@@ -163,22 +165,28 @@ async function ensureOwnersBusinessTypesColumn(): Promise<void> {
   hasOwnersBusinessTypesColumnInFlight = null;
 }
 
+type OwnerUpdateValue = string | string[] | boolean | null;
+
 function buildOwnerUpdates(payload: {
   name?: string | null;
   name_kana?: string | null;
   phone?: string | null;
   email?: string | null;
   address?: string | null;
+  postal_code?: string | null;
+  birth_date?: string | null;
+  is_member?: boolean | null;
+  member_number?: string | null;
   emergency_contact?: string | null;
   emergency_picker?: string | null;
   line_id?: string | null;
   memo?: string | null;
   business_types?: BusinessType[] | null;
-}, includeBusinessTypes: boolean): { updates: string[]; values: Array<string | string[] | null> } {
+}, includeBusinessTypes: boolean): { updates: string[]; values: OwnerUpdateValue[] } {
   const updates: string[] = [];
-  const values: Array<string | string[] | null> = [];
+  const values: OwnerUpdateValue[] = [];
 
-  const pushUpdate = (column: string, value: string | string[] | null) => {
+  const pushUpdate = (column: string, value: OwnerUpdateValue) => {
     updates.push(`${column} = $${values.length + 1}`);
     values.push(value);
   };
@@ -188,6 +196,10 @@ function buildOwnerUpdates(payload: {
   if (payload.phone !== undefined) pushUpdate('phone', payload.phone);
   if (payload.email !== undefined) pushUpdate('email', payload.email);
   if (payload.address !== undefined) pushUpdate('address', payload.address);
+  if (payload.postal_code !== undefined) pushUpdate('postal_code', payload.postal_code);
+  if (payload.birth_date !== undefined) pushUpdate('birth_date', payload.birth_date);
+  if (payload.is_member !== undefined) pushUpdate('is_member', payload.is_member);
+  if (payload.member_number !== undefined) pushUpdate('member_number', payload.member_number);
   if (payload.emergency_contact !== undefined) pushUpdate('emergency_contact', payload.emergency_contact);
   if (payload.emergency_picker !== undefined) pushUpdate('emergency_picker', payload.emergency_picker);
   if (payload.line_id !== undefined) pushUpdate('line_id', payload.line_id);
@@ -244,7 +256,9 @@ router.get('/:id', async function(req: AuthRequest, res): Promise<void> {
     const { id } = parsedParams.data;
 
     const ownerResult = await pool.query(
-      `SELECT * FROM owners WHERE id = $1 AND store_id = $2 AND deleted_at IS NULL`,
+      `SELECT o.*, to_char(o.birth_date, 'YYYY-MM-DD') AS birth_date
+       FROM owners o
+       WHERE o.id = $1 AND o.store_id = $2 AND o.deleted_at IS NULL`,
       [id, req.storeId]
     );
 
@@ -288,48 +302,95 @@ router.post('/', async function(req: AuthRequest, res): Promise<void> {
     }
     const businessTypesValue = hasOwnerBusinessTypes ? (payload.business_types ?? null) : null;
 
-    const result = hasOwnerBusinessTypes
-      ? await pool.query(
-        `INSERT INTO owners (
-          store_id, name, name_kana, phone, email, address,
-          emergency_contact, emergency_picker, line_id, memo, business_types
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        RETURNING *`,
-        [
-          req.storeId,
-          payload.name,
-          payload.name_kana,
-          payload.phone,
-          payload.email,
-          payload.address,
-          payload.emergency_contact,
-          payload.emergency_picker,
-          payload.line_id,
-          payload.memo,
-          businessTypesValue,
-        ]
-      )
-      : await pool.query(
-        `INSERT INTO owners (
-          store_id, name, name_kana, phone, email, address,
-          emergency_contact, emergency_picker, line_id, memo
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING *`,
-        [
-          req.storeId,
-          payload.name,
-          payload.name_kana,
-          payload.phone,
-          payload.email,
-          payload.address,
-          payload.emergency_contact,
-          payload.emergency_picker,
-          payload.line_id,
-          payload.memo,
-        ]
-      );
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    res.status(201).json(result.rows[0]);
+      const result = hasOwnerBusinessTypes
+        ? await client.query(
+          `INSERT INTO owners (
+            store_id, name, name_kana, phone, email, address,
+            postal_code, birth_date, is_member, member_number,
+            emergency_contact, emergency_picker, line_id, memo, business_types
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          RETURNING *`,
+          [
+            req.storeId,
+            payload.name,
+            payload.name_kana,
+            payload.phone,
+            payload.email,
+            payload.address,
+            payload.postal_code ?? null,
+            payload.birth_date ?? null,
+            payload.is_member ?? false,
+            payload.member_number ?? null,
+            payload.emergency_contact,
+            payload.emergency_picker,
+            payload.line_id,
+            payload.memo,
+            businessTypesValue,
+          ]
+        )
+        : await client.query(
+          `INSERT INTO owners (
+            store_id, name, name_kana, phone, email, address,
+            postal_code, birth_date, is_member, member_number,
+            emergency_contact, emergency_picker, line_id, memo
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          RETURNING *`,
+          [
+            req.storeId,
+            payload.name,
+            payload.name_kana,
+            payload.phone,
+            payload.email,
+            payload.address,
+            payload.postal_code ?? null,
+            payload.birth_date ?? null,
+            payload.is_member ?? false,
+            payload.member_number ?? null,
+            payload.emergency_contact,
+            payload.emergency_picker,
+            payload.line_id,
+            payload.memo,
+          ]
+        );
+
+      const owner = result.rows[0];
+
+      // 犬の同時複数登録（A-5）
+      const createdDogs: Array<Record<string, unknown>> = [];
+      if (Array.isArray(payload.dogs) && payload.dogs.length > 0) {
+        for (const dog of payload.dogs) {
+          const dogResult = await client.query(
+            `INSERT INTO dogs (
+              owner_id, name, breed, birth_date, gender, weight, color, neutered
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *`,
+            [
+              owner.id,
+              dog.name,
+              dog.breed,
+              dog.birth_date,
+              dog.gender,
+              dog.weight ?? null,
+              dog.color ?? null,
+              dog.neutered ?? null,
+            ]
+          );
+          createdDogs.push(dogResult.rows[0]);
+        }
+      }
+
+      await client.query('COMMIT');
+      res.status(201).json({ ...owner, dogs: createdDogs });
+    } catch (txError) {
+      await client.query('ROLLBACK');
+      throw txError;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     sendServerError(res, '飼い主の登録に失敗しました', error);
   }

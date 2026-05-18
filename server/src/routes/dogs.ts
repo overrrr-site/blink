@@ -18,7 +18,36 @@ function sanitizeOptionalString(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
-function sanitizeDogHealthInput(input: unknown): Record<string, string | null> | null {
+function sanitizeOptionalBool(value: unknown): boolean | null {
+  if (value === true || value === false) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
+    if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes') return true;
+    if (trimmed === 'false' || trimmed === '0' || trimmed === 'no') return false;
+  }
+  return null;
+}
+
+interface SanitizedDogHealth {
+  mixed_vaccine_date: string | null;
+  mixed_vaccine_cert_url: string | null;
+  rabies_vaccine_date: string | null;
+  rabies_vaccine_cert_url: string | null;
+  flea_tick_date: string | null;
+  flea_tick_prevention: boolean | null;
+  heartworm_prevention: boolean | null;
+  heartworm_prevention_date: string | null;
+  easily_upset_stomach: boolean;
+  easily_hurts_legs: boolean;
+  medical_history: string | null;
+  allergies: string | null;
+  medications: string | null;
+  vet_name: string | null;
+  vet_phone: string | null;
+  food_info: string | null;
+}
+
+function sanitizeDogHealthInput(input: unknown): SanitizedDogHealth | null {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return null;
   }
@@ -30,6 +59,11 @@ function sanitizeDogHealthInput(input: unknown): Record<string, string | null> |
     rabies_vaccine_date: sanitizeOptionalString(health.rabies_vaccine_date),
     rabies_vaccine_cert_url: sanitizeOptionalString(health.rabies_vaccine_cert_url),
     flea_tick_date: sanitizeOptionalString(health.flea_tick_date),
+    flea_tick_prevention: sanitizeOptionalBool(health.flea_tick_prevention),
+    heartworm_prevention: sanitizeOptionalBool(health.heartworm_prevention),
+    heartworm_prevention_date: sanitizeOptionalString(health.heartworm_prevention_date),
+    easily_upset_stomach: sanitizeOptionalBool(health.easily_upset_stomach) === true,
+    easily_hurts_legs: sanitizeOptionalBool(health.easily_hurts_legs) === true,
     medical_history: sanitizeOptionalString(health.medical_history),
     allergies: sanitizeOptionalString(health.allergies),
     medications: sanitizeOptionalString(health.medications),
@@ -75,22 +109,30 @@ async function buildDogHealthResponse(health: Record<string, unknown> | undefine
   };
 }
 
-async function upsertDogHealth(dogId: number, health: Record<string, string | null> | null | undefined): Promise<void> {
+async function upsertDogHealth(dogId: number, health: SanitizedDogHealth | null | undefined): Promise<void> {
   if (!health) return;
 
   await pool.query(
     `INSERT INTO dog_health (
       dog_id, mixed_vaccine_date, mixed_vaccine_cert_url,
       rabies_vaccine_date, rabies_vaccine_cert_url,
-      flea_tick_date, medical_history, allergies, medications,
+      flea_tick_date, flea_tick_prevention,
+      heartworm_prevention, heartworm_prevention_date,
+      easily_upset_stomach, easily_hurts_legs,
+      medical_history, allergies, medications,
       vet_name, vet_phone, food_info
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
     ON CONFLICT (dog_id) DO UPDATE SET
       mixed_vaccine_date = EXCLUDED.mixed_vaccine_date,
       mixed_vaccine_cert_url = EXCLUDED.mixed_vaccine_cert_url,
       rabies_vaccine_date = EXCLUDED.rabies_vaccine_date,
       rabies_vaccine_cert_url = EXCLUDED.rabies_vaccine_cert_url,
       flea_tick_date = EXCLUDED.flea_tick_date,
+      flea_tick_prevention = EXCLUDED.flea_tick_prevention,
+      heartworm_prevention = EXCLUDED.heartworm_prevention,
+      heartworm_prevention_date = EXCLUDED.heartworm_prevention_date,
+      easily_upset_stomach = EXCLUDED.easily_upset_stomach,
+      easily_hurts_legs = EXCLUDED.easily_hurts_legs,
       medical_history = EXCLUDED.medical_history,
       allergies = EXCLUDED.allergies,
       medications = EXCLUDED.medications,
@@ -100,17 +142,22 @@ async function upsertDogHealth(dogId: number, health: Record<string, string | nu
       updated_at = CURRENT_TIMESTAMP`,
     [
       dogId,
-      health.mixed_vaccine_date || null,
-      health.mixed_vaccine_cert_url || null,
-      health.rabies_vaccine_date || null,
-      health.rabies_vaccine_cert_url || null,
-      health.flea_tick_date || null,
-      health.medical_history || null,
-      health.allergies || null,
-      health.medications || null,
-      health.vet_name || null,
-      health.vet_phone || null,
-      health.food_info || null
+      health.mixed_vaccine_date,
+      health.mixed_vaccine_cert_url,
+      health.rabies_vaccine_date,
+      health.rabies_vaccine_cert_url,
+      health.flea_tick_date,
+      health.flea_tick_prevention,
+      health.heartworm_prevention,
+      health.heartworm_prevention_date,
+      health.easily_upset_stomach,
+      health.easily_hurts_legs,
+      health.medical_history,
+      health.allergies,
+      health.medications,
+      health.vet_name,
+      health.vet_phone,
+      health.food_info,
     ]
   );
 }
@@ -163,7 +210,13 @@ router.get('/', cacheControl(0, 30), async (req: AuthRequest, res) => {
     const params: (string | number)[] = [req.storeId];
 
     if (search) {
-      query += ` AND (d.name ILIKE $2 OR o.name ILIKE $2)`;
+      query += ` AND (
+        d.name ILIKE $2
+        OR d.name_kana ILIKE $2
+        OR d.breed ILIKE $2
+        OR o.name ILIKE $2
+        OR o.name_kana ILIKE $2
+      )`;
       params.push(`%${search}%`);
     }
 
@@ -268,6 +321,7 @@ router.post('/', async (req: AuthRequest, res) => {
     const {
       owner_id,
       name,
+      name_kana,
       breed,
       birth_date,
       gender,
@@ -275,6 +329,8 @@ router.post('/', async (req: AuthRequest, res) => {
       color,
       photo_url,
       neutered,
+      dog_tag_number,
+      microchip_number,
       health,
       personality,
     } = req.body;
@@ -300,11 +356,24 @@ router.post('/', async (req: AuthRequest, res) => {
 
     const dogResult = await pool.query(
       `INSERT INTO dogs (
-        owner_id, name, breed, birth_date, gender, weight,
-        color, photo_url, neutered
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        owner_id, name, name_kana, breed, birth_date, gender, weight,
+        color, photo_url, neutered, dog_tag_number, microchip_number
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *`,
-      [owner_id, name, breed, birth_date, gender, weight, color, photo_url, neuteredValue]
+      [
+        owner_id,
+        name,
+        sanitizeOptionalString(name_kana),
+        breed,
+        birth_date,
+        gender,
+        weight,
+        color,
+        photo_url,
+        neuteredValue,
+        sanitizeOptionalString(dog_tag_number),
+        sanitizeOptionalString(microchip_number),
+      ]
     );
 
     const dogId = dogResult.rows[0].id;
@@ -325,7 +394,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
     if (!requireStoreId(req, res)) return;
 
     const { id } = req.params;
-    const { name, breed, birth_date, gender, weight, color, photo_url, neutered, health, personality } = req.body;
+    const { name, name_kana, breed, birth_date, gender, weight, color, photo_url, neutered, dog_tag_number, microchip_number, health, personality } = req.body;
 
     // オーナーのstore_idを確認
     const dogCheck = await pool.query(
@@ -345,12 +414,26 @@ router.put('/:id', async (req: AuthRequest, res) => {
 
     const result = await pool.query(
       `UPDATE dogs SET
-        name = $1, breed = $2, birth_date = $3, gender = $4,
-        weight = $5, color = $6, photo_url = $7, neutered = $8,
+        name = $1, name_kana = $2, breed = $3, birth_date = $4, gender = $5,
+        weight = $6, color = $7, photo_url = $8, neutered = $9,
+        dog_tag_number = $10, microchip_number = $11,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $9
+      WHERE id = $12
       RETURNING *`,
-      [name, breed, birth_date, gender, weight, color, photo_url, neuteredValue, id]
+      [
+        name,
+        sanitizeOptionalString(name_kana),
+        breed,
+        birth_date,
+        gender,
+        weight,
+        color,
+        photo_url,
+        neuteredValue,
+        sanitizeOptionalString(dog_tag_number),
+        sanitizeOptionalString(microchip_number),
+        id,
+      ]
     );
 
     await upsertDogHealth(Number(id), sanitizeDogHealthInput(health));

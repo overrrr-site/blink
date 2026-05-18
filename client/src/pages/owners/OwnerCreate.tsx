@@ -9,6 +9,15 @@ import { useTrialStepCompletion } from '../../hooks/useTrialStepCompletion'
 import { TrialPageGuide } from '../../components/trial/TrialPageGuide'
 import type { RecordType } from '../../types/record'
 
+interface DogDraft {
+  name: string
+  breed: string
+  birth_date: string
+  gender: 'オス' | 'メス'
+}
+
+const EMPTY_DOG: DogDraft = { name: '', breed: '', birth_date: '', gender: 'オス' }
+
 const OwnerCreate = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
@@ -18,17 +27,18 @@ const OwnerCreate = () => {
 
   // トライアルガイド: 飼い主登録完了で Step 2 自動完了
   useTrialStepCompletion('register_customer', saved)
-  const [dogInfo, setDogInfo] = useState({
-    name: '',
-    breed: '',
-    birth_date: '',
-    gender: 'オス',
-  })
-  const [includeDog, setIncludeDog] = useState(false)
 
-  const handleDogChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setDogInfo((prev) => ({ ...prev, [name]: value }))
+  const [includeDog, setIncludeDog] = useState(false)
+  const [dogs, setDogs] = useState<DogDraft[]>([{ ...EMPTY_DOG }])
+
+  const updateDog = (index: number, field: keyof DogDraft, value: string) => {
+    setDogs((prev) => prev.map((dog, i) => (i === index ? { ...dog, [field]: value } : dog)))
+  }
+  const addDog = () => {
+    setDogs((prev) => [...prev, { ...EMPTY_DOG }])
+  }
+  const removeDog = (index: number) => {
+    setDogs((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)))
   }
 
   const handleSubmit = async (values: OwnerFormValues) => {
@@ -37,9 +47,20 @@ const OwnerCreate = () => {
       return
     }
 
-    if (includeDog && (!dogInfo.name || !dogInfo.breed || !dogInfo.birth_date)) {
-      showToast('ワンちゃんを登録する場合は、名前、犬種、生年月日は必須です', 'warning')
+    const dogsToSubmit = includeDog
+      ? dogs.filter((d) => d.name || d.breed || d.birth_date)
+      : []
+
+    if (includeDog && dogsToSubmit.length === 0) {
+      showToast('ワンちゃん情報を1頭以上入力してください', 'warning')
       return
+    }
+
+    for (const dog of dogsToSubmit) {
+      if (!dog.name || !dog.breed || !dog.birth_date) {
+        showToast('ワンちゃんの名前・犬種・生年月日は必須です', 'warning')
+        return
+      }
     }
 
     setLoading(true)
@@ -49,28 +70,18 @@ const OwnerCreate = () => {
         name_kana: values.name_kana || null,
         phone: values.phone,
         email: values.email || null,
+        postal_code: values.postal_code || null,
         address: values.address || null,
+        birth_date: values.birth_date || null,
+        is_member: values.is_member,
+        member_number: values.member_number || null,
         emergency_contact: values.emergency_contact_name || null,
         emergency_picker: values.emergency_contact_phone || null,
         memo: values.notes || null,
         business_types: values.business_types,
+        dogs: dogsToSubmit.length > 0 ? dogsToSubmit : undefined,
       })
       const ownerId = response.data.id
-
-      // 犬情報も登録する場合
-      if (includeDog && dogInfo.name && dogInfo.breed && dogInfo.birth_date) {
-        try {
-          await api.post('/dogs', {
-            owner_id: ownerId,
-            name: dogInfo.name,
-            breed: dogInfo.breed,
-            birth_date: dogInfo.birth_date,
-            gender: dogInfo.gender,
-          })
-        } catch {
-          showToast('飼い主は登録されましたが、ワンちゃんの登録に失敗しました。飼い主詳細ページから再度登録してください。', 'warning')
-        }
-      }
 
       setSaved(true)
       navigate(`/owners/${ownerId}`)
@@ -123,63 +134,87 @@ const OwnerCreate = () => {
           </div>
 
           {includeDog && (
-            <div className="space-y-4 pt-2">
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">
-                  名前 <span className="text-destructive">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={dogInfo.name}
-                  onChange={handleDogChange}
-                  placeholder="もも"
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-              </div>
+            <div className="space-y-5 pt-2">
+              {dogs.map((dog, index) => (
+                <div key={index} className="border border-border rounded-xl p-4 space-y-3 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-muted-foreground">ワンちゃん {index + 1}</h4>
+                    {dogs.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeDog(index)}
+                        className="text-xs text-destructive font-bold inline-flex items-center gap-1 active:scale-95 transition-transform min-h-[32px] px-2"
+                        aria-label={`ワンちゃん ${index + 1} を削除`}
+                      >
+                        <Icon icon="solar:trash-bin-minimalistic-linear" width="14" height="14" />
+                        削除
+                      </button>
+                    )}
+                  </div>
 
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">
-                  犬種 <span className="text-destructive">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="breed"
-                  value={dogInfo.breed}
-                  onChange={handleDogChange}
-                  placeholder="トイプードル"
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-              </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">
+                      名前 <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={dog.name}
+                      onChange={(e) => updateDog(index, 'name', e.target.value)}
+                      placeholder="もも"
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">
-                    性別 <span className="text-destructive">*</span>
-                  </label>
-                  <select
-                    name="gender"
-                    value={dogInfo.gender}
-                    onChange={handleDogChange}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  >
-                    <option value="オス">オス</option>
-                    <option value="メス">メス</option>
-                  </select>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">
+                      犬種 <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={dog.breed}
+                      onChange={(e) => updateDog(index, 'breed', e.target.value)}
+                      placeholder="トイプードル"
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1">
+                        性別 <span className="text-destructive">*</span>
+                      </label>
+                      <select
+                        value={dog.gender}
+                        onChange={(e) => updateDog(index, 'gender', e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      >
+                        <option value="オス">オス</option>
+                        <option value="メス">メス</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1">
+                        生年月日 <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={dog.birth_date}
+                        onChange={(e) => updateDog(index, 'birth_date', e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">
-                    生年月日 <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="birth_date"
-                    value={dogInfo.birth_date}
-                    onChange={handleDogChange}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  />
-                </div>
-              </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addDog}
+                className="w-full py-3 rounded-xl border-2 border-dashed border-primary/40 text-primary text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all hover:bg-primary/5 min-h-[48px]"
+              >
+                <Icon icon="solar:add-circle-bold" width="20" height="20" />
+                ワンちゃんを追加
+              </button>
 
               <p className="text-xs text-muted-foreground">
                 詳細な健康情報は、登録後にワンちゃんの編集画面から追加できます

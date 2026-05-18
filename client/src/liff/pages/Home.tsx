@@ -28,6 +28,11 @@ interface IntakeDog {
   intakeStatus: 'not_started' | 'in_progress' | 'completed';
 }
 
+type IntakeDogsResponse = IntakeDog[] | {
+  success: boolean;
+  data: IntakeDog[];
+}
+
 interface OwnerData {
   id: number;
   name: string;
@@ -121,13 +126,13 @@ export default function Home() {
   const [qrInput, setQrInput] = useState('');
   const [qrError, setQrError] = useState<string | null>(null);
 
-  // サーバーは { success, data: IntakeDog[] } を返す
-  const { data: intakeDogsResponse } = useSWR<{ success?: boolean; data: IntakeDog[] }>('/intake/dogs', liffFetcher, {
+  // サーバーは { success, data: IntakeDog[] } を返す（旧形式の配列レスポンスにも互換）
+  const { data: intakeDogsResponse } = useSWR<IntakeDogsResponse>('/intake/dogs', liffFetcher, {
     dedupingInterval: 60_000,
   });
-  const intakeDogs: IntakeDog[] | undefined = Array.isArray(intakeDogsResponse?.data)
-    ? intakeDogsResponse.data
-    : undefined;
+  const intakeDogs: IntakeDog[] | undefined = Array.isArray(intakeDogsResponse)
+    ? intakeDogsResponse
+    : intakeDogsResponse?.data;
 
   const recordLabel = getRecordLabel(effectiveBusinessType);
   const statusLabels = getDashboardStatusLabels(effectiveBusinessType);
@@ -456,6 +461,13 @@ export default function Home() {
                 </button>
               )}
             </>
+          )}
+
+          {isToday(new Date(nextReservation.reservation_date)) && !nextReservation.checked_out_at && (
+            <p className="text-xs text-muted-foreground leading-relaxed text-center px-2">
+              <Icon icon="solar:info-circle-linear" width="12" height="12" className="inline mr-1" />
+              店舗のQRコードを{statusLabels.checkIn}時とお迎え時の両方でスキャンしてください
+            </p>
           )}
         </div>
       ) : (

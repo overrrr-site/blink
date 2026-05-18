@@ -15,6 +15,60 @@ import {
 
 const router = express.Router();
 
+// 犬の記録写真一覧を軽量取得（プロフィール写真として日誌から選択するために利用）
+router.get('/photos/:dogId', async (req: AuthRequest, res) => {
+  try {
+    if (!requireStoreId(req, res)) {
+      return;
+    }
+
+    const dogId = Number(req.params.dogId);
+    if (!Number.isInteger(dogId) || dogId <= 0) {
+      sendBadRequest(res, 'dogId が不正です');
+      return;
+    }
+
+    // 犬が店舗に属することを確認
+    const dogCheck = await pool.query(
+      `SELECT d.id FROM dogs d
+       JOIN owners o ON d.owner_id = o.id
+       WHERE d.id = $1 AND o.store_id = $2 AND d.deleted_at IS NULL`,
+      [dogId, req.storeId]
+    );
+    if (dogCheck.rows.length === 0) {
+      sendNotFound(res, '犬が見つかりません');
+      return;
+    }
+
+    // 直近のカルテから写真を収集（最新順、最大100枚）
+    const result = await pool.query(
+      `SELECT r.id as record_id, r.record_date, r.photos
+       FROM records r
+       WHERE r.dog_id = $1 AND r.store_id = $2 AND r.deleted_at IS NULL
+       ORDER BY r.record_date DESC, r.created_at DESC
+       LIMIT 50`,
+      [dogId, req.storeId]
+    );
+
+    const photos: Array<{ url: string; date: string }> = [];
+    for (const row of result.rows as Array<{ record_date: string; photos: unknown }>) {
+      const normalized = normalizeStoredPhotos(row.photos || { regular: [], concerns: [] });
+      const dateStr = typeof row.record_date === 'string'
+        ? row.record_date.slice(0, 10)
+        : new Date(row.record_date).toISOString().slice(0, 10);
+      for (const p of normalized.regular) {
+        if (p?.url) photos.push({ url: p.url, date: dateStr });
+        if (photos.length >= 100) break;
+      }
+      if (photos.length >= 100) break;
+    }
+
+    res.json(photos);
+  } catch (error) {
+    sendServerError(res, '写真の取得に失敗しました', error);
+  }
+});
+
 // カルテ写真アップロード
 router.post('/:id/photos', async (req: AuthRequest, res) => {
   try {
