@@ -1,4 +1,4 @@
-import type { Express, Router } from 'express';
+import type { Express, Request, Response, Router } from 'express';
 import authRoutes from '../routes/auth.js';
 import trialRoutes from '../routes/trial.js';
 import ownersRoutes from '../routes/owners.js';
@@ -43,9 +43,12 @@ function registerRouteGroup(app: Express, routes: RouteDefinition[]): void {
 }
 
 function registerHealthRoute(app: Express): void {
-  app.get('/health', (_req, res) => {
+  const healthHandler = (_req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
-  });
+  };
+
+  app.get('/health', healthHandler);
+  app.get('/api/health', healthHandler);
 }
 
 function registerAuthRoutes(app: Express): void {
