@@ -3,21 +3,25 @@
 --
 -- Blink はバックエンド API 経由でのみ機微データへアクセスする設計のため、
 -- PostgREST からの anon / authenticated 直接アクセスは明示的に拒否する。
+--
+-- 各環境でテーブル適用状況が異なる可能性があるため、存在チェック付きで安全に実行する。
 
-ALTER TABLE billing_webhook_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE trial_line_links ENABLE ROW LEVEL SECURITY;
-ALTER TABLE trial_guide_progress ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ai_intake_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ai_intake_messages ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Deny all direct access" ON billing_webhook_events;
-DROP POLICY IF EXISTS "Deny all direct access" ON trial_line_links;
-DROP POLICY IF EXISTS "Deny all direct access" ON trial_guide_progress;
-DROP POLICY IF EXISTS "Deny all direct access" ON ai_intake_sessions;
-DROP POLICY IF EXISTS "Deny all direct access" ON ai_intake_messages;
-
-CREATE POLICY "Deny all direct access" ON billing_webhook_events FOR ALL USING (false);
-CREATE POLICY "Deny all direct access" ON trial_line_links FOR ALL USING (false);
-CREATE POLICY "Deny all direct access" ON trial_guide_progress FOR ALL USING (false);
-CREATE POLICY "Deny all direct access" ON ai_intake_sessions FOR ALL USING (false);
-CREATE POLICY "Deny all direct access" ON ai_intake_messages FOR ALL USING (false);
+DO $$
+DECLARE
+  t TEXT;
+  tables TEXT[] := ARRAY[
+    'billing_webhook_events',
+    'trial_line_links',
+    'trial_guide_progress',
+    'ai_intake_sessions',
+    'ai_intake_messages'
+  ];
+BEGIN
+  FOREACH t IN ARRAY tables LOOP
+    IF to_regclass('public.' || t) IS NOT NULL THEN
+      EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Deny all direct access" ON %I', t);
+      EXECUTE format('CREATE POLICY "Deny all direct access" ON %I FOR ALL USING (false)', t);
+    END IF;
+  END LOOP;
+END $$;

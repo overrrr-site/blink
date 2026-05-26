@@ -1,14 +1,29 @@
 import path from 'path'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN
 const sentryOrg = process.env.SENTRY_ORG || 'blink-pet'
 const sentryProject = process.env.SENTRY_PROJECT || 'blink-frontend'
 
+function liffDevFallback(): Plugin {
+  return {
+    name: 'liff-dev-fallback',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url === '/liff' || req.url?.startsWith('/liff/')) {
+          req.url = '/liff.html'
+        }
+        next()
+      })
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
+    liffDevFallback(),
     react(),
     ...(sentryAuthToken
       ? [
