@@ -131,13 +131,18 @@ const DogEdit = () => {
       try {
         const lifestyleRes = await api.get(`/dog-lifestyles/${id}`)
         const ls = lifestyleRes.data
+        const toiletEnvironments = Array.isArray(ls.toilet_environments)
+          ? ls.toilet_environments
+          : ls.toilet_environment
+            ? [ls.toilet_environment]
+            : []
         setLifestyle({
           praise_words: Array.isArray(ls.praise_words) ? ls.praise_words : [],
           praise_words_other: ls.praise_words_other || '',
           toilet_signal: Array.isArray(ls.toilet_signal) ? ls.toilet_signal : [],
           toilet_signal_other: ls.toilet_signal_other || '',
           rest_environments: Array.isArray(ls.rest_environments) ? ls.rest_environments : [],
-          toilet_environment: ls.toilet_environment || '',
+          toilet_environments: toiletEnvironments,
           toilet_training: Array.isArray(ls.toilet_training) ? ls.toilet_training : [],
           urination_count_per_day: ls.urination_count_per_day !== null && ls.urination_count_per_day !== undefined
             ? String(ls.urination_count_per_day) : '',
@@ -148,6 +153,7 @@ const DogEdit = () => {
           lunch_time: ls.lunch_time ? String(ls.lunch_time).slice(0, 5) : '',
           treat_experience: Array.isArray(ls.treat_experience) ? ls.treat_experience : [],
           treat_other_notes: ls.treat_other_notes || '',
+          other_concerns: ls.other_concerns || '',
         })
       } catch {
         // 未登録は無視
@@ -354,7 +360,7 @@ const DogEdit = () => {
           toilet_signal: lifestyle.toilet_signal,
           toilet_signal_other: lifestyle.toilet_signal_other || null,
           rest_environments: lifestyle.rest_environments,
-          toilet_environment: lifestyle.toilet_environment || null,
+          toilet_environments: lifestyle.toilet_environments,
           toilet_training: lifestyle.toilet_training,
           urination_count_per_day: lifestyle.urination_count_per_day ? Number(lifestyle.urination_count_per_day) : null,
           defecation_count_per_day: lifestyle.defecation_count_per_day ? Number(lifestyle.defecation_count_per_day) : null,
@@ -363,6 +369,7 @@ const DogEdit = () => {
           lunch_time: lifestyle.has_lunch && lifestyle.lunch_time ? lifestyle.lunch_time : null,
           treat_experience: lifestyle.treat_experience,
           treat_other_notes: lifestyle.treat_other_notes || null,
+          other_concerns: lifestyle.other_concerns || null,
         })
       } catch {
         showToast('基本情報は保存しましたが、生活情報の保存に失敗しました', 'warning')

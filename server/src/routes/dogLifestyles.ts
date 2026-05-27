@@ -44,6 +44,14 @@ function sanitizeOptionalTime(value: unknown): string | null {
   return t.length === 5 ? `${t}:00` : t;
 }
 
+function sanitizeToiletEnvironments(body: Record<string, unknown>): string[] {
+  const environments = sanitizeStringArray(body.toilet_environments, TOILET_ENV);
+  if (environments.length > 0) return environments;
+
+  const legacyEnvironment = sanitizeOptionalString(body.toilet_environment);
+  return legacyEnvironment && TOILET_ENV.has(legacyEnvironment) ? [legacyEnvironment] : [];
+}
+
 async function ensureDogBelongsToStore(dogId: number, storeId: number): Promise<boolean> {
   const result = await pool.query(
     `SELECT d.id FROM dogs d
@@ -99,10 +107,7 @@ router.put('/:dogId', async (req: AuthRequest, res) => {
       toilet_signal: sanitizeStringArray(body.toilet_signal, TOILET_SIGNAL),
       toilet_signal_other: sanitizeOptionalString(body.toilet_signal_other),
       rest_environments: sanitizeStringArray(body.rest_environments, REST_ENV),
-      toilet_environment: (() => {
-        const v = sanitizeOptionalString(body.toilet_environment);
-        return v && TOILET_ENV.has(v) ? v : null;
-      })(),
+      toilet_environments: sanitizeToiletEnvironments(body),
       toilet_training: sanitizeStringArray(body.toilet_training, TOILET_TRAINING),
       urination_count_per_day: sanitizeOptionalInt(body.urination_count_per_day),
       defecation_count_per_day: sanitizeOptionalInt(body.defecation_count_per_day),
@@ -111,22 +116,23 @@ router.put('/:dogId', async (req: AuthRequest, res) => {
       lunch_time: sanitizeOptionalTime(body.lunch_time),
       treat_experience: sanitizeStringArray(body.treat_experience, TREAT),
       treat_other_notes: sanitizeOptionalString(body.treat_other_notes),
+      other_concerns: sanitizeOptionalString(body.other_concerns),
     };
 
     const result = await pool.query(
       `INSERT INTO dog_lifestyles (
         dog_id, praise_words, praise_words_other, toilet_signal, toilet_signal_other,
-        rest_environments, toilet_environment, toilet_training,
+        rest_environments, toilet_environments, toilet_training,
         urination_count_per_day, defecation_count_per_day, toilet_timing_notes,
-        has_lunch, lunch_time, treat_experience, treat_other_notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        has_lunch, lunch_time, treat_experience, treat_other_notes, other_concerns
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       ON CONFLICT (dog_id) DO UPDATE SET
         praise_words = EXCLUDED.praise_words,
         praise_words_other = EXCLUDED.praise_words_other,
         toilet_signal = EXCLUDED.toilet_signal,
         toilet_signal_other = EXCLUDED.toilet_signal_other,
         rest_environments = EXCLUDED.rest_environments,
-        toilet_environment = EXCLUDED.toilet_environment,
+        toilet_environments = EXCLUDED.toilet_environments,
         toilet_training = EXCLUDED.toilet_training,
         urination_count_per_day = EXCLUDED.urination_count_per_day,
         defecation_count_per_day = EXCLUDED.defecation_count_per_day,
@@ -135,6 +141,7 @@ router.put('/:dogId', async (req: AuthRequest, res) => {
         lunch_time = EXCLUDED.lunch_time,
         treat_experience = EXCLUDED.treat_experience,
         treat_other_notes = EXCLUDED.treat_other_notes,
+        other_concerns = EXCLUDED.other_concerns,
         updated_at = NOW()
       RETURNING *`,
       [
@@ -144,7 +151,7 @@ router.put('/:dogId', async (req: AuthRequest, res) => {
         payload.toilet_signal,
         payload.toilet_signal_other,
         payload.rest_environments,
-        payload.toilet_environment,
+        payload.toilet_environments,
         payload.toilet_training,
         payload.urination_count_per_day,
         payload.defecation_count_per_day,
@@ -153,6 +160,7 @@ router.put('/:dogId', async (req: AuthRequest, res) => {
         payload.lunch_time,
         payload.treat_experience,
         payload.treat_other_notes,
+        payload.other_concerns,
       ]
     );
 

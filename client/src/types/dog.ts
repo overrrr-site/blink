@@ -63,7 +63,7 @@ export interface DogLifestyleData {
   toilet_signal: ToiletSignal[]
   toilet_signal_other: string
   rest_environments: RestEnvironment[]
-  toilet_environment: ToiletEnvironment | ''
+  toilet_environments: ToiletEnvironment[]
   toilet_training: ToiletTraining[]
   urination_count_per_day: string
   defecation_count_per_day: string
@@ -72,6 +72,7 @@ export interface DogLifestyleData {
   lunch_time: string
   treat_experience: TreatExperience[]
   treat_other_notes: string
+  other_concerns: string
 }
 
 export const DEFAULT_DOG_LIFESTYLE: DogLifestyleData = {
@@ -80,7 +81,7 @@ export const DEFAULT_DOG_LIFESTYLE: DogLifestyleData = {
   toilet_signal: [],
   toilet_signal_other: '',
   rest_environments: [],
-  toilet_environment: '',
+  toilet_environments: [],
   toilet_training: [],
   urination_count_per_day: '',
   defecation_count_per_day: '',
@@ -89,4 +90,5 @@ export const DEFAULT_DOG_LIFESTYLE: DogLifestyleData = {
   lunch_time: '',
   treat_experience: [],
   treat_other_notes: '',
+  other_concerns: '',
 }

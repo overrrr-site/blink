@@ -246,7 +246,7 @@ const Customers = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="名前、電話番号、犬種で検索..."
+            placeholder="名前、電話番号、フリガナ、犬種で検索..."
             className="w-full bg-muted border border-border rounded-xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm focus:shadow-md min-h-[48px]"
             aria-label="検索"
           />

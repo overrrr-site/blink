@@ -155,21 +155,13 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
         helper="使用しているものをすべて選択"
       />
 
-      <div>
-        <label className="block text-xs font-bold text-foreground mb-2">排泄環境</label>
-        <select
-          value={data.toilet_environment}
-          onChange={(e) => update('toilet_environment', e.target.value as ToiletEnvironment | '')}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-        >
-          <option value="">未設定</option>
-          {TOILET_ENV_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <CheckGroup
+        label="排泄環境"
+        options={TOILET_ENV_OPTIONS}
+        selected={data.toilet_environments}
+        onToggle={(v) => update('toilet_environments', toggle(data.toilet_environments, v))}
+        helper="使用しているものをすべて選択"
+      />
 
       <CheckGroup
         label="排泄のしつけ"
@@ -256,6 +248,17 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
           className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
       )}
+
+      <div>
+        <label className="block text-xs font-bold text-foreground mb-2">その他気になること</label>
+        <textarea
+          value={data.other_concerns}
+          onChange={(e) => update('other_concerns', e.target.value)}
+          placeholder="生活の様子で気になることがあれば入力"
+          rows={4}
+          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y min-h-[112px]"
+        />
+      </div>
     </section>
   )
 })
