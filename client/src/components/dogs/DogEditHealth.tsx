@@ -32,9 +32,9 @@ function TriStateToggle({
     { key: null, text: '未設定' },
   ]
   return (
-    <div>
+    <div className="min-w-0">
       <label className="block text-xs text-muted-foreground mb-1">{label}</label>
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap min-w-0">
         {options.map(({ key, text }) => {
           const isSelected = value === key
           return (
@@ -43,7 +43,7 @@ function TriStateToggle({
               type="button"
               onClick={() => onChange(key)}
               aria-pressed={isSelected}
-              className={`px-3 py-2 rounded-lg text-sm font-medium border min-h-[40px] transition-all active:scale-95 ${
+              className={`max-w-full break-words px-3 py-2 rounded-lg text-sm font-medium border min-h-[40px] transition-all active:scale-95 ${
                 isSelected
                   ? 'bg-primary/10 border-primary text-primary'
                   : 'bg-card border-border text-muted-foreground hover:border-primary/30'
@@ -70,7 +70,7 @@ const DogEditHealth = memo(function DogEditHealth({
   getFileUrl,
 }: DogEditHealthProps) {
   return (
-    <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+    <section className="min-w-0 bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-sm">
       <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
         <Icon icon="solar:health-bold" width="16" height="16" className="text-chart-2" />
         健康情報
@@ -78,7 +78,7 @@ const DogEditHealth = memo(function DogEditHealth({
 
       <div className="space-y-4">
         {/* 混合ワクチン */}
-        <div className="bg-muted/30 rounded-xl p-4">
+        <div className="min-w-0 bg-muted/30 rounded-xl p-3 sm:p-4">
           <label className="block text-xs font-bold text-foreground mb-2">
             混合ワクチン
           </label>
@@ -90,7 +90,7 @@ const DogEditHealth = memo(function DogEditHealth({
                 name="mixed_vaccine_date"
                 value={data.mixed_vaccine_date}
                 onChange={onChange}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
             <div>
@@ -103,15 +103,15 @@ const DogEditHealth = memo(function DogEditHealth({
                 className="hidden"
               />
               {data.mixed_vaccine_cert_url ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <a
                     href={data.mixed_vaccine_cert_access_url || getFileUrl(data.mixed_vaccine_cert_url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
+                    className="min-w-0 flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
                   >
                     <Icon icon="solar:file-check-bold" width="20" height="20" />
-                    <span className="truncate">証明書をプレビュー</span>
+                    <span className="min-w-0 truncate">証明書をプレビュー</span>
                   </a>
                   <button
                     type="button"
@@ -126,7 +126,7 @@ const DogEditHealth = memo(function DogEditHealth({
                   type="button"
                   onClick={() => mixedVaccineInputRef.current?.click()}
                   disabled={uploading === 'mixed'}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="w-full min-w-0 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {uploading === 'mixed' ? (
                     <>
@@ -146,7 +146,7 @@ const DogEditHealth = memo(function DogEditHealth({
         </div>
 
         {/* 狂犬病ワクチン */}
-        <div className="bg-muted/30 rounded-xl p-4">
+        <div className="min-w-0 bg-muted/30 rounded-xl p-3 sm:p-4">
           <label className="block text-xs font-bold text-foreground mb-2">
             狂犬病予防接種
           </label>
@@ -158,7 +158,7 @@ const DogEditHealth = memo(function DogEditHealth({
                 name="rabies_vaccine_date"
                 value={data.rabies_vaccine_date}
                 onChange={onChange}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
             <div>
@@ -171,15 +171,15 @@ const DogEditHealth = memo(function DogEditHealth({
                 className="hidden"
               />
               {data.rabies_vaccine_cert_url ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <a
                     href={data.rabies_vaccine_cert_access_url || getFileUrl(data.rabies_vaccine_cert_url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
+                    className="min-w-0 flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-chart-2 bg-chart-2/10 text-sm text-chart-2 hover:bg-chart-2/20 transition-colors"
                   >
                     <Icon icon="solar:file-check-bold" width="20" height="20" />
-                    <span className="truncate">証明書をプレビュー</span>
+                    <span className="min-w-0 truncate">証明書をプレビュー</span>
                   </a>
                   <button
                     type="button"
@@ -194,7 +194,7 @@ const DogEditHealth = memo(function DogEditHealth({
                   type="button"
                   onClick={() => rabiesVaccineInputRef.current?.click()}
                   disabled={uploading === 'rabies'}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="w-full min-w-0 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {uploading === 'rabies' ? (
                     <>
@@ -213,7 +213,7 @@ const DogEditHealth = memo(function DogEditHealth({
           </div>
         </div>
 
-        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+        <div className="min-w-0 bg-muted/30 rounded-xl p-3 sm:p-4 space-y-3">
           <label className="block text-xs font-bold text-foreground">ノミ・ダニ予防</label>
           <TriStateToggle
             label="予防状況"
@@ -227,12 +227,12 @@ const DogEditHealth = memo(function DogEditHealth({
               name="flea_tick_date"
               value={data.flea_tick_date}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
         </div>
 
-        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+        <div className="min-w-0 bg-muted/30 rounded-xl p-3 sm:p-4 space-y-3">
           <label className="block text-xs font-bold text-foreground">フィラリア予防</label>
           <TriStateToggle
             label="予防状況"
@@ -246,12 +246,12 @@ const DogEditHealth = memo(function DogEditHealth({
               name="heartworm_prevention_date"
               value={data.heartworm_prevention_date}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
         </div>
 
-        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+        <div className="min-w-0 bg-muted/30 rounded-xl p-3 sm:p-4 space-y-3">
           <label className="block text-xs font-bold text-foreground">体質の特徴</label>
           <label className="flex items-center gap-3 cursor-pointer min-h-[40px]">
             <input
@@ -281,7 +281,7 @@ const DogEditHealth = memo(function DogEditHealth({
             value={data.allergies}
             onChange={onChange}
             placeholder="特になし"
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
 
@@ -293,7 +293,7 @@ const DogEditHealth = memo(function DogEditHealth({
             onChange={onChange}
             placeholder="過去の病歴など"
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+            className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
           />
         </div>
       </div>

@@ -74,9 +74,9 @@ function CheckGroup<T extends string>({
   helper?: string
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label className="block text-xs font-bold text-foreground mb-2">{label}</label>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 min-w-0">
         {options.map((opt) => {
           const isSelected = selected.includes(opt.value)
           return (
@@ -85,7 +85,7 @@ function CheckGroup<T extends string>({
               type="button"
               onClick={() => onToggle(opt.value)}
               aria-pressed={isSelected}
-              className={`px-3 py-2 rounded-lg text-sm font-medium border min-h-[40px] transition-all active:scale-95 ${
+              className={`max-w-full break-words text-left px-3 py-2 rounded-lg text-sm font-medium border min-h-[40px] transition-all active:scale-95 ${
                 isSelected
                   ? 'bg-primary/10 border-primary text-primary'
                   : 'bg-card border-border text-muted-foreground hover:border-primary/30'
@@ -107,7 +107,7 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
   }
 
   return (
-    <section className="bg-card rounded-2xl p-5 border border-border shadow-sm space-y-5">
+    <section className="min-w-0 bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-sm space-y-5">
       <h3 className="text-sm font-bold font-heading flex items-center gap-2">
         <Icon icon="solar:home-2-bold" width="16" height="16" className="text-chart-3" />
         生活の様子
@@ -126,7 +126,7 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
           value={data.praise_words_other}
           onChange={(e) => update('praise_words_other', e.target.value)}
           placeholder="その他のほめ言葉（自由記述）"
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
       )}
 
@@ -143,7 +143,7 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
           value={data.toilet_signal_other}
           onChange={(e) => update('toilet_signal_other', e.target.value)}
           placeholder="その他のトイレ合図（自由記述）"
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
       )}
 
@@ -171,8 +171,8 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
         helper="該当項目すべて"
       />
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="min-w-0">
           <label className="block text-xs text-muted-foreground mb-1">排尿（回/日）</label>
           <input
             type="number"
@@ -181,10 +181,10 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
             value={data.urination_count_per_day}
             onChange={(e) => update('urination_count_per_day', e.target.value)}
             placeholder="3"
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="block text-xs text-muted-foreground mb-1">排便（回/日）</label>
           <input
             type="number"
@@ -193,7 +193,7 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
             value={data.defecation_count_per_day}
             onChange={(e) => update('defecation_count_per_day', e.target.value)}
             placeholder="1"
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
       </div>
@@ -205,11 +205,11 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
           value={data.toilet_timing_notes}
           onChange={(e) => update('toilet_timing_notes', e.target.value)}
           placeholder="食後すぐ／散歩中など（自由記述）"
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
       </div>
 
-      <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+      <div className="min-w-0 bg-muted/30 rounded-xl p-3 sm:p-4 space-y-3">
         <label className="flex items-center gap-3 cursor-pointer min-h-[40px]">
           <input
             type="checkbox"
@@ -226,7 +226,7 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
               type="time"
               value={data.lunch_time}
               onChange={(e) => update('lunch_time', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
         )}
@@ -245,7 +245,7 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
           value={data.treat_other_notes}
           onChange={(e) => update('treat_other_notes', e.target.value)}
           placeholder="その他のおやつ（自由記述）"
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
       )}
 
@@ -256,7 +256,7 @@ const DogEditLifestyle = memo(function DogEditLifestyle({ data, onChange }: DogE
           onChange={(e) => update('other_concerns', e.target.value)}
           placeholder="生活の様子で気になることがあれば入力"
           rows={4}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y min-h-[112px]"
+          className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y min-h-[112px]"
         />
       </div>
     </section>

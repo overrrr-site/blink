@@ -13,7 +13,7 @@ const DogEditPersonality = memo(function DogEditPersonality({
   onChange,
 }: DogEditPersonalityProps) {
   return (
-    <section className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+    <section className="min-w-0 bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-sm">
       <h3 className="text-sm font-bold font-heading flex items-center gap-2 mb-4">
         <Icon icon="solar:heart-bold" width="16" height="16" className="text-chart-3" />
         性格・特徴
@@ -28,18 +28,18 @@ const DogEditPersonality = memo(function DogEditPersonality({
             onChange={onChange}
             placeholder="性格や特徴を自由にご記入ください"
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+            className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="min-w-0">
             <label className="block text-xs text-muted-foreground mb-1">他の犬への反応</label>
             <select
               name="dog_compatibility"
               value={data.dog_compatibility}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
               <option value="">未設定</option>
               <option value="犬が好き">犬が好き</option>
@@ -51,13 +51,13 @@ const DogEditPersonality = memo(function DogEditPersonality({
               {data.dog_compatibility === '苦手' && <option value="苦手">ひとり遊びが好き（旧）</option>}
             </select>
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-xs text-muted-foreground mb-1">人への反応</label>
             <select
               name="human_reaction"
               value={data.human_reaction}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
               <option value="">未設定</option>
               <option value="人が好き">人が好き</option>
@@ -71,14 +71,14 @@ const DogEditPersonality = memo(function DogEditPersonality({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="min-w-0">
             <label className="block text-xs text-muted-foreground mb-1">トイレトレーニング</label>
             <select
               name="toilet_status"
               value={data.toilet_status}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
               <option value="">未設定</option>
               <option value="完璧">バッチリ</option>
@@ -86,13 +86,13 @@ const DogEditPersonality = memo(function DogEditPersonality({
               <option value="トレーニング中">練習中</option>
             </select>
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-xs text-muted-foreground mb-1">クレート</label>
             <select
               name="crate_training"
               value={data.crate_training}
               onChange={onChange}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
               <option value="">未設定</option>
               <option value="慣れている">お気に入りの場所</option>
@@ -110,7 +110,7 @@ const DogEditPersonality = memo(function DogEditPersonality({
             value={data.likes}
             onChange={onChange}
             placeholder="ボール遊び、散歩、おやつ など"
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
 
@@ -122,7 +122,7 @@ const DogEditPersonality = memo(function DogEditPersonality({
             value={data.dislikes}
             onChange={onChange}
             placeholder="大きな音、長時間の留守番 など"
-            className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
       </div>

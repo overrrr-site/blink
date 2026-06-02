@@ -33,6 +33,17 @@ label {
   font-size: 14px;
 }
 
+@media (max-width: 767px) {
+  /* iOS Safariのフォームフォーカス時の自動ズームを防ぐ */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
 /* フォーカス表示（キーボードナビゲーション時のみ） */
 :focus-visible {
   outline: 2px solid #EA580C;

@@ -147,33 +147,33 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="min-w-0">
               <label className="block text-xs text-muted-foreground mb-1">性別</label>
               <select
                 name="gender"
                 value={data.gender}
                 onChange={onChange}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="オス">オス</option>
                 <option value="メス">メス</option>
               </select>
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs text-muted-foreground mb-1">生年月日</label>
               <input
                 type="date"
                 name="birth_date"
                 value={data.birth_date}
                 onChange={onChange}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="min-w-0">
               <label className="block text-xs text-muted-foreground mb-1">体重 (kg)</label>
               <input
                 type="number"
@@ -182,10 +182,10 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
                 onChange={onChange}
                 step="0.1"
                 placeholder="4.5"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs text-muted-foreground mb-1">毛色</label>
               <input
                 type="text"
@@ -193,7 +193,7 @@ const DogEditBasicInfo = memo(function DogEditBasicInfo({
                 value={data.color}
                 onChange={onChange}
                 placeholder="アプリコット"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full min-w-0 px-4 py-3 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
           </div>
